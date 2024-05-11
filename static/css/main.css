@@ -1,0 +1,92 @@
+body{
+    background:rgba(230, 255, 255) ;
+    color: rgb(25, 0, 0,);
+
+}
+
+.navbar {
+    background: rgb(210, 255, 255) ;
+    padding: 10px 0;
+}
+
+.navbar ul {
+    display: flex;
+    justify-content: space-between;
+}
+
+.navbar ul li {
+    list-style:none ;
+}
+
+.navbar ul li a {
+    color: rgb(0, 50, 50);
+    text-decoration: none;
+}
+
+.navbar ul li a:hover {
+    color: rgb(150, 150, 0);
+}
+
+/*
+end
+*/
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px 20px;
+}
+
+.input {
+    background:wheat ;
+    padding: 10px;
+    text-align: center;
+    display: block;
+}
+
+.form-center input{
+    text-align: center;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(4, 2fr);
+    gap: 30px;
+}
+
+.card {
+    color :  rgb(0, 50, 50);
+    background: khaki;
+    border: 1px solid #4d0d0d;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 2px;
+}
+/* Estilos para la tabla */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Estilos para los enlaces */
+a {
+    text-decoration: none;
+    color: #0074D9;
+    transition: color 0.3s;
+}
+
+a:hover {
+    color: #0056b3;
+}
+
+/* Estilos para las filas impares */
+tr:nth-child(odd) {
+    background-color: #f9f9f9;
+}
