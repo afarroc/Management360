@@ -6,52 +6,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Django Projects</title>
-    <link rel="stylesheet" type='text/css', href="{% static 'css/main.css' %}"/>
+    <title>Panel de Eventos</title>
+    <link rel="stylesheet" type='text/css' , href="{% static 'css/main.css' %}" />
 </head>
 
 <body>
-
-    <nav class="navbar container">
-        <ul>
-            <li>
-                <a href="{% url 'index' %}">Home</a>
-            </li>
-            <li>
-                <a href="{% url 'about' %}">About</a>
-            </li>
-            <li>
-                <a href="{% url 'panel' %}">panel</a>
-            </li>
-            <li>
-                <a href="{% url 'events' %}">Events</a>
-            </li>
-            <li>
-                <a href="{% url 'projects' %}">Projects</a>
-            </li>
-            <li>
-                <a href="{% url 'tasks' %}">Task</a>
-            </li>
-            <li>
-                <a href="{% url 'create_task' %}">Create Task</a>
-            </li>
-            <li>
-                <a href="{% url 'create_project' %}">Create Project</a>
-            </li>
-            <li>
-                <a href="{% url 'create_event' %}">Create Event</a>
-            </li>
-            <li>
-                <a href="{% url 'admin' %}">Admin</a>
-            </li>
-        </ul>
-    </nav>
-
+    <header>
+        <nav class="container">
+            <h1>Panel de eventos</h1>
+        </nav>
+        <nav class="navbar container">
+            <ul>
+                <li>
+                    <a href="{% url 'index' %}">Home</a>
+                </li>
+                <li>
+                    <a href="{% url 'about' %}">About</a>
+                </li>
+                <li>
+                    <a href="{% url 'panel' %}">Panel</a>
+                </li>
+                <li>
+                    <a href="{% url 'events' %}">Events</a>
+                </li>
+                <li>
+                    <a href="{% url 'projects' %}">Projects</a>
+                </li>
+                <li>
+                    <a href="{% url 'tasks' %}">Task</a>
+                </li>
+                <li>
+                    <a href="{% url 'create_event' %}">Create Event</a>
+                </li>
+                <li>
+                    <a href="{% url 'create_project' %}">Create Project</a>
+                </li>
+                <li>
+                    <a href="{% url 'create_task' %}">Create Task</a>
+                </li>
+                <li>
+                    <a href="{% url 'admin' %}">Admin</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
     <main class="container">
         {% block content %}
         {% endblock %}
     </main>
-
+    <footer>
+        <nav class="container">
+            <p>&copy; 2024 Bohemian</p>
+        </nav>
+    </footer>
 </body>
 
 </html>
