@@ -10,18 +10,13 @@ def panel(request):
     events = Event.objects.all()
     return render(request, 'panel/panel.html', {'events': events})    
 
-def change_event_status(request, event_id):
-    event = get_object_or_404(Event, pk=event_id)
-    new_status_id = request.POST.get('new_status_id')
-    new_status = get_object_or_404(Status, pk=new_status_id)
-    event.event_status = new_status
-    event.save()
-    return redirect(reverse('events'))
+
 
 def delete_event(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
     event.delete()
     return redirect(reverse('events'))
+    
 
 def index(request):
     title="Django Course!!"
@@ -34,25 +29,68 @@ def about(request):
     return render(request, "about.html",{
         'username':username
     })
+# Vista Cambio de evento
 
-def hello(request, username):
-    return HttpResponse("<h2>Hello %s</h2>"%username)
+def change_event_status(request, event_id):
+    # Obtener evento desde el event_id
+    print("\n ---- Vista 'Cambio de estado' ----")
+    print("Cambiando estado del evento con  ID:", str(event_id))
+    
+    # Obtener vento
+    event = get_object_or_404(Event, pk=event_id)
+    print("titulo:",str(event.title))
+    print("estado:",str(event.event_status.status_name))
+    # Cambiar al nuevo estado el evento seleccionado
+    print("Nuevo id de estado: ",str(request.POST.get('new_status_id')))
+    new_status_id = request.POST.get('new_status_id')
+    new_status = get_object_or_404(Status, pk=new_status_id)
+    event.event_status = new_status
+    
+    # Guardar Cambios
+    event.save()
+    
+    print('filtro estado: ',request.POST.get('status'))
+    render(request, 'events/events.html', {
+        'events': events,
+        'status': new_status
+        })    
+    print("\n ---- Fin de vista 'cambio de estado' ----")
+    return redirect(reverse('events'))
+
+# Vista eventos
 
 def events(request):
+    # Obtener las variables de la solicitud 
+    status_id = request.POST.get('status')
+    date = request.POST.get('date')
+
+    print(status_id)
+    print(date)
     
-    status_id = request.GET.get('status')
-    date = request.GET.get('date')
-    
+    # Obtener Eventos ordenados descendentemente por fecha de creacion 
     events = Event.objects.all().order_by('-created_at')    
+
+    # Obtener Estados disponibles ordenados por nombre
+    statuses = Status.objects.all().order_by('status_name')
     
+    # aplicar filtros si existen datos en la solicitud
     if status_id:
         events = events.filter(event_status_id=status_id)
+        print("Filtardo por id"," ",status_id)
     if date:
         events = events.filter(created_at__date=date)
+        print("Filtrado por fecha"," ",date)
 
+    # devolver solcitud
 
-    statuses = Status.objects.all().order_by('status_name')
-    return render(request, 'events/events.html', {'events': events, 'statuses': statuses})
+    return render(request, 'events/events.html', {
+        'events': events,
+        'statuses': statuses,
+        'status': status_id
+        })
+
+# --- ---
+
     
 def projects(request):
     projects = Project.objects.all()

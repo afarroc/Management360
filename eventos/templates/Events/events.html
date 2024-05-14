@@ -1,38 +1,41 @@
 {% extends 'layouts/base.html' %}
 
 {% block content %}
-<h3>Events</h3>
-
 <div class="container">
-    <form class="form-container" method="GET" action="{% url 'events' %}">
+    <h2>Events</h2>
+</div>
+<section class="fcontainer">
+    <form method="POST" action="{% url 'events' %}">
+        {% csrf_token %}
+
         <label for="status">Estado:</label>
-        
         <select id="status" name="status">
             <option value="">-- Selecciona un estado --</option>  <!-- Elemento vacío -->
             {% for status in statuses %}
-                <option value="{{ status.id }}" {% if status.id|stringformat:"s" == request.GET.status|default:'' %}selected{% endif %}>{{ status.status_name }}</option>
+                <option value="{{ status.id }}" {% if status.id|stringformat:"s" == request.POST.status|default:'' %}selected{% endif %}>{{ status.status_name }}</option>
             {% endfor %}
         </select>
-        
 
         <label for="date">Fecha:</label>
-        <input type="date" id="date" name="date" {% if request.GET.date %}value="{{ request.GET.date }}" {% endif %}>
+        <input type="date" id="date" name="date" {% if request.POST.date %}value="{{ request.POST.date }}" {% endif %}>
 
         <input type="submit" value="Filtrar">
-        <a href="{% url 'events' %}"><button type="button">Restablecer</button></a>
+        
+        <a href="{% url 'events' %}">
+            <button type="button">
+                Restablecer
+            </button>
+        </a>
     </form>
-</div>
-<p></p>
+</section>
 
-<div class="grid-container">
+<section class="grid-container">
     {% for event in events %}
     <div class="card">
-        <p>ID: {{ event.id }} {{ event.event_status.icon }}</p>
-        <p>Fecha de creación: {{ event.created_at }}</p>
-        <p>Fecha de estado: {{ event.updated_at }}</p>
-        <h3>{{ event.title }}</h3>
+        <p><b>{{ event.event_status.icon }} [ {{ event.id }} ]: {{ event.title }}</b></p>
         <p>{{ event.description }}</p>
-
+        <p>Cracion: {{ event.created_at }}</p>
+        <p>Estado: {{ event.updated_at }}</p>
         <form  action="{% url 'change_event_status' event.id %}" method="post">
             {% csrf_token %}
 
@@ -51,5 +54,5 @@
         </form>
     </div>
     {% endfor %}
-</div>
+</section>
 {% endblock %}
