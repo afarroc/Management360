@@ -60,8 +60,8 @@ def events(request):
     status_id = request.POST.get('status') or request.session.get('status')
     date = request.POST.get('date')
 
-    print(status_id)
-    print(date)
+    print("Id de estado",status_id)
+    print("Fecha",date)
     
     # Obtener Eventos ordenados descendentemente por fecha de creacion 
     events = Event.objects.all().order_by('-created_at')    
