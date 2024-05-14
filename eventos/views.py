@@ -36,7 +36,7 @@ def change_event_status(request, event_id):
     print("\n ---- Vista 'Cambio de estado' ----")
     print("Cambiando estado del evento con  ID:", str(event_id))
     
-    # Obtener vento
+    # Obtener evento
     event = get_object_or_404(Event, pk=event_id)
     print("titulo:",str(event.title))
     print("estado:",str(event.event_status.status_name))
@@ -49,19 +49,15 @@ def change_event_status(request, event_id):
     # Guardar Cambios
     event.save()
     
-    print('filtro estado: ',request.POST.get('status'))
-    render(request, 'events/events.html', {
-        'events': events,
-        'status': new_status
-        })    
+    # Guardar el estado del filtro en la sesión
+    request.session['status'] = request.POST.get('status')
+
     print("\n ---- Fin de vista 'cambio de estado' ----")
     return redirect(reverse('events'))
 
-# Vista eventos
-
 def events(request):
     # Obtener las variables de la solicitud 
-    status_id = request.POST.get('status')
+    status_id = request.POST.get('status') or request.session.get('status')
     date = request.POST.get('date')
 
     print(status_id)
@@ -89,9 +85,8 @@ def events(request):
         'status': status_id
         })
 
-# --- ---
 
-    
+
 def projects(request):
     projects = Project.objects.all()
     return render(request, "projects/projects.html",{

@@ -30,9 +30,8 @@ body{
 
 /* Estilos para el contenedor principal */
 .container {
-    background: rebeccapurple;
-    max-width: 400px;
-    margin: 30 auto;
+    max-width: 900px;
+    margin: 0 auto;
     padding: 20px 20px;
 }
 
