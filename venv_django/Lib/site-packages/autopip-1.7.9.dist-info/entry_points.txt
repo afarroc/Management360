@@ -1,0 +1,3 @@
+[console_scripts]
+app = autopip:main
+autopip = autopip:main

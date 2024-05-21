@@ -3,25 +3,26 @@
 {% block content %}
 <div class="container">
     <h2>Events</h2>
+    {{ mensaje}}
 </div>
-<section>
+<section >
     <div class="container">
-        <form method="POST" action="{% url 'events' %}">{% csrf_token %}
+        <form method="POST" action="{% url 'events' %}">
+            {% csrf_token %}
+    
             <label for="status">Estado: </label>
             <select id="status" name="status">
-                <option value="">-- Selecciona un estado --</option> <!-- Elemento vacío -->
+                <option value="">-- Selecciona un estado --</option>  <!-- Elemento vacío -->
                 {% for status in statuses %}
-                <option value="{{ status.id }}" {% if status.id|stringformat:"s"==request.session.status|default:''
-                    %}selected{% endif %}>{{ status.status_name }}</option>
+                    <option value="{{ status.id }}" {% if status.id|stringformat:"s" == request.POST.status|default:'' %}selected{% endif %}>{{ status.status_name }}</option>
                 {% endfor %}
             </select>
-
+    
             <label for="date">Fecha:</label>
-            <input type="date" id="date" name="date" {% if request.session.date %}value="{{ request.session.date }}" {%
-                endif %}>
-
+            <input type="date" id="date" name="date" {% if request.POST.date %}value="{{ request.POST.date }}" {% endif %}>
+    
             <input type="submit" value="Filtrar">
-
+            
             <a href="{% url 'events' %}">
                 <button type="button">
                     Restablecer
@@ -42,34 +43,30 @@
             <p>Cracion: {{ event.created_at }}</p>
             <p>Estado: {{ event.updated_at }}</p>
 
-            
 
 
-            <form action="{% url 'change_event_status' event.id %}" method="post">
+            <form  action="{% url 'change_event_status' event.id %}" method="POST">
                 {% csrf_token %}
-
+            
                 <select name="new_status_id">
                     {% for status in statuses %}
-                    <option value="{{ status.id }}" {% if
-                        status.id|stringformat:"s"==event.event_status.id|stringformat:"s" %}selected{% endif %}>{{
-                        status.status_name }}</option>
+                    <option value="{{ status.id }}" {% if status.id|stringformat:"s" == event.event_status.id|stringformat:"s" %}selected{% endif %}>{{ status.status_name }}</option>
                     {% endfor %}
                 </select>
-
+            
                 <!-- Aquí está el nuevo campo oculto -->
                 <input type="hidden" name="status" value="{{ request.POST.status }}">
-
                 <input type="submit" value="Cambiar Estado">
             </form>
-
-
-            <form action="{% url 'delete_event' event.id %}" method="post">
+            
+    
+            <form action="{% url 'delete_event' event.id %}" method="POST">
                 {% csrf_token %}
                 <input type="submit" value="Eliminar">
             </form>
         </div>
         {% endfor %}
-
+    
     </div>
 </section>
 {% endblock %}

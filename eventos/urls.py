@@ -20,5 +20,9 @@ urlpatterns = [
     path('change_event_status/<int:event_id>/', views.change_event_status, name='change_event_status'),
     path('delete_event/<int:event_id>/', views.delete_event, name='delete_event'),
     path('panel/', views.panel, name='panel'),
+    path('signup/', views.signup, name='signup'),
+    path('logout/', views.signout, name='logout'),
+    path('signin/', views.signin, name='signin'),
+    
     
 ]               

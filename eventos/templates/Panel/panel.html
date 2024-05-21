@@ -1,31 +1,64 @@
 {% extends 'layouts/base.html' %}
 
 {% block content %}
-
+<style>
+    .grid-container2 {
+      display: grid;
+      grid-template-columns: 15% 70% 15% ;
+      max-width: 900px;
+      gap: 10px;
+    }
+    .table-container {
+      max-height: 300px; /* Ajusta este valor a tu necesidad */
+      overflow: auto;
+    }
+</style>
 <h3>Panel</h3>
 
-<nav>
-    <table  >
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Titulo</th>
-                <th>Fecha Creación</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for event in events %}
-            <tr>
-                <td><a href="{% url 'event_detail' event.id %}">{{ event.id }}</a></td>
-                <td><a href="{% url 'event_detail' event.id %}">{{ event.title }}</a></td>
-                <td><a href="{% url 'event_detail' event.id %}">{{ event.created_at }}</a></td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</nav>
-
-
-
+<div class="grid-container2">
+    <div style="background-color:#FFF4A3;">
+        Uno
+    </div>
+    <div style="background-color:#FFC0C7;">
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Guardar cambios</button>
+        </form>
+    </div>
+    <div style="background-color:#D9EEE1;">
+        Tres
+    </div>
+    <div style="background-color:#FFF4A3;">
+        Cuatro
+    </div>
+    <div style="background-color:#FFC0C7;">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Titulo</th>
+                        <th>Fecha Creación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in events %}
+                    {% if forloop.counter <= 20 %}
+                    <tr>
+                        <td><a href="{% url 'event_detail' event.id %}">{{ event.id }}</a></td>
+                        <td><a href="{% url 'event_detail' event.id %}">{{ event.title }}</a></td>
+                        <td><a href="{% url 'event_detail' event.id %}">{{ event.created_at }}</a></td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div style="background-color:#D9EEE1;">
+        Seis
+    </div>
+</div>
 
 {% endblock %}

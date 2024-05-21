@@ -47,6 +47,21 @@
                 <li>
                     <a href="{% url 'admin' %}">Admin</a>
                 </li>
+
+                {% if user.is_authenticated %}
+                
+                    <li>
+                        <a href="/logout">Logout</a>
+                    </li>
+                    {% else %}
+                        <li>
+                            <a href="{% url 'signup' %}">Signup</a>
+                        </li>
+                        <li>
+                            <a href="{% url 'signin' %}">Signin</a>
+                        </li>
+
+                    {% endif %}
             </ul>
         </nav>
     </header>
