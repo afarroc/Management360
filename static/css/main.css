@@ -1,38 +1,15 @@
 /* Estilos para el cuerpo del documento */
 body{
-    background:rgb(230, 255, 255);
-    color: rgb(0, 50, 50);
+    background:rgb(255, 255, 255);
+    color: rgb(0, 0, 0);
 }
 
-/* Estilos para la barra de navegación */
-.navbar {
-    background: rgb(210, 255, 255);
-    padding: 10px 0;
-}
-
-.navbar ul {
-    display: flex;
-    justify-content: space-between;
-}
-
-.navbar ul li {
-    list-style:none;
-}
-
-.navbar ul li a {
-    color: rgb(0, 50, 50);
-    text-decoration: none;
-}
-
-.navbar ul li a:hover {
-    color: rgb(150, 150, 0);
-}
 
 /* Estilos para el contenedor principal */
 .container {
-    max-width: 900px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 20px 20px;
+    padding: 10px 10px;
 }
 
 /* Estilos para los elementos de entrada */
@@ -50,18 +27,18 @@ body{
 /* Estilos para el contenedor de cuadrícula */
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(5, 2fr);
-    gap: 30px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
 }
 
 /* Estilos para las tarjetas */
 .card {
-    color :  rgb(0, 50, 50);
-    background: khaki;
-    border: 2px solid #4d0d0d;
-    padding: 20px;
-    border-radius: 5px;
-    margin-bottom: 2px;
+    color :  black;
+    background: white;
+    border: 1px solid #4d0d0d;
+    padding: 5px;
+    border-radius: 3px;
+    margin-bottom: 1px;
 }
 
 /* Estilos para la tabla */

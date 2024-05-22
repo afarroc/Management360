@@ -33,17 +33,14 @@
 </section>
 
 <section>
-    <p>{{ request.POST.status }}</p>
+
     <div class="grid-container">
         {% for event in events %}
         <div class="card">
-            <p><b>{{ event.event_status.icon }} [ {{ event.id }} ]: {{ event.title }}</b></p>
-
+            <p>{{ event.event_status.icon }} [ {{ event.id }} ]: {{ event.title }}</p>
             <p>{{ event.description }}</p>
-            <p>Cracion: {{ event.created_at }}</p>
-            <p>Estado: {{ event.updated_at }}</p>
-
-
+            <p>Creado: {{ event.created_at|date:"d-M H:i" }}</p>
+            <p>Estado: {{ event.updated_at|date:"d-M H:i" }}</p>
 
             <form  action="{% url 'change_event_status' event.id %}" method="POST">
                 {% csrf_token %}
