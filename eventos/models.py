@@ -54,7 +54,7 @@ class Event(models.Model):
         super(Event, self).save(*args, **kwargs)
         
     def __str__(self):
-        return self.title
+        return self.title + " - " + self.event_status.status_name
 
 class EventAttendee(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

@@ -92,7 +92,7 @@ def index(request):
     })
 
 def about(request):
-    username = "Fazt"
+    username = "Nano"
     return render(request, "about.html",{
         'username':username
     })
