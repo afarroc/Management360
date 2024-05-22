@@ -119,7 +119,10 @@ def change_event_status(request, event_id):
     event.save()
     
     # Guardar el estado del filtro en la sesión
-    print('Estado filtrado:', request.POST.get('status'))
+    request.session['filtered_status'] = request.POST.get('status')
+    request.session['filtered_date'] = request.POST.get('date')
+    print('Estado filtrado:', request.session['filtered_status'])
+    print('Fecha filtrada:', request.session['filtered_date'])
 
     print("---- Fin de vista 'cambio de estado' ----\n")
     
@@ -128,40 +131,55 @@ def change_event_status(request, event_id):
     # Devolver la redirección a la página de eventos
     return redirect(reverse('events'))
     
+    
 def events(request):
     
     print("Inicio vista Events")
-    print(request.POST)
-
-    status = request.POST.get('status')
-    date = request.POST.get('date')
 
     events = Event.objects.all().order_by('-created_at')    
     statuses = Status.objects.all().order_by('status_name')
     
     if request.method == 'POST':
         print("Solicitud POST")
+        print(request.POST)
+        status = request.POST.get('status')
+        date = request.POST.get('date')
+        
         if status:
             events = events.filter(event_status_id=status)
             print("Filtardo por id de estado"," ",status)
         if date:
             events = events.filter(created_at__date=date)
             print("Filtrado por fecha"," ",date)
+            
         print("Fin vista Events")
         
         return render(request, 'events/events.html', {
             'events': events,
             'statuses': statuses,
-            'status': status
+            'status': status,
+            'date':date,
             })
     else:
         print("Solicitud GET")
+        print(request.GET)        
+        status = request.session.get('filtered_status')
+        date = request.session.get('filtered_date')
+
+        if status:
+            events = events.filter(event_status_id=status)
+            print("Filtardo por id de estado"," ",status)
+        if date:
+            events = events.filter(created_at__date=date)
+            print("Filtrado por fecha"," ",date)        
+        
+        print(status,date)
         print("Fin vista Events")
-        print(request.GET)
         return render(request, 'events/events.html', {
             'events': events,
             'statuses': statuses,
-            'status': status
+            'status': status,
+            'date':date
             })
  
 def projects(request):
