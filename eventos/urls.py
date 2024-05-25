@@ -24,5 +24,7 @@ urlpatterns = [
     path('logout/', views.signout, name='logout'),
     path('signin/', views.signin, name='signin'),
     
+    path('panel/event_edit/<int:event_id>/', views.event_edit, name='event_edit'),
+
     
 ]               

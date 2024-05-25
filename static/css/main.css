@@ -7,7 +7,7 @@ body{
 
 /* Estilos para el contenedor principal */
 .container {
-    max-width: 1200px;
+    max-width: 1000px;
     margin: 0 auto;
     padding: 10px 10px;
 }
@@ -41,34 +41,47 @@ body{
     margin-bottom: 1px;
 }
 
-/* Estilos para la tabla */
-table tr{
+
+
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Float four columns side by side */
+.column {
+  float: left;
+  width: 25%;
+  padding: 0 10px;
+}
+
+/* Remove extra left and right margins, due to padding in columns */
+.row {margin: 0 -5px;}
+
+/* Clear floats after the columns */
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+/* Style the counter cards */
+.card {
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2); /* this adds the "card" effect */
+  padding: 16px;
+  text-align: center;
+  background-color: #f1f1f1;
+}
+
+/* Responsive columns - one column layout (vertical) on small screens */
+@media screen and (max-width: 600px) {
+  .column {
     width: 100%;
-    border-collapse: collapse;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    max-height: 10px; /* Altura máxima que deseas */
-    overflow: auto; 
-}
-
-th, td {
-    padding: 10px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-    
-}
-
-/* Estilos para los enlaces */
-a {
-    text-decoration: none;
-    color: #0074D9;
-    transition: color 0.3s;
-}
-
-a:hover {
-    color: #0056b3;
-}
-
-/* Estilos para las filas impares de la tabla */
-tr:nth-child(odd) {
-    background-color: #f9f9f9;
+    display: block;
+    margin-bottom: 20px;
+  }
 }
