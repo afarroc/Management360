@@ -4,9 +4,79 @@
 
 {% block content %}
 
-<h1>{{title}}</h1>
-<img src="{% static 'images/wp4591743_2.jpg' %}" alt="" width="200">
+<style>
+    .containerx {
+        padding: 5px;
+        max-width: 800px;
+        background: white;
+        text-align: center;
+        align-content: center;
+        vertical-align: center;
+    }
+    .containery {
+        padding: 5px;
+        background: whitesmoke;
+    }
 
-<p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Non consequuntur, sapiente nam tempore aliquam ab asperiores deserunt similique obcaecati. Dolores esse nisi quis sed eos, fugit vitae praesentium quidem perferendis!</p>
+    .title{
+        color:black;
+        padding: 5px;
+        border: 0px;
+        border-style: solid;
+        border-color: grey;
+        background:lightskyblue;
+        align-content: center;
+        vertical-align:auto;
+    }
+    .index {
+        padding: 10px;
+        border: 1px;
+        border-style: solid;
+        background: white;
+    }
+
+    .topbar{
+        color: black;
+        background-color:skyblue;
+        padding:  5px;
+    }
+    .content{
+        background-color: aliceblue;
+        padding: 5px;
+    }
+    .subcontent{
+        background-color:snow;
+        padding: 5px;
+    }
+
+</style>
+<div class="containerx">
+    <div class="containery">
+
+        <div class="title">
+            <h3>{{title}}</h3>
+        </div>
+
+        <div class="index">
+
+            <div class="topbar">
+                <p>Subtitulo</p>
+            </div>
+            
+            <div class="content">
+                <img src="{% static 'images/wp4591743_2.jpg' %}" alt="" width="300">
+            </div>
+            <div class="subcontent">
+                <p>Detalle</p>
+                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Non consequuntur, sapiente nam tempore aliquam
+                    ab asperiores deserunt similique obcaecati. Dolores esse nisi quis sed eos, fugit vitae praesentium
+                    quidem perferendis!</p>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+
 
 {% endblock %}
