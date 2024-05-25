@@ -1,7 +1,7 @@
 from .models import Project, Task, Event, Status
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
-from .forms import CreateNewTask, CreateNewProject, CreateNewEvent, EventForm
+from .forms import CreateNewTask, CreateNewProject, CreateNewEvent, EventEditForm
 from django.urls import reverse
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
@@ -9,25 +9,19 @@ from django.contrib.auth import login, logout, authenticate
 from django.db import IntegrityError
 # Create your views here.
 
-
-def edit_event(request, event_id):
+def event_edit(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
-    if request.method == "POST":
-        form = EventForm(request.POST, instance=event)
+    if request.method == 'POST':
+        form = EventEditForm(request.POST, instance=event)
         if form.is_valid():
             form.save()
-            return redirect('event_detail', event_id=event.id)
+            print("Guardado")# Redirige a otra página o muestra un mensaje de éxito
     else:
-        form = EventForm(instance=event)
-    return render(request, 'edit_event.html', {'form': form})
-
-
-
-
-
-
-
-
+        print(request.GET)
+        form = EventEditForm(instance=event)
+    return render(request, 'events/event_edit.html', {
+        'form': form
+        })
 
 def signup(request):
     
@@ -77,7 +71,8 @@ def signin(request):
             return redirect('events')
             
 def panel(request):
-    events = Event.objects.all()
+    events = Event.objects.all().order_by('-created_at')
+    events = events.filter(event_status_id = 5)
     return render(request, 'panel/panel.html', {'events': events})    
 
 def delete_event(request, event_id):
@@ -86,7 +81,7 @@ def delete_event(request, event_id):
     return redirect(reverse('events'))
     
 def index(request):
-    title="Django Course!!"
+    title="Pagina Pricipal"
     return render(request, "index.html",{
         'title':title
     })
@@ -117,10 +112,10 @@ def change_event_status(request, event_id):
     
     # Guardar cambios
     event.save()
+    print('Actualizado')
     
     # Guardar el estado del filtro en la sesión
-    request.session['filtered_status'] = request.POST.get('status')
-    request.session['filtered_date'] = request.POST.get('date')
+
     print('Estado filtrado:', request.session['filtered_status'])
     print('Fecha filtrada:', request.session['filtered_date'])
 
@@ -146,19 +141,24 @@ def events(request):
         date = request.POST.get('date')
         
         if status:
-            events = events.filter(event_status_id=status)
+            events = events.filter(event_status_id = status)
+            request.session['filtered_status'] = status
             print("Filtardo por id de estado"," ",status)
+        else:
+            request.session['filtered_status'] =""
+            
         if date:
-            events = events.filter(created_at__date=date)
+            events = events.filter(created_at__date = date)
+            request.session['filtered_date'] = date
             print("Filtrado por fecha"," ",date)
+        else:
+            request.session['filtered_date'] = ""
             
         print("Fin vista Events")
         
         return render(request, 'events/events.html', {
             'events': events,
             'statuses': statuses,
-            'status': status,
-            'date':date,
             })
     else:
         print("Solicitud GET")
@@ -178,8 +178,6 @@ def events(request):
         return render(request, 'events/events.html', {
             'events': events,
             'statuses': statuses,
-            'status': status,
-            'date':date
             })
  
 def projects(request):

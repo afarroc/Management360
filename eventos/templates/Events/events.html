@@ -4,33 +4,83 @@
 <div class="container">
     <h2>Events</h2>
     {{ mensaje }}
+    
 </div>
+<style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    
+    /* Float four columns side by side */
+    .column {
+      float: left;
+      width: 25%;
+      padding: 0 10px;
+    }
+    
+    /* Remove extra left and right margins, due to padding */
+    .row {margin: 0 -5px;}
+    
+    /* Clear floats after the columns */
+    .row:after {
+      content: "";
+      display: table;
+      clear: both;
+    }
+    
+    /* Responsive columns */
+    @media screen and (max-width: 600px) {
+      .column {
+        width: 100%;
+        display: block;
+        margin-bottom: 20px;
+      }
+    }
+    
+    /* Style the counter cards */
+    .card {
+      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+      padding: 16px;
+      text-align: center;
+      background-color: #f1f1f1;
+    }
+    </style>
+
 <section >
     <div class="container">
         <form method="POST" action="{% url 'events' %}">
             {% csrf_token %}
-    
             <label for="status">Estado: </label>
+
             <select id="status" name="status">
                 <option value="">-- Selecciona un estado --</option>  <!-- Elemento vacío -->
                 {% for status in statuses %}
-                    <option value="{{ status.id }}" {% if status.id|stringformat:"s" == request.session.filtered_status|default:'' %}selected{% endif %}>{{ status.status_name }}</option>
+                    <!-- Compara el id del estado con el valor de 'filtered_status' en la sesión. -->
+                    <!-- Si son iguales, selecciona este estado en el menú desplegable. -->
+                    <!-- Usa el filtro 'stringformat:"s"' para asegurarte de que ambos valores son cadenas. -->
+                    <!-- Usa 'default:""' para evitar errores si 'filtered_status' no está en la sesión. -->
+                    <option value="{{ status.id }}" {% if status.id|stringformat:"s" == request.session.filtered_status|default:'' %}selected{% endif %}>
+                        {{ status.status_name }}
+                    </option>
                 {% endfor %}
             </select>
-    
+            
+
             <label for="date">Fecha:</label>
             <input type="date" id="date" name="date" {% if request.session.filtered_date %}value="{{ request.session.filtered_date }}" {% endif %}>
-    
             <input type="submit" value="Filtrar">
-            
         </form>
     </div>
 </section>
 
-<section>
 
-    <div class="grid-container">
-        {% for event in events %}
+<div class="row">
+    {% for event in events %}
+    <div class="column">
         <div class="card">
             <p>{{ event.event_status.icon }} [ {{ event.id }} ]: {{ event.title }}</p>
             <p>{{ event.description }}</p>
@@ -57,8 +107,9 @@
                 <input type="submit" value="Eliminar">
             </form>
         </div>
-        {% endfor %}
-    
     </div>
-</section>
+    {% endfor %}
+</div>
+
+
 {% endblock %}
