@@ -55,6 +55,7 @@
         <form method="POST" action="{% url 'events' %}">
             {% csrf_token %}
             <label for="status">Estado: </label>
+
             <select id="status" name="status">
                 <option value="">-- Selecciona un estado --</option>  <!-- Elemento vacío -->
                 {% for status in statuses %}
@@ -67,10 +68,17 @@
                     </option>
                 {% endfor %}
             </select>
+<<<<<<< HEAD
             <label for="date">Fecha:</label>
             <input type="date" id="date" name="date" {% if request.session.filtered_date %}value="{{ request.session.filtered_date }}" {% endif %}>
             <label for="cerrado">Omitir Cerrados</label>
             <input type="checkbox" name="cerrado" value="true" checked>
+=======
+            
+
+            <label for="date">Fecha:</label>
+            <input type="date" id="date" name="date" {% if request.session.filtered_date %}value="{{ request.session.filtered_date }}" {% endif %}>
+>>>>>>> b93d3b8d3ed7ec599769904e1f55ec6fc5e657dd
             <input type="submit" value="Filtrar">
         </form>
     </div>
