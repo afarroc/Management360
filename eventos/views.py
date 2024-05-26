@@ -153,9 +153,7 @@ def events(request):
             print("Filtardo por id de estado"," ",status)
         else:
             request.session['filtered_status'] =""
-        
-      
-
+            
         if date:
             events = events.filter(created_at__date = date)
             request.session['filtered_date'] = date
