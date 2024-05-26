@@ -9,6 +9,7 @@ class Status(models.Model):
     status_name = models.CharField(max_length=50)
     icon = models.CharField(max_length=2, blank=True)
     active = models.BooleanField(default=True)
+    color = models.CharField(max_length=30, default="white")
     
     def __str__(self):
         return self.status_name
