@@ -12,7 +12,8 @@
     }
     
     body {
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: Arial, Helvetica, sans-serif; Segoe UI Emoji, Noto Color Emoji, Twemoji, sans-serif;
+	  
     }
     
     /* Float four columns side by side */
@@ -43,13 +44,29 @@
     
     /* Style the counter cards */
     .card {
-      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-      padding: 16px;
+      box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
+      padding: 5;
       text-align: center;
-      background-color: #f1f1f1;
+      background-color: white;
     }
-    </style>
 
+	.card-main {
+		background: whitesmoke;
+		padding: 10px;
+	}
+
+	.colorbar{
+		border-style: solid;
+		border-color: white;
+		border-width: 0.1px;
+		
+	}
+	.title{
+		background-color: wheat;
+		
+	}
+
+    </style>
 <section >
     <div class="container">
         <form method="POST" action="{% url 'events' %}">
@@ -57,12 +74,8 @@
             <label for="status">Estado: </label>
 
             <select id="status" name="status">
-                <option value="">-- Selecciona un estado --</option>  <!-- Elemento vacío -->
+                <option value="">-- Selecciona un estado --</option>
                 {% for status in statuses %}
-                    <!-- Compara el id del estado con el valor de 'filtered_status' en la sesión. -->
-                    <!-- Si son iguales, selecciona este estado en el menú desplegable. -->
-                    <!-- Usa el filtro 'stringformat:"s"' para asegurarte de que ambos valores son cadenas. -->
-                    <!-- Usa 'default:""' para evitar errores si 'filtered_status' no está en la sesión. -->
                     <option value="{{ status.id }}" {% if status.id|stringformat:"s" == request.session.filtered_status|default:'' %}selected{% endif %}>
                         {{ status.status_name }}
                     </option>
@@ -71,7 +84,7 @@
             <label for="date">Fecha:</label>
             <input type="date" id="date" name="date" {% if request.session.filtered_date %}value="{{ request.session.filtered_date }}" {% endif %}>
             <label for="cerrado">Omitir Cerrados</label>
-            <input type="checkbox" name="cerrado" value="true" checked>
+            <input type="checkbox" name="cerrado" value="true" {% if request.session.filtered_cerrado %} checked {% endif %}>
             <input type="submit" value="Filtrar">
         </form>
     </div>
@@ -81,31 +94,50 @@
 <div class="row">
     {% for event in events %}
     <div class="column">
-        <div class="card">
-            <p>{{ event.event_status.icon }} [ {{ event.id }} ]: {{ event.title }}</p>
-            <p>{{ event.description }}</p>
-            <p>Creado: {{ event.created_at|date:"d-M H:i" }}</p>
-            <p>Estado: {{ event.updated_at|date:"d-M H:i" }}</p>
+        <div class="card" >
+			<div class="card-main">
+				
+				<div class="colorbar" style="background-color:  {{ event.event_status.color }};">
+					<p></p>
+				</div>
 
-            <form  action="{% url 'change_event_status' event.id %}" method="POST">
-                {% csrf_token %}
-            
-                <select name="new_status_id">
-                    {% for status in statuses %}
-                    <option value="{{ status.id }}" {% if status.id|stringformat:"s" == event.event_status.id|stringformat:"s" %}selected{% endif %}>{{ status.status_name }}</option>
-                    {% endfor %}
-                </select>
-            
-                <!-- Aquí está el nuevo campo oculto -->
-                <!--input type="hidden" name="status" value="{{ request.POST.status }}"-->
-                <input type="submit" value="Cambiar Estado">
-            </form>
-            
-    
-            <form action="{% url 'delete_event' event.id %}" method="POST">
-                {% csrf_token %}
-                <input type="submit" value="Eliminar">
-            </form>
+				<div class="title">
+					<p>{{ event.event_status.icon }} [ {{ event.id }} ]: {{ event.title }}</p>
+				</div>
+
+				<div class="description">
+					<p>{{ event.description }}</p>
+				</div>
+
+
+				<div>
+					<p>Creado: {{ event.created_at|date:"d-M H:i" }}</p>
+					<p>Estado: {{ event.updated_at|date:"d-M H:i" }}</p>
+				</div>
+				<div>
+					<form  action="{% url 'change_event_status' event.id %}" method="POST">
+						{% csrf_token %}
+					
+						<select name="new_status_id">
+							{% for status in statuses %}
+							<option value="{{ status.id }}" {% if status.id|stringformat:"s" == event.event_status.id|stringformat:"s" %}selected{% endif %}>{{ status.status_name }}</option>
+							{% endfor %}
+						</select>
+					
+						<!-- Aquí está el nuevo campo oculto -->
+						<!--input type="hidden" name="status" value="{{ request.POST.status }}"-->
+						<input type="submit" value="Cambiar Estado">
+					</form>
+				</div>
+
+				<div>
+					<form action="{% url 'delete_event' event.id %}" method="POST">
+						{% csrf_token %}
+						<input type="submit" value="Eliminar">
+					</form>
+				</div>
+
+			</div>
         </div>
     </div>
     {% endfor %}

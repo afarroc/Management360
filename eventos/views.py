@@ -129,63 +129,67 @@ def change_event_status(request, event_id):
     
     
 def events(request):
-    
     print("Inicio vista Events")
 
-    events = Event.objects.all().order_by('-created_at')    
+    events = Event.objects.all().order_by('-created_at')
     statuses = Status.objects.all().order_by('status_name')
-    
+
     if request.method == 'POST':
         print("Solicitud POST")
         print(request.POST)
         status = request.POST.get('status')
         date = request.POST.get('date')
         cerrado = request.POST.get('cerrado')
-        
+
         if cerrado:
-            events = events.filter(~Q(event_status_id=3))
-            request.session['filtered_status'] = status
-            print("Filtardo por <> cerrado"," ",cerrado)
-            
-        if status:
-            events = events.filter(event_status_id = status)
-            request.session['filtered_status'] = status
-            print("Filtardo por id de estado"," ",status)
+            events = events.exclude(event_status_id=3)
+            request.session['filtered_cerrado'] = "true" 
+            print("Filtrado por <> cerrado", cerrado)
         else:
-            request.session['filtered_status'] =""
-            
-        if date:
-            events = events.filter(created_at__date = date)
-            request.session['filtered_date'] = date
-            print("Filtrado por fecha"," ",date)
-        else:
-            request.session['filtered_date'] = ""
-            
-        print("Fin vista Events")
-        
-        return render(request, 'events/events.html', {
-            'events': events,
-            'statuses': statuses,
-            })
-    else:
-        print("Solicitud GET")
-        print(request.GET)        
-        status = request.session.get('filtered_status')
-        date = request.session.get('filtered_date')
+            request.session['filtered_cerrado'] = ""    
 
         if status:
             events = events.filter(event_status_id=status)
-            print("Filtardo por id de estado"," ",status)
+            request.session['filtered_status'] = status
+            print("Filtrado por id de estado", status)
+        else:
+            request.session['filtered_status'] = ""
+
         if date:
             events = events.filter(created_at__date=date)
-            print("Filtrado por fecha"," ",date)        
-        
-        print(status,date)
+            request.session['filtered_date'] = date
+            print("Filtrado por fecha", date)
+        else:
+            request.session['filtered_date'] = ""
+
         print("Fin vista Events")
         return render(request, 'events/events.html', {
             'events': events,
             'statuses': statuses,
-            })
+        })
+    else:
+        print("Solicitud GET")
+        print(request.GET)
+        status = request.session.get('filtered_status')
+        date = request.session.get('filtered_date')
+        cerrado = 3
+
+        if cerrado:
+            events=events.exclude(event_status_id=3)
+        if status:
+            events = events.filter(event_status_id=status)
+            print("Filtrado por id de estado", status)
+        if date:
+            events = events.filter(created_at__date=date)
+            print("Filtrado por fecha", date)
+
+        print(status, date)
+        print("Fin vista Events")
+        return render(request, 'events/events.html', {
+            'events': events,
+            'statuses': statuses,
+        })
+
  
 def projects(request):
     projects = Project.objects.all()
@@ -199,15 +203,28 @@ def task(request):
         'tasks':tasks
     })
 
+# views.py
+
+from django.shortcuts import render, redirect
+from .models import Event
+from .forms import CreateNewEvent  # Import your event form here
+
 def create_event(request):
-    if request.method == 'GET':
-        return render(request, 'events/create_event.html',{
-            'form':CreateNewEvent()
-            })
+    if request.method == 'POST':
+        form = CreateNewEvent(request.POST)
+        if form.is_valid():
+            event = form.save(commit=False)
+            # Assign the current user as the event host
+            event.host = request.user
+            event.save()
+            return redirect('events')  # Redirect to the events list page
     else:
-        Event.objects.create(title=request.POST['title'], description=request.POST['description'])
-        return redirect('events')
-    
+        form = CreateNewEvent()
+
+    return render(request, 'events/create_event.html', {'form': form})
+
+
+
 def create_task(request):
     if request.method == 'GET':
         return render(request, 'tasks/create_task.html',{
