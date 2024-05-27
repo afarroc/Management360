@@ -203,26 +203,17 @@ def task(request):
         'tasks':tasks
     })
 
-# views.py
-
-from django.shortcuts import render, redirect
-from .models import Event
-from .forms import CreateNewEvent  # Import your event form here
 
 def create_event(request):
-    if request.method == 'POST':
-        form = CreateNewEvent(request.POST)
-        if form.is_valid():
-            event = form.save(commit=False)
-            # Assign the current user as the event host
-            event.host = request.user
-            event.save()
-            return redirect('events')  # Redirect to the events list page
+    if request.method == 'GET':
+        return render(request, 'events/create_event.html',{
+            'form':CreateNewEvent()
+            })
     else:
-        form = CreateNewEvent()
-
-    return render(request, 'events/create_event.html', {'form': form})
-
+        Event.objects.create(
+            title=request.POST['title'],
+            description=request.POST['description'])
+        return redirect('events')
 
 
 def create_task(request):

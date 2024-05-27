@@ -1,27 +1,10 @@
-/* Estilos para el cuerpo del documento */
-body{
-    background:rgb(255, 255, 255);
-    color: rgb(0, 0, 0);
-}
 
 
 /* Estilos para el contenedor principal */
 .container {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 10px 10px;
-}
-
-/* Estilos para los elementos de entrada */
-.input {
-    background:wheat;
-    padding: 10px;
-    text-align: center;
-    display: block;
-}
-
-.form-center input{
-    text-align: center;
 }
 
 /* Estilos para el contenedor de cuadrícula */

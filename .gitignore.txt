@@ -1,2 +1,4 @@
 .class
-venv_django
+!venv_django/
+venv_django/
+venv_django/*
