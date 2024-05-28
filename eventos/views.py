@@ -163,7 +163,7 @@ def events(request):
             request.session['filtered_date'] = ""
 
         print("Fin vista Events")
-        return render(request, 'events/events.html', {
+        return render(request, 'Events/events.html', {
             'events': events,
             'statuses': statuses,
         })
@@ -185,7 +185,7 @@ def events(request):
 
         print(status, date)
         print("Fin vista Events")
-        return render(request, 'events/events.html', {
+        return render(request, 'Events/events.html', {
             'events': events,
             'statuses': statuses,
         })
