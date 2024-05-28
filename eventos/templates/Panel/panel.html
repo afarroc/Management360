@@ -1,92 +1,112 @@
 {% extends 'layouts/base.html' %}
 
 {% block content %}
+
 <style>
-    .my_row_container {
-        display: grid;
-        grid-template-rows: 1fr 2fr;
-        gap: 10px;
+    html,
+    body {
+        height: 100%;
     }
 
-    .my_col_container {
-        display: grid;
-        grid-template-columns: 2fr 1fr;
-        gap: 10px;
+    .gbody {
+        padding: 20px;
+        margin: 20;
+        background: linear-gradient(45deg, #49a09d, #5f2c82);
+        font-family: sans-serif;
+        font-weight: 100;
     }
 
-    .listbox-container {
-        max-height: 300px;
-        overflow: auto;
-        background: white;
-        padding: 0;
-        list-style-type: none;
+    .gcontainer {
+        padding: 60px;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    table {
+        width: 800px;
+        border-collapse: collapse;
+        overflow: hidden;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    }
+
+    th,
+    td {
+        padding: 15px;
+        background-color: rgba(255, 255, 255, 0.2);
+        color: #fff;
+    }
+
+    th {
+        text-align: left;
+    }
+
+    thead {
+        th {
+            background-color: #55608f;
+        }
+    }
+
+    tbody {
+        tr {
+            &:hover {
+                background-color: rgba(255, 255, 255, 0.3);
+            }
+        }
+
+        td {
+            position: relative;
+
+            &:hover {
+                &:before {
+                    content: "";
+                    position: absolute;
+                    left: 0;
+                    right: 0;
+                    top: -9999px;
+                    bottom: -9999px;
+                    background-color: rgba(255, 255, 255, 0.2);
+                    z-index: -1;
+                }
+            }
+        }
     }
 </style>
 
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-
-        let eventoSeleccionado = null;
-        // Filtra específicamente los elementos con la clase '.evento'
-        document.querySelector('.listbox-container').addEventListener('click', (event) => {
-            if (event.target.classList.contains('evento')) {
-                eventoSeleccionado = event.target.dataset.id;
-            }});
-
-        document.querySelector('#boton-edicion').addEventListener('click', async () => {
-            if (eventoSeleccionado) {
-                try {
-                    const response = await fetch(`event_edit/${eventoSeleccionado}`);
-                    if (response.ok) {
-                        const data = await response.text();
-                        // Actualiza el contenido del contenedor con el título del evento
-                        document.querySelector('#contenedor-del-formulario').innerHTML = data;
-                    } else {
-                        console.error('Error en la solicitud:', response.status);
-                    }
-                } catch (error) {
-                    console.error('Error en la solicitud:', error);
-                }
-            }
-        });
-    });
-
-
-</script>
-<h3>Panel</h3>
-
-<div class="my_col_container">
-    <div class="my_row_container">
-        <div>
-            <p>Botonera</p>
-            <button id="boton-edicion">Editar Evento</button>
-        </div>
-        <div id="contenedor-del-formulario">
-            <p>Panel de edicion</p>
-        </div>
-    </div>
-    <div>
-        <div>
-            <h4>Panel Derecho</h4>
-        </div>
-        <div>
-            <p>Eventos En Curso</p>
-            <div class="listbox-container">
-                <ul>
+<div class="global">
+    <div class="gbody">
+    
+        <div >
+            <!-- mi_template.html -->
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Evento</th>
+                        <th>Fecha</th>
+                        <!--th>Estado</th-->
+                    </tr>
+                </thead>
+                <tbody>
                     {% for event in events %}
-                    <li class="evento" data-id="{{ event.id }}">{{ event.title }}</li>
+                    <tr>
+                        <td>{{ event.id }}</td>
+                        <td>{{ event.title }}</td>
+                        <td>{{ event.created_at|date:"d-M H:i" }}</td>
+                        <!--td>{{ event.event_status.status_name }}</td-->
+                    </tr>
                     {% endfor %}
-                </ul>
-            </div>
-            <div>
-                <section>
-                    <p>Sección baja</p>
-                </section>
-            </div>
-        </div>
-        <div>
-            <p>End</p>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
+
+
+<div>
+
+</div>
+
+
 {% endblock %}
