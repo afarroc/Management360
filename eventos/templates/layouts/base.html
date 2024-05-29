@@ -1,93 +1,48 @@
 {% load static %}
 
 <!DOCTYPE html>
-<html lang="en">
-
-
+<html lang="es">
 <head>
-    <!-- Required meta tags -->
-    <meta charset="utf-8">
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de Eventos</title>
-    <!--Bootstrap CSS-->
-    <!-- CSS de Bootstrap -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="{% static 'css/main.css' %}">
     <script src="{% static 'js/main.js' %}"></script>
+    <title>Panel de Eventos</title>
+    <link rel="stylesheet" href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css">
+    <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/boxicons@latest/css/boxicons.min.css">
 </head>
-
-
 <body>
     <header>
-
-        <nav class="container navbar navbar-expand-lg navbar-light bg-light">
-            <a class="navbar-brand" href="{% url 'index' %}">Home</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav">
-                    <li class="nav-item active">
-                        <a class="nav-link" href="{% url 'panel' %}">Panel <span class="sr-only">(current)</span></a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'events' %}">Events</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'projects' %}">Projects</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'tasks' %}">Tasks</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'create_event' %}">Create Event</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'create_task' %}">Create Task</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'create_project' %}">Create Project</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'about' %}">About</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'admin' %}">Admin</a>
-                    </li>
-
-
-                    {% if user.is_authenticated %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'logout' %}">Logout</a>
-                    </li>
-                    {% else %}
-                    <li class="nav-item"><a class="nav-link" href="{% url 'signup' %}">Signup</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'signin' %}">Signin</a></li>
-                    {% endif %}
-
-                </ul>
-            </div>
-        </nav>
-
-
-
-        <!-- Scripts de Bootstrap -->
-        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
-
+        <h1></h1>
     </header>
-    <main >
+    {% include 'layouts/navbar.html' %} <!-- Aquí se incluirá el contenido del navbar -->
+    <main>
+
+        <div class="py-32 bg-red-500 h-screen p-3">
         {% block content %}
+        <!-- Contenido específico de cada página -->
+
         {% endblock %}
+        </div>
     </main>
     <footer>
+        <!-- Pie de página -->
         <nav class="container">
             <p>&copy; 2024 Bohemian</p>
         </nav>
     </footer>
 </body>
-
 </html>
+
+
+
+
+
+
+
+
+
+
+
