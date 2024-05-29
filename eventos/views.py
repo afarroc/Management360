@@ -74,7 +74,7 @@ def signin(request):
 def panel(request):
     events = Event.objects.all().order_by('-created_at')
     events = events.filter(event_status_id = 5)
-    return render(request, 'panel/panel.html', {'events': events})    
+    return render(request, 'Panel/panel.html', {'events': events})    
 
 def delete_event(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
