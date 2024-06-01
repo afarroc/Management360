@@ -73,8 +73,10 @@ def signin(request):
             
 def panel(request):
     events = Event.objects.all().order_by('-created_at')
-    events = events.filter(event_status_id = 5)
-    return render(request, 'Panel/panel.html', {'events': events})    
+    #events = events.filter(event_status_id = 5)
+    return render(request, 'panel/panel.html', {'events': events})    
+
+
 
 def delete_event(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
@@ -163,7 +165,7 @@ def events(request):
             request.session['filtered_date'] = ""
 
         print("Fin vista Events")
-        return render(request, 'Events/events.html', {
+        return render(request, 'events/events.html', {
             'events': events,
             'statuses': statuses,
         })
@@ -185,7 +187,7 @@ def events(request):
 
         print(status, date)
         print("Fin vista Events")
-        return render(request, 'Events/events.html', {
+        return render(request, 'events/events.html', {
             'events': events,
             'statuses': statuses,
         })
