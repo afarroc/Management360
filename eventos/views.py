@@ -135,6 +135,8 @@ def events(request):
 
     events = Event.objects.all().order_by('-created_at')
     statuses = Status.objects.all().order_by('status_name')
+    for status in statuses:
+        print(status, status.icon)
 
     if request.method == 'POST':
         print("Solicitud POST")
