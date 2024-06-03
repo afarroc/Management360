@@ -1,8 +1,102 @@
 {% extends 'layouts/base.html' %}
-
+{% load static %}
 {% block content %}
+<style>
+    .falling-image {
+        position: fixed;
+        z-index: 9999;
+        animation: fall linear infinite;
+        width: 100px;
+        /* Ajusta el tamaño deseado (mediano) */
+        height: 100px;
+        /* Ajusta el tamaño deseado (mediano) */
+    }
 
-<h1>About</h1>
-<p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Molestias at odio perspiciatis modi minima, vel architecto omnis repudiandae eligendi accusamus excepturi ducimus distinctio ipsam laboriosam soluta? Facere sed consectetur, alias autem sint nesciunt asperiores pariatur ullam, repudiandae veniam fugiat provident fugit deserunt rem eligendi non, deleniti delectus voluptas eveniet porro debitis quam expedita mollitia inventore. Eum amet vel laudantium libero nam numquam ducimus! Accusantium ipsum, rerum sequi autem error aliquam veritatis animi explicabo est consectetur dolorem earum, nam at itaque inventore quis cupiditate exercitationem dolores. Saepe dolorem maxime vitae fugiat officia harum soluta veniam voluptatibus, rem ad, cumque recusandae sapiente.</p>
-<p>Website created by {{username}}</p>
+    @keyframes fall {
+        0% {
+            top: -100px;
+        }
+
+        100% {
+            top: 100%;
+        }
+    }
+</style>
+<script>
+    // Lista de imágenes
+    const images = [
+        '{% static "images/panda1.png" %}',
+        '{% static "images/panda2.png" %}',
+        '{% static "images/panda3.png" %}',
+        '{% static "images/panda4.png" %}',
+        '{% static "images/panda5.png" %}',
+        '{% static "images/panda6.png" %}',
+
+        // Añade más imágenes aquí
+    ];
+
+    // Función para iniciar la lluvia de imágenes
+    function startRain() {
+        images.forEach((imageSrc, index) => {
+            const image = document.createElement('img');
+            image.src = imageSrc;
+            image.classList.add('falling-image');
+            image.style.left = Math.random() * window.innerWidth + 'px';
+            image.style.animationDuration = (Math.random() * 1 + 20) + 's'; // Duración aleatoria entre 5 y 10 segundos
+            image.style.animationDelay = (Math.random() * 20) + 's'; // Retraso aleatorio hasta 5 segundos
+            document.body.appendChild(image);
+        });
+    }
+
+    // Iniciar la animación al cargar la página
+    window.onload = startRain;
+</script>
+
+
+
+
+
+
+<div class="bg-image" style="background-image: url('{% static "images/bamboo2.jpg" %}'); height: 100vh;">
+
+    <div class="container">
+        <div>
+            <h1>Importar Imagen</h1>
+        </div>
+        
+    
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="imageInput" class="form-label">Selecciona una imagen:</label>
+                <input type="file" class="form-control" id="imageInput" name="image">
+            </div>
+            <button type="submit" class="btn btn-primary">Subir Imagen</button>
+        </form>
+    </div>
+
+    <div class="container">
+        <h1>About</h1>
+        <p>Lorem ipsum dolor, sit amet consectetur adipisicing elit. Molestias at odio perspiciatis modi minima, vel
+            architecto
+            omnis repudiandae eligendi accusamus excepturi ducimus distinctio ipsam laboriosam soluta? Facere sed
+            consectetur,
+            alias autem sint nesciunt asperiores pariatur ullam, repudiandae veniam fugiat provident fugit deserunt rem
+            eligendi
+            non, deleniti delectus voluptas eveniet porro debitis quam expedita mollitia inventore. Eum amet vel laudantium
+            libero nam numquam ducimus! Accusantium ipsum, rerum sequi autem error aliquam veritatis animi explicabo est
+            consectetur dolorem earum, nam at itaque inventore quis cupiditate exercitationem dolores. Saepe dolorem maxime
+            vitae fugiat officia harum soluta veniam voluptatibus, rem ad, cumque recusandae sapiente.</p>
+        <p>Website created by {{username}}</p>
+    
+    
+    </div>
+
+
+
+
+
+
+
+</div>
 {% endblock %}
