@@ -7,7 +7,7 @@ from django.utils import timezone
 
 class Status(models.Model):
     status_name = models.CharField(max_length=50)
-    icon = models.CharField(max_length=2, blank=True)
+    icon = models.CharField(max_length=10, blank=True)
     active = models.BooleanField(default=True)
     color = models.CharField(max_length=30, default="white")
     
