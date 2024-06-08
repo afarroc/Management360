@@ -119,8 +119,6 @@ def change_event_status(request, event_id):
     
     # Guardar el estado del filtro en la sesión
 
-    print('Estado filtrado:', request.session['filtered_status'])
-    print('Fecha filtrada:', request.session['filtered_date'])
 
     print("---- Fin de vista 'cambio de estado' ----\n")
     
@@ -133,7 +131,7 @@ def change_event_status(request, event_id):
 def events(request):
     print("Inicio vista Events")
 
-    events = Event.objects.all().order_by('-created_at')
+    events = Event.objects.all().order_by('-updated_at')
     statuses = Status.objects.all().order_by('status_name')
     for status in statuses:
         print(status, status.icon)
