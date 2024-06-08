@@ -4,38 +4,46 @@
 {% block content %}
 
 <style>
-  .example{
+  .title{
     background-color: whitesmoke;
     text-align:center;
-    vertical-align:bottom;
+    vertical-align:center;
+    margin: 10px;
   }
-  .example h2{
+  .filters{
+    background-color: beige;
+    text-align:left;
+    vertical-align:center;
+    margin: 10px;
+  }
+  .message{
+    background-color: blueviolet;
+  }
+  .title h2{
 
     align-content: center;
     vertical-align: middle;
   }    
 
 </style>
+{{ mensaje }}
 
-    <div class="container" >
-      
-        <h2>Events</h2>
-      
-      <br>
-      {{ mensaje }}
+    <div class="container title" >
+      <h3>Events</h3>
     </div>
 
-    <div class="container" style="padding:10px;">
-        <form method="POST" action="{% url 'events' %}">
-            {% csrf_token %}
-            <label for="status">Estado: </label>
+    <div class="container filters" style="padding:10px;">
 
+        <form method="POST" action="{% url 'events' %}">{% csrf_token %}
+          <b>Events Filter: </b>
+          
+          <label for="status">Estado: </label>
             <select id="status" name="status">
                 <option value="">-- Selecciona un estado --</option>
                 {% for status in statuses %}
                     <option value="{{ status.id }}" {% if status.id|stringformat:"s" == request.session.filtered_status|default:'' %}selected{% endif %}>
                         {{ status.status_name }}
-                    </option>
+                    </option>z
                 {% endfor %}
             </select>
             <label for="date">Fecha:</label>
