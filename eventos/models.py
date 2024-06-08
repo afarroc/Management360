@@ -23,9 +23,13 @@ class Project(models.Model):
 class Task(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    important = models.BooleanField(default=False)
+    created_at = models.DateField(auto_now_add=True)
+    updated_at = models.DateField(null=True)
     done = models.BooleanField(default=False)
-
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+  
     def __str__(self):
         return self.title + " - " + self.project.name
 
