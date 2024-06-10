@@ -2,93 +2,135 @@
 
 {% block content %}
 
-<style>
-
-.tabla-contenedor {
-    max-height: 400px; /* Ajusta la altura según tus necesidades */
-    overflow-y: auto; /* Habilita el scroll vertical */
-}
-/* Estilo para la tabla (como mencionamos en respuestas anteriores) */
-/* ... */
-
-
-
-.mainf{
-	background-color:blue;
-	padding:10px;
-
-
-	}
-
-.topf{
-	background:green;
-	padding:10px;
-
-	
-}
-
-.contentf{
-	background:aliceblue;
-	padding:10px
-}
-
-
-/* Estilo para la tabla */
-table {
-    border-collapse: collapse;
-    width: 100%;
-}
-th, td {
-    padding: 8px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-}
-tr:nth-child(odd) {
-    background-color: #f2f2f2; /* Fondo intercalado */
-}
-th {
-    background-color: #333;
-    color: white;
-    font-weight: bold;
-}
-/* Bordes */
-table, th, td {
-    border: 1px solid #ddd;
-}
-
-</style>
-
-
-
-
-
 <div class="mainf">
-    	<div class="topf">
-        <p>Top</p>
-	</div>
-	<div class="contentf">
-		<div class="tabla-contenedor">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Evento</th>
-                        <th>Fecha</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for event in events %}
-                    <tr>
-                        <td>{{ event.id }}</td>
-                        <td>{{ event.title }}</td>
-                        <td>{{ event.created_at|date:"d-M H:i" }}</td>
-                    </tr>
+    <div class="topf">
+        <div class="container">
+            <form method="POST" action="{% url 'events' %}">
+                {% csrf_token %}
+                <b>Filtro de Eventos:</b>
+                <label for="status">Estado:</label>
+                <select id="status" name="status">
+                    <option value="">-- Selecciona un estado --</option>
+                    {% for status in statuses %}
+                        <option value="{{ status.id }}" {% if status.id|stringformat:"s" == request.session.filtered_status|default:'' %}selected{% endif %}>
+                            {{ status.status_name }}
+                        </option>
                     {% endfor %}
-                </tbody>
-            </table>
-	    </div>
+                </select>
+                <label for="date">Fecha:</label>
+                <input type="date" id="date" name="date" {% if request.session.filtered_date %}value="{{ request.session.filtered_date }}" {% endif %}>
+                <label for="cerrado">Omitir Cerrados</label>
+                <input type="checkbox" name="cerrado" value="true" {% if request.session.filtered_cerrado %}checked{% endif %}>
+                <input type="submit" value="Filtrar">
+            </form>
         </div>
     </div>
+
+
+    <div class="contentf">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-md-9">
+
+                    <div class="row row-cols-1 row-cols-md-3 g-4">
+                        <div class="col">
+                            <div class="card h-100">
+                                <div class="card-header">Header</div>
+                                <div class="card-body">
+                                    <h5 class="card-title">Título de la tarjeta</h5>
+                                    <p class="card-text">Este es un contenido más amplio con texto de apoyo a continuación.</p>
+                                </div>
+                                <div class="card-footer">
+                                    <small class="text-muted">Última actualización hace 3 minutos</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="card" style="width: 18rem;">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item">Un elemento</li>
+                                    <li class="list-group-item">Un segundo elemento</li>
+                                    <li class="list-group-item">Un tercer elemento</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                      
+                </div>
+
+                <div class="col-md-3">
+                    <p></p>
+                    <div class="btn-group btn-group-sm" role="group">
+                         
+                        <button class="btn btn-secondary" type="button">
+                            Left
+                        </button> 
+                        <button class="btn btn-secondary" type="button">
+                            Center
+                        </button> 
+                        <button class="btn btn-secondary" type="button">
+                            Right
+                        </button> 
+                        <button class="btn btn-secondary" type="button">
+                            Justify
+                        </button>
+                    </div>
+                    <p></p>
+                    <div class="dropdown">
+                         
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown">
+                            Acción
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                             <a class="dropdown-item disabled" href="#">Action</a> <a class="dropdown-item" href="#">Another action</a> <a class="dropdown-item" href="#">Something else here</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="contentf">
+        <div class="container">
+            <div class="tabla-contenedor">
+                <table id="infoTable" class="table table-striped table-hover table-sm">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Evento</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for event in events %}
+                            <tr class="clickableRow" data-event-id="{{ event.id }}">
+                                <td>{{ event.id }}</td>
+                                <td>{{ event.title }}</td>
+                                <td>{{ event.created_at|date:"d-M H:i" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+
+    </div>
+</div>
+<!-- Dentro de tu script -->
+<script>
+    // Selecciona una fila al hacer clic en ella
+    document.querySelectorAll('#infoTable tbody tr').forEach(row => {
+        row.addEventListener('click', () => {
+            // Obtiene el ID del evento de la fila seleccionada
+            const eventId = row.getAttribute('data-event-id');
+            console.log(`Evento seleccionado: ID ${eventId}`);
+            // Puedes guardar el ID en una variable o realizar otras acciones con él
+        });
+    });
+</script>
 
 
 {% endblock %}

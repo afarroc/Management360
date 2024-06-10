@@ -1,0 +1,54 @@
+/* ... */
+.tabla-contenedor {
+    max-height: 200px;
+    /* Ajusta la altura según tus necesidades */
+    overflow-y: auto;
+    /* Habilita el scroll vertical */
+}
+
+/* Estilo para la tabla (como mencionamos en respuestas anteriores) */
+.mainf {
+    background-color: wheat;
+    padding: 10px;
+}
+
+.topf {
+    background: white;
+    padding: 10px;
+}
+
+.contentf {
+    background: aliceblue;
+    padding: 10px
+}
+
+/* Estilo para la tabla */
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th,
+td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+tr:nth-child(odd) {
+    background-color: #f2f2f2;
+    /* Fondo intercalado */
+}
+
+th {
+    background-color: #333;
+    color: white;
+    font-weight: bold;
+}
+
+/* Bordes */
+table,
+th,
+td {
+    border: 1px solid #ddd;
+}
