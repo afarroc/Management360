@@ -1,24 +1,67 @@
 {% extends 'layouts/base.html' %}
-
 {% block content %}
+<style>
+    /* ... */
+.tabla-contenedor {
+    max-height: 200px;
+    /* Ajusta la altura según tus necesidades */
+    overflow-y: auto;
+    /* Habilita el scroll vertical */
+}
+
+/* Estilo para la tabla (como mencionamos en respuestas anteriores) */
+.mainf {
+    background-color: wheat;
+    padding: 10px;
+}
+
+.topf {
+    background: white;
+    padding: 10px;
+}
+
+.contentf {
+    background: aliceblue;
+    padding: 10px
+}
+
+/* Estilo para la tabla */
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th,
+td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+tr:nth-child(odd) {
+    background-color: #f2f2f2;
+    /* Fondo intercalado */
+}
+
+th {
+    background-color: #333;
+    color: white;
+    font-weight: bold;
+}
+
+/* Bordes */
+table,
+th,
+td {
+    border: 1px solid #ddd;
+}
+</style>
 
 <div class="mainf">
     <div class="topf">
         <div class="container">
             <form method="POST" action="{% url 'events' %}">
                 {% csrf_token %}
-                <b>Filtro de Eventos:</b>
-                <label for="status">Estado:</label>
-                <select id="status" name="status">
-                    <option value="">-- Selecciona un estado --</option>
-                    {% for status in statuses %}
-                        <option value="{{ status.id }}" {% if status.id|stringformat:"s" == request.session.filtered_status|default:'' %}selected{% endif %}>
-                            {{ status.status_name }}
-                        </option>
-                    {% endfor %}
-                </select>
-                <label for="date">Fecha:</label>
-                <input type="date" id="date" name="date" {% if request.session.filtered_date %}value="{{ request.session.filtered_date }}" {% endif %}>
                 <label for="cerrado">Omitir Cerrados</label>
                 <input type="checkbox" name="cerrado" value="true" {% if request.session.filtered_cerrado %}checked{% endif %}>
                 <input type="submit" value="Filtrar">
@@ -26,31 +69,28 @@
         </div>
     </div>
 
-
     <div class="contentf">
         <div class="container-fluid">
             <div class="row">
                 <div class="col-md-9">
-
                     <div class="row row-cols-1 row-cols-md-3 g-4">
                         <div class="col">
                             <div class="card h-100">
-                                <div class="card-header">Header</div>
+                                <div class="card-header"></div>
                                 <div class="card-body">
-                                    <h5 class="card-title">Título de la tarjeta</h5>
-                                    <p class="card-text">Este es un contenido más amplio con texto de apoyo a continuación.</p>
+                                    <h5 class="card-title"></h5>
+                                    <p class="card-text"></p>
                                 </div>
                                 <div class="card-footer">
-                                    <small class="text-muted">Última actualización hace 3 minutos</small>
+                                    <small class="text-muted"></small>
                                 </div>
                             </div>
                         </div>
                         <div class="col">
                             <div class="card" style="width: 18rem;">
                                 <ul class="list-group list-group-flush">
-                                    <li class="list-group-item">Un elemento</li>
-                                    <li class="list-group-item">Un segundo elemento</li>
-                                    <li class="list-group-item">Un tercer elemento</li>
+                                    <li class="list-group-item"></li>
+                                    <li class="list-group-item"></li>
                                 </ul>
                             </div>
                         </div>
@@ -59,20 +99,12 @@
                 </div>
 
                 <div class="col-md-3">
-                    <p></p>
+
                     <div class="btn-group btn-group-sm" role="group">
                          
-                        <button class="btn btn-secondary" type="button">
-                            Left
+                        <button class="btn btn-secondary" type="button">A
                         </button> 
-                        <button class="btn btn-secondary" type="button">
-                            Center
-                        </button> 
-                        <button class="btn btn-secondary" type="button">
-                            Right
-                        </button> 
-                        <button class="btn btn-secondary" type="button">
-                            Justify
+                        <button class="btn btn-secondary" type="button">B
                         </button>
                     </div>
                     <p></p>
@@ -86,11 +118,10 @@
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
     </div>
-
-
     <div class="contentf">
         <div class="container">
             <div class="tabla-contenedor">
@@ -104,7 +135,7 @@
                     </thead>
                     <tbody>
                         {% for event in events %}
-                            <tr class="clickableRow" data-event-id="{{ event.id }}">
+                            <tr class="clickableRow user-select-none" data-event-id="{{ event.id }}">
                                 <td>{{ event.id }}</td>
                                 <td>{{ event.title }}</td>
                                 <td>{{ event.created_at|date:"d-M H:i" }}</td>
@@ -112,25 +143,46 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                
             </div>
         </div>
-
-
-
     </div>
 </div>
 <!-- Dentro de tu script -->
 <script>
-    // Selecciona una fila al hacer clic en ella
+    // Función para mostrar una alerta de confirmación
+    function confirmacionDobleClic(eventId) {
+        const mensaje = '¿Desea gestionar esta tarjeta?'; // Mensaje de confirmación
+        const confirmado = confirm(mensaje); // Muestra la alerta y devuelve true o false
+
+        if (confirmado) {
+            // El usuario hizo clic en "Aceptar"
+            // Actualiza el contenido de la tarjeta con la información relevante
+            //updateEvents();
+            //updateTable();
+            
+            const primeraTarjeta = document.querySelector('.card');
+            // const title = ...
+            // const details = ...
+            // const created_at = ...
+            primeraTarjeta.querySelector('.card-header').textContent = `Evento ${eventId}`;
+            //primeraTarjeta.querySelector('.card-title').textContent = event.title
+            //primeraTarjeta.querySelector('.card-text').textContent = event.details
+            //primeraTarjeta.querySelector('.text-muted').textContent = created_at;
+        } else {
+            // El usuario hizo clic en "Cancelar"
+            console.log('Acción cancelada');
+        }
+    }
+
+    // Asigna la función al evento de doble clic (dblclick) en las filas de la tabla
     document.querySelectorAll('#infoTable tbody tr').forEach(row => {
-        row.addEventListener('click', () => {
-            // Obtiene el ID del evento de la fila seleccionada
-            const eventId = row.getAttribute('data-event-id');
-            console.log(`Evento seleccionado: ID ${eventId}`);
-            // Puedes guardar el ID en una variable o realizar otras acciones con él
-        });
+        const eventId = row.getAttribute('data-event-id');
+        row.addEventListener('dblclick', () => confirmacionDobleClic(eventId));
     });
 </script>
+
+
 
 
 {% endblock %}
