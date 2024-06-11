@@ -1,11 +1,12 @@
-from .models import Project, Task, Event, Status
+from .models import Project, Task, Event, Status, EventAttendee, EventState
+from .forms import CreateNewTask, CreateNewProject, CreateNewEvent, EventEditForm 
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
-from .forms import CreateNewTask, CreateNewProject, CreateNewEvent, EventEditForm
 from django.urls import reverse
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
-from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
 from django.db.models import Q
 # Create your views here.
@@ -205,16 +206,37 @@ def task(request):
         'tasks':tasks
     })
 
-
+@login_required
 def create_event(request):
     if request.method == 'GET':
-        return render(request, 'events/create_event.html',{
-            'form':CreateNewEvent()
-            })
+        return render(request, 'events/create_event.html', {
+            'form': CreateNewEvent()
+        })
     else:
-        Event.objects.create(
+        # Determinar el estado inicial basado en la solicitud
+        initial_status_id = '19' if 'inbound' in request.POST else '16'
+        initial_status = Status.objects.get(id=initial_status_id)
+
+        # Crear el evento
+        new_event = Event.objects.create(
             title=request.POST['title'],
-            description=request.POST['description'])
+            description=request.POST['description'],
+            event_status=initial_status,
+            host=request.user  # El usuario que crea el evento
+        )
+
+        # Asignar el usuario que crea el evento como atendedor
+        EventAttendee.objects.create(
+            user=request.user,
+            event=new_event
+        )
+
+        # Crear el estado inicial para el evento
+        EventState.objects.create(
+            event=new_event,
+            status=initial_status
+        )
+
         return redirect('events')
 
 
