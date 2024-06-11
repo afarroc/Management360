@@ -5,15 +5,6 @@ from django.utils import timezone
 
 # Create your models here.
 
-class Status(models.Model):
-    status_name = models.CharField(max_length=50)
-    icon = models.CharField(max_length=10, blank=True)
-    active = models.BooleanField(default=True)
-    color = models.CharField(max_length=30, default="white")
-    
-    def __str__(self):
-        return self.status_name
-
 class Project(models.Model):
     name = models.CharField(max_length=200)
 
@@ -31,38 +22,116 @@ class Task(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
   
     def __str__(self):
-        return self.title + " - " + self.project.name
+        return self.title + " - " + self.project.name  
 
+# Modelo para los estados del evento
+class Status(models.Model):
+    status_name = models.CharField(max_length=50)
+    icon = models.CharField(max_length=10, blank=True)
+    active = models.BooleanField(default=True)
+    color = models.CharField(max_length=30, default="white")
+    
+    def __str__(self):
+        return self.status_name
+
+# Modelo para registrar los estados por los que pasa cada evento
+class EventState(models.Model):
+    event = models.ForeignKey('Event', on_delete=models.CASCADE)
+    status = models.ForeignKey('Status', on_delete=models.CASCADE)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        # Si es un nuevo estado, establecer la hora de inicio
+        if not self.id:
+            self.start_time = timezone.now()
+        # Si se está finalizando un estado, establecer la hora de finalización
+        else:
+            self.end_time = timezone.now()
+        super(EventState, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.status.status_name} ({self.start_time} - {self.end_time})"
+    
+
+# Modelo para registrar las ediciones realizadas en los campos del evento
+class EventHistory(models.Model):
+    event = models.ForeignKey('Event', on_delete=models.CASCADE)
+    edited_at = models.DateTimeField(auto_now_add=True)
+    editor = models.ForeignKey(User, on_delete=models.CASCADE)
+    field_name = models.CharField(max_length=100)
+    old_value = models.TextField(null=True, blank=True)
+    new_value = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.event.title} - {self.field_name} editado por {self.editor.username}"
+
+# Modelo principal del evento
 class Event(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    event_status = models.ForeignKey(Status, on_delete=models.CASCADE, default=16)
+    event_status = models.ForeignKey(Status, on_delete=models.CASCADE)
     venue = models.CharField(max_length=200)
-    start_time = models.DateTimeField(auto_now=True)
-    end_time = models.DateTimeField(auto_now=True)
     host = models.CharField(max_length=100)
     event_category = models.CharField(max_length=50)
     max_attendees = models.IntegerField(default=0)
     ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
     attendees = models.ManyToManyField(User, through='EventAttendee')
 
-    def change_status(self, new_status):
+    def change_status(self, new_status_id):
+        # Obtener el nuevo estado
+        new_status = Status.objects.get(id=new_status_id)
+        # Finalizar el estado actual
+        current_state = self.eventstate_set.filter(end_time__isnull=True).last()
+        if current_state:
+            current_state.end_time = timezone.now()
+            current_state.save()
+        # Crear un nuevo estado con el nuevo estado proporcionado
+        EventState.objects.create(event=self, status=new_status)
+        # Actualizar el estado del evento
         self.event_status = new_status
         self.updated_at = timezone.now()
         self.save()
 
+    def record_edit(self, editor, field_name, old_value, new_value):
+        # Registrar la edición en el historial
+        EventHistory.objects.create(
+            event=self,
+            editor=editor,
+            field_name=field_name,
+            old_value=old_value,
+            new_value=new_value
+        )
+
     def save(self, *args, **kwargs):
-        if self.pk is not None:
-            self.updated_at = timezone.now()
+        # Registrar automáticamente los cambios en los campos editables
+        if self.pk:
+            original_event = Event.objects.get(pk=self.pk)
+            fields_to_check = ['title', 'description', 'venue', 'host', 'event_category', 'max_attendees', 'ticket_price']
+            for field in fields_to_check:
+                original_value = getattr(original_event, field)
+                new_value = getattr(self, field)
+                if original_value != new_value:
+                    self.record_edit(
+                        editor=self.editor,  # Asegúrate de asignar el editor actual
+                        field_name=field,
+                        old_value=original_value,
+                        new_value=new_value
+                    )
+        else:
+            # Si es un nuevo evento, inicializar con el estado 'Creado'
+            super(Event, self).save(*args, **kwargs)  # Guardar el evento antes de crear el EventState
+            created_status = Status.objects.get_or_create(status_name='Creado')[0]
+            EventState.objects.create(event=self, status=created_status)
         super(Event, self).save(*args, **kwargs)
-        
+
     def __str__(self):
         return self.title + " - " + self.event_status.status_name
 
+# Modelo para registrar los asistentes al evento
 class EventAttendee(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     registration_time = models.DateTimeField(auto_now_add=True)
-
