@@ -274,3 +274,114 @@ def event_detail(request, id):
         'events':events
     })
 
+
+## Vistas para perfil de usuario
+
+
+from django.db import IntegrityError, transaction
+from django.forms import formset_factory
+from django.views import View
+from django.shortcuts import render, redirect
+from .models import Profile
+from .forms import ProfileForm, ExperienceForm, EducationForm, SkillForm
+
+ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
+EducationFormSet = formset_factory(EducationForm, extra=1, can_delete=True)
+SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
+
+class ProfileView(View):
+    def get(self, request, user_id=None):
+        try:
+            if user_id:
+                profile = Profile.objects.get(user_id=user_id)
+                profile_form = ProfileForm(instance=profile)
+                experience_formset = ExperienceFormSet(prefix='experiences', queryset=profile.experiences.all())
+                education_formset = EducationFormSet(prefix='education', queryset=profile.education.all())
+                skill_formset = SkillFormSet(prefix='skills', queryset=profile.skills.all())
+            else:
+                profile_form = ProfileForm()
+                experience_formset = ExperienceFormSet(prefix='experiences')
+                education_formset = EducationFormSet(prefix='education')
+                skill_formset = SkillFormSet(prefix='skills')
+
+            return render(request, 'profiles/profile_form.html', {
+                'profile_form': profile_form,
+                'experience_formset': experience_formset,
+                'education_formset': education_formset,
+                'skill_formset': skill_formset
+            })
+        except Exception as e:
+            return render(request, 'error.html', {'message': str(e)})
+
+    @transaction.atomic
+    def post(self, request, user_id=None):
+        try:
+            profile = Profile.objects.get(user_id=user_id) if user_id else None
+            profile_form = ProfileForm(request.POST, instance=profile)
+            experience_formset = ExperienceFormSet(request.POST, prefix='experiences')
+            education_formset = EducationFormSet(request.POST, prefix='education')
+            skill_formset = SkillFormSet(request.POST, prefix='skills')
+
+            if profile_form.is_valid() and all(formset.is_valid() for formset in [experience_formset, education_formset, skill_formset]):
+                profile = profile_form.save(commit=False)
+                profile.user = request.user
+                profile.save()
+
+                for form in experience_formset:
+                    if form.cleaned_data.get('DELETE'):
+                        if form.instance.pk:
+                            form.instance.delete()
+                    else:
+                        experience = form.save(commit=False)
+                        experience.profile = profile
+                        experience.save()
+
+                for form in education_formset:
+                    if form.cleaned_data.get('DELETE'):
+                        if form.instance.pk:
+                            form.instance.delete()
+                    else:
+                        education = form.save(commit=False)
+                        education.profile = profile
+                        education.save()
+
+                for form in skill_formset:
+                    if form.cleaned_data.get('DELETE'):
+                        if form.instance.pk:
+                            form.instance.delete()
+                    else:
+                        skill = form.save(commit=False)
+                        skill.profile = profile
+                        skill.save()
+
+                return redirect('view_profile')
+
+            return render(request, 'profiles/profile_form.html', {
+                'profile_form': profile_form,
+                'experience_formset': experience_formset,
+                'education_formset': education_formset,
+                'skill_formset': skill_formset
+            })
+        except IntegrityError as e:
+            return render(request, 'error.html', {'message': f"An error occurred. Please make sure all fields are filled out correctly. Error: {e}"})
+        except Exception as e:
+            return render(request, 'error.html', {'message': str(e)})
+
+
+
+
+
+
+class ViewProfileView(View):
+    def get(self, request, user_id):
+        profile = Profile.objects.get(user_id=user_id)
+        experiences = profile.experiences.all()
+        education = profile.education.all()
+        skills = profile.skills.all()
+
+        return render(request, 'profiles/view_profile.html', {
+            'profile': profile,
+            'experiences': experiences,
+            'education': education,
+            'skills': skills
+        })

@@ -1,0 +1,130 @@
+{% extends 'layouts/base.html' %}
+
+{% load static %}
+
+{% block content %}
+
+<div class="container py-5">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title">Create Your Profile</h2>
+            {% if error_message %}
+                <div class="alert alert-danger">
+                    {{ error_message }}
+                </div>
+            {% endif %}
+            <form method="post" id="profileForm" enctype="multipart/form-data" class="needs-validation" novalidate>
+                {% csrf_token %}
+                {{ profile_form }}
+
+                {% if profile_form.errors %}
+                    {% for field, errors in profile_form.errors.items %}
+                        {% for error in errors %}
+                            <div class="alert alert-danger">
+                                {{ error }}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                {% endif %}
+
+                <div class="card my-4">
+                    <div class="card-body">
+                        <h3 class="card-title">Experience</h3>
+                        <div id="experienceFormSet">
+                            {{ experience_formset.management_form }}
+                            {% for form in experience_formset %}
+                            <div class="mb-3">
+                                {{ form }}
+                            </div>
+                            {% if form.errors %}
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <div class="alert alert-danger">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        <button type="button" id="addExperience" class="btn btn-primary">Add Experience</button>
+                    </div>
+                </div>
+
+                <div class="card my-4">
+                    <div class="card-body">
+                        <h3 class="card-title">Education</h3>
+                        <div id="educationFormSet">
+                            {{ education_formset.management_form }}
+                            {% for form in education_formset %}
+                            <div class="mb-3">
+                                {{ form }}
+                            </div>
+                            {% if form.errors %}
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <div class="alert alert-danger">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        <button type="button" id="addEducation" class="btn btn-primary">Add Education</button>
+                    </div>
+                </div>
+
+                <div class="card my-4">
+                    <div class="card-body">
+                        <h3 class="card-title">Skills</h3>
+                        <div id="skillFormSet">
+                            {{ skill_formset.management_form }}
+                            {% for form in skill_formset %}
+                            <div class="mb-3">
+                                {{ form }}
+                            </div>
+                            {% if form.errors %}
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <div class="alert alert-danger">
+                                            {{ error }}
+                                        </div>
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        <button type="button" id="addSkill" class="btn btn-primary">Add Skill</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-success mt-3">Save Profile</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        $('#addExperience').click(function() {
+            var formIdx = $('#id_experiences-TOTAL_FORMS').val();
+            $('#experienceFormSet').append($('#newExperienceForm').html().replace(/__prefix__/g, formIdx));
+            $('#id_experiences-TOTAL_FORMS').val(parseInt(formIdx) + 1);
+        });
+
+        $('#addEducation').click(function() {
+            var formIdx = $('#id_education-TOTAL_FORMS').val();
+            $('#educationFormSet').append($('#newEducationForm').html().replace(/__prefix__/g, formIdx));
+            $('#id_education-TOTAL_FORMS').val(parseInt(formIdx) + 1);
+        });
+
+        $('#addSkill').click(function() {
+            var formIdx = $('#id_skills-TOTAL_FORMS').val();
+            $('#skillFormSet').append($('#newSkillForm').html().replace(/__prefix__/g, formIdx));
+            $('#id_skills-TOTAL_FORMS').val(parseInt(formIdx) + 1);
+        });
+    });
+</script>
+
+{% endblock %}
