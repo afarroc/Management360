@@ -2,15 +2,26 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
 
-
 # Create your models here.
 
+# Modelo para los estados del evento
+class Status(models.Model):
+    status_name = models.CharField(max_length=50)
+    icon = models.CharField(max_length=10, blank=True)
+    active = models.BooleanField(default=True)
+    color = models.CharField(max_length=30, default="white")
+    
+    def __str__(self):
+        return self.status_name
+
+# Modelo para los proyectos    
 class Project(models.Model):
     name = models.CharField(max_length=200)
 
     def __str__(self):
         return self.name
 
+# Modelo para las tareas:
 class Task(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
@@ -24,15 +35,7 @@ class Task(models.Model):
     def __str__(self):
         return self.title + " - " + self.project.name  
 
-# Modelo para los estados del evento
-class Status(models.Model):
-    status_name = models.CharField(max_length=50)
-    icon = models.CharField(max_length=10, blank=True)
-    active = models.BooleanField(default=True)
-    color = models.CharField(max_length=30, default="white")
-    
-    def __str__(self):
-        return self.status_name
+
 
 # Modelo para registrar los estados por los que pasa cada evento
 class EventState(models.Model):
@@ -135,3 +138,47 @@ class EventAttendee(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     registration_time = models.DateTimeField(auto_now_add=True)
+
+
+## modelos para el perfil del usuario
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    bio = models.TextField(max_length=500, blank=True)
+    location = models.CharField(max_length=30, blank=True)
+    profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
+    linkedin_url = models.URLField(blank=True)
+
+    def __str__(self):
+        return self.user.username
+
+class Experience(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='experiences')
+    job_title = models.CharField(max_length=100)
+    company_name = models.CharField(max_length=100)
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    description = models.TextField()
+
+    def __str__(self):
+        return f"{self.job_title} at {self.company_name}"
+
+class Education(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='education')
+    institution_name = models.CharField(max_length=100)
+    degree = models.CharField(max_length=100)
+    field_of_study = models.CharField(max_length=100)
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.degree} in {self.field_of_study} from {self.institution_name}"
+
+class Skill(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='skills')
+    skill_name = models.CharField(max_length=100)
+    proficiency_level = models.CharField(max_length=50)  # Ejemplo: Principiante, Intermedio, Experto
+
+    def __str__(self):
+        return self.skill_name

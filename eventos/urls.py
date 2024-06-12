@@ -25,6 +25,10 @@ urlpatterns = [
     path('signin/', views.signin, name='signin'),
     
     path('panel/event_edit/<int:event_id>/', views.event_edit, name='event_edit'),
+    
+    path('profile/', views.ViewProfileView.as_view(), name='profile'),
+    path('create_profile/', views.ProfileView.as_view(), name='create_profile'),
+    path('edit_profile/<int:user_id>', views.ProfileView.as_view(), name='edit_profile'),
 
     
 ]               

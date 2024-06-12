@@ -58,6 +58,22 @@
                         <li><a class="dropdown-item" href="#">Something else here</a></li>
                     </ul>
                 </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="{% url 'events' %}" role="button" data-bs-toggle="dropdown"
+                        aria-expanded="false">
+                        Profile
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'create_profile' %}">Create Profile</a></li>
+                        <li><a class="dropdown-item" href="{% url 'profile' user.id %}">My Profile</a></li>
+                        <li><a class="dropdown-item" href="{% url 'edit_profile' %}">Edit Profile</a></li>
+                        
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="#">Something else here</a></li>
+                    </ul>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'about' %}">About</a>
                 </li>
