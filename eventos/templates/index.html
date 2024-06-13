@@ -4,81 +4,24 @@
 
 {% block content %}
 
-<style>
-    .containerx {
-        padding: 5px;
-        max-width: 800px;
-        background: white;
-        text-align: center;
-        align-content: center;
-        vertical-align: center;
-    }
-    .containery {
-        padding: 5px;
-        background: whitesmoke;
-    }
-
-    .title{
-        color:black;
-        padding: 5px;
-        border: 0px;
-        border-style: solid;
-        border-color: grey;
-        background:lightskyblue;
-        align-content: center;
-        vertical-align:auto;
-    }
-    .index {
-        padding: 10px;
-        border: 1px;
-        border-style: solid;
-        background: white;
-    }
-
-    .topbar{
-        color: black;
-        background-color:skyblue;
-        padding:  5px;
-    }
-    .content{
-        background-color: aliceblue;
-        padding: 5px;
-    }
-    .subcontent{
-        background-color:snow;
-        padding: 5px;
-    }
-
-</style>
-<div class="container">
-    <div class="containerx">
-        <div class="containery">
-    
-            <div class="title">
-                <h3>{{title}}</h3>
+<div class="container my-5">
+    <div class="bg-white text-center p-5">
+        <h3 class="mb-3">{{ title }}</h3>
+        <div class="bg-light p-3">
+            <div class="bg-primary text-white p-2 mb-3">
+                <p>Adelante</p>
             </div>
-    
-            <div class="index">
-    
-                <div class="topbar">
-                    <p>Adelante</p>
-                </div>
-                
-                <div class="content">
-                    <img src="{% static 'images/wp4591743_2.jpg' %}" alt="" width="500">
-                </div>
-                <div class="subcontent">
-                    <p>Sobre mi</p>
-                    <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Non consequuntur, sapiente nam tempore aliquam
-                        ab asperiores deserunt similique obcaecati. Dolores esse nisi quis sed eos, fugit vitae praesentium
-                        quidem perferendis!</p>
-                </div>
+            <div class="p-3">
+                <img src="{% static 'images/wp4591743_2.jpg' %}" alt="" class="img-fluid">
             </div>
-    
-    
+            <div class="bg-white p-3">
+                <h5>Sobre mi</h5>
+                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Non consequuntur, sapiente nam tempore aliquam
+                    ab asperiores deserunt similique obcaecati. Dolores esse nisi quis sed eos, fugit vitae praesentium
+                    quidem perferendis!</p>
+            </div>
         </div>
     </div>
-    
 </div>
 
 {% endblock %}

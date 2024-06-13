@@ -1,13 +1,38 @@
-from .models import Event, Profile, Experience, Education, Skill
 from django import forms
+from django.forms import ModelForm
+from django.contrib.auth.models import User
+from django import forms
+from .models import Task, Event, Profile, Experience, Education, Skill 
 
-class CreateNewEvent(forms.Form):
-    title = forms.CharField(label="Titulo de evento", max_length=200, widget=forms.TextInput(attrs={'class':'input'}))
-    description = forms.CharField(label="Detalle del evento", widget=forms.Textarea(attrs={'class':'input'}))
+class CreateNewEvent(ModelForm):
+    class Meta:
+        model = Event
+        fields = ['title', 'description', 'event_status', 'host']
+
+class AssignAttendeesForm(forms.Form):
+    attendees = forms.ModelMultipleChoiceField(
+        queryset=User.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False
+    )
     
-class CreateNewTask(forms.Form):
-    title = forms.CharField(label="Titulo de tarea", max_length=200, widget=forms.TextInput(attrs={'class':'input'}))
-    description = forms.CharField(label="Detalle de la tarea", widget=forms.Textarea(attrs={'class':'input'}))
+from django import forms
+from .models import Task
+
+from django import forms
+from .models import Task
+
+class CreateNewTask(forms.ModelForm):
+    class Meta:
+        model = Task
+        fields = ['title', 'description', 'important', 'project']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control'}),
+            'important': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'project': forms.Select(attrs={'class': 'form-select'}),
+        }
+
 
 class CreateNewProject(forms.Form):
     name = forms.CharField(label="Nombre del proyecto", max_length=200, widget=forms.TextInput(attrs={'class':'input'}))
@@ -21,12 +46,6 @@ class EventEditForm(forms.ModelForm):
     class Meta:
         model = Event
         fields = ['title', 'description', 'event_status']
-
-# formularios para perfil de usuario
-
-# forms.py
-from django import forms
-from .models import Profile, Experience, Education, Skill
 
 class ProfileForm(forms.ModelForm):
     class Meta:

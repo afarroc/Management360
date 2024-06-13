@@ -21,21 +21,18 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
-# Modelo para las tareas:
 class Task(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     important = models.BooleanField(default=False)
     created_at = models.DateField(auto_now_add=True)
-    updated_at = models.DateField(null=True)
+    updated_at = models.DateField(null=True, blank=True)  # Agregar blank=True para permitir que el campo sea opcional en formularios
     done = models.BooleanField(default=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-  
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')  # Asegúrate de que esta línea esté presente
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)  # Usa comillas si Project está definido más abajo en el mismo archivo
+
     def __str__(self):
-        return self.title + " - " + self.project.name  
-
-
+        return f"{self.title} - {self.project.name}"
 
 # Modelo para registrar los estados por los que pasa cada evento
 class EventState(models.Model):
@@ -77,12 +74,12 @@ class Event(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     event_status = models.ForeignKey(Status, on_delete=models.CASCADE)
     venue = models.CharField(max_length=200)
-    host = models.CharField(max_length=100)
+    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_events')
     event_category = models.CharField(max_length=50)
     max_attendees = models.IntegerField(default=0)
     ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
-    attendees = models.ManyToManyField(User, through='EventAttendee')
-
+    attendees = models.ManyToManyField(User, through='EventAttendee', related_name='attending_events')
+    
     def change_status(self, new_status_id):
         # Obtener el nuevo estado
         new_status = Status.objects.get(id=new_status_id)
@@ -138,6 +135,8 @@ class EventAttendee(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     registration_time = models.DateTimeField(auto_now_add=True)
+    has_paid = models.BooleanField(default=False)  # Campo nuevo para el pago
+    notes = models.TextField(blank=True, null=True)  # Campo nuevo para notas adicionales
 
 
 ## modelos para el perfil del usuario
