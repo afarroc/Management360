@@ -1,16 +1,137 @@
-from .models import Project, Task, Event, Status, EventAttendee, EventState
-from .forms import CreateNewTask, CreateNewProject, CreateNewEvent, EventEditForm 
+# Django imports
 from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import Q
+from django.forms import formset_factory
+from django.views import View
+
+# Local imports from .models
+from .models import Project, Task, Event, Status, EventAttendee, EventState, Profile
+
+# Local imports from .forms
+from .forms import (
+    CreateNewTask, CreateNewProject, CreateNewEvent, EventEditForm,
+    ProfileForm, ExperienceForm, EducationForm, SkillForm
+)
+
+ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
+EducationFormSet = formset_factory(EducationForm, extra=1, can_delete=True)
+SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
 # Create your views here.
 
+# Create tasks
+
+from django.contrib import messages
+
+
+@login_required
+def create_task(request):
+    if request.method == 'GET':
+        form = CreateNewTask()
+    else:
+        form = CreateNewTask(request.POST)
+        if form.is_valid():
+            task = form.save(commit=False)
+            task.user = request.user  # Asignar el usuario actual como el creador de la tarea
+            task.project = form.cleaned_data['project']
+            try:
+                with transaction.atomic():
+                    task.save()
+                    messages.success(request, 'Task created successfully!')
+                    return redirect('tasks')
+            except IntegrityError:
+                messages.error(request, 'There was a problem saving the task.')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+
+    return render(request, 'tasks/create_task.html', {'form': form})
+
+
+
+# Events
+def events(request):
+    print("Inicio vista Events")
+
+    # Obtener todos los eventos y ordenarlos por fecha de actualización
+    events = Event.objects.all().order_by('-updated_at')
+    statuses = Status.objects.all().order_by('status_name')
+
+    # Imprimir el estado y el ícono de cada estado
+    for status in statuses:
+        print(status, status.icon)
+
+    if request.method == 'POST':
+        print("Solicitud POST")
+        print(request.POST)
+        status = request.POST.get('status')
+        date = request.POST.get('date')
+        cerrado = request.POST.get('cerrado')
+
+        # Filtrar eventos basados en si están cerrados o no
+        if cerrado:
+            events = events.exclude(event_status_id=3)
+            request.session['filtered_cerrado'] = "true"
+            print("Filtrado por <> cerrado", cerrado)
+        else:
+            request.session['filtered_cerrado'] = ""
+
+        # Filtrar eventos basados en el estado seleccionado
+        if status:
+            events = events.filter(event_status_id=status)
+            request.session['filtered_status'] = status
+            print("Filtrado por id de estado", status)
+        else:
+            request.session['filtered_status'] = ""
+
+        # Filtrar eventos basados en la fecha seleccionada
+        if date:
+            events = events.filter(created_at__date=date)
+            request.session['filtered_date'] = date
+            print("Filtrado por fecha", date)
+        else:
+            request.session['filtered_date'] = ""
+
+        print("Fin vista Events")
+        return render(request, 'events/events.html', {
+            'events': events,
+            'statuses': statuses,
+        })
+
+    else:
+        print("Solicitud GET")
+        print(request.GET)
+        status = request.session.get('filtered_status')
+        date = request.session.get('filtered_date')
+        cerrado = request.session.get('filtered_cerrado') == "true"
+
+        # Filtrar eventos basados en si están cerrados o no
+        if cerrado:
+            events = events.exclude(event_status_id=3)
+
+        # Filtrar eventos basados en el estado seleccionado
+        if status:
+            events = events.filter(event_status_id=status)
+            print("Filtrado por id de estado", status)
+
+        # Filtrar eventos basados en la fecha seleccionada
+        if date:
+            events = events.filter(created_at__date=date)
+            print("Filtrado por fecha", date)
+
+        print(status, date)
+        print("Fin vista Events")
+        return render(request, 'events/events.html', {
+            'events': events,
+            'statuses': statuses,
+        })
+
+# Event edit
 def event_edit(request, event_id):
     event = get_object_or_404(Event, pk=event_id)
     if request.method == 'POST':
@@ -77,13 +198,16 @@ def panel(request):
     #events = events.filter(event_status_id = 5)
     return render(request, 'panel/panel.html', {'events': events})    
 
-
-
 def delete_event(request, event_id):
-    event = get_object_or_404(Event, pk=event_id)
-    event.delete()
+    # Asegúrate de que solo se pueda acceder a esta vista mediante POST
+    if request.method == 'POST':
+        event = get_object_or_404(Event, pk=event_id)
+        event.delete()
+        messages.success(request, 'El evento ha sido eliminado exitosamente.')
+    else:
+        messages.error(request, 'Método no permitido.')
     return redirect(reverse('events'))
-    
+  
 def index(request):
     title="Pagina Pricipal"
     return render(request, "index.html",{
@@ -128,72 +252,6 @@ def change_event_status(request, event_id):
     # Devolver la redirección a la página de eventos
     return redirect(reverse('events'))
     
-    
-def events(request):
-    print("Inicio vista Events")
-
-    events = Event.objects.all().order_by('-updated_at')
-    statuses = Status.objects.all().order_by('status_name')
-    for status in statuses:
-        print(status, status.icon)
-
-    if request.method == 'POST':
-        print("Solicitud POST")
-        print(request.POST)
-        status = request.POST.get('status')
-        date = request.POST.get('date')
-        cerrado = request.POST.get('cerrado')
-
-        if cerrado:
-            events = events.exclude(event_status_id=3)
-            request.session['filtered_cerrado'] = "true" 
-            print("Filtrado por <> cerrado", cerrado)
-        else:
-            request.session['filtered_cerrado'] = ""    
-
-        if status:
-            events = events.filter(event_status_id=status)
-            request.session['filtered_status'] = status
-            print("Filtrado por id de estado", status)
-        else:
-            request.session['filtered_status'] = ""
-
-        if date:
-            events = events.filter(created_at__date=date)
-            request.session['filtered_date'] = date
-            print("Filtrado por fecha", date)
-        else:
-            request.session['filtered_date'] = ""
-
-        print("Fin vista Events")
-        return render(request, 'events/events.html', {
-            'events': events,
-            'statuses': statuses,
-        })
-    else:
-        print("Solicitud GET")
-        print(request.GET)
-        status = request.session.get('filtered_status')
-        date = request.session.get('filtered_date')
-        cerrado = 3
-
-        if cerrado:
-            events=events.exclude(event_status_id=3)
-        if status:
-            events = events.filter(event_status_id=status)
-            print("Filtrado por id de estado", status)
-        if date:
-            events = events.filter(created_at__date=date)
-            print("Filtrado por fecha", date)
-
-        print(status, date)
-        print("Fin vista Events")
-        return render(request, 'events/events.html', {
-            'events': events,
-            'statuses': statuses,
-        })
-
- 
 def projects(request):
     projects = Project.objects.all()
     return render(request, "projects/projects.html",{
@@ -206,48 +264,6 @@ def task(request):
         'tasks':tasks
     })
 
-@login_required
-def create_event(request):
-    if request.method == 'GET':
-        return render(request, 'events/create_event.html', {
-            'form': CreateNewEvent()
-        })
-    else:
-        # Determinar el estado inicial basado en la solicitud
-        initial_status_id = '19' if 'inbound' in request.POST else '16'
-        initial_status = Status.objects.get(id=initial_status_id)
-
-        # Crear el evento
-        new_event = Event.objects.create(
-            title=request.POST['title'],
-            description=request.POST['description'],
-            event_status=initial_status,
-            host=request.user  # El usuario que crea el evento
-        )
-
-        # Asignar el usuario que crea el evento como atendedor
-        EventAttendee.objects.create(
-            user=request.user,
-            event=new_event
-        )
-
-        # Crear el estado inicial para el evento
-        EventState.objects.create(
-            event=new_event,
-            status=initial_status
-        )
-
-        return redirect('events')
-
-
-def create_task(request):
-    if request.method == 'GET':
-        return render(request, 'tasks/create_task.html',{
-            'form':CreateNewTask()
-            })
-    else:
-        Task.objects.create(title=request.POST['title'], description=request.POST['description'], project_id=1)
-        return redirect('tasks')
 
 def create_project(request):
     if request.method == 'GET':
@@ -274,21 +290,67 @@ def event_detail(request, id):
         'events':events
     })
 
+@login_required
+def create_event(request):
+    if request.method == 'GET':
+        form = CreateNewEvent()
+    else:
+        form = CreateNewEvent(request.POST)
+        if form.is_valid():
+            try:
+                # Determinar el estado inicial basado en la solicitud
+                initial_status_id = '19' if 'inbound' in request.POST else '16'
+                initial_status = Status.objects.get(id=initial_status_id)
+
+                # Crear el evento con los datos validados del formulario
+                new_event = form.save(commit=False)
+                new_event.event_status = initial_status
+                new_event.host = request.user
+                new_event.save()
+
+                # Asignar el usuario que crea el evento como atendedor
+                EventAttendee.objects.create(
+                    user=request.user,
+                    event=new_event
+                )
+
+                # Crear el estado inicial para el evento
+                EventState.objects.create(
+                    event=new_event,
+                    status=initial_status
+                )
+
+                messages.success(request, 'Evento creado con éxito.')
+                return redirect('events')
+            except IntegrityError as e:
+                messages.error(request, f'Hubo un error al crear el evento: {e}')
+
+    return render(request, 'events/create_event.html', {'form': form})
+
+@login_required
+def assign_attendee_to_event(request, event_id, user_id):
+    # Obtén el evento y el usuario basado en los IDs proporcionados
+    event = get_object_or_404(Event, pk=event_id)
+    user = get_object_or_404(User, pk=user_id)
+
+    # Crea una nueva instancia de EventAttendee
+    event_attendee, created = EventAttendee.objects.get_or_create(
+        user=user,
+        event=event
+    )
+
+    if created:
+        # El asistente fue asignado al evento exitosamente
+        messages.success(request, 'Asistente asignado al evento con éxito.')
+    else:
+        # El asistente ya estaba asignado al evento
+        messages.info(request, 'El asistente ya estaba asignado a este evento.')
+
+    # Redirige a la página que desees, por ejemplo, la página de detalles del evento
+    return redirect('event_detail', event_id=event_id)
+
 
 ## Vistas para perfil de usuario
-
-
-from django.db import IntegrityError, transaction
-from django.forms import formset_factory
-from django.views import View
-from django.shortcuts import render, redirect
-from .models import Profile
-from .forms import ProfileForm, ExperienceForm, EducationForm, SkillForm
-
-ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
-EducationFormSet = formset_factory(EducationForm, extra=1, can_delete=True)
-SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
-
 class ProfileView(View):
     def get(self, request, user_id=None):
         try:
@@ -311,7 +373,7 @@ class ProfileView(View):
                 'skill_formset': skill_formset
             })
         except Exception as e:
-            return render(request, 'error.html', {'message': str(e)})
+            return render(request, 'profiles/error.html', {'message': str(e)})
 
     @transaction.atomic
     def post(self, request, user_id=None):
@@ -366,11 +428,6 @@ class ProfileView(View):
             return render(request, 'error.html', {'message': f"An error occurred. Please make sure all fields are filled out correctly. Error: {e}"})
         except Exception as e:
             return render(request, 'error.html', {'message': str(e)})
-
-
-
-
-
 
 class ViewProfileView(View):
     def get(self, request, user_id):

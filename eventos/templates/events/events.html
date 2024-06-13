@@ -1,108 +1,89 @@
 {% extends 'layouts/base.html' %}
 
-
 {% block content %}
 
-<style>
-  .title{
-    background-color: whitesmoke;
-    text-align:center;
-    vertical-align:center;
-    margin: 10px;
-  }
-  .filters{
-    background-color: beige;
-    text-align:left;
-    vertical-align:center;
-    margin: 10px;
-  }
-  .message{
-    background-color: blueviolet;
-  }
-  .title h2{
+<!-- Mensajes de confirmación y éxito -->
+{% if messages %}
+  <div class="alert alert-info" role="alert">
+    {% for message in messages %}
+      <p{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</p>
+    {% endfor %}
+  </div>
+{% endif %}
 
-    align-content: center;
-    vertical-align: middle;
-  }    
+<div class="container my-3">
+  <h3>Events</h3>
+</div>
 
-</style>
-{{ mensaje }}
-
-    <div class="container title" >
-      <h3>Events</h3>
+<div class="container my-3">
+  <form method="POST" action="{% url 'events' %}" class="row g-3">
+    {% csrf_token %}
+    <div class="col-auto">
+      <label for="status" class="visually-hidden">Estado:</label>
+      <select id="status" name="status" class="form-select">
+        <option value="">-- Selecciona un estado --</option>
+        {% for status in statuses %}
+          <option value="{{ status.id }}" {% if status.id|stringformat:"s" == request.session.filtered_status|default:'' %}selected{% endif %}>
+            {{ status.status_name }}
+          </option>
+        {% endfor %}
+      </select>
     </div>
-
-    <div class="container filters" style="padding:10px;">
-
-        <form method="POST" action="{% url 'events' %}">{% csrf_token %}
-          <b>Events Filter: </b>
-          
-          <label for="status">Estado: </label>
-            <select id="status" name="status">
-                <option value="">-- Selecciona un estado --</option>
-                {% for status in statuses %}
-                    <option value="{{ status.id }}" {% if status.id|stringformat:"s" == request.session.filtered_status|default:'' %}selected{% endif %}>
-                        {{ status.status_name }}
-                    </option>z
-                {% endfor %}
-            </select>
-            <label for="date">Fecha:</label>
-            <input type="date" id="date" name="date" {% if request.session.filtered_date %}value="{{ request.session.filtered_date }}" {% endif %}>
-            <label for="cerrado">Omitir Cerrados</label>
-            <input type="checkbox" name="cerrado" value="true" {% if request.session.filtered_cerrado %} checked {% endif %}>
-            <input type="submit" value="Filtrar">
-        </form>
+    <div class="col-auto">
+      <label for="date" class="visually-hidden">Fecha:</label>
+      <input type="date" id="date" name="date" class="form-control" {% if request.session.filtered_date %}value="{{ request.session.filtered_date }}" {% endif %}>
     </div>
+    <div class="col-auto">
+      <div class="form-check">
+        <input type="checkbox" name="cerrado" value="true" class="form-check-input" id="cerrado" {% if request.session.filtered_cerrado %} checked {% endif %}>
+        <label class="form-check-label" for="cerrado">Omitir Cerrados</label>
+      </div>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-primary mb-3">Filtrar</button>
+    </div>
+  </form>
+</div>
 
-
-    <div>
-
-   
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-      {% for event in events %}
-
-      <div class="col">
-        <div class="card h-100" >
-          <div class="card-img-top" style="background-color: {{ event.event_status.color }}; opacity: 0.9;">
-            <p></p>
-          </div>
-          <!--img src="..." class="card-img-top" alt=""-->
-          <div class="card-body" >
-            <h5 class="card-title">[{{ event.id }}]{{ event.status_id|safe }} {{ event.title }}</h5>
-            <p class="card-text">{{ event.description }}</p>
-          </div>
-          <div class="card-body">
-            <form action="{% url 'change_event_status' event.id %}" method="POST">
-              {% csrf_token %}
-              <div class="mb-3">
+<div class="row row-cols-1 row-cols-md-3 g-4">
+  {% for event in events %}
+    <div class="col">
+      <div class="card h-100">
+        <div class="card-header" style="background-color: {{ event.event_status.color }};">
+          <!-- Placeholder for potential event status indicator -->
+        </div>
+        <div class="card-body">
+          <h5 class="card-title">[{{ event.id }}] {{ event.title }}</h5>
+          <p class="card-text">{{ event.description }}</p>
+          <!-- Formulario de cambio de estado -->
+          <form action="{% url 'change_event_status' event.id %}" method="POST" class="mb-2">
+            {% csrf_token %}
+            <div class="mb-3">
               <select name="new_status_id" class="form-select" aria-label="Default select example">
                 {% for status in statuses %}
-                <option value="{{ status.id }}" {% if status.id|stringformat:"s" == event.event_status.id|stringformat:"s" %}selected{% endif %}>{{ status.status_name }}</option>
+                  <option value="{{ status.id }}" {% if status.id|stringformat:"s" == event.event_status.id|stringformat:"s" %}selected{% endif %}>
+                    {{ status.status_name }}
+                  </option>
                 {% endfor %}
               </select>
-
-                <div class="mb-3">
-                  <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="disabledFieldsetCheck" disabled>
-                    <label class="form-check-label" for="disabledFieldsetCheck"></label>
-                  </div>
-
-              </div class="mb-3">
-              <!--input type="hidden" name="status" value="{{ request.POST.status }}"-->
-              <input class="btn btn-primary" type="submit" value="Cambiar Estado">
-              </div>
-            </form>
-          </div>
-          <div class="card-footer">
-            <small class="text-muted">
-              <p>Last Updated: {{ event.updated_at|date:"d-M H:i" }}</p>
-              <p>Created Date: {{ event.created_at|date:"d-M H:i" }}</p>
-            </small>
-          </div>
+            </div>
+            <button type="submit" class="btn btn-outline-primary btn-sm">Cambiar Estado</button>
+          </form>
+          <!-- Botón de eliminación con ícono -->
+          <form action="{% url 'delete_event' event.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este evento?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-sm">
+              <i class="bi bi-trash-fill"></i>
+            </button>
+          </form>
+        </div>
+        <div class="card-footer text-muted">
+          Last Updated: {{ event.updated_at|date:"d-M H:i" }}
+          Created Date: {{ event.created_at|date:"d-M H:i" }}
         </div>
       </div>
-      {% endfor %}
     </div>
+  {% endfor %}
 </div>
 
 {% endblock %}
