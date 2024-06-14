@@ -4,7 +4,8 @@
 
 {{ error }}
 
-<form action="/signin/" method="POST">
+<form action="{% url 'signin' %}" method="POST">
+
     {% csrf_token %}
     {{ form.as_p }}
     <button>
