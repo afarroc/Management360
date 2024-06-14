@@ -94,7 +94,10 @@ DATABASES = {
         'USER': 'admin',
         'PASSWORD': 'Admin+123',
         'HOST': '192.168.18.40',   # O la IP de tu servidor de base de datos
-        'PORT': '3306',        # El puerto por defecto de MySQL es el 3306
+        'PORT': '3306',        # El puerto por defecto de MySQL es el 3306,
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
     }
 }
 

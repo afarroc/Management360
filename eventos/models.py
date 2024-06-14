@@ -7,7 +7,7 @@ from django.utils import timezone
 # Modelo para los estados del evento
 class Status(models.Model):
     status_name = models.CharField(max_length=50)
-    icon = models.CharField(max_length=10, blank=True)
+    icon = models.CharField(max_length=30, blank=True)
     active = models.BooleanField(default=True)
     color = models.CharField(max_length=30, default="white")
     
@@ -53,7 +53,6 @@ class EventState(models.Model):
     def __str__(self):
         return f"{self.status.status_name} ({self.start_time} - {self.end_time})"
     
-
 # Modelo para registrar las ediciones realizadas en los campos del evento
 class EventHistory(models.Model):
     event = models.ForeignKey('Event', on_delete=models.CASCADE)
@@ -79,6 +78,7 @@ class Event(models.Model):
     max_attendees = models.IntegerField(default=0)
     ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
     attendees = models.ManyToManyField(User, through='EventAttendee', related_name='attending_events')
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE)
     
     def change_status(self, new_status_id):
         # Obtener el nuevo estado
@@ -138,7 +138,6 @@ class EventAttendee(models.Model):
     has_paid = models.BooleanField(default=False)  # Campo nuevo para el pago
     notes = models.TextField(blank=True, null=True)  # Campo nuevo para notas adicionales
 
-
 ## modelos para el perfil del usuario
 
 class Profile(models.Model):
@@ -147,7 +146,14 @@ class Profile(models.Model):
     location = models.CharField(max_length=30, blank=True)
     profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
     linkedin_url = models.URLField(blank=True)
-
+    ROLE_CHOICES = [
+        ('SU', 'Supervisor'),
+        ('GE', 'Gestor de Eventos'),
+        ('AD', 'Administrador'),
+        ('US', 'Usuario Estándar'),
+    ]
+    role = models.CharField(max_length=2, choices=ROLE_CHOICES, default='US')
+    
     def __str__(self):
         return self.user.username
 

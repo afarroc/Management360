@@ -1,7 +1,6 @@
 {% extends 'layouts/base.html' %}
 
 {% block content %}
-
 <!-- Mensajes de confirmación y éxito -->
 {% if messages %}
   <div class="alert alert-info" role="alert">
@@ -12,7 +11,7 @@
 {% endif %}
 
 <div class="container my-3">
-  <h3>Events</h3>
+  <h3 class="text-center">Events</h3>
 </div>
 
 <div class="container my-3">
@@ -53,7 +52,8 @@
           <!-- Placeholder for potential event status indicator -->
         </div>
         <div class="card-body">
-          <h5 class="card-title">[{{ event.id }}] {{ event.title }}</h5>
+          <h5 class="card-title text-center">{{ event.event_status.icon }} [{{ event.id }}]</h5>
+          <h2 class="card-title text-center">{{ event.title }}</h2>
           <p class="card-text">{{ event.description }}</p>
           <!-- Formulario de cambio de estado -->
           <form action="{% url 'change_event_status' event.id %}" method="POST" class="mb-2">
@@ -72,14 +72,14 @@
           <!-- Botón de eliminación con ícono -->
           <form action="{% url 'delete_event' event.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este evento?');">
             {% csrf_token %}
-            <button type="submit" class="btn btn-outline-danger btn-sm">
+            <button type="submit" class="btn btn-danger">
               <i class="bi bi-trash-fill"></i>
             </button>
           </form>
         </div>
         <div class="card-footer text-muted">
-          Last Updated: {{ event.updated_at|date:"d-M H:i" }}
-          Created Date: {{ event.created_at|date:"d-M H:i" }}
+          <p>Updated: {{ event.updated_at|date:"d-M H:i" }}</p>
+          <p>Created: {{ event.created_at|date:"d-M H:i" }}</p>
         </div>
       </div>
     </div>
