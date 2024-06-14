@@ -1,13 +1,14 @@
 from django import forms
-from django.forms import ModelForm
 from django.contrib.auth.models import User
-from django import forms
-from .models import Task, Event, Profile, Experience, Education, Skill 
+from .models import Task, Event, Profile, Experience, Education, Skill, Status
 
-class CreateNewEvent(ModelForm):
+class CreateNewEvent(forms.ModelForm):
+    attendee = forms.ModelChoiceField(queryset=User.objects.all())
+    assigned_to = forms.ModelChoiceField(queryset=User.objects.all())
     class Meta:
         model = Event
-        fields = ['title', 'description', 'event_status', 'host']
+        fields = ['title', 'description', 'event_status', 'host', 'attendee',
+                   'assigned_to']
 
 class AssignAttendeesForm(forms.Form):
     attendees = forms.ModelMultipleChoiceField(
@@ -15,12 +16,6 @@ class AssignAttendeesForm(forms.Form):
         widget=forms.CheckboxSelectMultiple,
         required=False
     )
-    
-from django import forms
-from .models import Task
-
-from django import forms
-from .models import Task
 
 class CreateNewTask(forms.ModelForm):
     class Meta:
@@ -32,7 +27,6 @@ class CreateNewTask(forms.ModelForm):
             'important': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'project': forms.Select(attrs={'class': 'form-select'}),
         }
-
 
 class CreateNewProject(forms.Form):
     name = forms.CharField(label="Nombre del proyecto", max_length=200, widget=forms.TextInput(attrs={'class':'input'}))
@@ -72,3 +66,8 @@ class SkillForm(forms.ModelForm):
     class Meta:
         model = Skill
         fields = ['skill_name', 'proficiency_level']
+
+class EditStatusForm(forms.ModelForm):
+    class Meta:
+        model = Status
+        fields = ['status_name', 'icon', 'active', 'color']
