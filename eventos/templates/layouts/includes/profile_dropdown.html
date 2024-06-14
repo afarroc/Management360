@@ -1,0 +1,11 @@
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+        Profile
+    </a>
+    <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{% url 'create_profile' user.id %}">Create Profile</a></li>
+        <li><a class="dropdown-item" href="{% url 'profile' user.id %}">My Profile</a></li>
+        <li><a class="dropdown-item" href="{% url 'edit_profile' user.id %}">Edit Profile</a></li>
+        <!-- ... -->
+    </ul>
+</li>
