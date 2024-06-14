@@ -1,5 +1,4 @@
-<!-- navbar goes here -->
-
+<!-- navbar.html -->
 <nav class="navbar navbar-expand-lg bg-body-tertiary">
     <div class="container-fluid">
         <a class="navbar-brand" href="{% url 'index' %}">Panel</a>
@@ -9,91 +8,15 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="{% url 'index' %}">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'panel' %}">My Panel</a>
-                </li>
-
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="{% url 'projects' %}" role="button" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        Projects
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{% url 'projects' %}">Projects</a></li>
-                        <li><a class="dropdown-item" href="{% url 'create_project' %}">Create Project</a></li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <li><a class="dropdown-item" href="#">Something else here</a></li>
-                    </ul>
-                </li>                
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="{% url 'projects' %}" role="button" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        Tasks
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{% url 'tasks' %}">Tasks</a></li>
-                        <li><a class="dropdown-item" href="{% url 'create_task' %}">Create Task</a></li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <li><a class="dropdown-item" href="#">Something else here</a></li>
-                    </ul>
-                </li> 
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="{% url 'events' %}" role="button" data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                        Events
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{% url 'events' %}">Events</a></li>
-                        <li><a class="dropdown-item" href="{% url 'create_event' %}">Create Event</a></li>
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
-                        <li><a class="dropdown-item" href="#">Piked up Events</a></li>
-                    </ul>
-                </li>
-
-                {% if user.is_authenticated %}
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        Profile
-                    </a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{% url 'create_profile' user.id %}">Create Profile</a></li>
-                        <li><a class="dropdown-item" href="{% url 'profile' user.id %}">My Profile</a></li>
-                        <li><a class="dropdown-item" href="{% url 'edit_profile' user.id %}">Edit Profile</a></li>
-                        <!-- ... -->
-                    </ul>
-                </li>
-            {% else %}
-                <!-- Mostrar enlaces para iniciar sesión o registrarse si el usuario no está autenticado -->
-            {% endif %}
-            
-
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'about' %}">About</a>
-                </li>
-                {% if user.is_authenticated %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'logout' %}">Logout</a>
-                </li>
-                {% else %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'signup' %}">Signup</a>
-                </li>               
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'signin' %}">Signin</a>
-                </li>                
-                {% endif %}
-                <li class="nav-item">
-                    <a class="nav-link disabled" aria-disabled="true">Disabled</a>
-                </li>
+                {% include 'layouts/includes/home_link.html' %}
+                {% include 'layouts/includes/panel_link.html' %}
+                {% include 'layouts/includes/projects_dropdown.html' %}
+                {% include 'layouts/includes/tasks_dropdown.html' %}
+                {% include 'layouts/includes/events_dropdown.html' %}
+                {% include 'layouts/includes/profile_dropdown.html' %}
+                {% include 'layouts/includes/about_link.html' %}
+                {% include 'layouts/includes/disabled_link.html' %}
+                {% include 'layouts/includes/session.html' %}
             </ul>
             <form class="d-flex" role="search">
                 <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
@@ -102,5 +25,3 @@
         </div>
     </div>
 </nav>
-
-<!-- content goes here -->
