@@ -45,45 +45,58 @@
 </div>
 
 <div class="row row-cols-1 row-cols-md-3 g-4">
-  {% for event in events %}
-    <div class="col">
-      <div class="card h-100">
-        <div class="card-header" style="background-color: {{ event.event_status.color }};">
-          <!-- Placeholder for potential event status indicator -->
-        </div>
-        <div class="card-body">
-          <h5 class="card-title text-center">{{ event.event_status.icon }} [{{ event.id }}]</h5>
-          <h2 class="card-title text-center">{{ event.title }}</h2>
-          <p class="card-text">{{ event.description }}</p>
-          <!-- Formulario de cambio de estado -->
-          <form action="{% url 'change_event_status' event.id %}" method="POST" class="mb-2">
-            {% csrf_token %}
-            <div class="mb-3">
-              <select name="new_status_id" class="form-select" aria-label="Default select example">
-                {% for status in statuses %}
-                  <option value="{{ status.id }}" {% if status.id|stringformat:"s" == event.event_status.id|stringformat:"s" %}selected{% endif %}>
-                    {{ status.status_name }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-            <button type="submit" class="btn btn-outline-primary btn-sm">Cambiar Estado</button>
-          </form>
-          <!-- Botón de eliminación con ícono -->
-          <form action="{% url 'delete_event' event.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este evento?');">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-danger">
-              <i class="bi bi-trash-fill"></i>
-            </button>
-          </form>
-        </div>
-        <div class="card-footer text-muted">
-          <p>Updated: {{ event.updated_at|date:"d-M H:i" }}</p>
-          <p>Created: {{ event.created_at|date:"d-M H:i" }}</p>
-        </div>
-      </div>
-    </div>
-  {% endfor %}
+	{% for event in events %}
+	<div class="col">
+		<div class="card h-100">
+			<div class="card-header" style="background-color: {{ event.event_status.color }};">
+				<!-- Placeholder for potential event status indicator -->
+			</div>
+			<div class="card-body">
+				<h5 class="card-title text-center">{{ event.event_status.icon }} [{{ event.id }}]</h5>
+				<h2 class="card-title text-center">{{ event.title }}</h2>
+				<p class="card-text">{{ event.description }}</p>
+				<!-- ... -->
+				<p class="card-text">Host: {{ event.host.username }}</p>
+				<p class="card-text">Asignado a: {{ event.assigned_to.username }}</p>
+				<p class="card-text">Asistentes:</p>
+				<ul>
+				{% for attendee in event.attendees.all %}
+					<li>{{ attendee.username }}</li>
+				{% endfor %}
+				</ul>
+				<!-- ... -->
+				<!-- Formulario de cambio de estado -->
+				<form action="{% url 'change_event_status' event.id %}" method="POST" class="mb-2">
+				{% csrf_token %}
+					<div class="mb-3">
+						<select name="new_status_id" class="form-select" aria-label="Default select example">
+						{% for status in statuses %}
+							<option value="{{ status.id }}" {% if status.id|stringformat:"s" == event.event_status.id|stringformat:"s" %}selected{% endif %}>
+							{{ status.status_name }}
+							</option>
+						{% endfor %}
+						</select>
+					</div>
+					<button type="submit" class="btn btn-outline-primary btn-sm">Cambiar Estado</button>
+				{% if request.user.profile.role == 'SU' %}	
+				</form>
+				<!-- Botón de eliminación con ícono -->
+				<form action="{% url 'delete_event' event.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este evento?');">
+				{% csrf_token %}
+					<button type="submit" class="btn btn-danger">
+						<i class="bi bi-trash-fill"></i>
+					</button>
+				</form>
+				{% endif %}
+	
+			</div>
+			<div class="card-footer text-muted">
+				<p>Updated: {{ event.updated_at|date:"d-M H:i" }}</p>
+				<p>Created: {{ event.created_at|date:"d-M H:i" }}</p>
+			</div>
+		</div>
+	</div>
+	{% endfor %}
 </div>
 
 {% endblock %}
