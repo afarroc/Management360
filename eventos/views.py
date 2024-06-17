@@ -152,18 +152,15 @@ def create_task(request):
 # Events
 
 def events(request):
-    print("Inicio vista Events")
 
-    # Obtener todos los eventos y ordenarlos por fecha de actualización
-    # Filtrar los eventos por el usuario logueado
-    events = Event.objects.filter(assigned_to=request.user).order_by('-updated_at')
-
+    # Verificar el rol del usuario
+    if request.user.profile.role == 'SU':
+        # Si el usuario es un 'SU', puede ver todos los eventos
+        events = Event.objects.all().order_by('-updated_at')
+    else:
+        # Si no, solo puede ver los eventos que le están asignados o a los que asiste
+        events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
     statuses = Status.objects.all().order_by('status_name')
-
-    
-    # Imprimir el estado y el ícono de cada estado
-    for status in statuses:
-        print(status, status.icon)
 
     if request.method == 'POST':
         print("Solicitud POST")
@@ -252,38 +249,46 @@ def assign_attendee_to_event(request, event_id, user_id):
     # Redirige a la página que desees, por ejemplo, la página de detalles del evento
     return redirect('event_detail', event_id=event_id)
 
-from django.http import HttpResponseForbidden
-
 @login_required
 def create_event(request):
     if request.method == 'GET':
-        form = CreateNewEvent()
+        default = {
+            'assigned_to': request.user.id,
+            'host': request.user.id,  # El host por defecto es el usuario actual
+            'event_status': Status.objects.get(id='16').id  # El estado por defecto es 16
+        }
+        form = CreateNewEvent(initial=default)
     else:
         form = CreateNewEvent(request.POST)
         if form.is_valid():
             try:
                 # Determinar el estado inicial basado en la solicitud
-                initial_status_id = '19' if 'inbound' in request.POST else '16'
+                # Determinar el estado inicial basado en la solicitud
+                if 'inbound' in request.POST or request.user.profile.role == 'SU':
+                    print(request.POST)
+                    initial_status_id = request.POST.get('event_status')
+                    print(initial_status_id)
+                else:
+                    initial_status_id = '16'
                 initial_status = Status.objects.get(id=initial_status_id)
 
                 # Crear el evento con los datos validados del formulario
                 new_event = form.save(commit=False)
                 new_event.event_status = initial_status
                 new_event.host = request.user  # El host es siempre el creador del evento
+                if request.user.profile.role != 'SU':
+                    new_event.assigned_to = request.user  # Establecer automáticamente assigned_to como el usuario actual si el usuario no es un 'SU'
                 new_event.save()
 
                 # Si el usuario es un supervisor, puede asignar el evento a cualquier usuario
-                if request.user.profile.role == 'SU':
-                    attendee = form.cleaned_data.get('attendee')
-                # Si el usuario es un usuario estándar, solo puede asignarse el evento a sí mismo
-                else:
-                    attendee = request.user
-
-                # Asignar el usuario asignado como atendedor
-                EventAttendee.objects.create(
-                    user=attendee,
-                    event=new_event
-                )
+                # if request.user.profile.role == 'SU':
+                attendees = form.cleaned_data.get('attendees')
+                for attendee in attendees:
+                    # Asignar el usuario asignado como atendedor
+                    EventAttendee.objects.create(
+                        user=attendee,
+                        event=new_event
+                    )
 
                 # Crear el estado inicial para el evento
                 EventState.objects.create(
@@ -295,6 +300,11 @@ def create_event(request):
                 return redirect('events')
             except IntegrityError as e:
                 messages.error(request, f'Hubo un error al crear el evento: {e}')
+        else:
+            # Si el formulario no es válido, agregar los errores del formulario a los mensajes
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f'Error en el campo {field}: {error}')
 
     return render(request, 'events/create_event.html', {'form': form})
 
@@ -351,15 +361,24 @@ def change_event_status(request, event_id):
     # Devolver la redirección a la página de eventos
     return redirect(reverse('events'))
  
+from django.core.exceptions import PermissionDenied
+
 def delete_event(request, event_id):
     # Asegúrate de que solo se pueda acceder a esta vista mediante POST
     if request.method == 'POST':
         event = get_object_or_404(Event, pk=event_id)
+
+        # Verificar si el usuario es un 'SU'
+        if request.user.profile.role != 'SU':
+            messages.error(request, 'No tienes permiso para eliminar este evento.')
+            return redirect(reverse('events'))
+
         event.delete()
         messages.success(request, 'El evento ha sido eliminado exitosamente.')
     else:
         messages.error(request, 'Método no permitido.')
     return redirect(reverse('events'))
+
 
 
 # Panel

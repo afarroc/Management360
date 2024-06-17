@@ -77,8 +77,8 @@ class Event(models.Model):
     event_category = models.CharField(max_length=50)
     max_attendees = models.IntegerField(default=0)
     ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
-    attendees = models.ManyToManyField(User, through='EventAttendee', related_name='attending_events')
-    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE)
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_events') 
+    attendees = models.ManyToManyField(User, through='EventAttendee', related_name='collaborating_events') 
     
     def change_status(self, new_status_id):
         # Obtener el nuevo estado
