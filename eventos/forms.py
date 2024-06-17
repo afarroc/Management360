@@ -3,12 +3,20 @@ from django.contrib.auth.models import User
 from .models import Task, Event, Profile, Experience, Education, Skill, Status
 
 class CreateNewEvent(forms.ModelForm):
-    attendee = forms.ModelChoiceField(queryset=User.objects.all())
-    assigned_to = forms.ModelChoiceField(queryset=User.objects.all())
+    title = forms.CharField(max_length=200)
+    description = forms.CharField(widget=forms.Textarea)
+    venue = forms.CharField(max_length=200)
+    event_status = forms.ModelChoiceField(queryset=Status.objects.all())
+    event_category = forms.CharField(max_length=50)
+    max_attendees = forms.IntegerField()
+    ticket_price = forms.DecimalField(max_digits=6, decimal_places=2)
+    assigned_to = forms.ModelChoiceField(queryset=User.objects.all())  # Un único usuario asignado
+    attendees = forms.ModelMultipleChoiceField(queryset=User.objects.all(), required=False)  # Varios asistentes
+    
     class Meta:
         model = Event
-        fields = ['title', 'description', 'event_status', 'host', 'attendee',
-                   'assigned_to']
+        fields = ['title', 'description', 'venue', 'event_status', 'event_category', 'max_attendees', 'ticket_price', 'assigned_to', 'attendees']
+
 
 class AssignAttendeesForm(forms.Form):
     attendees = forms.ModelMultipleChoiceField(
