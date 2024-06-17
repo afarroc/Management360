@@ -65,6 +65,12 @@ class EventHistory(models.Model):
     def __str__(self):
         return f"{self.event.title} - {self.field_name} editado por {self.editor.username}"
 
+class Tag(models.Model):
+    name = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.name
+
 # Modelo principal del evento
 class Event(models.Model):
     title = models.CharField(max_length=200)
@@ -79,15 +85,19 @@ class Event(models.Model):
     ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
     assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_events') 
     attendees = models.ManyToManyField(User, through='EventAttendee', related_name='collaborating_events') 
+    tags = models.ManyToManyField(Tag, blank=True)
+    links = models.ManyToManyField('self', blank=True, symmetrical=False)
     
     def change_status(self, new_status_id, editor=None):
         # Obtener el nuevo estado
         new_status = Status.objects.get(id=new_status_id)
+    
         # Finalizar el estado actual
         current_state = self.eventstate_set.filter(end_time__isnull=True).last()
         if current_state:
             current_state.end_time = timezone.now()
             current_state.save()
+    
         # Crear un nuevo estado con el nuevo estado proporcionado
         EventState.objects.create(event=self, status=new_status)
         # Registrar el cambio de estado en EventHistory
@@ -101,6 +111,9 @@ class Event(models.Model):
         self.event_status = new_status
         self.updated_at = timezone.now()
         self.save()
+
+
+
 
     def record_edit(self, editor, field_name, old_value, new_value):
         # Registrar la edición en el historial
