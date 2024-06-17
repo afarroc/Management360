@@ -5,10 +5,12 @@
     </a>
     <ul class="dropdown-menu">
         <li><a class="dropdown-item" href="{% url 'events' %}">Events</a></li>
-        <li><a class="dropdown-item" href="{% url 'create_event' %}">Create Event</a></li>
         <li>
             <hr class="dropdown-divider">
         </li>
+        <li><a class="dropdown-item" href="{% url 'create_event' %}">Create Event</a></li>
+        <li><a class="dropdown-item" href="{% url 'edit_event' %}">Edit Event</a></li>
+
         <li><a class="dropdown-item" href="#">Picked up Events</a></li>
     </ul>
 </li>

@@ -80,7 +80,7 @@ class Event(models.Model):
     assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_events') 
     attendees = models.ManyToManyField(User, through='EventAttendee', related_name='collaborating_events') 
     
-    def change_status(self, new_status_id):
+    def change_status(self, new_status_id, editor=None):
         # Obtener el nuevo estado
         new_status = Status.objects.get(id=new_status_id)
         # Finalizar el estado actual
@@ -90,6 +90,13 @@ class Event(models.Model):
             current_state.save()
         # Crear un nuevo estado con el nuevo estado proporcionado
         EventState.objects.create(event=self, status=new_status)
+        # Registrar el cambio de estado en EventHistory
+        self.record_edit(
+            editor=editor,
+            field_name='event_status',
+            old_value=self.event_status.status_name,
+            new_value=new_status.status_name
+        )
         # Actualizar el estado del evento
         self.event_status = new_status
         self.updated_at = timezone.now()
@@ -97,16 +104,18 @@ class Event(models.Model):
 
     def record_edit(self, editor, field_name, old_value, new_value):
         # Registrar la edición en el historial
-        EventHistory.objects.create(
+        event_history = EventHistory.objects.create(
             event=self,
             editor=editor,
             field_name=field_name,
             old_value=old_value,
             new_value=new_value
         )
+        print(f"Registro de edición creado: {event_history}")
 
     def save(self, *args, **kwargs):
-        # Registrar automáticamente los cambios en los campos editables
+        editor = kwargs.pop('editor', None)
+        # ...
         if self.pk:
             original_event = Event.objects.get(pk=self.pk)
             fields_to_check = ['title', 'description', 'venue', 'host', 'event_category', 'max_attendees', 'ticket_price']
@@ -115,20 +124,21 @@ class Event(models.Model):
                 new_value = getattr(self, field)
                 if original_value != new_value:
                     self.record_edit(
-                        editor=self.editor,  # Asegúrate de asignar el editor actual
+                        editor=editor,  # Usa el editor proporcionado, si existe
                         field_name=field,
-                        old_value=original_value,
-                        new_value=new_value
+                        old_value=str(original_value),
+                        new_value=str(new_value)
                     )
+            # Si el estado del evento ha cambiado, registrar el cambio de estado
+            if original_event.event_status != self.event_status:
+                self.change_status(self.event_status.id, editor)  # Asegúrate de asignar el editor actual
         else:
             # Si es un nuevo evento, inicializar con el estado 'Creado'
             super(Event, self).save(*args, **kwargs)  # Guardar el evento antes de crear el EventState
             created_status = Status.objects.get_or_create(status_name='Creado')[0]
             EventState.objects.create(event=self, status=created_status)
         super(Event, self).save(*args, **kwargs)
-
-    def __str__(self):
-        return self.title + " - " + self.event_status.status_name
+        print(f"Evento guardado: {self}")
 
 # Modelo para registrar los asistentes al evento
 class EventAttendee(models.Model):
