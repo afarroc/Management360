@@ -14,6 +14,7 @@ from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
 from .forms import EditStatusForm
 from .models import Status
+from django.utils import timezone
 
 # Local imports from .models
 from .models import Project, Task, Event, Status, EventAttendee, EventState, Profile
@@ -290,12 +291,6 @@ def create_event(request):
                         event=new_event
                     )
 
-                # Crear el estado inicial para el evento
-                EventState.objects.create(
-                    event=new_event,
-                    status=initial_status
-                )
-
                 messages.success(request, 'Evento creado con éxito.')
                 return redirect('events')
             except IntegrityError as e:
@@ -315,21 +310,38 @@ def event_detail(request, id):
         'events':events
     })
 
-def event_edit(request, event_id):
-    event = get_object_or_404(Event, pk=event_id)
-    if request.method == 'POST':
-        form = EventEditForm(request.POST, instance=event)
-        if form.is_valid():
-            form.save()
-            print("Guardado")# Redirige a otra página o muestra un mensaje de éxito
+def edit_event(request, event_id=None):
+    if event_id is not None:
+        # Estamos editando un evento existente
+        event = get_object_or_404(Event, pk=event_id)
+        if request.method == 'POST':
+            form = CreateNewEvent(request.POST, instance=event)
+            if form.is_valid():
+                # Asigna el usuario autenticado como el editor
+                event.editor = request.user
+                form.save()
+                messages.success(request, 'Evento guardado con éxito.')
+                return redirect('edit_event')  # Redirige a la página de lista de edición
+            else:
+                messages.error(request, 'Hubo un error al guardar el evento. Por favor, revisa el formulario.')
+        else:
+            form = CreateNewEvent(instance=event)
+        return render(request, 'events/event_edit.html', {'form': form})
     else:
-        print(request.GET)
-        form = EventEditForm(instance=event)
-    return render(request, 'events/event_edit.html', {
-        'form': form
-        })
+        # Estamos manejando una solicitud GET sin argumentos
+        # Verificar el rol del usuario
+        if request.user.profile.role == 'SU':
+            # Si el usuario es un 'SU', puede ver todos los eventos
+            events = Event.objects.all().order_by('-updated_at')
+        else:
+            # Si no, solo puede ver los eventos que le están asignados o a los que asiste
+            events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+        return render(request, 'events/event_list.html', {'events': events})
 
 def change_event_status(request, event_id):
+    if request.method != 'POST':
+        return HttpResponse("Método no permitido", status=405)
+
     # Obtener evento desde el event_id
     print("\n ---- Vista 'Cambio de estado' ----")
     print("Cambiando estado del evento con ID:", str(event_id))
@@ -345,9 +357,21 @@ def change_event_status(request, event_id):
     
     new_status_id = request.POST.get('new_status_id')
     new_status = get_object_or_404(Status, pk=new_status_id)
+    
+    # Finalizar el estado actual
+    current_state = event.eventstate_set.filter(end_time__isnull=True).last()
+    if current_state:
+        current_state.end_time = timezone.now()
+        current_state.save()
+
+    # Crear un nuevo estado con el nuevo estado proporcionado
+    EventState.objects.create(event=event, status=new_status)
+
+    # Actualizar el estado del evento
     event.event_status = new_status
     
     # Guardar cambios
+    print("Guardando...")
     event.save()
     print('Actualizado')
     
@@ -360,8 +384,6 @@ def change_event_status(request, event_id):
     
     # Devolver la redirección a la página de eventos
     return redirect(reverse('events'))
- 
-from django.core.exceptions import PermissionDenied
 
 def delete_event(request, event_id):
     # Asegúrate de que solo se pueda acceder a esta vista mediante POST
@@ -378,8 +400,6 @@ def delete_event(request, event_id):
     else:
         messages.error(request, 'Método no permitido.')
     return redirect(reverse('events'))
-
-
 
 # Panel
 
@@ -481,7 +501,6 @@ class ViewProfileView(View):
             'education': education,
             'skills': skills
         })
-
 
 # Estatuses
 

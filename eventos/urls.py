@@ -10,8 +10,10 @@ urlpatterns = [
     # Eventos
     path('events/', views.events, name="events"),
     path('events/<int:id>', views.event_detail, name="event_detail"),
-    path('create_event/', views.create_event, name="create_event"),
-
+    path('events/create', views.create_event, name="create_event"),
+    path('events/edit/', views.edit_event, name="edit_event"),
+    path('events/edit/<int:event_id>', views.edit_event, name="edit_event"),
+    
     # Proyectos
     path('projects/', views.projects, name="projects"),
     path('projects/<int:id>', views.project_detail, name="project_detail"),
@@ -27,7 +29,7 @@ urlpatterns = [
 
     # Panel
     path('panel/', views.panel, name='panel'),
-    path('panel/event_edit/<int:event_id>/', views.event_edit, name='event_edit'),
+    path('panel/event_edit/<int:event_id>/', views.edit_event, name='event_edit'),
 
     # Sesión
     path('statics/session/signup/', views.signup, name='signup'),
