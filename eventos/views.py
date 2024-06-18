@@ -152,110 +152,123 @@ def create_task(request):
 
 # Events
 
+from django.contrib import messages
+from django.shortcuts import redirect
+
 def events(request):
-
-    # Verificar si el usuario tiene un perfil
-    if hasattr(request.user, 'profile'):
-        # Verificar el rol del usuario
-        if request.user.profile.role == 'SU':
-            # Si el usuario es un 'SU', puede ver todos los eventos
-            events = Event.objects.all().order_by('-updated_at')
+    try:
+        # Aquí va el código para interactuar con la base de datos...
+        # Verificar si el usuario tiene un perfil
+        if hasattr(request.user, 'profile'):
+            # Verificar el rol del usuario
+            if request.user.profile.role == 'SU':
+                # Si el usuario es un 'SU', puede ver todos los eventos
+                events = Event.objects.all().order_by('-updated_at')
+            else:
+                # Si no, solo puede ver los eventos que le están asignados o a los que asiste
+                events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
         else:
-            # Si no, solo puede ver los eventos que le están asignados o a los que asiste
-            events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-    else:
-        # Si el usuario no tiene un perfil, puedes manejarlo de la manera que prefieras.
-        # Por ejemplo, podrías redirigir al usuario a una página de error.
-        return redirect('error_page')
-    
-    statuses = Status.objects.all().order_by('status_name')
+            # Si el usuario no tiene un perfil, puedes manejarlo de la manera que prefieras.
+            # Por ejemplo, podrías redirigir al usuario a una página de error.
+            return redirect('error_page')
 
-    if request.method == 'POST':
-        print("Solicitud POST")
-        print(request.POST)
-        status = request.POST.get('status')
-        date = request.POST.get('date')
-        cerrado = request.POST.get('cerrado')
+        statuses = Status.objects.all().order_by('status_name')
 
-        # Filtrar eventos basados en si están cerrados o no
-        if cerrado:
-            events = events.exclude(event_status_id=3)
-            request.session['filtered_cerrado'] = "true"
-            print("Filtrado por <> cerrado", cerrado)
+        if request.method == 'POST':
+            print("Solicitud POST")
+            print(request.POST)
+            status = request.POST.get('status')
+            date = request.POST.get('date')
+            cerrado = request.POST.get('cerrado')
+
+            # Filtrar eventos basados en si están cerrados o no
+            if cerrado:
+                events = events.exclude(event_status_id=3)
+                request.session['filtered_cerrado'] = "true"
+                print("Filtrado por <> cerrado", cerrado)
+            else:
+                request.session['filtered_cerrado'] = ""
+
+            # Filtrar eventos basados en el estado seleccionado
+            if status:
+                events = events.filter(event_status_id=status)
+                request.session['filtered_status'] = status
+                print("Filtrado por id de estado", status)
+            else:
+                request.session['filtered_status'] = ""
+
+            # Filtrar eventos basados en la fecha seleccionada
+            if date:
+                events = events.filter(created_at__date=date)
+                request.session['filtered_date'] = date
+                print("Filtrado por fecha", date)
+            else:
+                request.session['filtered_date'] = ""
+
+            print("Fin vista Events")
+            return render(request, 'events/events.html', {
+                'events': events,
+                'statuses': statuses,
+            })
+
         else:
-            request.session['filtered_cerrado'] = ""
+            print("Solicitud GET")
+            print(request.GET)
+            status = request.session.get('filtered_status')
+            date = request.session.get('filtered_date')
+            cerrado = request.session.get('filtered_cerrado') == "true"
 
-        # Filtrar eventos basados en el estado seleccionado
-        if status:
-            events = events.filter(event_status_id=status)
-            request.session['filtered_status'] = status
-            print("Filtrado por id de estado", status)
-        else:
-            request.session['filtered_status'] = ""
+            # Filtrar eventos basados en si están cerrados o no
+            if cerrado:
+                events = events.exclude(event_status_id=3)
 
-        # Filtrar eventos basados en la fecha seleccionada
-        if date:
-            events = events.filter(created_at__date=date)
-            request.session['filtered_date'] = date
-            print("Filtrado por fecha", date)
-        else:
-            request.session['filtered_date'] = ""
+            # Filtrar eventos basados en el estado seleccionado
+            if status:
+                events = events.filter(event_status_id=status)
+                print("Filtrado por id de estado", status)
 
-        print("Fin vista Events")
-        return render(request, 'events/events.html', {
-            'events': events,
-            'statuses': statuses,
-        })
+            # Filtrar eventos basados en la fecha seleccionada
+            if date:
+                events = events.filter(created_at__date=date)
+                print("Filtrado por fecha", date)
 
-    else:
-        print("Solicitud GET")
-        print(request.GET)
-        status = request.session.get('filtered_status')
-        date = request.session.get('filtered_date')
-        cerrado = request.session.get('filtered_cerrado') == "true"
-
-        # Filtrar eventos basados en si están cerrados o no
-        if cerrado:
-            events = events.exclude(event_status_id=3)
-
-        # Filtrar eventos basados en el estado seleccionado
-        if status:
-            events = events.filter(event_status_id=status)
-            print("Filtrado por id de estado", status)
-
-        # Filtrar eventos basados en la fecha seleccionada
-        if date:
-            events = events.filter(created_at__date=date)
-            print("Filtrado por fecha", date)
-
-        print(status, date)
-        print("Fin vista Events")
-        return render(request, 'events/events.html', {
-            'events': events,
-            'statuses': statuses,
-        })
+            print(status, date)
+            print("Fin vista Events")
+            return render(request, 'events/events.html', {
+                'events': events,
+                'statuses': statuses,
+            })
+    except Exception as e:
+        # Si ocurre un error, muestra un mensaje de alerta y redirige al usuario a la página de inicio
+        messages.error(request, 'Ha ocurrido un error al obtener los eventos: {}'.format(e))
+        return redirect('index')
 
 @login_required
 def assign_attendee_to_event(request, event_id, user_id):
-    # Obtén el evento y el usuario basado en los IDs proporcionados
-    event = get_object_or_404(Event, pk=event_id)
-    user = get_object_or_404(User, pk=user_id)
+    try:
+        # Obtén el evento y el usuario basado en los IDs proporcionados
+        event = get_object_or_404(Event, pk=event_id)
+        user = get_object_or_404(User, pk=user_id)
 
-    # Crea una nueva instancia de EventAttendee
-    event_attendee, created = EventAttendee.objects.get_or_create(
-        user=user,
-        event=event
-    )
+        # Crea una nueva instancia de EventAttendee
+        event_attendee, created = EventAttendee.objects.get_or_create(
+            user=user,
+            event=event
+        )
 
-    if created:
-        # El asistente fue asignado al evento exitosamente
-        messages.success(request, 'Asistente asignado al evento con éxito.')
-    else:
-        # El asistente ya estaba asignado al evento
-        messages.info(request, 'El asistente ya estaba asignado a este evento.')
+        if created:
+            # El asistente fue asignado al evento exitosamente
+            messages.success(request, 'Asistente asignado al evento con éxito.')
+        else:
+            # El asistente ya estaba asignado al evento
+            messages.info(request, 'El asistente ya estaba asignado a este evento.')
 
-    # Redirige a la página que desees, por ejemplo, la página de detalles del evento
-    return redirect('event_detail', event_id=event_id)
+        # Redirige a la página que desees, por ejemplo, la página de detalles del evento
+        return redirect('event_detail', event_id=event_id)
+    except Exception as e:
+        # Si ocurre un error, muestra un mensaje de alerta y redirige al usuario a la página de inicio
+        messages.error(request, 'Ha ocurrido un error al asignar el asistente al evento: {}'.format(e))
+        return redirect('index')
 
 @login_required
 def create_event(request):
