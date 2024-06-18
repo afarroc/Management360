@@ -154,13 +154,20 @@ def create_task(request):
 
 def events(request):
 
-    # Verificar el rol del usuario
-    if request.user.profile.role == 'SU':
-        # Si el usuario es un 'SU', puede ver todos los eventos
-        events = Event.objects.all().order_by('-updated_at')
+    # Verificar si el usuario tiene un perfil
+    if hasattr(request.user, 'profile'):
+        # Verificar el rol del usuario
+        if request.user.profile.role == 'SU':
+            # Si el usuario es un 'SU', puede ver todos los eventos
+            events = Event.objects.all().order_by('-updated_at')
+        else:
+            # Si no, solo puede ver los eventos que le están asignados o a los que asiste
+            events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
     else:
-        # Si no, solo puede ver los eventos que le están asignados o a los que asiste
-        events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+        # Si el usuario no tiene un perfil, puedes manejarlo de la manera que prefieras.
+        # Por ejemplo, podrías redirigir al usuario a una página de error.
+        return redirect('error_page')
+    
     statuses = Status.objects.all().order_by('status_name')
 
     if request.method == 'POST':
