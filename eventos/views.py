@@ -170,7 +170,7 @@ def events(request):
         else:
             # Si el usuario no tiene un perfil, puedes manejarlo de la manera que prefieras.
             # Por ejemplo, podrías redirigir al usuario a una página de error.
-            return redirect('error_page')
+            return redirect('index')
 
         statuses = Status.objects.all().order_by('status_name')
 
@@ -241,7 +241,7 @@ def events(request):
     except Exception as e:
         # Si ocurre un error, muestra un mensaje de alerta y redirige al usuario a la página de inicio
         messages.error(request, 'Ha ocurrido un error al obtener los eventos: {}'.format(e))
-        return redirect('index/index.html')
+        return redirect('index')
 
 @login_required
 def assign_attendee_to_event(request, event_id, user_id):
