@@ -127,23 +127,30 @@ class Event(models.Model):
         print(f"Registro de edición creado: {event_history}")
 
     def save(self, *args, **kwargs):
+        print("Inicio de save: ")
         editor = kwargs.pop('editor', None)
+        print("Save editor:", editor)
         # ...
         if self.pk:
+            print("inicio edición:" , editor)
+            
             original_event = Event.objects.get(pk=self.pk)
             fields_to_check = ['title', 'description', 'venue', 'host', 'event_category', 'max_attendees', 'ticket_price']
             for field in fields_to_check:
                 original_value = getattr(original_event, field)
                 new_value = getattr(self, field)
                 if original_value != new_value:
+                    (print("hay diferencias:" , str(editor)))
                     self.record_edit(
                         editor=editor,  # Usa el editor proporcionado, si existe
                         field_name=field,
                         old_value=str(original_value),
                         new_value=str(new_value)
                     )
+                    
             # Si el estado del evento ha cambiado, registrar el cambio de estado
             if original_event.event_status != self.event_status:
+                print("Estados diferentes:", editor)
                 self.change_status(self.event_status.id, editor)  # Asegúrate de asignar el editor actual
         else:
             # Si es un nuevo evento, inicializar con el estado 'Creado'

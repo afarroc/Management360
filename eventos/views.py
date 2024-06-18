@@ -319,6 +319,7 @@ def edit_event(request, event_id=None):
             if form.is_valid():
                 # Asigna el usuario autenticado como el editor
                 event.editor = request.user
+                print('gusardando via post si es valido')
                 form.save()
                 messages.success(request, 'Evento guardado con éxito.')
                 return redirect('edit_event')  # Redirige a la página de lista de edición
@@ -339,50 +340,31 @@ def edit_event(request, event_id=None):
         return render(request, 'events/event_list.html', {'events': events})
 
 def change_event_status(request, event_id):
+    # Verificar que la solicitud sea de tipo POST
+    print("Inicio de vista change_event_status")
     if request.method != 'POST':
+        print("solicitud GET")
         return HttpResponse("Método no permitido", status=405)
 
-    # Obtener evento desde el event_id
-    print("\n ---- Vista 'Cambio de estado' ----")
-    print("Cambiando estado del evento con ID:", str(event_id))
-    
-    # Obtener evento
+    # Obtener el evento a partir del ID proporcionado
     event = get_object_or_404(Event, pk=event_id)
-    
-    print("Título:", str(event.title))
-    print("Estado:", str(event.event_status.status_name))
-    
-    # Cambiar al nuevo estado el evento seleccionado
-    print("Nuevo ID de estado:", str(request.POST.get('new_status_id')))
-    
+    print("ID a cambiar", str(event))
+    # Obtener el nuevo estado a partir del ID proporcionado en la solicitud POST
     new_status_id = request.POST.get('new_status_id')
     new_status = get_object_or_404(Status, pk=new_status_id)
-    
-    # Finalizar el estado actual
-    current_state = event.eventstate_set.filter(end_time__isnull=True).last()
-    if current_state:
-        current_state.end_time = timezone.now()
-        current_state.save()
 
-    # Crear un nuevo estado con el nuevo estado proporcionado
-    EventState.objects.create(event=event, status=new_status)
-
-    # Actualizar el estado del evento
+    # Actualizar el estado del evento en el modelo de evento
     event.event_status = new_status
-    
-    # Guardar cambios
-    print("Guardando...")
-    event.save()
-    print('Actualizado')
-    
-    # Guardar el estado del filtro en la sesión
 
+    # Verificar que request.user no sea None
+    if request.user is None:
+        return HttpResponse("Usuario no autenticado", status=401)
+    
+    # Guardar el evento con el editor actual (usuario que realiza la solicitud)
+    print("intentando guardar el evento:", str(request.user))
+    event.save(editor=request.user)
 
-    print("---- Fin de vista 'cambio de estado' ----\n")
-    
-    print("contenido de post antes de redireccionar: ", request.POST )
-    
-    # Devolver la redirección a la página de eventos
+    # Redirigir al usuario a la página de eventos
     return redirect(reverse('events'))
 
 def delete_event(request, event_id):
