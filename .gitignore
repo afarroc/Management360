@@ -1,4 +1,3 @@
-.class
-!venv_django/
-venv_django/
-venv_django/*
+db.sqlite3
+venv_django
+__pycache__
