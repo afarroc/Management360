@@ -10,6 +10,9 @@
   </div>
 {% endif %}
 
+{% if events %}
+    <!-- Aquí va el código para mostrar los eventos -->
+
 <div class="container my-3">
   <h3 class="text-center">Events</h3>
 </div>
@@ -98,5 +101,9 @@
 	</div>
 	{% endfor %}
 </div>
-
+{% else %}
+<div class="container my-3">
+	<p>No hay eventos para mostrar.</p>
+</div>
+{% endif %}
 {% endblock %}
