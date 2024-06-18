@@ -209,7 +209,7 @@ def events(request):
 
         # Filtrar eventos basados en si están cerrados o no
         if cerrado:
-            events = events.exclude(event_status_id=2)
+            events = events.exclude(event_status_id=3)
 
         # Filtrar eventos basados en el estado seleccionado
         if status:
@@ -404,7 +404,7 @@ def delete_event(request, event_id):
 
 def panel(request):
     events = Event.objects.all().order_by('-created_at')
-    #events = events.filter(event_status_id = 5)
+    #events = events.filter(event_status_id = 2)
     return render(request, 'panel/panel.html', {'events': events})    
 
 # Vistas para perfil de usuario
