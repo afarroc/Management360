@@ -241,7 +241,7 @@ def events(request):
     except Exception as e:
         # Si ocurre un error, muestra un mensaje de alerta y redirige al usuario a la página de inicio
         messages.error(request, 'Ha ocurrido un error al obtener los eventos: {}'.format(e))
-        return redirect('index')
+        return redirect('index/index.html')
 
 @login_required
 def assign_attendee_to_event(request, event_id, user_id):
