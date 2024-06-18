@@ -209,7 +209,7 @@ def events(request):
 
         # Filtrar eventos basados en si están cerrados o no
         if cerrado:
-            events = events.exclude(event_status_id=3)
+            events = events.exclude(event_status_id=2)
 
         # Filtrar eventos basados en el estado seleccionado
         if status:
@@ -256,7 +256,7 @@ def create_event(request):
         default = {
             'assigned_to': request.user.id,
             'host': request.user.id,  # El host por defecto es el usuario actual
-            'event_status': Status.objects.get(id='16').id  # El estado por defecto es 16
+            'event_status': Status.objects.get(id='1').id  # El estado por defecto es 16
         }
         form = CreateNewEvent(initial=default)
     else:
@@ -270,7 +270,7 @@ def create_event(request):
                     initial_status_id = request.POST.get('event_status')
                     print(initial_status_id)
                 else:
-                    initial_status_id = '16'
+                    initial_status_id = '1'
                 initial_status = Status.objects.get(id=initial_status_id)
 
                 # Crear el evento con los datos validados del formulario
