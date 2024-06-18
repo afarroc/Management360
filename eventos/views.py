@@ -320,7 +320,19 @@ def edit_event(request, event_id=None):
                 # Asigna el usuario autenticado como el editor
                 event.editor = request.user
                 print('gusardando via post si es valido')
+                
+                # Guardar el evento con el editor actual (usuario que realiza la solicitud)
+                for field in form.changed_data:
+                    old_value = getattr(event, field)
+                    new_value = form.cleaned_data.get(field)
+                    event.record_edit(
+                        editor=request.user,
+                        field_name=field,
+                        old_value=str(old_value),
+                        new_value=str(new_value)
+                    )
                 form.save()
+                
                 messages.success(request, 'Evento guardado con éxito.')
                 return redirect('edit_event')  # Redirige a la página de lista de edición
             else:
@@ -353,19 +365,24 @@ def change_event_status(request, event_id):
     new_status_id = request.POST.get('new_status_id')
     new_status = get_object_or_404(Status, pk=new_status_id)
 
-    # Actualizar el estado del evento en el modelo de evento
-    event.event_status = new_status
-
     # Verificar que request.user no sea None
     if request.user is None:
         return HttpResponse("Usuario no autenticado", status=401)
-    
-    # Guardar el evento con el editor actual (usuario que realiza la solicitud)
-    print("intentando guardar el evento:", str(request.user))
-    event.save(editor=request.user)
+
+    # Cambiar el estado del evento
+    old_status = event.event_status
+
+    # Registrar el cambio de estado
+    event.record_edit(
+        editor=request.user,
+        field_name='event_status',
+        old_value=str(old_status),
+        new_value=str(new_status)
+    )
 
     # Redirigir al usuario a la página de eventos
     return redirect(reverse('events'))
+
 
 def delete_event(request, event_id):
     # Asegúrate de que solo se pueda acceder a esta vista mediante POST
