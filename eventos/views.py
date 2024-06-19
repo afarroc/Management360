@@ -270,6 +270,7 @@ def assign_attendee_to_event(request, event_id, user_id):
         messages.error(request, 'Ha ocurrido un error al asignar el asistente al evento: {}'.format(e))
         return redirect('index')
 
+
 from django.core.exceptions import ObjectDoesNotExist
 
 @login_required
@@ -287,7 +288,7 @@ def create_event(request):
             if form.is_valid():
                 try:
                     # Determinar el estado inicial basado en la solicitud
-                    if 'inbound' in request.POST or request.user.profile.role == 'SU':
+                    if 'inbound' in request.POST or (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU'):
                         print(request.POST)
                         initial_status_id = request.POST.get('event_status')
                         print(initial_status_id)
@@ -299,7 +300,7 @@ def create_event(request):
                     new_event = form.save(commit=False)
                     new_event.event_status = initial_status
                     new_event.host = request.user  # El host es siempre el creador del evento
-                    if request.user.profile.role != 'SU':
+                    if not hasattr(request.user, 'profile') or not hasattr(request.user.profile, 'role') or request.user.profile.role != 'SU':
                         new_event.assigned_to = request.user  # Establecer automáticamente assigned_to como el usuario actual si el usuario no es un 'SU'
                     new_event.save()
 
@@ -323,12 +324,15 @@ def create_event(request):
                         messages.error(request, f'Error en el campo {field}: {error}')
 
         return render(request, 'events/create_event.html', {'form': form})
+    
     except ObjectDoesNotExist:
         messages.error(request, 'El objeto solicitado no existe.')
         return redirect('index')
     except Exception as e:
         messages.error(request, f'Ha ocurrido un error inesperado: {e}')
         return redirect('index')
+
+
 
 def event_detail(request, id):
     event = get_object_or_404(Event, id=id)
