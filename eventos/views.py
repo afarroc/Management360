@@ -195,6 +195,7 @@ def events(request):
             except Status.DoesNotExist:
                 print('El estado "Cerrado" no existe.')
 
+            # El resto del código sigue aquí...
 
             # Filtrar eventos basados en el estado seleccionado
             if status:
