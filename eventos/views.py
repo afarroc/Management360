@@ -218,19 +218,23 @@ def events(request):
             date = request.session.get('filtered_date')
             cerrado = request.session.get('filtered_cerrado') == "true"
 
-            # Filtrar eventos basados en si están cerrados o no
-            if cerrado:
-                events = events.exclude(event_status_id=3)
+            try:
+                # Filtrar eventos basados en si están cerrados o no
+                if cerrado:
+                    events = events.exclude(event_status_id=3)
 
-            # Filtrar eventos basados en el estado seleccionado
-            if status:
-                events = events.filter(event_status_id=status)
-                print("Filtrado por id de estado", status)
+                # Filtrar eventos basados en el estado seleccionado
+                if status:
+                    events = events.filter(event_status_id=status)
+                    print("Filtrado por id de estado", status)
 
-            # Filtrar eventos basados en la fecha seleccionada
-            if date:
-                events = events.filter(created_at__date=date)
-                print("Filtrado por fecha", date)
+                # Filtrar eventos basados en la fecha seleccionada
+                if date:
+                    events = events.filter(created_at__date=date)
+                    print("Filtrado por fecha", date)
+            except Exception as e:
+                messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
+                return redirect('index')
 
             print(status, date)
             print("Fin vista Events")
@@ -238,6 +242,7 @@ def events(request):
                 'events': events,
                 'statuses': statuses,
             })
+
     except Exception as e:
         # Si ocurre un error, muestra un mensaje de alerta y redirige al usuario a la página de inicio
         messages.error(request, 'Ha ocurrido un error al obtener los eventos: {}'.format(e))
