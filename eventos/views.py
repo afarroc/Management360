@@ -220,7 +220,7 @@ def events(request):
             try:
                 # Filtrar eventos basados en si están cerrados o no
                 if cerrado:
-                    events = events.exclude(event_status_id='3')
+                    events = events.exclude(event_status_id=3)
 
                 # Filtrar eventos basados en el estado seleccionado
                 if status:
