@@ -181,13 +181,20 @@ def events(request):
             date = request.POST.get('date')
             cerrado = request.POST.get('cerrado')
 
-            # Filtrar eventos basados en si están cerrados o no
-            if cerrado:
-                events = events.exclude(event_status_id=3)
-                request.session['filtered_cerrado'] = "true"
-                print("Filtrado por <> cerrado", cerrado)
-            else:
-                request.session['filtered_cerrado'] = ""
+            try:
+                # Obtén el estado 'Cerrado'
+                status_cerrado = Status.objects.get(status_name='Cerrado')
+
+                # Filtrar eventos basados en si están cerrados o no
+                if cerrado:
+                    events = events.exclude(event_status_id=status_cerrado.id)
+                    request.session['filtered_cerrado'] = "true"
+                    print("Filtrado por <> cerrado", cerrado)
+                else:
+                    request.session['filtered_cerrado'] = ""
+            except Status.DoesNotExist:
+                print('El estado "Cerrado" no existe.')
+
 
             # Filtrar eventos basados en el estado seleccionado
             if status:
