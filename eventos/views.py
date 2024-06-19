@@ -329,7 +329,6 @@ def create_event(request):
                         return redirect('index')
                     
                     # El resto de tu código sigue aquí...
-
                     
                     # Crear el evento con los datos validados del formulario
                     new_event = form.save(commit=False)
@@ -376,46 +375,58 @@ def event_detail(request, id):
         'events':events
     })
 
+from django.http import Http404
+
 def edit_event(request, event_id=None):
-    if event_id is not None:
-        # Estamos editando un evento existente
-        event = get_object_or_404(Event, pk=event_id)
-        if request.method == 'POST':
-            form = CreateNewEvent(request.POST, instance=event)
-            if form.is_valid():
-                # Asigna el usuario autenticado como el editor
-                event.editor = request.user
-                print('gusardando via post si es valido')
-                
-                # Guardar el evento con el editor actual (usuario que realiza la solicitud)
-                for field in form.changed_data:
-                    old_value = getattr(event, field)
-                    new_value = form.cleaned_data.get(field)
-                    event.record_edit(
-                        editor=request.user,
-                        field_name=field,
-                        old_value=str(old_value),
-                        new_value=str(new_value)
-                    )
-                form.save()
-                
-                messages.success(request, 'Evento guardado con éxito.')
-                return redirect('edit_event')  # Redirige a la página de lista de edición
+    try:
+        if event_id is not None:
+            # Estamos editando un evento existente
+            try:
+                event = get_object_or_404(Event, pk=event_id)
+            except Http404:
+                messages.error(request, 'El evento con el ID "{}" no existe.'.format(event_id))
+                return redirect('index')
+
+            if request.method == 'POST':
+                form = CreateNewEvent(request.POST, instance=event)
+                if form.is_valid():
+                    # Asigna el usuario autenticado como el editor
+                    event.editor = request.user
+                    print('gusardando via post si es valido')
+
+                    # Guardar el evento con el editor actual (usuario que realiza la solicitud)
+                    for field in form.changed_data:
+                        old_value = getattr(event, field)
+                        new_value = form.cleaned_data.get(field)
+                        event.record_edit(
+                            editor=request.user,
+                            field_name=field,
+                            old_value=str(old_value),
+                            new_value=str(new_value)
+                        )
+                    form.save()
+
+                    messages.success(request, 'Evento guardado con éxito.')
+                    return redirect('edit_event')  # Redirige a la página de lista de edición
+                else:
+                    messages.error(request, 'Hubo un error al guardar el evento. Por favor, revisa el formulario.')
             else:
-                messages.error(request, 'Hubo un error al guardar el evento. Por favor, revisa el formulario.')
+                form = CreateNewEvent(instance=event)
+            return render(request, 'events/event_edit.html', {'form': form})
         else:
-            form = CreateNewEvent(instance=event)
-        return render(request, 'events/event_edit.html', {'form': form})
-    else:
-        # Estamos manejando una solicitud GET sin argumentos
-        # Verificar el rol del usuario
-        if request.user.profile.role == 'SU':
-            # Si el usuario es un 'SU', puede ver todos los eventos
-            events = Event.objects.all().order_by('-updated_at')
-        else:
-            # Si no, solo puede ver los eventos que le están asignados o a los que asiste
-            events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-        return render(request, 'events/event_list.html', {'events': events})
+            # Estamos manejando una solicitud GET sin argumentos
+            # Verificar el rol del usuario
+            if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
+                # Si el usuario es un 'SU', puede ver todos los eventos
+                events = Event.objects.all().order_by('-updated_at')
+            else:
+                # Si no, solo puede ver los eventos que le están asignados o a los que asiste
+                events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+            return render(request, 'events/event_list.html', {'events': events})
+    except Exception as e:
+        messages.error(request, 'Ha ocurrido un error: {}'.format(e))
+        return redirect('index')
+
 
 def change_event_status(request, event_id):
     # Verificar que la solicitud sea de tipo POST
