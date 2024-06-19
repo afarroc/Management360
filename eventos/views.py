@@ -282,12 +282,20 @@ from django.core.exceptions import ObjectDoesNotExist
 def create_event(request):
     try:
         if request.method == 'GET':
+            try:
+                default_status = Status.objects.get(name='Creado').id
+            except Status.DoesNotExist:
+                messages.error(request, 'El estado "Creado" no existe. ')
+                return redirect('index')
+
             default = {
                 'assigned_to': request.user.id,
-                'host': request.user.id,  # El host por defecto es el usuario actual
-                'event_status': Status.objects.get(id='1').id  # El estado por defecto es 16
+                'host': request.user.id,
+                'event_status': default_status
             }
             form = CreateNewEvent(initial=default)
+            # El resto del código sigue aquí...
+
         else:
             form = CreateNewEvent(request.POST)
             if form.is_valid():
