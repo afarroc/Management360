@@ -446,19 +446,24 @@ def change_event_status(request, event_id):
     if request.user is None:
         return HttpResponse("Usuario no autenticado", status=401)
 
-    # Cambiar el estado del evento
-    old_status = event.event_status
+    # Verificar que el evento tiene un host antes de intentar acceder a él
+    if event.host is not None and (event.host == request.user or request.user in event.attendees.all()):
+        # Cambiar el estado del evento
+        old_status = event.event_status
 
-    # Registrar el cambio de estado
-    event.record_edit(
-        editor=request.user,
-        field_name='event_status',
-        old_value=str(old_status),
-        new_value=str(new_status)
-    )
+        # Registrar el cambio de estado
+        event.record_edit(
+            editor=request.user,
+            field_name='event_status',
+            old_value=str(old_status),
+            new_value=str(new_status)
+        )
+    else:
+        return HttpResponse("No tienes permiso para editar este evento", status=403)
 
     # Redirigir al usuario a la página de eventos
     return redirect(reverse('events'))
+
 
 
 def delete_event(request, event_id):
