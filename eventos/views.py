@@ -150,12 +150,18 @@ def create_task(request):
 
     return render(request, 'tasks/create_task.html', {'form': form})
 
+
 # Events
 
 from django.contrib import messages
 from django.shortcuts import redirect
 
 def events(request):
+    
+    cerrado = request.session.get('filtered_cerrado', None)  # Obtiene 'filtered_cerrado' de la sesión
+    status = request.session.get('filtered_status', None)  # Obtiene 'filtered_status' de la sesión
+    date = request.session.get('filtered_date', None)  # Obtiene 'filtered_date' de la sesión
+    
     try:
         # Aquí va el código para interactuar con la base de datos...
         # Verificar si el usuario tiene un perfil
