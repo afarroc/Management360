@@ -270,58 +270,65 @@ def assign_attendee_to_event(request, event_id, user_id):
         messages.error(request, 'Ha ocurrido un error al asignar el asistente al evento: {}'.format(e))
         return redirect('index')
 
+from django.core.exceptions import ObjectDoesNotExist
+
 @login_required
 def create_event(request):
-    if request.method == 'GET':
-        default = {
-            'assigned_to': request.user.id,
-            'host': request.user.id,  # El host por defecto es el usuario actual
-            'event_status': Status.objects.get(id='1').id  # El estado por defecto es 16
-        }
-        form = CreateNewEvent(initial=default)
-    else:
-        form = CreateNewEvent(request.POST)
-        if form.is_valid():
-            try:
-                # Determinar el estado inicial basado en la solicitud
-                # Determinar el estado inicial basado en la solicitud
-                if 'inbound' in request.POST or request.user.profile.role == 'SU':
-                    print(request.POST)
-                    initial_status_id = request.POST.get('event_status')
-                    print(initial_status_id)
-                else:
-                    initial_status_id = '1'
-                initial_status = Status.objects.get(id=initial_status_id)
-
-                # Crear el evento con los datos validados del formulario
-                new_event = form.save(commit=False)
-                new_event.event_status = initial_status
-                new_event.host = request.user  # El host es siempre el creador del evento
-                if request.user.profile.role != 'SU':
-                    new_event.assigned_to = request.user  # Establecer automáticamente assigned_to como el usuario actual si el usuario no es un 'SU'
-                new_event.save()
-
-                # Si el usuario es un supervisor, puede asignar el evento a cualquier usuario
-                # if request.user.profile.role == 'SU':
-                attendees = form.cleaned_data.get('attendees')
-                for attendee in attendees:
-                    # Asignar el usuario asignado como atendedor
-                    EventAttendee.objects.create(
-                        user=attendee,
-                        event=new_event
-                    )
-
-                messages.success(request, 'Evento creado con éxito.')
-                return redirect('events')
-            except IntegrityError as e:
-                messages.error(request, f'Hubo un error al crear el evento: {e}')
+    try:
+        if request.method == 'GET':
+            default = {
+                'assigned_to': request.user.id,
+                'host': request.user.id,  # El host por defecto es el usuario actual
+                'event_status': Status.objects.get(id='1').id  # El estado por defecto es 16
+            }
+            form = CreateNewEvent(initial=default)
         else:
-            # Si el formulario no es válido, agregar los errores del formulario a los mensajes
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'Error en el campo {field}: {error}')
+            form = CreateNewEvent(request.POST)
+            if form.is_valid():
+                try:
+                    # Determinar el estado inicial basado en la solicitud
+                    if 'inbound' in request.POST or request.user.profile.role == 'SU':
+                        print(request.POST)
+                        initial_status_id = request.POST.get('event_status')
+                        print(initial_status_id)
+                    else:
+                        initial_status_id = '1'
+                    initial_status = Status.objects.get(id=initial_status_id)
 
-    return render(request, 'events/create_event.html', {'form': form})
+                    # Crear el evento con los datos validados del formulario
+                    new_event = form.save(commit=False)
+                    new_event.event_status = initial_status
+                    new_event.host = request.user  # El host es siempre el creador del evento
+                    if request.user.profile.role != 'SU':
+                        new_event.assigned_to = request.user  # Establecer automáticamente assigned_to como el usuario actual si el usuario no es un 'SU'
+                    new_event.save()
+
+                    # Si el usuario es un supervisor, puede asignar el evento a cualquier usuario
+                    attendees = form.cleaned_data.get('attendees')
+                    for attendee in attendees:
+                        # Asignar el usuario asignado como atendedor
+                        EventAttendee.objects.create(
+                            user=attendee,
+                            event=new_event
+                        )
+
+                    messages.success(request, 'Evento creado con éxito.')
+                    return redirect('events')
+                except IntegrityError as e:
+                    messages.error(request, f'Hubo un error al crear el evento: {e}')
+            else:
+                # Si el formulario no es válido, agregar los errores del formulario a los mensajes
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f'Error en el campo {field}: {error}')
+
+        return render(request, 'events/create_event.html', {'form': form})
+    except ObjectDoesNotExist:
+        messages.error(request, 'El objeto solicitado no existe.')
+        return redirect('index')
+    except Exception as e:
+        messages.error(request, f'Ha ocurrido un error inesperado: {e}')
+        return redirect('index')
 
 def event_detail(request, id):
     event = get_object_or_404(Event, id=id)
