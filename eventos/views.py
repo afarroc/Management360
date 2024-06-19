@@ -170,8 +170,8 @@ def events(request):
         else:
             # Si el usuario no tiene un perfil, puedes manejarlo de la manera que prefieras.
             # Por ejemplo, podrías redirigir al usuario a una página de error.
-            return redirect('index')
-
+            events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+        
         statuses = Status.objects.all().order_by('status_name')
 
         if request.method == 'POST':
@@ -212,8 +212,7 @@ def events(request):
             })
 
         else:
-            print("Solicitud GET")
-            print(request.GET)
+            
             status = request.session.get('filtered_status')
             date = request.session.get('filtered_date')
             cerrado = request.session.get('filtered_cerrado') == "true"
@@ -221,7 +220,7 @@ def events(request):
             try:
                 # Filtrar eventos basados en si están cerrados o no
                 if cerrado:
-                    events = events.exclude(event_status_id=3)
+                    events = events.exclude(event_status_id='3')
 
                 # Filtrar eventos basados en el estado seleccionado
                 if status:
@@ -232,6 +231,7 @@ def events(request):
                 if date:
                     events = events.filter(created_at__date=date)
                     print("Filtrado por fecha", date)
+                    
             except Exception as e:
                 messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
                 return redirect('index')
