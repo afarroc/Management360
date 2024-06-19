@@ -302,13 +302,16 @@ def create_event(request):
                 try:
                     # Determinar el estado inicial basado en la solicitud
                     if 'inbound' in request.POST or (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU'):
-                        print(request.POST)
                         initial_status_id = request.POST.get('event_status')
-                        print(initial_status_id)
                     else:
-                        initial_status_id = '1'
-                    initial_status = Status.objects.get(id=initial_status_id)
+                        initial_status_id = 'Creado'
 
+                    try:
+                        initial_status = Status.objects.get(status_name=initial_status_id)
+                    except Status.DoesNotExist:
+                        messages.error(request, f'El estado "{initial_status_id}" no existe.')
+                        return redirect('index')
+                    
                     # Crear el evento con los datos validados del formulario
                     new_event = form.save(commit=False)
                     new_event.event_status = initial_status
