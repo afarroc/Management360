@@ -213,14 +213,13 @@ def events(request):
 
         else:
             
-            status = request.session.get('filtered_status')
-            date = request.session.get('filtered_date')
-            cerrado = request.session.get('filtered_cerrado') == "true"
-
             try:
+                # Obtén el estado 'Cerrado'
+                status_cerrado = Status.objects.get(status_name='Cerrado')
+
                 # Filtrar eventos basados en si están cerrados o no
                 if cerrado:
-                    events = events.exclude(event_status_id=3)
+                    events = events.exclude(event_status_id=status_cerrado.id)
 
                 # Filtrar eventos basados en el estado seleccionado
                 if status:
@@ -232,6 +231,9 @@ def events(request):
                     events = events.filter(created_at__date=date)
                     print("Filtrado por fecha", date)
                     
+            except Status.DoesNotExist:
+                print('El estado "Cerrado" no existe.')
+                
             except Exception as e:
                 messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
                 return redirect('index')
