@@ -84,6 +84,8 @@ WSGI_APPLICATION = 'panel.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
+
+
 """ 
 DATABASES = {
     'default': {
@@ -91,32 +93,32 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'projects',
-        'USER': 'admin',
-        'PASSWORD': 'Admin+123',
-        'HOST': '192.168.18.40',   # O la IP de tu servidor de base de datos
-        'PORT': '3306',        # El puerto por defecto de MySQL es el 3306,
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        },
-    }
-}
 """
+
+import os
 import dj_database_url
 
-# Database documentation https://docs.djangoproject.com/en/5.0/ref/settings/#databases
-
-DATABASES = {
-    'default': dj_database_url.config(
-        # Replace this value with your local database's connection string.
-        default='postgresql://postgres:postgres@localhost:5432/mysite',
-        conn_max_age=600
-    )
-}
+if os.getenv('DJANGO_DEVELOPMENT') == 'true':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'projects',
+            'USER': 'admin',
+            'PASSWORD': 'Admin+123',
+            'HOST': '192.168.18.40',
+            'PORT': '3306',
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+            },
+        }
+    }
+else:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default='postgresql://postgres:postgres@localhost:5432/mysite',
+            conn_max_age=600
+        )
+    }
 
 
 # Password validation
