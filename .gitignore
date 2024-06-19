@@ -1,3 +1,8 @@
+# Ignora la base de datos SQLite
 db.sqlite3
-venv_django
-__pycache__
+
+# Ignora el entorno virtual
+venv_django/
+
+# Ignora todos los directorios __pycache__
+__pycache__/
