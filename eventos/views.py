@@ -283,7 +283,7 @@ def create_event(request):
     try:
         if request.method == 'GET':
             try:
-                default_status = Status.objects.get(name='Creado').id
+                default_status = Status.objects.get(status_name='Creado').id
             except Status.DoesNotExist:
                 messages.error(request, 'El estado "Creado" no existe. ')
                 return redirect('index')
