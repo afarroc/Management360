@@ -63,7 +63,7 @@ class EventHistory(models.Model):
     new_value = models.TextField(null=True, blank=True)
 
     def __str__(self):
-        return f"{self.event.title} - {self.field_name} editado por {self.editor.username}"
+        return f"{self.event.id} - {self.field_name} - {self.editor.username} : - ({self.old_value} - {self.new_value})"
 
 class Tag(models.Model):
     name = models.CharField(max_length=50)
@@ -122,7 +122,6 @@ class Event(models.Model):
         if field_name == 'event_status':
             new_status = Status.objects.get(status_name=new_value)
             self.change_status(new_status.id)
-
 
 # Modelo para registrar los asistentes al evento
 class EventAttendee(models.Model):
