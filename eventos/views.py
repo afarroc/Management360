@@ -427,6 +427,7 @@ def edit_event(request, event_id=None):
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
 
+from django.template.loader import render_to_string
 
 def change_event_status(request, event_id):
     # Verificar que la solicitud sea de tipo POST
@@ -463,9 +464,14 @@ def change_event_status(request, event_id):
         )
     else:
         return HttpResponse("No tienes permiso para editar este evento", status=403)
+    
 
     # Redirigir al usuario a la página de eventos
-    return redirect(reverse('events'))
+    message_html = render_to_string('message_container.html', {'messages': messages})
+    event_card_html = render_to_string('event_card.html', {'event': event})
+
+    # Devolver el HTML en la respuesta
+    return JsonResponse({'message_html': message_html, 'event_card_html': event_card_html})
 
 
 
