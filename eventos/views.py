@@ -434,22 +434,25 @@ def change_event_status(request, event_id):
     if request.method != 'POST':
         print("solicitud GET")
         return HttpResponse("Método no permitido", status=405)
-
+    print("solicitud Post")
     # Obtener el evento a partir del ID proporcionado
     event = get_object_or_404(Event, pk=event_id)
-    print("ID a cambiar", str(event))
+    print("ID a cambiar:", str(event.id))
     # Obtener el nuevo estado a partir del ID proporcionado en la solicitud POST
     new_status_id = request.POST.get('new_status_id')
     new_status = get_object_or_404(Status, pk=new_status_id)
-
+    print("new_status_id", str(new_status))
     # Verificar que request.user no sea None
     if request.user is None:
-        return HttpResponse("Usuario no autenticado", status=401)
+        print("User is none: Usuario no autenticado")
+        messages.error(request, "User is none: Usuario no autenticado")
+        return redirect('index')
 
     # Verificar que el evento tiene un host antes de intentar acceder a él
     if event.host is not None and (event.host == request.user or request.user in event.attendees.all()):
         # Cambiar el estado del evento
         old_status = event.event_status
+        print("old_status:", old_status)
 
         # Registrar el cambio de estado
         event.record_edit(
