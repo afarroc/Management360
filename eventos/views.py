@@ -1,33 +1,29 @@
 # Django imports
-from django.http import HttpResponse, JsonResponse, HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render, redirect
-from django.urls import reverse
-from django.contrib.auth import login, logout, authenticate
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.forms import formset_factory
-from django.views import View
-from django.contrib import messages
-from django.shortcuts import render, get_object_or_404, redirect
-from .forms import EditStatusForm
-from .models import Status
+from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
-
-# Local imports from .models
-from .models import Project, Task, Event, Status, EventAttendee, EventState, Profile
+from django.views import View
 
 # Local imports from .forms
-from .forms import (
-    CreateNewTask, CreateNewProject, CreateNewEvent, EventEditForm,
-    ProfileForm, ExperienceForm, EducationForm, SkillForm
-)
-
-ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
+from .forms import (CreateNewEvent, CreateNewProject, CreateNewTask, EducationForm, EventEditForm, ExperienceForm, ProfileForm, SkillForm)
 EducationFormSet = formset_factory(EducationForm, extra=1, can_delete=True)
+ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
 SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
+
+# Local imports from .models
+from .models import Event, EventAttendee, EventState, Profile, Project, Status, Task
+
 # Create your views here.
 
 # Principal
@@ -150,11 +146,9 @@ def create_task(request):
 
     return render(request, 'tasks/create_task.html', {'form': form})
 
-
 # Events
 
-from django.contrib import messages
-from django.shortcuts import redirect
+
 
 def events(request):
     
@@ -291,9 +285,6 @@ def assign_attendee_to_event(request, event_id, user_id):
         messages.error(request, 'Ha ocurrido un error al asignar el asistente al evento: {}'.format(e))
         return redirect('index')
 
-
-from django.core.exceptions import ObjectDoesNotExist
-
 @login_required
 def create_event(request):
     try:
@@ -366,16 +357,12 @@ def create_event(request):
         messages.error(request, f'Ha ocurrido un error inesperado: {e}')
         return redirect('index')
 
-
-
 def event_detail(request, id):
     event = get_object_or_404(Event, id=id)
     return render(request, 'events/detail.html', {
         'event' :event,
         'events':events
     })
-
-from django.http import Http404
 
 def edit_event(request, event_id=None):
     try:
@@ -427,8 +414,6 @@ def edit_event(request, event_id=None):
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
 
-from django.template.loader import render_to_string
-
 def change_event_status(request, event_id):
     # Verificar que la solicitud sea de tipo POST
     print("Inicio de vista change_event_status")
@@ -472,8 +457,6 @@ def change_event_status(request, event_id):
 
     # Devolver el HTML en la respuesta
     return JsonResponse({'message_html': message_html, 'event_card_html': event_card_html})
-
-
 
 def delete_event(request, event_id):
     # Asegúrate de que solo se pueda acceder a esta vista mediante POST
