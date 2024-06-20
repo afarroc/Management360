@@ -434,7 +434,7 @@ def change_event_status(request, event_id):
     if request.method != 'POST':
         print("solicitud GET")
         return HttpResponse("Método no permitido", status=405)
-    print("solicitud Post")
+    print("solicitud Post:", request.POST)
     # Obtener el evento a partir del ID proporcionado
     event = get_object_or_404(Event, pk=event_id)
     print("ID a cambiar:", str(event.id))
