@@ -187,7 +187,7 @@ def get_upload_path(instance, filename):
     # Obtiene la extensión del archivo
     ext = filename.split('.')[-1]
     # Crea la ruta según la extensión
-    path = f'media/documents/{ext}/' if ext in ['pdf', 'docx', 'ppt'] else f'media/images/{ext}/'
+    path = f'documents/{ext}/' if ext in ['pdf', 'docx', 'ppt'] else f'images/{ext}/'
     # Retorna la ruta completa con el nombre del archivo
     return os.path.join(path, filename)
 
