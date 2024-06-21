@@ -53,5 +53,5 @@ urlpatterns = [
     # Document viewer
     path('documents/docsview/', views.document_view, name='docsview'),
     path('documents/docupload/', views.upload_document, name='docupload'),
-
+    path('documents/delete/<int:document_id>/', views.delete_document, name='delete_document'),
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

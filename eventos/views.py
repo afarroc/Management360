@@ -605,31 +605,26 @@ def status_list(request):
 
 # Document viewer
 
-from django.shortcuts import render
-from .models import Document
+
 from .forms import DocumentForm
-from django.views.decorators.clickjacking import xframe_options_exempt
+from .models import Document
+from django.shortcuts import get_object_or_404, render, redirect
+from django.contrib import messages
 
-class NoDocumentsException(Exception):
-    pass
-
-@xframe_options_exempt
 def document_view(request):
-    if request.method == 'POST':
-        form = DocumentForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-    else:
-        form = DocumentForm()
-
     documents = Document.objects.all()
-    if not documents:
-        try:
-            raise NoDocumentsException("No hay documentos disponibles.")
-        except NoDocumentsException as e:
-            return render(request, 'documents/docsview.html', {'form': form, 'error_message': str(e)})
-        
-    return render(request, 'documents/docsview.html', {'form': form, 'documents': documents})
+    return render(request, 'documents/docsview.html', {'documents': documents})
+
+def delete_document(request, document_id):
+    document = get_object_or_404(Document, id=document_id)
+    if request.method == 'POST':
+        document.upload.delete()  # Esto elimina el archivo del sistema de archivos.
+        document.delete()         # Esto elimina la instancia del modelo de la base de datos.
+        messages.success(request, 'El documento ha sido eliminado exitosamente.')
+        return redirect('docsview')
+    else:
+        # Si no es una solicitud POST, muestra la página de confirmación.
+        return render(request, 'documents/confirmar_eliminacion.html', {'document': document})
 
 
 def upload_document(request):
