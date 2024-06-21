@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Task, Event, Profile, Experience, Education, Skill, Status
+from .models import Task, Event, Profile, Experience, Education, Skill, Status, Document
 
 class CreateNewEvent(forms.ModelForm):
     title = forms.CharField(max_length=200)
@@ -79,3 +79,8 @@ class EditStatusForm(forms.ModelForm):
     class Meta:
         model = Status
         fields = ['status_name', 'icon', 'active', 'color']
+
+class DocumentForm(forms.ModelForm):
+    class Meta:
+        model = Document
+        fields = ('upload', )
