@@ -605,35 +605,72 @@ def status_list(request):
 
 # Document viewer
 
-
+from django.views.generic import FormView
+from .forms import DocumentForm, ImageForm
+from .models import Document, Image
+from django.urls import reverse_lazy
 from .forms import DocumentForm
 from .models import Document
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib import messages
 
 def document_view(request):
-    documents = Document.objects.all()
-    return render(request, 'documents/docsview.html', {'documents': documents})
+    documents = Document.objects.all()  # Obtiene todos los documentos
+    images = Image.objects.all()        # Obtiene todas las imágenes
+    context = {
+        'documents': documents,
+        'images': images
+    }
+    return render(request, 'documents/docsview.html', context)
 
-def delete_document(request, document_id):
-    document = get_object_or_404(Document, id=document_id)
+
+from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib import messages
+from .models import Document, Image  # Asegúrate de importar el modelo Image
+
+def delete_file(request, file_id, file_type):
+    if file_type == 'document':
+        file_model = Document
+    elif file_type == 'image':
+        file_model = Image
+    else:
+        messages.error(request, 'Tipo de archivo no válido.')
+        return redirect('docsview')
+
+    file_instance = get_object_or_404(file_model, id=file_id)
     if request.method == 'POST':
-        document.upload.delete()  # Esto elimina el archivo del sistema de archivos.
-        document.delete()         # Esto elimina la instancia del modelo de la base de datos.
-        messages.success(request, 'El documento ha sido eliminado exitosamente.')
+        file_instance.upload.delete()  # Esto elimina el archivo del sistema de archivos.
+        file_instance.delete()         # Esto elimina la instancia del modelo de la base de datos.
+        messages.success(request, f'El {file_type} ha sido eliminado exitosamente.')
         return redirect('docsview')
     else:
         # Si no es una solicitud POST, muestra la página de confirmación.
-        return render(request, 'documents/confirmar_eliminacion.html', {'document': document})
+        return render(request, 'documents/confirmar_eliminacion.html', {'file': file_instance, 'type': file_type})
 
 
-def upload_document(request):
-    if request.method == 'POST':
-        form = DocumentForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.save()
-            return redirect('docsview')  # Redirige a la vista de documentos después de subir
-    else:
-        form = DocumentForm()
+# Vista para subir documentos
+class DocumentUploadView(FormView):
+    template_name = 'documents/upload.html' # El nombre del template que quieres usar
+    form_class = DocumentForm # El formulario que quieres usar
+    success_url = reverse_lazy('docsview')# La url a la que quieres redirigir después de subir el archivo
+    def form_valid(self, form):
+        # Este método se ejecuta si el formulario es válido
+        # Aquí puedes guardar el archivo en tu modelo
+        file = form.cleaned_data['file'] # Obtiene el archivo del formulario
+        document = Document(upload=file) # Crea una instancia de tu modelo con el archivo
+        document.save() # Guarda el archivo en la base de datos
+        return super().form_valid(form) # Retorna la vista de éxito
 
-    return render(request, 'documents/upload.html', {'form': form})
+# Vista para subir imágenes
+class ImageUploadView(FormView):
+    template_name = 'documents/upload.html' # El nombre del template que quieres usar
+    form_class = ImageForm # El formulario que quieres usar
+    success_url = reverse_lazy('docsview')# La url a la que quieres redirigir después de subir el archivo
+
+    def form_valid(self, form):
+        # Este método se ejecuta si el formulario es válido
+        # Aquí puedes guardar el archivo en tu modelo
+        file = form.cleaned_data['file'] # Obtiene el archivo del formulario
+        image = Image(upload=file) # Crea una instancia de tu modelo con el archivo
+        image.save() # Guarda el archivo en la base de datos
+        return super().form_valid(form) # Retorna la vista de éxito

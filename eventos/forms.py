@@ -80,7 +80,13 @@ class EditStatusForm(forms.ModelForm):
         model = Status
         fields = ['status_name', 'icon', 'active', 'color']
 
-class DocumentForm(forms.ModelForm):
-    class Meta:
-        model = Document
-        fields = ('upload', )
+from django import forms
+from django.core.validators import FileExtensionValidator
+
+# Formulario para subir documentos
+class DocumentForm(forms.Form):
+    file = forms.FileField(validators=[FileExtensionValidator(['pdf', 'docx', 'ppt'])])
+
+# Formulario para subir imágenes
+class ImageForm(forms.Form):
+    file = forms.FileField(validators=[FileExtensionValidator(['jpg', 'bmp', 'png'])])
