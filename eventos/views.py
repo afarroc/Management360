@@ -16,7 +16,7 @@ from django.utils import timezone
 from django.views import View
 
 # Local imports from .forms
-from .forms import (CreateNewEvent, CreateNewProject, CreateNewTask, EducationForm, EventEditForm, ExperienceForm, ProfileForm, SkillForm)
+from .forms import (CreateNewEvent, CreateNewProject, CreateNewTask, EducationForm, EventEditForm, ExperienceForm, ProfileForm, SkillForm, EditStatusForm)
 EducationFormSet = formset_factory(EducationForm, extra=1, can_delete=True)
 ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
 SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
@@ -147,8 +147,6 @@ def create_task(request):
     return render(request, 'tasks/create_task.html', {'form': form})
 
 # Events
-
-
 
 def events(request):
     
@@ -414,48 +412,44 @@ def edit_event(request, event_id=None):
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
 
+
+from django.contrib.messages import get_messages
+
 def change_event_status(request, event_id):
-    # Verificar que la solicitud sea de tipo POST
     print("Inicio de vista change_event_status")
-    if request.method != 'POST':
-        print("solicitud GET")
-        return HttpResponse("Método no permitido", status=405)
-    print("solicitud Post:", request.POST)
-    # Obtener el evento a partir del ID proporcionado
-    event = get_object_or_404(Event, pk=event_id)
-    print("ID a cambiar:", str(event.id))
-    # Obtener el nuevo estado a partir del ID proporcionado en la solicitud POST
-    new_status_id = request.POST.get('new_status_id')
-    new_status = get_object_or_404(Status, pk=new_status_id)
-    print("new_status_id", str(new_status))
-    # Verificar que request.user no sea None
-    if request.user is None:
-        print("User is none: Usuario no autenticado")
-        messages.error(request, "User is none: Usuario no autenticado")
-        return redirect('index')
+    try:
+        if request.method != 'POST':
+            print("solicitud GET")
+            return HttpResponse("Método no permitido", status=405)
+        print("solicitud Post:", request.POST)
+        event = get_object_or_404(Event, pk=event_id)
+        print("ID a cambiar:", str(event.id))
+        new_status_id = request.POST.get('new_status_id')
+        new_status = get_object_or_404(Status, pk=new_status_id)
+        print("new_status_id", str(new_status))
+        if request.user is None:
+            print("User is none: Usuario no autenticado")
+            messages.error(request, "User is none: Usuario no autenticado")
+            return redirect('index')
+        if event.host is not None and (event.host == request.user or request.user in event.attendees.all()):
+            old_status = event.event_status
+            print("old_status:", old_status)
+            event.record_edit(
+                editor=request.user,
+                field_name='event_status',
+                old_value=str(old_status),
+                new_value=str(new_status)
+            )
+        else:
+            return HttpResponse("No tienes permiso para editar este evento", status=403)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return HttpResponse(f"Error: {str(e)}", status=500)
 
-    # Verificar que el evento tiene un host antes de intentar acceder a él
-    if event.host is not None and (event.host == request.user or request.user in event.attendees.all()):
-        # Cambiar el estado del evento
-        old_status = event.event_status
-        print("old_status:", old_status)
+    storage = get_messages(request)
+    message_html = render_to_string('events/message_container.html', {'messages': storage})
+    event_card_html = render_to_string('events/event_card.html', {'event': event})
 
-        # Registrar el cambio de estado
-        event.record_edit(
-            editor=request.user,
-            field_name='event_status',
-            old_value=str(old_status),
-            new_value=str(new_status)
-        )
-    else:
-        return HttpResponse("No tienes permiso para editar este evento", status=403)
-    
-
-    # Redirigir al usuario a la página de eventos
-    message_html = render_to_string('message_container.html', {'messages': messages})
-    event_card_html = render_to_string('event_card.html', {'event': event})
-
-    # Devolver el HTML en la respuesta
     return JsonResponse({'message_html': message_html, 'event_card_html': event_card_html})
 
 def delete_event(request, event_id):
@@ -609,3 +603,42 @@ def status_list(request):
     statuses = Status.objects.all()
     return render(request, 'configuration/status_list.html', {'statuses': statuses})
 
+# Document viewer
+
+from django.shortcuts import render
+from .models import Document
+from .forms import DocumentForm
+from django.views.decorators.clickjacking import xframe_options_exempt
+
+class NoDocumentsException(Exception):
+    pass
+
+@xframe_options_exempt
+def document_view(request):
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+    else:
+        form = DocumentForm()
+
+    documents = Document.objects.all()
+    if not documents:
+        try:
+            raise NoDocumentsException("No hay documentos disponibles.")
+        except NoDocumentsException as e:
+            return render(request, 'documents/docsview.html', {'form': form, 'error_message': str(e)})
+        
+    return render(request, 'documents/docsview.html', {'form': form, 'documents': documents})
+
+
+def upload_document(request):
+    if request.method == 'POST':
+        form = DocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('docsview')  # Redirige a la vista de documentos después de subir
+    else:
+        form = DocumentForm()
+
+    return render(request, 'documents/upload.html', {'form': form})
