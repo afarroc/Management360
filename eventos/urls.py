@@ -52,6 +52,11 @@ urlpatterns = [
 
     # Document viewer
     path('documents/docsview/', views.document_view, name='docsview'),
-    path('documents/docupload/', views.upload_document, name='docupload'),
-    path('documents/delete/<int:document_id>/', views.delete_document, name='delete_document'),
+    path('delete/<str:file_type>/<int:file_id>/', views.delete_file, name='delete_file'),
+    # Url para subir documentos
+    path('documents/doc_upload/', views.DocumentUploadView.as_view(), name='document_upload'),
+    # Url para subir imágenes
+    path('documents/img_upload/', views.ImageUploadView.as_view(), name='image_upload'),
+    
+    
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -12,10 +12,12 @@
 {% endif %}
 
 <div class="container mt-3">
+    <h2>Archivos</h2>
     <table class="table">
         <thead>
             <tr>
-                <th>Documento</th>
+                <th>Archivo</th>
+                <th>Tipo</th>
                 <th>Acciones</th>
             </tr>
         </thead>
@@ -23,43 +25,85 @@
             {% for document in documents %}
             <tr>
                 <td>{{ document.upload.name }}</td>
+                <td>Documento</td>
                 <td>
                     <a href="{{ document.upload.url }}" class="btn btn-primary btn-sm" target="_blank">Ver</a>
-                    <!-- Botón que activa el modal de confirmación -->
+                    <!-- Botón que activa el modal de confirmación para documentos -->
                     <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ document.id }}">
                         Eliminar
                     </button>
                 </td>
             </tr>
-
-            <!-- Modal de confirmación de eliminación -->
-            <div class="modal fade" id="deleteModal{{ document.id }}" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="deleteModalLabel">Confirmar Eliminación</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            ¿Estás seguro de que quieres eliminar el documento "{{ document.upload.name }}"?
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <!-- Formulario para eliminar el documento -->
-                            <form action="{% url 'delete_document' document.id %}" method="post" class="d-inline">
-                                {% csrf_token %}
-                                <button type="submit" class="btn btn-danger">Confirmar eliminación</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% empty %}
+            {% endfor %}
+            {% for image in images %}
             <tr>
-                <td colspan="2">No hay documentos disponibles.</td>
+                <td>{{ image.upload.name }}</td>
+                <td>Imagen</td>
+                <td>
+                    <a href="{{ image.upload.url }}" class="btn btn-primary btn-sm" target="_blank">Ver</a>
+                    <!-- Botón que activa el modal de confirmación para imágenes -->
+                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModalImage{{ image.id }}">
+                        Eliminar
+                    </button>
+                </td>
             </tr>
             {% endfor %}
+            {% if documents|length == 0 and images|length == 0 %}
+            <tr>
+                <td colspan="3">No hay archivos disponibles.</td>
+            </tr>
+            {% endif %}
         </tbody>
     </table>
 </div>
+
+<!-- Modales de confirmación de eliminación para documentos -->
+{% for document in documents %}
+<div class="modal fade" id="deleteModal{{ document.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ document.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel{{ document.id }}">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ¿Estás seguro de que quieres eliminar el documento "{{ document.upload.name }}"?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <!-- Formulario para eliminar el documento -->
+                <form action="{% url 'delete_file' 'document' document.id %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Confirmar eliminación</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Modales de confirmación de eliminación para imágenes -->
+{% for image in images %}
+<div class="modal fade" id="deleteModalImage{{ image.id }}" tabindex="-1" aria-labelledby="deleteModalLabelImage{{ image.id }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabelImage{{ image.id }}">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ¿Estás seguro de que quieres eliminar la imagen "{{ image.upload.name }}"?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <!-- Formulario para eliminar la imagen -->
+                <form action="{% url 'delete_file' 'image' image.id %}" method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Confirmar eliminación</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
 {% endblock %}

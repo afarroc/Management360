@@ -181,8 +181,27 @@ class Skill(models.Model):
     def __str__(self):
         return self.skill_name
 
-# Documents
+import os
 
+def get_upload_path(instance, filename):
+    # Obtiene la extensión del archivo
+    ext = filename.split('.')[-1]
+    # Crea la ruta según la extensión
+    path = f'media/documents/{ext}/' if ext in ['pdf', 'docx', 'ppt'] else f'media/images/{ext}/'
+    # Retorna la ruta completa con el nombre del archivo
+    return os.path.join(path, filename)
+
+
+from django.db import models
+from django.core.validators import FileExtensionValidator
+
+# Documents
 class Document(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
-    upload = models.FileField()
+    upload = models.FileField(upload_to=get_upload_path, validators=[FileExtensionValidator(['pdf', 'docx', 'ppt'])])
+
+# Images
+class Image(models.Model):
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    upload = models.FileField(upload_to=get_upload_path, validators=[FileExtensionValidator(['jpg', 'bmp', 'png'])])
+
