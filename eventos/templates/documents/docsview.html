@@ -14,9 +14,6 @@
     <div class="container">
         {% for document in documents %}
             <embed src="{{ document.upload.url }}" type="application/pdf" width="100%" height="600">
-            <object data="{{ document.upload.url }}" type="application/pdf" width="800px" height="600px">
-                <p>Tu navegador no tiene un visor de PDF incorporado. Puedes <a href="{{ document.upload.url }}">descargar el PDF aquí</a>.</p>
-            </object>
             <p>{{ document.upload.name }}</p>
         {% empty %}
             <p>No hay documentos disponibles.</p>
