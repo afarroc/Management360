@@ -3,21 +3,63 @@
 {% block content %}
 <!-- Mensajes de confirmación y éxito -->
 {% if messages %}
-	<div id="message-container" class="alert alert-info" role="alert">
-    	{% for message in messages %}
-	    <p{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</p>
-    	{% endfor %}
-  </div>
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
 {% endif %}
 
-    <!-- Aquí va el código para mostrar los documentos -->
-    <div class="container">
-        {% for document in documents %}
-            <embed src="{{ document.upload.url }}" type="application/pdf" width="100%" height="600">
-            <p>{{ document.upload.name }}</p>
-        {% empty %}
-            <p>No hay documentos disponibles.</p>
-        {% endfor %}
-    </div>
-    
+<div class="container mt-3">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Documento</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for document in documents %}
+            <tr>
+                <td>{{ document.upload.name }}</td>
+                <td>
+                    <a href="{{ document.upload.url }}" class="btn btn-primary btn-sm" target="_blank">Ver</a>
+                    <!-- Botón que activa el modal de confirmación -->
+                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ document.id }}">
+                        Eliminar
+                    </button>
+                </td>
+            </tr>
+
+            <!-- Modal de confirmación de eliminación -->
+            <div class="modal fade" id="deleteModal{{ document.id }}" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="deleteModalLabel">Confirmar Eliminación</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            ¿Estás seguro de que quieres eliminar el documento "{{ document.upload.name }}"?
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <!-- Formulario para eliminar el documento -->
+                            <form action="{% url 'delete_document' document.id %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger">Confirmar eliminación</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <tr>
+                <td colspan="2">No hay documentos disponibles.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
 {% endblock %}
