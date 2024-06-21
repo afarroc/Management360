@@ -1,6 +1,9 @@
 from django.urls import path
 from .import views
 
+from django.conf import settings
+from django.conf.urls.static import static
+
 urlpatterns = [
     # Páginas principales
     path('', views.index, name="index"),
@@ -46,4 +49,9 @@ urlpatterns = [
     path('configuration/edit_status/<int:status_id>/', views.edit_status, name='edit_status'),
     path('configuration/delete_status/<int:status_id>/', views.delete_status, name='delete_status'),
     path('configuration/create_status/', views.create_status, name='create_status'),
-]
+
+    # Document viewer
+    path('documents/docsview/', views.document_view, name='docsview'),
+    path('documents/docupload/', views.upload_document, name='docupload'),
+
+]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

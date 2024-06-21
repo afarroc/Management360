@@ -131,7 +131,7 @@ class EventAttendee(models.Model):
     has_paid = models.BooleanField(default=False)  # Campo nuevo para el pago
     notes = models.TextField(blank=True, null=True)  # Campo nuevo para notas adicionales
 
-## modelos para el perfil del usuario
+# modelos para el perfil del usuario
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -180,3 +180,9 @@ class Skill(models.Model):
 
     def __str__(self):
         return self.skill_name
+
+# Documents
+
+class Document(models.Model):
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    upload = models.FileField()
