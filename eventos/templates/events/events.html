@@ -64,6 +64,7 @@ $(document).ready(function(){
         event.preventDefault();
         var actionUrl = $(this).attr('action');
         var event_id = actionUrl.substring(actionUrl.lastIndexOf('/') + 1);
+        
         $.ajax({
             url: actionUrl,
             type: $(this).attr('method'),
@@ -72,10 +73,26 @@ $(document).ready(function(){
                 // Actualizar el contenedor de mensajes y el card del evento con el HTML devuelto por la vista
                 $('#message-container').html(response.message_html);
                 $('#event-card-' + event_id).html(response.event_card_html);
+
+                // Confirmar la actualización del contenedor
+                console.log("El contenedor de mensajes se ha actualizado con:", response.message_html);
+                console.log("El card del evento se ha actualizado con:", response.event_card_html);
+
+                // Otra forma de confirmar es verificar si el contenido del contenedor ha cambiado
+                if($('#message-container').html() === response.message_html && $('#event-card-' + event_id).html() === response.event_card_html) {
+                    console.log("Confirmación: El contenedor se ha actualizado correctamente.");
+                } else {
+                    console.log("Advertencia: El contenedor no se ha actualizado correctamente.");
+                }
+            },
+            error: function(xhr, status, error) {
+                // Manejar el error
+                console.error("Error en la solicitud:", error);
             }
         });
     });
 });
+
 </script>
 
 

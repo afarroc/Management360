@@ -9,7 +9,7 @@
                 <li><a class="dropdown-item" href="{% url 'profile' user.id %}">My Profile</a></li>
                 <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
             {% else %}
-                <li><a class="dropdown-item" href="{% url 'create_profile' user.id %}">Create Profile</a></li>
+                <li><a class="dropdown-item" href="{% url 'create_profile' %}">Create Profile</a></li>
                 <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
             {% endif %}
         </ul>

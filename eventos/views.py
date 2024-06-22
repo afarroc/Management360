@@ -479,8 +479,10 @@ def panel(request):
 
 class ProfileView(View):
     def get(self, request, user_id=None):
+        print(request.GET,user_id)
         try:
             if user_id:
+                
                 profile = Profile.objects.get(user_id=user_id)
                 profile_form = ProfileForm(instance=profile)
                 experience_formset = ExperienceFormSet(prefix='experiences', queryset=profile.experiences.all())
@@ -551,9 +553,11 @@ class ProfileView(View):
                 'skill_formset': skill_formset
             })
         except IntegrityError as e:
-            return render(request, 'error.html', {'message': f"An error occurred. Please make sure all fields are filled out correctly. Error: {e}"})
+            return render(request, 'profiles/error.html', {'message': f"An error occurred. Please make sure all fields are filled out correctly. Error: {e}"})
         except Exception as e:
-            return render(request, 'error.html', {'message': str(e)})
+            return render(request, 'profiles/error.html', {'message': str(e)})
+
+
 
 class ViewProfileView(View):
     def get(self, request, user_id):

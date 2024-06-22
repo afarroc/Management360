@@ -42,7 +42,8 @@ urlpatterns = [
     # Perfil
     path('profile/<int:user_id>', views.ViewProfileView.as_view(), name='profile'),
     path('edit_profile/<int:user_id>', views.ProfileView.as_view(), name='edit_profile'),
-    path('create_profile/<int:user_id>/', views.ProfileView.as_view(), name='create_profile'),
+    path('create_profile/', views.ProfileView.as_view(), name='create_profile'),
+    path('create_profile/<int:user_id>', views.ProfileView.as_view(), name='create_profile'),
     
     # Configuración
     path('configuration/status_list/', views.status_list, name='status_list'),
