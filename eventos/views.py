@@ -34,6 +34,11 @@ def index(request):
         'title':title
     })
 
+def home(request):
+    return render(request, 'layouts/main.html')
+
+
+
 def about(request):
     username = "Nano"
     return render(request, "about/about.html",{
