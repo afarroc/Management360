@@ -446,11 +446,7 @@ def change_event_status(request, event_id):
         print(f"Error: {str(e)}")
         return HttpResponse(f"Error: {str(e)}", status=500)
 
-    storage = get_messages(request)
-    message_html = render_to_string('events/message_container.html', {'messages': storage})
-    event_card_html = render_to_string('events/event_card.html', {'event': event})
-
-    return JsonResponse({'message_html': message_html, 'event_card_html': event_card_html})
+    return redirect('events')
 
 def delete_event(request, event_id):
     # Asegúrate de que solo se pueda acceder a esta vista mediante POST

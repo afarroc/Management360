@@ -1,21 +1,20 @@
 <div id="event-card-{{ event.id }}" class="col">
-	<div class="card h-100">
-		<div class="card-header" style="background-color: {{ event.event_status.color }};">
+	<div class="card h-100 shadow-sm"> <!-- Agregado sombra para un mejor efecto visual -->
+		<div class="card-header text-white" style="background-color: {{ event.event_status.color }};">
 			<!-- Placeholder for potential event status indicator -->
 		</div>
 		<div class="card-body">
-			<h5 class="card-title text-center">{{ event.event_status.icon }} [{{ event.id }}]</h5>
-			<h2 class="card-title text-center">{{ event.title }}</h2>
-			<p class="card-text">{{ event.description }}</p>
+			<h5 class="card-title text-center mb-3">{{ event.event_status.icon }} [{{ event.id }}]</h5> <!-- Agregado margen inferior -->
+			<h2 class="card-title text-center mb-3">{{ event.title }}</h2> <!-- Agregado margen inferior -->
+			<p class="card-text mb-3">{{ event.description }}</p> <!-- Agregado margen inferior -->
 			<!-- ... -->
-			<p class="card-text">Host: {{ event.host.username }}</p>
-			<p class="card-text">Asignado a: {{ event.assigned_to.username }}</p>
-			<p class="card-text">Asistentes:</p>
-			<ul>
-			{% for attendee in event.attendees.all %}
-				<li>{{ attendee.username }}</li>
-			{% endfor %}
-			</ul>
+			<p class="card-text mb-3"><strong>Host:</strong> {{ event.host.username|title }}</p> <!-- Agregado margen inferior y negrita -->
+			<p class="card-text mb-3"><strong>Asignado a:</strong> {{ event.assigned_to.username|title }}.</p> <!-- Agregado margen inferior y negrita -->
+			<p class="card-text mb-3"><strong>Asistentes:</strong> <!-- Agregado margen inferior y negrita -->
+				{% for attendee in event.attendees.all %}
+					{{ attendee.username|title }}{% if not forloop.last %},{% else %}.{% endif %}
+				{% endfor %}
+			</p>
 			<!-- ... -->
 			<!-- Formulario de cambio de estado -->
 			<form action="{% url 'change_event_status' event.id %}" method="POST" class="mb-2">
@@ -43,8 +42,8 @@
 
 		</div>
 		<div class="card-footer text-muted">
-			<p>Updated: {{ event.updated_at|date:"d-M H:i" }}</p>
-			<p>Created: {{ event.created_at|date:"d-M H:i" }}</p>
+			<p><strong>Updated:</strong> {{ event.updated_at|date:"d-M H:i" }}</p> <!-- Agregado negrita -->
+			<p><strong>Created:</strong> {{ event.created_at|date:"d-M H:i" }}</p> <!-- Agregado negrita -->
 		</div>
 	</div>
 </div>
