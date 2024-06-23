@@ -1,25 +1,20 @@
 <div id="event-card-{{ event.id }}" class="col">
-	<div class="card h-100 shadow-sm"> <!-- Agregado sombra para un mejor efecto visual -->
-		<div class="card-header text-white" style="background-color: {{ event.event_status.color }};">
-			<!-- Placeholder for potential event status indicator -->
-		</div>
+	<div class="card h-100 shadow-sm">
+		<div class="card-header text-white" style="background-color: {{ event.event_status.color }};"></div>
 		<div class="card-body">
-			<h5 class="card-title text-center mb-3">{{ event.event_status.icon }} [{{ event.id }}]</h5> <!-- Agregado margen inferior -->
-			<h2 class="card-title text-center mb-3">{{ event.title }}</h2> <!-- Agregado margen inferior -->
-			<p class="card-text mb-3">{{ event.description }}</p> <!-- Agregado margen inferior -->
-			<!-- ... -->
-			<p class="card-text mb-3"><strong>Host:</strong> {{ event.host.username|title }}</p> <!-- Agregado margen inferior y negrita -->
-			<p class="card-text mb-3"><strong>Asignado a:</strong> {{ event.assigned_to.username|title }}.</p> <!-- Agregado margen inferior y negrita -->
-			<p class="card-text mb-3"><strong>Asistentes:</strong> <!-- Agregado margen inferior y negrita -->
+			<p class="card-title text-center mb-1">{{ event.event_status.icon }} [{{ event.id }}]</p>
+			<h5 class="card-title text-center mb-1">{{ event.title }}</h5>
+			<p class="card-text mb-1">{{ event.description }}</p>
+			<p class="card-text mb-1"><strong>Host:</strong> {{ event.host.username|title }}</p>
+			<p class="card-text mb-1"><strong>Asignado a:</strong> {{ event.assigned_to.username|title }}.</p>
+			<p class="card-text mb-1"><strong>Asistentes:</strong>
 				{% for attendee in event.attendees.all %}
 					{{ attendee.username|title }}{% if not forloop.last %},{% else %}.{% endif %}
 				{% endfor %}
 			</p>
-			<!-- ... -->
-			<!-- Formulario de cambio de estado -->
-			<form action="{% url 'change_event_status' event.id %}" method="POST" class="mb-2">
+			<form action="{% url 'change_event_status' event.id %}" method="POST" class="mb-1">
 			{% csrf_token %}
-				<div class="mb-3">
+				<div class="mb-1">
 					<select name="new_status_id" class="form-select" aria-label="Default select example">
 					{% for status in statuses %}
 						<option value="{{ status.id }}" {% if status.id|stringformat:"s" == event.event_status.id|stringformat:"s" %}selected{% endif %}>
@@ -29,9 +24,8 @@
 					</select>
 				</div>
 				<button type="submit" class="btn btn-outline-primary btn-sm">Cambiar Estado</button>
-			{% if request.user.profile.role == 'SU' %}	
+			{% if request.user.profile.role == 'SU' %}
 			</form>
-			<!-- Botón de eliminación con ícono -->
 			<form action="{% url 'delete_event' event.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este evento?');">
 			{% csrf_token %}
 				<button type="submit" class="btn btn-danger">
@@ -39,11 +33,10 @@
 				</button>
 			</form>
 			{% endif %}
-
 		</div>
 		<div class="card-footer text-muted">
-			<p><strong>Updated:</strong> {{ event.updated_at|date:"d-M H:i" }}</p> <!-- Agregado negrita -->
-			<p><strong>Created:</strong> {{ event.created_at|date:"d-M H:i" }}</p> <!-- Agregado negrita -->
+			<p class="card-text mb-1"><strong>Updated:</strong> {{ event.updated_at|date:"d-M H:i" }}</p>
+			<p class="card-text mb-1"><strong>Created:</strong> {{ event.created_at|date:"d-M H:i" }}</p>
 		</div>
 	</div>
 </div>
