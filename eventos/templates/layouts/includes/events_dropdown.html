@@ -1,16 +1,22 @@
-<li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle" href="{% url 'events' %}" role="button" data-bs-toggle="dropdown"
-        aria-expanded="false">
-        Events
+<li class="nav-item">
+    <a class="nav-link collapsed" data-bs-target="#events-nav" data-bs-toggle="collapse" href="{% url 'events' %}">
+        <i class="bi bi-menu-button-wide"></i><span>Events</span><i class="bi bi-chevron-down ms-auto"></i>
     </a>
-    <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="{% url 'events' %}">Events</a></li>
+    <ul id="events-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
         <li>
-            <hr class="dropdown-divider">
+            <a href="{% url 'events' %}">
+                <i class="bi bi-circle"></i><span>Events</span>
+            </a>
         </li>
-        <li><a class="dropdown-item" href="{% url 'create_event' %}">Create Event</a></li>
-        <li><a class="dropdown-item" href="{% url 'edit_event' %}">Edit Event</a></li>
-
-        <li><a class="dropdown-item" href="#">Picked up Events</a></li>
+        <li>
+            <a href="{% url 'create_event' %}">
+                <i class="bi bi-circle"></i><span>Create Event</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'edit_event' %}">
+                <i class="bi bi-circle"></i><span>Edit Event</span>
+            </a>
+        </li>
     </ul>
-</li>
+</li><!-- End events Nav -->
