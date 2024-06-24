@@ -15,7 +15,7 @@
 			<form action="{% url 'change_event_status' event.id %}" method="POST" class="mb-1">
 			{% csrf_token %}
 				<div class="mb-1">
-					<select name="new_status_id" class="form-select" aria-label="Default select example">
+					<select name="new_status_id_{{ event.id }}" class="form-select" aria-label="Default select example">
 					{% for status in statuses %}
 						<option value="{{ status.id }}" {% if status.id|stringformat:"s" == event.event_status.id|stringformat:"s" %}selected{% endif %}>
 						{{ status.status_name }}
@@ -24,8 +24,8 @@
 					</select>
 				</div>
 				<button type="submit" class="btn btn-outline-primary btn-sm">Cambiar Estado</button>
-			{% if request.user.profile.role == 'SU' %}
 			</form>
+			{% if request.user.profile.role == 'SU' %}
 			<form action="{% url 'delete_event' event.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este evento?');">
 			{% csrf_token %}
 				<button type="submit" class="btn btn-danger">
