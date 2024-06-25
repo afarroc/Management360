@@ -1,24 +1,16 @@
 <!-- session.html -->
 {% if user.is_authenticated %}
-    <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <img src="{{ user.profile.image.url }}" class="rounded-circle" width="30" height="30"> {{ user.username }}
-        </a>
-        <ul class="dropdown-menu">
-            {% if user.profile.id %}
-                <li><a class="dropdown-item" href="{% url 'profile' user.id %}">My Profile</a></li>
-                <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
-            {% else %}
-                <li><a class="dropdown-item" href="{% url 'create_profile' %}">Create Profile</a></li>
-                <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
-            {% endif %}
-        </ul>
-    </li>
+<li class="nav-item">
+    <a class="nav-link collapsed" href="{% url 'logout' %}">
+        <i class="bi bi-box-arrow-in-left"></i>
+        <span>Sign Out</span>
+    </a>
+</li>
 {% else %}
-    <li class="nav-item">
-        <a class="nav-link" href="{% url 'signup' %}">Signup</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link" href="{% url 'signin' %}">Signin</a>
-    </li>
+<li class="nav-item">
+    <a class="nav-link collapsed" href="{% url 'signin' %}">
+        <i class="bi bi-box-arrow-in-right"></i>
+        <span>Login</span>
+    </a>
+</li>
 {% endif %}
