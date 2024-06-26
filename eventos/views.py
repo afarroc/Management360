@@ -48,9 +48,8 @@ def about(request):
 # Sessions
 
 def signup(request):
-    
     if request.method=="GET":
-        return render(request, 'session/signup.html', {
+        return render(request, 'acounts/signup.html', {
             'form':UserCreationForm
         })       
     else:
@@ -60,11 +59,11 @@ def signup(request):
                 user = User.objects.create_user(username=request.POST['username'], password=request.POST['password1'])
                 user.save()
                 login(request, user)
-                return(redirect('events'))
+                return(redirect('accounts/signup'))  # Modificado aquí
             
             except IntegrityError:
                 
-                return render(request, 'signup.html', {
+                return render(request, 'accounts/signup.html', {
                     'form': UserCreationForm,
                     "error": "User already exist"
                 })       
@@ -79,7 +78,7 @@ def signout(request):
 
 def signin(request):
     if request.method == "GET":
-        return render(request,'session/signin.html',{
+        return render(request,'acounts/signin.html',{
             'form':AuthenticationForm,
             })
     else:
@@ -87,7 +86,7 @@ def signin(request):
             request, username=request.POST['username'], password=request.POST['password'])
         if user is None:
             print('user is none')
-            return render(request,'session/signin.html',{
+            return render(request,'acounts/signin.html',{
                 'form':AuthenticationForm,
                 'error':'Username or password is incorrect'
             })
