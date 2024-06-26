@@ -59,7 +59,7 @@ def signup(request):
                 user = User.objects.create_user(username=request.POST['username'], password=request.POST['password1'])
                 user.save()
                 login(request, user)
-                return(redirect('accounts/signup'))  # Modificado aquí
+                return(redirect('accounts/signup.html'))  # Modificado aquí
             
             except IntegrityError:
                 
@@ -67,7 +67,7 @@ def signup(request):
                     'form': UserCreationForm,
                     "error": "User already exist"
                 })       
-        return render(request, 'signup.html', { 
+        return render(request, 'accounts/signup.html', { 
             'form': UserCreationForm,
             "error": "Password do not match"
         })    
