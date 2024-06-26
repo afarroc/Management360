@@ -1,0 +1,11 @@
+<!-- session.html -->
+{% if user.is_authenticated %}
+
+{% else %}
+<li class="nav-item">
+    <a class="nav-link collapsed" href="{% url 'signin' %}">
+        <i class="bi bi-box-arrow-in-right"></i>
+        <span>Register</span>
+    </a>
+</li>
+{% endif %}
