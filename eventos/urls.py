@@ -35,9 +35,9 @@ urlpatterns = [
     path('panel/event_edit/<int:event_id>/', views.edit_event, name='event_edit'),
 
     # Sesión
-    path('statics/session/signup/', views.signup, name='signup'),
+    path('accounts/signup/', views.signup, name='signup'),
     path('logout/', views.signout, name='logout'),
-    path('statics/session/signin/', views.signin, name='signin'),
+    path('accounts/login/', views.signin, name='signin'),
 
     # Perfil
     path('profile/<int:user_id>', views.ViewProfileView.as_view(), name='profile'),

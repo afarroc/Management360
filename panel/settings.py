@@ -59,7 +59,10 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    'panel.middleware.DatabaseSelectorMiddleware',
 ]
+
+
 
 ROOT_URLCONF = 'panel.urls'
 
@@ -85,40 +88,43 @@ WSGI_APPLICATION = 'panel.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+import os
+from django.db.utils import OperationalError
+from django.db import connections
+from dj_database_url import config as dj_config
 
-""" 
 DATABASES = {
-    'default': {
+    'sqlite': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    },
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'projects',
+        'USER': 'admin',
+        'PASSWORD': 'Admin+123',
+        'HOST': '192.168.18.40',
+        'PORT': '3306',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
+    },
+    'mysql2': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'projects',
+        'USER': 'root',
+        'PASSWORD': 'Peru+123',
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+        },
+    },
+    'postgres': dj_config(
+        default='postgresql://postgres:postgres@localhost:5432/mysite',
+        conn_max_age=600
+    )
 }
-"""
-
-import os
-import dj_database_url
-
-if os.getenv('DJANGO_DEVELOPMENT') == 'true':
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': 'projects',
-            'USER': 'admin',
-            'PASSWORD': 'Admin+123',
-            'HOST': '192.168.18.40',
-            'PORT': '3306',
-            'OPTIONS': {
-                'charset': 'utf8mb4',
-            },
-        }
-    }
-else:
-    DATABASES = {
-        'default': dj_database_url.config(
-            default='postgresql://postgres:postgres@localhost:5432/mysite',
-            conn_max_age=600
-        )
-    }
 
 
 # Password validation
