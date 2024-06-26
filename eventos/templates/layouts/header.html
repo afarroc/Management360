@@ -157,24 +157,25 @@
 
         </li><!-- End Messages Nav -->
 
+        {% if user.is_authenticated %}
         <li class="nav-item dropdown pe-3">
-
             <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
-                <img src="{{ profile.profile_picture.url }}" alt="Profile" class="rounded-circle">
-                <span class="d-none d-md-block dropdown-toggle ps-2">{{ profile.user.get_full_name }}</span>
-            </a><!-- End Profile Iamge Icon -->
+                <img src="{{ user.profile.profile_picture.url }}" alt="Profile" class="rounded-circle">
+                <span class="d-none d-md-block dropdown-toggle ps-2">{{ user.get_full_name }}</span>
+            </a><!-- End Profile Image Icon -->
 
             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
                 <li class="dropdown-header">
-                    <h6>Kevin Anderson</h6>
-                    <span>Web Designer</span>
+                    <h6>{{ user.profile.user.get_full_name }}</h6>
+                    <span>{{ user.profile.role }}</span>
                 </li>
+                
                 <li>
                     <hr class="dropdown-divider">
                 </li>
 
                 <li>
-                    <a class="dropdown-item d-flex align-items-center" href="users-profile.html">
+                    <a class="dropdown-item d-flex align-items-center" href="{% url 'profile' user.id %}">
                         <i class="bi bi-person"></i>
                         <span>My Profile</span>
                     </a>
@@ -184,12 +185,11 @@
                 </li>
 
                 <li>
-                    <a class="dropdown-item d-flex align-items-center" href="users-profile.html">
+                    <a class="dropdown-item d-flex align-items-center" href="{% url 'edit_profile' user.id %}">
                         <i class="bi bi-gear"></i>
                         <span>Account Settings</span>
                     </a>
-                </li>
-                <li>
+                </li>                <li>
                     <hr class="dropdown-divider">
                 </li>
 
@@ -204,7 +204,7 @@
                 </li>
 
                 <li>
-                    <a class="dropdown-item d-flex align-items-center" href="#">
+                    <a class="dropdown-item d-flex align-items-center" href="{% url 'logout' %}">
                         <i class="bi bi-box-arrow-right"></i>
                         <span>Sign Out</span>
                     </a>
@@ -212,6 +212,21 @@
 
             </ul><!-- End Profile Dropdown Items -->
         </li><!-- End Profile Nav -->
+        {% else %}
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'signup' %}">
+                <i class="bi bi-card-list ps-3"></i>
+                <span>Register</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'signin' %}">
+                <i class="bi bi-box-arrow-in-right ps-3"></i>
+                <span>Login  </span>
+            </a>
+        </li>
 
+
+        {% endif %}
     </ul>
 </nav><!-- End Icons Navigation -->
