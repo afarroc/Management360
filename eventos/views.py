@@ -152,11 +152,26 @@ def create_task(request):
 
 # Events
 
+
+from django.utils import timezone
+
 def events(request):
-    
-    cerrado = request.session.get('filtered_cerrado', None)  # Obtiene 'filtered_cerrado' de la sesión
-    status = request.session.get('filtered_status', None)  # Obtiene 'filtered_status' de la sesión
-    date = request.session.get('filtered_date', None)  # Obtiene 'filtered_date' de la sesión
+    # Intenta obtener el ID del estado 'En curso'
+    try:
+        status_en_curso = Status.objects.get(status_name='En curso').id
+    except ObjectDoesNotExist:
+        status_en_curso = None
+
+    # Si 'filtered_status' no está en la sesión, establece 'status' como el ID del estado 'En curso'
+    status = request.session.setdefault('filtered_status', status_en_curso)  # Obtiene 'filtered_status' de la sesión
+
+    # Si 'filtered_cerrado' no está en la sesión, establece 'cerrado' como True
+    cerrado = request.session.setdefault('filtered_cerrado', "true")  # Obtiene 'filtered_cerrado' de la sesión
+
+    # Si 'filtered_date' no está en la sesión, establece 'date' como la fecha actual
+    date = request.session.setdefault('filtered_date', timezone.now().date().isoformat())  # Obtiene 'filtered_date' de la sesión
+
+    # El resto del código sigue aquí...    
     
     try:
         # Aquí va el código para interactuar con la base de datos...
@@ -209,7 +224,7 @@ def events(request):
 
             # Filtrar eventos basados en la fecha seleccionada
             if date:
-                events = events.filter(created_at__date=date)
+                events = events.filter(updated_at__date=date)
                 request.session['filtered_date'] = date
                 print("Filtrado por fecha", date)
             else:
