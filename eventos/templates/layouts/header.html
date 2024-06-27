@@ -10,14 +10,12 @@
 <nav class="header-nav ms-auto">
     <ul class="d-flex align-items-center">
 
-        {% if user.is_authenticated %}
-
         <li class="nav-item d-block d-lg-none">
             <a class="nav-link nav-icon search-bar-toggle " href="#">
                 <i class="bi bi-search"></i>
             </a>
         </li><!-- End Search Icon-->
-
+        {% if user.is_authenticated %}
         <li class="nav-item dropdown">
 
             <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
@@ -196,7 +194,7 @@
                 </li>
 
                 <li>
-                    <a class="dropdown-item d-flex align-items-center" href="pages-faq.html">
+                    <a class="dropdown-item d-flex align-items-center" href="{% url 'about' %}">
                         <i class="bi bi-question-circle"></i>
                         <span>Need Help?</span>
                     </a>
