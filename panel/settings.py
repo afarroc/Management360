@@ -94,36 +94,18 @@ from django.db import connections
 from dj_database_url import config as dj_config
 
 DATABASES = {
+    'default': dj_config(
+        default='postgresql://admin:Admin+123@192.168.18.40:5432/projects',
+        conn_max_age=600
+    ),
+    'postgres_online': dj_config(
+        default='postgresql://admin:Admin+123@db-server.example.com:5432/projects',
+        conn_max_age=600
+    ),
     'sqlite': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     },
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'projects',
-        'USER': 'admin',
-        'PASSWORD': 'Admin+123',
-        'HOST': '192.168.18.40',
-        'PORT': '3306',
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        },
-    },
-    'mysql2': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'projects',
-        'USER': 'root',
-        'PASSWORD': 'Peru+123',
-        'HOST': '127.0.0.1',
-        'PORT': '3306',
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        },
-    },
-    'postgres': dj_config(
-        default='postgresql://postgres:postgres@localhost:5432/mysite',
-        conn_max_age=600
-    )
 }
 
 
