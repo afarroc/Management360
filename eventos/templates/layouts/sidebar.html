@@ -185,14 +185,15 @@
         </li><!-- End Icons Nav -->
 
         <li class="nav-heading">Pages</li>
-
+        {% if user.is_authenticated %}
         <li class="nav-item">
             <a class="nav-link collapsed" href="{% url 'profile' user.id %}" >
                 <i class="bi bi-person"></i>
                 <span>Profile</span>
             </a>
         </li><!-- End Profile Page Nav -->
-
+        {% else %}
+        {% endif %}
         <li class="nav-item">
             <a class="nav-link collapsed" href="{% url 'about' %}">
                 <i class="bi bi-question-circle"></i>
