@@ -8,15 +8,18 @@
                 <i class="bi bi-circle"></i><span>Events</span>
             </a>
         </li>
+        {% if user.is_authenticated %}
         <li>
             <a href="{% url 'create_event' %}">
                 <i class="bi bi-circle"></i><span>Create Event</span>
             </a>
         </li>
+
         <li>
             <a href="{% url 'edit_event' %}">
                 <i class="bi bi-circle"></i><span>Edit Event</span>
             </a>
         </li>
+        {% endif %}
     </ul>
 </li><!-- End events Nav -->
