@@ -691,3 +691,21 @@ class ImageUploadView(FormView):
         image = Image(upload=file) # Crea una instancia de tu modelo con el archivo
         image.save() # Guarda el archivo en la base de datos
         return super().form_valid(form) # Retorna la vista de éxito
+
+# about upload
+
+from django.core.files.storage import FileSystemStorage
+
+def upload_image(request):
+    if request.method == 'POST':
+        try:
+            image = request.FILES['image']
+            fs = FileSystemStorage()
+            filename = fs.save(image.name, image)
+            uploaded_file_url = fs.url(filename)
+            messages.success(request, 'Imagen subida con éxito.')
+            return redirect('about')
+        except KeyError:
+            messages.error(request, 'Por favor, selecciona una imagen para subir.')
+    return render(request, 'about/about.html')
+
