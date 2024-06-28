@@ -182,7 +182,8 @@
                     </a>
                 </li>
             </ul>
-        </li><!-- End Icons Nav -->
+        </li>
+        <!-- End Icons Nav -->
 
         <li class="nav-heading">Pages</li>
         {% if user.is_authenticated %}
@@ -216,14 +217,14 @@
   
 
         <li class="nav-item">
-            <a class="nav-link collapsed" href="pages-error-404.html">
+            <a class="nav-link collapsed" href="{% url 'about' %}">
                 <i class="bi bi-dash-circle"></i>
                 <span>Error 404</span>
             </a>
         </li><!-- End Error 404 Page Nav -->
 
         <li class="nav-item">
-            <a class="nav-link collapsed" href="pages-blank.html">
+            <a class="nav-link collapsed" href="{% url 'about' %}">
                 <i class="bi bi-file-earmark"></i>
                 <span>Blank</span>
             </a>
