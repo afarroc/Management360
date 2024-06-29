@@ -1,0 +1,39 @@
+<li class="nav-item">
+    <a class="nav-link collapsed" data-bs-target="#configuration-nav" data-bs-toggle="collapse" href="#">
+        <i class="bi bi-menu-button-wide"></i><span>Configuración</span><i class="bi bi-chevron-down ms-auto"></i>
+    </a>
+    <ul id="configuration-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+        <!-- Crear nueva tipificación -->
+        <li>
+            <a href="{% url 'create_classification' %}">
+                <i class="bi bi-circle"></i><span>Crear nueva tipificación</span>
+            </a>
+        </li>
+
+        <!-- Gestionar classificationes -->
+        <li>
+            <a href="{% url 'classification_list' %}">
+                <i class="bi bi-circle"></i><span>Gestionar classificationes</span>
+            </a>
+        </li>
+
+        <!-- Divider -->
+        <li>
+            <hr class="dropdown-divider">
+        </li>
+
+        <!-- Crear nuevo estado -->
+        <li>
+            <a href="{% url 'create_status' %}">
+                <i class="bi bi-circle"></i><span>Crear nuevo estado</span>
+            </a>
+        </li>
+
+        <!-- Gestionar Estados -->
+        <li>
+            <a href="{% url 'status_list' %}">
+                <i class="bi bi-circle"></i><span>Gestionar Estados</span>
+            </a>
+        </li>
+    </ul>
+</li><!-- End configuration Nav -->

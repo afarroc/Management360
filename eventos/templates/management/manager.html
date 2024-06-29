@@ -1,0 +1,76 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+  <h2>Gestión de eventos</h2>
+  <div class="container-fluid">
+    <!-- Panel superior -->
+    <div class="row" style="height: 33vh;">
+      <!-- Tabla de eventos -->
+      <div class="col-md-6" style="overflow-y: auto; max-height: 200px;">
+        <table class="table">
+          <thead>
+            <tr>
+              <th scope="col">Seleccionar</th>
+              <th scope="col">ID del Evento</th>
+              <th scope="col">Título del Evento</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for evento in eventos_asignados %}
+              <tr>
+                <td><input type="checkbox" name="evento" value="{{ evento.id }}"></td>
+                <td>{{ evento.id }}</td>
+                <td>{{ evento.title }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Gestor -->
+      <div class="col-md-6">
+        <form method="post">
+          {% csrf_token %}
+          <label for="classification">Selecciona una Clasificación:</label>
+          <select name="classification" id="classification">
+            {% for classification in classifications %}
+              <option value="{{ classification.id }}">{{ classification.nombre }}</option>
+            {% endfor %}
+          </select>
+
+          <label for="comentario">Añade un comentario:</label>
+          <textarea name="comentario" id="comentario"></textarea>
+
+          <button type="submit">Finalizar evento</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Panel inferior para las pestañas -->
+    <div class="row mt-4" style="height: 33vh;">
+      <div class="col-md-12">
+        <ul class="nav nav-tabs" id="eventTabList" role="tablist">
+          <!-- Las pestañas se añadirán aquí con jQuery -->
+        </ul>
+        <div class="tab-content" id="eventTabContent">
+          <!-- El contenido de las pestañas se añadirá aquí con jQuery -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      $('input[name="evento"]').on('change', function() {
+        var id = $(this).val();
+        var title = $(this).parent().next().next().text();
+        var tabListHtml = '<li class="nav-item" role="presentation"><button class="nav-link" id="event-tab' + id + '" data-bs-toggle="tab" data-bs-target="#event' + id + '" type="button" role="tab" aria-controls="event' + id + '" aria-selected="false">' + title + '</button></li>';
+        var tabContentHtml = '<div class="tab-pane fade" id="event' + id + '" role="tabpanel" aria-labelledby="event-tab' + id + '">Contenido del evento ' + title + '</div>';
+        $('#eventTabList').append(tabListHtml);
+        $('#eventTabContent').append(tabContentHtml);
+      });
+    });
+  </script>
+{% endblock %}

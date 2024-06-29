@@ -1,7 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Task, Event, Profile, Experience, Education, Skill, Status, Document
-
+from .models import Task, Event, Profile, Experience, Education, Skill, Status, Document, Classification
 class CreateNewEvent(forms.ModelForm):
     title = forms.CharField(max_length=200)
     description = forms.CharField(widget=forms.Textarea)
@@ -90,3 +89,14 @@ class DocumentForm(forms.Form):
 # Formulario para subir imágenes
 class ImageForm(forms.Form):
     file = forms.FileField(validators=[FileExtensionValidator(['jpg', 'bmp', 'png'])])
+
+
+class EditClassificationForm(forms.ModelForm):
+    class Meta:
+        model = Classification
+        fields = ['nombre', 'descripcion']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['nombre'].label = "Nombre de la Tipificación"
+        self.fields['descripcion'].label = "Descripción de la Tipificación"
