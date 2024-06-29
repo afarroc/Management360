@@ -65,6 +65,7 @@ urlpatterns = [
     # management
     path('management/manager/', views.management, name='manager'),
     path('management/manager/', views.management, name='management'),
+    path('update_event/', views.update_event, name='update_event'),
 
     path('configuration/create_classification/', views.create_Classification, name='create_classification'),
     path('configuration/edit_classification/<int:Classification_id>/', views.edit_Classification, name='edit_classification'),
