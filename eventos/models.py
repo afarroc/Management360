@@ -14,6 +14,14 @@ class Status(models.Model):
     def __str__(self):
         return self.status_name
 
+# Classificationes
+class Classification(models.Model):
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField()
+
+    def __str__(self):
+        return self.nombre
+
 # Modelo para los proyectos    
 class Project(models.Model):
     name = models.CharField(max_length=200)
@@ -87,7 +95,9 @@ class Event(models.Model):
     attendees = models.ManyToManyField(User, through='EventAttendee', related_name='collaborating_events') 
     tags = models.ManyToManyField(Tag, blank=True)
     links = models.ManyToManyField('self', blank=True, symmetrical=False)
-    
+    classification = models.ForeignKey(Classification, on_delete=models.SET_NULL, null=True, blank=True)
+
+
     def change_status(self, new_status_id):
         # Obtener el nuevo estado
         new_status = Status.objects.get(id=new_status_id)
@@ -204,4 +214,5 @@ class Document(models.Model):
 class Image(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     upload = models.FileField(upload_to=get_upload_path, validators=[FileExtensionValidator(['jpg', 'bmp', 'png'])])
+
 

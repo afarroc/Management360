@@ -620,6 +620,56 @@ def status_list(request):
     statuses = Status.objects.all()
     return render(request, 'configuration/status_list.html', {'statuses': statuses})
 
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Classification
+from .forms import EditClassificationForm  # Asegúrate de que este formulario esté definido correctamente
+
+def create_Classification(request):
+    if request.method == 'POST':
+        form = EditClassificationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('classification_list')
+    else:
+        form = EditClassificationForm()
+    return render(request, 'configuration/create_classification.html', {'form': form})
+
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Classification
+from .forms import EditClassificationForm
+
+def edit_Classification(request, Classification_id):
+    # Obtén la tipificación o muestra un error 404 si no se encuentra
+    classification = get_object_or_404(Classification, id=Classification_id)
+
+    if request.method == 'POST':
+        # Si el formulario se envía, rellena el formulario con los datos enviados
+        form = EditClassificationForm(request.POST, instance=classification)
+        if form.is_valid():
+            # Si el formulario es válido, guárdalo y redirige al usuario a la lista de Classificationes
+            form.save()
+            return redirect('classification_list')
+    else:
+        # Si el formulario no se envía, rellena el formulario con los datos actuales de la tipificación
+        form = EditClassificationForm(instance=classification)
+
+    # Renderiza la plantilla con el formulario
+    return render(request, 'configuration/edit_classification.html', {'form': form})
+
+def delete_Classification(request, Classification_id):
+    Classification = get_object_or_404(Classification, id=Classification_id)
+    if request.method == 'POST':
+        Classification.delete()
+        return redirect('Classification_list')
+    return render(request, 'configuration/confirm_delete.html', {'object': Classification})
+
+def Classification_list(request):
+    classifications = Classification.objects.all()
+    for classification in classifications:
+        print(classification)
+    return render(request, 'configuration/classification_list.html', {'classifications': classifications})
+
+
 # Document viewer
 
 from django.views.generic import FormView
@@ -709,3 +759,41 @@ def upload_image(request):
             messages.error(request, 'Por favor, selecciona una imagen para subir.')
     return render(request, 'about/about.html')
 
+# GTR
+from django.shortcuts import render, redirect
+from .models import Event, Classification
+from django.urls import reverse
+from django.contrib import messages
+
+from django.shortcuts import render, redirect
+from .models import Event, Classification
+from django.contrib import messages
+
+def management(request):
+    # Obtén los eventos asignados al usuario logueado
+    eventos_asignados = Event.objects.filter(assigned_to=request.user)
+    classifications = Classification.objects.all()
+
+    if request.method == 'POST':
+        # Obtén el evento y la clasificación del formulario
+        evento_id = request.POST.get('evento')
+        classification_id = request.POST.get('classification')
+        comentario = request.POST.get('comentario')
+
+        # Encuentra el evento y la clasificación en la base de datos
+        evento = Event.objects.get(id=evento_id)
+        classification = Classification.objects.get(id=classification_id)
+
+        # Actualiza el evento
+        evento.classification = classification
+        evento.comentario = comentario
+        evento.estado = 'Finalizado'
+        evento.save()
+
+        messages.success(request, 'Evento actualizado con éxito.')
+        return redirect(reverse('manager'))
+
+    return render(request, 'management/manager.html', {
+        'eventos_asignados': eventos_asignados,
+        'classifications': classifications
+        })
