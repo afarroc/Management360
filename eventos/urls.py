@@ -62,4 +62,14 @@ urlpatterns = [
     # Url para subir pandas
     path('about/upload/', views.upload_image, name='upload_image'),
     
+    # management
+    path('management/manager/', views.management, name='manager'),
+    path('management/manager/', views.management, name='management'),
+
+    path('configuration/create_classification/', views.create_Classification, name='create_classification'),
+    path('configuration/edit_classification/<int:Classification_id>/', views.edit_Classification, name='edit_classification'),
+    path('configuration/delete_classification/<int:Classification_id>/', views.delete_Classification, name='delete_classification'),
+    path('configuration/classification_list/', views.Classification_list, name='classification_list'),
+
+
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
