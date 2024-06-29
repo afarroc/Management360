@@ -771,7 +771,7 @@ from django.contrib import messages
 
 def management(request):
     # Obtén los eventos asignados al usuario logueado
-    eventos_asignados = Event.objects.filter(assigned_to=request.user)
+    eventos_asignados = Event.objects.filter(assigned_to=request.user).order_by('-created_at')
     classifications = Classification.objects.all()
 
     if request.method == 'POST':
@@ -797,3 +797,23 @@ def management(request):
         'eventos_asignados': eventos_asignados,
         'classifications': classifications
         })
+
+from django.http import JsonResponse
+
+# Añade esta función a tu vista
+def update_event(request):
+    if request.method == 'POST':
+        # Obtén el ID del evento y si está seleccionado o no
+        evento_id = request.POST.get('evento')
+        selected = request.POST.get('selected') == 'true'
+
+        # Encuentra el evento en la base de datos
+        evento = Event.objects.get(id=evento_id)
+
+        # Actualiza el estado del evento
+        evento.estado = 'Finalizado' if selected else 'No finalizado'
+        evento.save()
+
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'success': False})
