@@ -17,14 +17,17 @@
     {% csrf_token %}
     <div class="col-auto">
       <label for="status" class="visually-hidden">Estado:</label>
+
       <select id="status" name="status" class="form-select">
         <option value="">-- Selecciona un estado --</option>
         {% for status in statuses %}
-          <option value="{{ status.id }}" {% if status.id == request.session.filtered_status|default:'' %}selected{% endif %}>
+          <option value="{{ status.id }}" {% if status.id|stringformat:"s" == request.session.filtered_status|default:'' %}selected{% endif %}>
             {{ status.status_name }}
           </option>
         {% endfor %}
       </select>
+      
+
     </div>
     <div class="col-auto">
       <label for="date" class="visually-hidden">Fecha:</label>

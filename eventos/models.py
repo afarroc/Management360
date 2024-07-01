@@ -1,8 +1,8 @@
-from django.contrib.auth.models import User
+import os
 from django.db import models
+from django.core.validators import FileExtensionValidator
+from django.contrib.auth.models import User
 from django.utils import timezone
-
-# Create your models here.
 
 # Modelo para los estados del evento
 class Status(models.Model):
@@ -29,6 +29,7 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
+# Modelo para las tareas
 class Task(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
@@ -73,6 +74,7 @@ class EventHistory(models.Model):
     def __str__(self):
         return f"{self.event.id} - {self.field_name} - {self.editor.username} : - ({self.old_value} - {self.new_value})"
 
+# Modelo para las etiquetas
 class Tag(models.Model):
     name = models.CharField(max_length=50)
 
@@ -191,8 +193,6 @@ class Skill(models.Model):
     def __str__(self):
         return self.skill_name
 
-import os
-
 def get_upload_path(instance, filename):
     # Obtiene la extensión del archivo
     ext = filename.split('.')[-1]
@@ -200,10 +200,6 @@ def get_upload_path(instance, filename):
     path = f'documents/{ext}/' if ext in ['pdf', 'docx', 'ppt'] else f'images/{ext}/'
     # Retorna la ruta completa con el nombre del archivo
     return os.path.join(path, filename)
-
-
-from django.db import models
-from django.core.validators import FileExtensionValidator
 
 # Documents
 class Document(models.Model):
@@ -214,5 +210,3 @@ class Document(models.Model):
 class Image(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     upload = models.FileField(upload_to=get_upload_path, validators=[FileExtensionValidator(['jpg', 'bmp', 'png'])])
-
-
