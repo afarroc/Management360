@@ -8,23 +8,29 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.forms import formset_factory
-from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views import View
+from django.views.generic import FormView
+from django.core.files.storage import FileSystemStorage
+
+# Local imports from .models
+from .models import Classification, Document, Event, EventAttendee, EventState, Image, Profile, Project, Status, Task
 
 # Local imports from .forms
-from .forms import (CreateNewEvent, CreateNewProject, CreateNewTask, EducationForm, EventEditForm, ExperienceForm, ProfileForm, SkillForm, EditStatusForm)
+from .forms import (CreateNewEvent, CreateNewProject, CreateNewTask, DocumentForm, EditClassificationForm, EducationForm,  ExperienceForm, ImageForm, ProfileForm, SkillForm, EditStatusForm)
+
+# Formsets
 EducationFormSet = formset_factory(EducationForm, extra=1, can_delete=True)
 ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
 SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
 
-# Local imports from .models
-from .models import Event, EventAttendee, EventState, Profile, Project, Status, Task
 
 # Create your views here.
+
+
 
 # Principal
 
@@ -36,8 +42,6 @@ def index(request):
 
 def home(request):
     return render(request, 'layouts/main.html')
-
-
 
 def about(request):
     username = "Nano"
@@ -152,8 +156,6 @@ def create_task(request):
 
 # Events
 
-
-from django.utils import timezone
 
 def events(request):
     # Intenta obtener el ID del estado 'En curso'
@@ -431,9 +433,6 @@ def edit_event(request, event_id=None):
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
 
-
-from django.contrib.messages import get_messages
-
 def change_event_status(request, event_id):
     print("Inicio de vista change_event_status")
     try:
@@ -620,10 +619,6 @@ def status_list(request):
     statuses = Status.objects.all()
     return render(request, 'configuration/status_list.html', {'statuses': statuses})
 
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Classification
-from .forms import EditClassificationForm  # Asegúrate de que este formulario esté definido correctamente
-
 def create_Classification(request):
     if request.method == 'POST':
         form = EditClassificationForm(request.POST)
@@ -633,10 +628,6 @@ def create_Classification(request):
     else:
         form = EditClassificationForm()
     return render(request, 'configuration/create_classification.html', {'form': form})
-
-from django.shortcuts import render, redirect, get_object_or_404
-from .models import Classification
-from .forms import EditClassificationForm
 
 def edit_Classification(request, Classification_id):
     # Obtén la tipificación o muestra un error 404 si no se encuentra
@@ -669,17 +660,7 @@ def Classification_list(request):
         print(classification)
     return render(request, 'configuration/classification_list.html', {'classifications': classifications})
 
-
 # Document viewer
-
-from django.views.generic import FormView
-from .forms import DocumentForm, ImageForm
-from .models import Document, Image
-from django.urls import reverse_lazy
-from .forms import DocumentForm
-from .models import Document
-from django.shortcuts import get_object_or_404, render, redirect
-from django.contrib import messages
 
 def document_view(request):
     documents = Document.objects.all()  # Obtiene todos los documentos
@@ -689,11 +670,6 @@ def document_view(request):
         'images': images
     }
     return render(request, 'documents/docsview.html', context)
-
-
-from django.shortcuts import get_object_or_404, redirect, render
-from django.contrib import messages
-from .models import Document, Image  # Asegúrate de importar el modelo Image
 
 def delete_file(request, file_id, file_type):
     if file_type == 'document':
@@ -713,7 +689,6 @@ def delete_file(request, file_id, file_type):
     else:
         # Si no es una solicitud POST, muestra la página de confirmación.
         return render(request, 'documents/confirmar_eliminacion.html', {'file': file_instance, 'type': file_type})
-
 
 # Vista para subir documentos
 class DocumentUploadView(FormView):
@@ -744,8 +719,6 @@ class ImageUploadView(FormView):
 
 # about upload
 
-from django.core.files.storage import FileSystemStorage
-
 def upload_image(request):
     if request.method == 'POST':
         try:
@@ -760,14 +733,6 @@ def upload_image(request):
     return render(request, 'about/about.html')
 
 # GTR
-from django.shortcuts import render, redirect
-from .models import Event, Classification
-from django.urls import reverse
-from django.contrib import messages
-
-from django.shortcuts import render, redirect
-from .models import Event, Classification
-from django.contrib import messages
 
 def management(request):
     # Obtén los eventos asignados al usuario logueado
@@ -797,8 +762,6 @@ def management(request):
         'eventos_asignados': eventos_asignados,
         'classifications': classifications
         })
-
-from django.http import JsonResponse
 
 # Añade esta función a tu vista
 def update_event(request):
