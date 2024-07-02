@@ -96,6 +96,7 @@ def signin(request):
             })
         else:
             login(request, user)
+            request.session.setdefault('first_session', True)
             return redirect('events')
 
 # Proyects
@@ -155,125 +156,116 @@ def create_task(request):
     return render(request, 'tasks/create_task.html', {'form': form})
 
 # Events
-
-
+@login_required
 def events(request):
-    # Intenta obtener el ID del estado 'En curso'
-    try:
-        status_en_curso = Status.objects.get(status_name='En curso').id
-    except ObjectDoesNotExist:
-        status_en_curso = None
-
-    # Si 'filtered_status' no está en la sesión, establece 'status' como el ID del estado 'En curso'
-    status = request.session.setdefault('filtered_status', status_en_curso)  # Obtiene 'filtered_status' de la sesión
-
-    # Si 'filtered_cerrado' no está en la sesión, establece 'cerrado' como True
-    cerrado = request.session.setdefault('filtered_cerrado', "true")  # Obtiene 'filtered_cerrado' de la sesión
-
-    # Si 'filtered_date' no está en la sesión, establece 'date' como la fecha actual
-    date = request.session.setdefault('filtered_date', timezone.now().date().isoformat())  # Obtiene 'filtered_date' de la sesión
-
-    # El resto del código sigue aquí...    
-    
-    try:
-        # Aquí va el código para interactuar con la base de datos...
-        # Verificar si el usuario tiene un perfil
-        if hasattr(request.user, 'profile'):
-            # Verificar el rol del usuario
-            if request.user.profile.role == 'SU':
-                # Si el usuario es un 'SU', puede ver todos los eventos
-                events = Event.objects.all().order_by('-updated_at')
-            else:
-                # Si no, solo puede ver los eventos que le están asignados o a los que asiste
-                events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-        else:
-            # Si el usuario no tiene un perfil, puedes manejarlo de la manera que prefieras.
-            # Por ejemplo, podrías redirigir al usuario a una página de error.
-            events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+    if request.session['first_session'] == True:
+        print('Esta la primera sesión')
+        try:
+            status_en_curso = Status.objects.get(status_name='En curso').id
+        except ObjectDoesNotExist:
+            status_en_curso = None
+        cerrado = request.session.setdefault('filtered_cerrado', True)
+        status = request.session.setdefault('filtered_status', status_en_curso)
+        date = request.session.setdefault('filtered_date', timezone.now().date().isoformat())
+        request.session['first_session'] = False  
+        print(cerrado, status, date)
+        print(request.session['filtered_cerrado'])
+        print(request.session['filtered_status'])
+        print(request.session['filtered_date'])
         
+    try:
+        if hasattr(request.user, 'profile'):
+            if request.user.profile.role == 'SU':
+                events = Event.objects.all().order_by('-updated_at')
+                
+            else:
+                events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+                
+        else:
+            events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+            
         statuses = Status.objects.all().order_by('status_name')
-
+        
         if request.method == 'POST':
-            print("Solicitud POST")
-            print(request.POST)
-            status = request.POST.get('status')
+            print('solicitud post')
+
+            cerrado = request.POST.get('cerrado') == 'True'
+            status = int(request.POST.get('status')) if request.POST.get('status') else None
             date = request.POST.get('date')
-            cerrado = request.POST.get('cerrado')
-
+            
+            print('post:', cerrado, status, date)
+            
             try:
-                # Obtén el estado 'Cerrado'
-                status_cerrado = Status.objects.get(status_name='Cerrado')
-
-                # Filtrar eventos basados en si están cerrados o no
                 if cerrado:
+                    status_cerrado = Status.objects.get(status_name='Cerrado')
                     events = events.exclude(event_status_id=status_cerrado.id)
-                    request.session['filtered_cerrado'] = "true"
-                    print("Filtrado por <> cerrado", cerrado)
+                    request.session['filtered_cerrado'] = True
                 else:
-                    request.session['filtered_cerrado'] = ""
+                    request.session['filtered_cerrado'] = False
+
             except Status.DoesNotExist:
-                print('El estado "Cerrado" no existe.')
-
-            # El resto del código sigue aquí...
-
-            # Filtrar eventos basados en el estado seleccionado
+                messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
+                
             if status:
                 events = events.filter(event_status_id=status)
                 request.session['filtered_status'] = status
-                print("Filtrado por id de estado", status)
             else:
-                request.session['filtered_status'] = ""
-
-            # Filtrar eventos basados en la fecha seleccionada
+                request.session['filtered_status'] = status
+                
+                
             if date:
                 events = events.filter(updated_at__date=date)
                 request.session['filtered_date'] = date
-                print("Filtrado por fecha", date)
             else:
-                request.session['filtered_date'] = ""
-
-            print("Fin vista Events")
+                request.session['filtered_date'] = date
+            
+            print("session cerrado:", request.session['filtered_cerrado'], type(request.session['filtered_cerrado']))
+            print("session estado:", request.session['filtered_status'], type(request.session['filtered_status']))
+            print("session fecha:", request.session['filtered_date'], type(request.session['filtered_date']))
+            
             return render(request, 'events/events.html', {
                 'events': events,
                 'statuses': statuses,
             })
-
+            
         else:
+            print('solcitud get')
+            status = request.session['filtered_status'] 
+            date = request.session['filtered_date']
+            cerrado = request.session['filtered_cerrado']
+            print(cerrado, status, date)
+
             
             try:
-                # Obtén el estado 'Cerrado'
-                status_cerrado = Status.objects.get(status_name='Cerrado')
-
-                # Filtrar eventos basados en si están cerrados o no
                 if cerrado:
+                    status_cerrado = Status.objects.get(status_name='Cerrado')
                     events = events.exclude(event_status_id=status_cerrado.id)
-
-                # Filtrar eventos basados en el estado seleccionado
+                    print("filtrado los estados cerrados")
+                    
                 if status:
                     events = events.filter(event_status_id=status)
-                    print("Filtrado por id de estado", status)
-
-                # Filtrar eventos basados en la fecha seleccionada
+                    print("Filtrado por estado", status)                    
                 if date:
-                    events = events.filter(created_at__date=date)
+                    events = events.filter(updated_at__date=date)
                     print("Filtrado por fecha", date)
                     
             except Status.DoesNotExist:
-                print('El estado "Cerrado" no existe.')
+                messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
                 
             except Exception as e:
                 messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
                 return redirect('index')
-
-            print(status, date)
-            print("Fin vista Events")
+            
+            print("session cerrado:", request.session['filtered_cerrado'], type(request.session['filtered_cerrado']))
+            print("session estado:", request.session['filtered_status'], type(request.session['filtered_status']))
+            print("session fecha:", request.session['filtered_date'], type(request.session['filtered_date']))
+            
             return render(request, 'events/events.html', {
                 'events': events,
                 'statuses': statuses,
             })
-
+            
     except Exception as e:
-        # Si ocurre un error, muestra un mensaje de alerta y redirige al usuario a la página de inicio
         messages.error(request, 'Ha ocurrido un error al obtener los eventos: {}'.format(e))
         return redirect('index')
 
