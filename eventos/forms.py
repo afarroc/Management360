@@ -1,6 +1,9 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Task, Event, Profile, Experience, Education, Skill, Status, Document, Classification
+from .models import Task, Event, Profile, Experience, Education, Skill, Status, Document, Classification, Project
+from django.core.validators import FileExtensionValidator
+
+
 class CreateNewEvent(forms.ModelForm):
     title = forms.CharField(max_length=200)
     description = forms.CharField(widget=forms.Textarea)
@@ -15,7 +18,6 @@ class CreateNewEvent(forms.ModelForm):
     class Meta:
         model = Event
         fields = ['title', 'description', 'venue', 'event_status', 'event_category', 'max_attendees', 'ticket_price', 'assigned_to', 'attendees']
-
 
 class AssignAttendeesForm(forms.Form):
     attendees = forms.ModelMultipleChoiceField(
@@ -35,9 +37,21 @@ class CreateNewTask(forms.ModelForm):
             'project': forms.Select(attrs={'class': 'form-select'}),
         }
 
-class CreateNewProject(forms.Form):
-    name = forms.CharField(label="Nombre del proyecto", max_length=200, widget=forms.TextInput(attrs={'class':'input'}))
+class CreateNewProject(forms.ModelForm):
+    
+    class Meta:
+        model = Project
+        fields = ['title', 'description', 'event', 'project_status', 'assigned_to', 'attendees']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control'}),
+            'event': forms.Select(attrs={'class': 'form-select'}),
+            'project_status': forms.Select(attrs={'class': 'form-select'}),
+            'assigned_to': forms.Select(attrs={'class': 'form-select'}),
+            'attendees': forms.SelectMultiple(attrs={'class': 'form-select'}),
+        }
 
+        
 class EventForm(forms.ModelForm):
     class Meta:
         model = Event
@@ -78,9 +92,6 @@ class EditStatusForm(forms.ModelForm):
     class Meta:
         model = Status
         fields = ['status_name', 'icon', 'active', 'color']
-
-from django import forms
-from django.core.validators import FileExtensionValidator
 
 # Formulario para subir documentos
 class DocumentForm(forms.Form):

@@ -17,20 +17,17 @@ from django.views.generic import FormView
 from django.core.files.storage import FileSystemStorage
 
 # Local imports from .models
-from .models import Classification, Document, Event, EventAttendee, EventState, Image, Profile, Project, Status, Task
+from .models import Classification, Document, Event, EventAttendee, ProjectStatus, Image, Profile, Project, Status, Task
 
 # Local imports from .forms
-from .forms import (CreateNewEvent, CreateNewProject, CreateNewTask, DocumentForm, EditClassificationForm, EducationForm,  ExperienceForm, ImageForm, ProfileForm, SkillForm, EditStatusForm)
+from .forms import (CreateNewEvent, CreateNewProject, CreateNewTask, DocumentForm, EditClassificationForm, EducationForm,  ExperienceForm, ImageForm, ProfileForm, SkillForm, EditStatusForm, Event)
 
 # Formsets
 EducationFormSet = formset_factory(EducationForm, extra=1, can_delete=True)
 ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
 SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
 
-
 # Create your views here.
-
-
 
 # Principal
 
@@ -102,20 +99,34 @@ def signin(request):
 # Proyects
             
 def projects(request):
-    projects = Project.objects.all()
+    statuses = ProjectStatus.objects.all().order_by('status_name')
+    projects = Project.objects.all().order_by('-updated_at')
     return render(request, "projects/projects.html",{
-        'projects':projects
+        'projects':projects,
+        'statuses':statuses
     })
 
 def create_project(request):
     if request.method == 'GET':
-        return render(request, 'projects/create_project.html', {
-            'form':CreateNewProject()
-        })
+        form = CreateNewProject()
     else:
+        form = CreateNewProject(request.POST)
+        if form.is_valid():
+            project = form.save(commit=False)
+            project.host = request.user  # Asignar el usuario actual como el creador del projecto
+            project.event = form.cleaned_data['event']
+            try:
+                with transaction.atomic():
+                    project.save()
+                    form.save_m2m()
+                    messages.success(request, 'Project created successfully!')
+                    return redirect('projects')
+            except IntegrityError:
+                messages.error(request, 'There was a problem saving the project.')
+        else:
+            messages.error(request, 'Please correct the errors below.')
 
-        Project.objects.create(name=request.POST['name'])
-        return redirect('projects')
+    return render(request, 'projects/create_project.html', {'form': form})
 
 def project_detail(request, id):
     project = get_object_or_404(Project, id=id)
@@ -124,6 +135,52 @@ def project_detail(request, id):
         'project' : project,
         'tasks':tasks
     })
+
+def project_delete(request, project_id):
+    if request.method == 'POST':
+        project = get_object_or_404(Project, pk=project_id)
+        if request.user.profile.role != 'SU':
+            messages.error(request, 'No tienes permiso para eliminar este projecto.')
+            return redirect(reverse('projects'))
+        project.delete()
+        messages.success(request, 'El pryecto ha sido eliminado exitosamente.')
+    else:
+        messages.error(request, 'Método no permitido.')
+    return redirect(reverse('projects'))
+
+def change_project_status(request, project_id):
+    print("Inicio de vista change_project_status")
+    try:
+        if request.method != 'POST':
+            print("solicitud GET")
+            return HttpResponse("Método no permitido", status=405)
+        print("solicitud Post:", request.POST)
+        project = get_object_or_404(Project, pk=project_id)
+        print("ID a cambiar:", str(project.id))
+        new_status_id = request.POST.get('new_status_id')
+        new_status = get_object_or_404(ProjectStatus, pk=new_status_id)
+        print("new_status_id", str(new_status))
+        if request.user is None:
+            print("User is none: Usuario no autenticado")
+            messages.error(request, "User is none: Usuario no autenticado")
+            return redirect('index')
+        if project.host is not None and (project.host == request.user or request.user in project.attendees.all()):
+            old_status = project.project_status
+            print("old_status:", old_status)
+            project.record_edit(
+                editor=request.user,
+                field_name='project_status',
+                old_value=str(old_status),
+                new_value=str(new_status)
+            )
+        else:
+            return HttpResponse("No tienes permiso para editar este projecto", status=403)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return HttpResponse(f"Error: {str(e)}", status=500)
+
+    return redirect('projects')
+
 
 # Tasks
      
