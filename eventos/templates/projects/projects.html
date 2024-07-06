@@ -1,16 +1,30 @@
-
 {% extends 'layouts/base.html' %}
 
 {% block content %}
+<!-- Mensajes de confirmación y éxito -->
+{% if messages %}
+<div id="message-container" class="alert alert-info" role="alert">
+    {% for message in messages %}
+    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
+        {% endfor %}
+</div>
+{% endif %}
+<div class="container my-3">
+    <h3 class="text-center">Projects</h3>
+</div>
 
-<h1>Projects</h1>
+{% if projects %}
+    <!-- Aquí va el código para mostrar los eventos -->
 
-{% for project in projects %}
-<article class="card">
-    <a href="{% url 'project_detail' project.id %}">
-        <h1>{{project.name}}</h1>
-    </a>
-</article>
-{% endfor %}
+<div class="row row-cols-1 row-cols-md-3 g-3">
+	{% for project in projects %}
+	{% include 'projects/project_card.html' %}
+	{% endfor %}
+</div>
+{% else %}
+<div class="container my-3">
+	<p>No hay projectos para mostrar.</p>
+</div>
+{% endif %}
 
 {% endblock %}
