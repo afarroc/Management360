@@ -19,8 +19,9 @@ urlpatterns = [
     
     # Proyectos
     path('projects/', views.projects, name="projects"),
-    path('projects/<int:id>', views.project_detail, name="project_detail"),
-    path('create_project/', views.create_project, name="create_project"),
+    path('projects/detail/<int:id>', views.project_detail, name="project_detail"),
+    path('projects/create/', views.create_project, name="create_project"),
+    path('projects/delete/<int:id>', views.project_delete, name="project_delete"),
 
     # Tareas
     path('task/', views.task, name="tasks"),
@@ -28,6 +29,7 @@ urlpatterns = [
 
     # Cambio de estado y eliminación de eventos
     path('change_event_status/<int:event_id>/', views.change_event_status, name='change_event_status'),
+    path('change_project_status/<int:project_id>/', views.change_project_status, name='change_project_status'),
     path('delete_event/<int:event_id>/', views.delete_event, name='delete_event'),
 
     # Panel

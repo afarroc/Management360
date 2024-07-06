@@ -7,12 +7,22 @@ from django.utils import timezone
 # Modelo para los estados del evento
 class Status(models.Model):
     status_name = models.CharField(max_length=50)
-    icon = models.CharField(max_length=30, blank=True)
+    icon = models.CharField(max_length=30, blank=True, null=True)
     active = models.BooleanField(default=True)
     color = models.CharField(max_length=30, default="white")
     
     def __str__(self):
         return self.status_name
+
+class ProjectStatus(models.Model):
+    status_name = models.CharField(max_length=50)
+    icon = models.CharField(max_length=30, blank=True, null=True)
+    active = models.BooleanField(default=True)
+    color = models.CharField(max_length=30, default="white")
+    
+    def __str__(self):
+        return self.status_name
+
 
 # Classificationes
 class Classification(models.Model):
@@ -22,23 +32,115 @@ class Classification(models.Model):
     def __str__(self):
         return self.nombre
 
-# Modelo para los proyectos    
-class Project(models.Model):
-    name = models.CharField(max_length=200)
+
+
+# Modelo para registrar los estados por los que pasa cada proyecto
+class ProjectState(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    status = models.ForeignKey('ProjectStatus', on_delete=models.CASCADE)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        # Si es un nuevo estado, establecer la hora de inicio
+        if not self.id:
+            self.start_time = timezone.now()
+        # Si se está finalizando un estado, establecer la hora de finalización
+        else:
+            self.end_time = timezone.now()
+        super(ProjectState, self).save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        return f"{self.status.status_name} ({self.start_time} - {self.end_time})"
+    
+# Modelo para registrar las ediciones realizadas en los campos del proyecto
+class ProjectHistory(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    edited_at = models.DateTimeField(auto_now_add=True)
+    editor = models.ForeignKey(User, on_delete=models.CASCADE)
+    field_name = models.CharField(max_length=100)
+    old_value = models.TextField(null=True, blank=True)
+    new_value = models.TextField(null=True, blank=True)
 
+    def __str__(self):
+        return f"{self.project.id} - {self.field_name} - {self.editor.username} : - ({self.old_value} - {self.new_value})"
+
+
+
+
+# Modelo para los proyectos    
+class Project(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    done = models.BooleanField(default=False)
+    event = models.ForeignKey('Event', on_delete=models.CASCADE, null=True, blank=True)
+    project_status = models.ForeignKey(ProjectStatus, on_delete=models.CASCADE)
+    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_projects')
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_projets') 
+    attendees = models.ManyToManyField(User, through='ProjectAttendee', related_name='collaborating_projects') 
+
+    def change_status(self, new_status_id):
+        # Obtener el nuevo estado
+        new_status = ProjectStatus.objects.get(id=new_status_id)
+        
+        # Finalizar el estado actual
+        current_state = self.projectstate_set.filter(end_time__isnull=True).last()
+        if current_state:
+            current_state.end_time = timezone.now()
+            current_state.save()
+        
+        # Crear un nuevo estado con el nuevo estado proporcionado
+        ProjectState.objects.create(project=self, status=new_status)
+        
+        # Actualizar el estado del proyecto
+        self.project_status = new_status
+        self.updated_at = timezone.now()
+        self.save()
+
+    def record_edit(self, editor, field_name, old_value, new_value):
+        # Registrar la edición en el historial
+        project_history = ProjectHistory.objects.create(
+            project=self,
+            editor=editor,
+            field_name=field_name,
+            old_value=old_value,
+            new_value=new_value
+        )
+        print(f"Registro de edición creado: {project_history}")
+        
+        # Si el campo editado es 'projects_status', ejecutar change_status
+        if field_name == 'project_status':
+            new_status = ProjectStatus.objects.get(status_name=new_value)
+            self.change_status(new_status.id)
+   
+
+    def __str__(self):
+        return f"{self.title} - {self.event}"
+
+
+# Modelo para registrar los asistentes al Proyecto
+class ProjectAttendee(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    registration_time = models.DateTimeField(auto_now_add=True)
+    has_paid = models.BooleanField(default=False)  # Campo nuevo para el pago
+    notes = models.TextField(blank=True, null=True)  # Campo nuevo para notas adicionales
+
+
+    
 # Modelo para las tareas
 class Task(models.Model):
     title = models.CharField(max_length=200)
-    description = models.TextField()
+    description = models.TextField(null=True, blank=True)
     important = models.BooleanField(default=False)
     created_at = models.DateField(auto_now_add=True)
     updated_at = models.DateField(null=True, blank=True)  # Agregar blank=True para permitir que el campo sea opcional en formularios
     done = models.BooleanField(default=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')  # Asegúrate de que esta línea esté presente
     project = models.ForeignKey('Project', on_delete=models.CASCADE)  # Usa comillas si Project está definido más abajo en el mismo archivo
+    event = models.ForeignKey('Event', on_delete=models.CASCADE, blank=True, null=True)
 
     def __str__(self):
         return f"{self.title} - {self.project.name}"
@@ -84,7 +186,7 @@ class Tag(models.Model):
 # Modelo principal del evento
 class Event(models.Model):
     title = models.CharField(max_length=200)
-    description = models.TextField()
+    description = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     event_status = models.ForeignKey(Status, on_delete=models.CASCADE)
@@ -134,6 +236,9 @@ class Event(models.Model):
         if field_name == 'event_status':
             new_status = Status.objects.get(status_name=new_value)
             self.change_status(new_status.id)
+            
+    def __str__(self):
+        return f"{self.title}"
 
 # Modelo para registrar los asistentes al evento
 class EventAttendee(models.Model):
