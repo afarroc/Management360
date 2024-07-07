@@ -14,17 +14,17 @@ urlpatterns = [
     path('events/', views.events, name="events"),
     path('events/<int:id>', views.event_detail, name="event_detail"),
     path('events/create', views.create_event, name="create_event"),
-    path('delete_event/<int:event_id>/', views.delete_event, name='delete_event'),    
-    path('events/edit/', views.edit_event, name="edit_event"),
-    path('events/edit/<int:event_id>', views.edit_event, name="edit_event"),
+    path('events/delete/<int:event_id>/', views.event_delete, name='event_delete'),    
+    path('events/edit/', views.event_edit, name="event_edit"),
+    path('events/edit/<int:event_id>', views.event_edit, name="event_edit"),
 
     # Proyectos
     path('projects/', views.projects, name="projects"),
     path('projects/detail/<int:id>', views.project_detail, name="project_detail"),
     path('projects/create/', views.create_project, name="create_project"),
-    path('projects/delete/<int:id>', views.project_delete, name="project_delete"),
-    path('projects/edit/<int:project_id>', views.project_edit, name="project_edit"),
+    path('projects/delete/<int:project_id>', views.project_delete, name="project_delete"),
     path('projects/edit/', views.project_edit, name="project_edit"),
+    path('projects/edit/<int:project_id>', views.project_edit, name="project_edit"),
 
     # Tareas
     path('task/', views.task, name="tasks"),
@@ -36,7 +36,7 @@ urlpatterns = [
 
     # Panel
     path('panel/', views.panel, name='panel'),
-    path('panel/event_edit/<int:event_id>/', views.edit_event, name='event_edit'),
+    path('panel/event_edit/<int:event_id>/', views.event_edit, name='event_edit'),
 
     # Sesión
     path('accounts/signup/', views.signup, name='signup'),

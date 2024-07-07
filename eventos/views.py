@@ -181,7 +181,6 @@ def change_project_status(request, project_id):
 
     return redirect('projects')
 
-
 def project_edit(request, project_id=None):
     try:
         if project_id is not None:
@@ -222,10 +221,10 @@ def project_edit(request, project_id=None):
             # Estamos manejando una solicitud GET sin argumentos
             # Verificar el rol del usuario
             if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
-                # Si el usuario es un 'SU', puede ver todos los eventos
+                # Si el usuario es un 'SU', puede ver todos los proyectos
                 projects = Project.objects.all().order_by('-updated_at')
             else:
-                # Si no, solo puede ver los eventos que le están asignados o a los que asiste
+                # Si no, solo puede ver los proyectos que le están asignados o a los que asiste
                 projects = Project.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
             return render(request, 'projects/project_list.html', {'projects': projects})
     except Exception as e:
@@ -482,7 +481,7 @@ def event_detail(request, id):
         'events':events
     })
 
-def edit_event(request, event_id=None):
+def event_edit(request, event_id=None):
     try:
         if event_id is not None:
             # Estamos editando un evento existente
@@ -512,7 +511,7 @@ def edit_event(request, event_id=None):
                     form.save()
 
                     messages.success(request, 'Evento guardado con éxito.')
-                    return redirect('edit_event')  # Redirige a la página de lista de edición
+                    return redirect('event_edit')  # Redirige a la página de lista de edición
                 else:
                     messages.error(request, 'Hubo un error al guardar el evento. Por favor, revisa el formulario.')
             else:
@@ -565,7 +564,7 @@ def change_event_status(request, event_id):
 
     return redirect('events')
 
-def delete_event(request, event_id):
+def event_delete(request, event_id):
     # Asegúrate de que solo se pueda acceder a esta vista mediante POST
     if request.method == 'POST':
         event = get_object_or_404(Event, pk=event_id)
