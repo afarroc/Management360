@@ -14,14 +14,17 @@ urlpatterns = [
     path('events/', views.events, name="events"),
     path('events/<int:id>', views.event_detail, name="event_detail"),
     path('events/create', views.create_event, name="create_event"),
+    path('delete_event/<int:event_id>/', views.delete_event, name='delete_event'),    
     path('events/edit/', views.edit_event, name="edit_event"),
     path('events/edit/<int:event_id>', views.edit_event, name="edit_event"),
-    
+
     # Proyectos
     path('projects/', views.projects, name="projects"),
     path('projects/detail/<int:id>', views.project_detail, name="project_detail"),
     path('projects/create/', views.create_project, name="create_project"),
     path('projects/delete/<int:id>', views.project_delete, name="project_delete"),
+    path('projects/edit/<int:project_id>', views.project_edit, name="project_edit"),
+    path('projects/edit/', views.project_edit, name="project_edit"),
 
     # Tareas
     path('task/', views.task, name="tasks"),
@@ -30,7 +33,6 @@ urlpatterns = [
     # Cambio de estado y eliminación de eventos
     path('change_event_status/<int:event_id>/', views.change_event_status, name='change_event_status'),
     path('change_project_status/<int:project_id>/', views.change_project_status, name='change_project_status'),
-    path('delete_event/<int:event_id>/', views.delete_event, name='delete_event'),
 
     # Panel
     path('panel/', views.panel, name='panel'),
