@@ -79,7 +79,7 @@ class Project(models.Model):
     project_status = models.ForeignKey(ProjectStatus, on_delete=models.CASCADE)
     host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_projects')
     assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_projets') 
-    attendees = models.ManyToManyField(User, through='ProjectAttendee', related_name='collaborating_projects') 
+    attendees = models.ManyToManyField(User, through='ProjectAttendee', related_name='collaborating_projects',blank=True, null=True) 
 
     def change_status(self, new_status_id):
         # Obtener el nuevo estado

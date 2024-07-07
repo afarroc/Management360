@@ -193,7 +193,7 @@ def project_edit(request, project_id=None):
                 return redirect('index')
 
             if request.method == 'POST':
-                form = CreateNewProject(request.POST, instance=Project)
+                form = CreateNewProject(request.POST, instance=project)
                 if form.is_valid():
                     # Asigna el usuario autenticado como el editor
                     project.editor = request.user
