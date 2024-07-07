@@ -182,6 +182,56 @@ def change_project_status(request, project_id):
     return redirect('projects')
 
 
+def project_edit(request, project_id=None):
+    try:
+        if project_id is not None:
+            # Estamos editando un proyecto existente
+            try:
+                project = get_object_or_404(Project, pk=project_id)
+            except Http404:
+                messages.error(request, 'El proyecto con el ID "{}" no existe.'.format(project_id))
+                return redirect('index')
+
+            if request.method == 'POST':
+                form = CreateNewProject(request.POST, instance=Project)
+                if form.is_valid():
+                    # Asigna el usuario autenticado como el editor
+                    project.editor = request.user
+                    print('guardando via post si es valido')
+
+                    # Guardar el proyecto con el editor actual (usuario que realiza la solicitud)
+                    for field in form.changed_data:
+                        old_value = getattr(project, field)
+                        new_value = form.cleaned_data.get(field)
+                        project.record_edit(
+                            editor=request.user,
+                            field_name=field,
+                            old_value=str(old_value),
+                            new_value=str(new_value)
+                        )
+                    form.save()
+
+                    messages.success(request, 'Proyecto guardado con éxito.')
+                    return redirect('project_edit')  # Redirige a la página de lista de edición
+                else:
+                    messages.error(request, 'Hubo un error al guardar el proyecto. Por favor, revisa el formulario.')
+            else:
+                form = CreateNewProject(instance=project)
+            return render(request, 'projects/project_edit.html', {'form': form})
+        else:
+            # Estamos manejando una solicitud GET sin argumentos
+            # Verificar el rol del usuario
+            if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
+                # Si el usuario es un 'SU', puede ver todos los eventos
+                projects = Project.objects.all().order_by('-updated_at')
+            else:
+                # Si no, solo puede ver los eventos que le están asignados o a los que asiste
+                projects = Project.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+            return render(request, 'projects/project_list.html', {'projects': projects})
+    except Exception as e:
+        messages.error(request, 'Ha ocurrido un error: {}'.format(e))
+        return redirect('index')
+
 # Tasks
      
 def task(request):
