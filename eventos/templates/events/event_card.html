@@ -26,7 +26,7 @@
 				<button type="submit" class="btn btn-outline-primary btn-sm">Cambiar Estado</button>
 			</form>
 			{% if request.user.profile.role == 'SU' %}
-			<form id="delete-form-{{ event.id }}" action="{% url 'delete_event' event.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este evento?');">
+			<form id="delete-form-{{ event.id }}" action="{% url 'event_delete' event.id %}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este evento?');">
 			{% csrf_token %}
 				<button type="submit" class="btn btn-danger">
 					<i class="bi bi-trash-fill"></i>

@@ -65,11 +65,11 @@
                 <td>{{ event.ticket_price }}</td>
                 <td>{{ event.assigned_to.username }}</td>
                 <td>
-                    <a href="{% url 'edit_event' event.id %}" class="btn btn-primary">
+                    <a href="{% url 'event_edit' event.id %}" class="btn btn-primary">
                         <i class="bi bi-pencil-fill"></i>
                     </a>
                     <!-- Formulario de eliminación -->
-                    <form method="post" action="{% url 'delete_event' event.id %}" style="display: inline;">
+                    <form method="post" action="{% url 'event_delete' event.id %}" style="display: inline;">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-danger">
                             <i class="bi bi-trash-fill"></i>
