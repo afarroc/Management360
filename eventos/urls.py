@@ -8,15 +8,18 @@ urlpatterns = [
     # Páginas principales
     path('', views.index, name="index"),
     path('about/', views.about, name="about"),
-    path('admin/', views.create_project, name="admin"),
+    path('blank/', views.blank, name="blank"),
 
     # Eventos
     path('events/', views.events, name="events"),
-    path('events/<int:id>', views.event_detail, name="event_detail"),
+    path('events/detail/<int:event_id>', views.event_detail, name="event_detail"),
     path('events/create', views.create_event, name="create_event"),
     path('events/delete/<int:event_id>/', views.event_delete, name='event_delete'),    
     path('events/edit/', views.event_edit, name="event_edit"),
     path('events/edit/<int:event_id>', views.event_edit, name="event_edit"),
+    path('events/panel/', views.event_panel, name="event_panel"),
+    path('events/panel/<int:event_id>', views.event_panel, name="event_panel"),
+
 
     # Proyectos
     path('projects/', views.projects, name="projects"),
@@ -25,10 +28,16 @@ urlpatterns = [
     path('projects/delete/<int:project_id>', views.project_delete, name="project_delete"),
     path('projects/edit/', views.project_edit, name="project_edit"),
     path('projects/edit/<int:project_id>', views.project_edit, name="project_edit"),
+    path('projects/panel/', views.project_panel, name="project_panel"),
+    path('projects/panel/<int:project_id>', views.project_panel, name="project_panel"),
 
     # Tareas
-    path('task/', views.task, name="tasks"),
-    path('create_task/', views.create_task, name="create_task"),
+    path('tasks/', views.tasks, name="tasks"),
+    path('tasks/<int:task_id>', views.tasks, name="tasks"),
+    path('tasks/create/', views.task_create, name="task_create"),
+    path('tasks/edit/', views.task_edit, name="task_edit"),
+    path('tasks/edit/<int:task_id>', views.task_edit, name="task_edit"),
+    path('tasks/delete/<int:task_id>', views.task_delete, name="task_delete"),
 
     # Cambio de estado y eliminación de eventos
     path('change_event_status/<int:event_id>/', views.change_event_status, name='change_event_status'),

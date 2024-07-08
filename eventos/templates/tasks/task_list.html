@@ -50,26 +50,21 @@
                     <tr>
                         <th>ID</th>
                         <th>Título</th>
-                        <th>Anfitrión</th>
-                        <th>Asignado a</th>
-                        <th>Estado</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for project in projects %}
+                    {% for task in tasks %}
                     <tr>
-                        <td><a href="{% url 'project_panel' project.id %}">{{ project.id }} </a></td>
-                        <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{project.description}}" href="{% url 'project_panel' project.id %}">{{ project.title }}</a></td>
-                        <td>{{ project.host.username }}</td>
-                        <td>{{ project.assigned_to.username }}</td>
-                        <td>{{ project.project_status.status_name }}</td>
+                        <td><a href="{% url 'tasks' task.id %}">{{ task.id }} </a></td>
+                        <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{task.description}}" href="{% url 'tasks' task.id %}">{{ task.title }}</a></td>
+                        <td>{{ tasks.host.username }}</td>
                         <td>
-                            <a href="{% url 'project_edit' project.id %}" class="btn btn-primary">
+                            <a href="{% url 'task_edit' task.id %}" class="btn btn-primary">
                                 <i class="bi bi-pencil-fill"></i>
                             </a>
                             <!-- Formulario de eliminación -->
-                            <form method="post" action="{% url 'project_delete' project.id %}" style="display: inline;">
+                            <form method="post" action="{% url 'task_delete' task.id %}" style="display: inline;">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-danger">
                                     <i class="bi bi-trash-fill"></i>
@@ -79,7 +74,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="11">No hay proyectos disponibles.</td>
+                        <td colspan="11">No hay tareas disponibles.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
