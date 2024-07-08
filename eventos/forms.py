@@ -5,19 +5,22 @@ from django.core.validators import FileExtensionValidator
 
 
 class CreateNewEvent(forms.ModelForm):
-    title = forms.CharField(max_length=200)
-    description = forms.CharField(widget=forms.Textarea)
-    venue = forms.CharField(max_length=200)
-    event_status = forms.ModelChoiceField(queryset=Status.objects.all())
-    event_category = forms.CharField(max_length=50)
-    max_attendees = forms.IntegerField()
-    ticket_price = forms.DecimalField(max_digits=6, decimal_places=2)
-    assigned_to = forms.ModelChoiceField(queryset=User.objects.all())  # Un único usuario asignado
-    attendees = forms.ModelMultipleChoiceField(queryset=User.objects.all(), required=False)  # Varios asistentes
-    
+
     class Meta:
         model = Event
-        fields = ['title', 'description', 'venue', 'event_status', 'event_category', 'max_attendees', 'ticket_price', 'assigned_to', 'attendees']
+        fields = ['title', 'description', 'attendees', 'venue', 'event_status', 'event_category', 'max_attendees', 'ticket_price', 'assigned_to']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control'}),
+            'attendees': forms.SelectMultiple(attrs={'class': 'form-select'}),
+            'venue': forms.TextInput(attrs={'class': 'form-control'}),
+            'event_status': forms.Select(attrs={'class': 'form-select'}),
+            'event_category': forms.TextInput(attrs={'class': 'form-control'}),
+            'max_attendees': forms.NumberInput(attrs={'class': 'form-control'}),
+            'ticket_price': forms.NumberInput(attrs={'class': 'form-control'}),
+            'assigned_to': forms.Select(attrs={'class': 'form-select'}),
+        }
+
 
 class AssignAttendeesForm(forms.Form):
     attendees = forms.ModelMultipleChoiceField(
@@ -51,7 +54,20 @@ class CreateNewProject(forms.ModelForm):
             'attendees': forms.SelectMultiple(attrs={'class': 'form-select'}),
         }
 
-        
+
+class CreateNewTask(forms.ModelForm):
+    
+    class Meta:
+        model = Task
+        fields = ['title', 'description', 'event', 'project']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control'}),
+            'event': forms.Select(attrs={'class': 'form-select'}),
+            'project': forms.Select(attrs={'class': 'form-select'}),
+
+        }
+       
 class EventForm(forms.ModelForm):
     class Meta:
         model = Event

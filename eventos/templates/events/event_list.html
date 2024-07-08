@@ -1,100 +1,116 @@
 {% extends 'layouts/base.html' %}
 
 {% block content %}
-
+<div class="pagetitle">
+    <h1>{{title}}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'blank' %}">Blank</a></li>
+            <li class="breadcrumb-item active">{{title}}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+<!-- Mensajes de confirmación y éxito -->
 {% if messages %}
-<div class="alert alert-info">
+<div id="message-container" class="alert alert-info" role="alert">
     {% for message in messages %}
     <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
-    {% endfor %}
+        {% endfor %}
 </div>
 {% endif %}
+<section class="section">
+    <div class="row">
+        <div class="col-lg-6">
 
-<h2>Lista de Eventos</h2>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Example Card</h5>
+                    <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.</p>
+                </div>
+            </div>
 
-<style>
-    /* Ajusta el alto de las celdas de la tabla al mínimo y quita el ajuste de texto */
-    .table td, .table th {
-        height: 1%;
-        white-space: nowrap;
-    }
-    /* Establece un ancho máximo para la columna de descripción y maneja el desbordamiento de texto */
-    .table td:nth-child(3) {
-        max-width: 200px;  /* Ajusta este valor según tus necesidades */
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    /* Inmoviliza las dos primeras columnas */
-    .table td:nth-child(-n+2), .table th:nth-child(-n+2) {
-        position: sticky;
-        left: 0;
-        background: white;
-        z-index: 1;
-    }
-</style>
+        </div>
 
-<!-- Contenedor independiente para la tabla con desplazamiento vertical -->
-<div style="overflow-x: auto; overflow-y: auto; max-height: 70vh;">
-    <table class="table table-hover table-striped">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Título</th>
-                <th>Descripción</th>
-                <th>Estado</th>
-                <th>Lugar</th>
-                <th>Anfitrión</th>
-                <th>Categoría</th>
-                <th>Máximo de asistentes</th>
-                <th>Precio del ticket</th>
-                <th>Asignado a</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for event in events %}
-            <tr>
-                <td>{{ event.id }}</td>
-                <td>{{ event.title }}</td>
-                <td>{{ event.description }}</td>
-                <td>{{ event.event_status.status_name }}</td>
-                <td>{{ event.venue }}</td>
-                <td>{{ event.host.username }}</td>
-                <td>{{ event.event_category }}</td>
-                <td>{{ event.max_attendees }}</td>
-                <td>{{ event.ticket_price }}</td>
-                <td>{{ event.assigned_to.username }}</td>
-                <td>
-                    <a href="{% url 'event_edit' event.id %}" class="btn btn-primary">
-                        <i class="bi bi-pencil-fill"></i>
-                    </a>
-                    <!-- Formulario de eliminación -->
-                    <form method="post" action="{% url 'event_delete' event.id %}" style="display: inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-trash-fill"></i>
-                        </button>
-                    </form>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="11">No hay eventos disponibles.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>  <!-- Fin del contenedor independiente para la tabla -->
+        <div class="col-lg-6">
+
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Example Card</h5>
+                    <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.</p>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- Contenedor independiente para la tabla con desplazamiento vertical -->
+        <div style="overflow-x: auto; overflow-y: auto; max-height: 40vh;">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Título</th>
+                        <th>Estado</th>
+                        <th>Lugar</th>
+                        <th>Anfitrión</th>
+                        <th>Máximo de asistentes</th>
+                        <th>Precio del ticket</th>
+                        <th>Asignado a</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for event in events %}
+                    <tr>
+                        <td><a href="{% url 'event_panel' event.id %}">{{ event.id }} </a></td>
+                        <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{event.description}}" href="{% url 'event_panel' event.id %}">{{ event.title }}</a></td>
+                        <td>{{ event.event_status.status_name }}</td>
+                        <td>{{ event.venue }}</td>
+                        <td>{{ event.host.username }}</td>
+                        <td>{{ event.max_attendees }}</td>
+                        <td>{{ event.ticket_price }}</td>
+                        <td>{{ event.assigned_to.username }}</td>
+                        <td>
+                            <div style="display: flex;">
+                                <a href="{% url 'event_edit' event.id %}" class="btn btn-primary">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </a>
+                                <!-- Formulario de eliminación -->
+                                <form method="post" action="{% url 'event_delete' event.id %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11">No hay eventos disponibles.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>  <!-- Fin del contenedor independiente para la tabla -->
+    </div>
+</section>
+
+
+
 
 <!-- Código de jQuery para desvanecer los mensajes de alerta -->
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script type="text/javascript">
-$(document).ready(function() {
-    // Oculta los mensajes de alerta después de 5 segundos (5000 milisegundos)
-    setTimeout(function() {
-        $('.alert').fadeOut('slow');
-    }, 5000);
-});
+
+    $(document).ready(function () {
+        // Oculta los mensajes de alerta después de 5 segundos (5000 milisegundos)
+        setTimeout(function () {
+            $('.alert').fadeOut('slow');
+        }, 5000);
+    });
 </script>
+
 
 {% endblock %}

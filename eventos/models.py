@@ -23,6 +23,14 @@ class ProjectStatus(models.Model):
     def __str__(self):
         return self.status_name
 
+class TaskStatus(models.Model):
+    status_name = models.CharField(max_length=50)
+    icon = models.CharField(max_length=30, blank=True, null=True)
+    active = models.BooleanField(default=True)
+    color = models.CharField(max_length=30, default="white")
+    
+    def __str__(self):
+        return self.status_name
 
 # Classificationes
 class Classification(models.Model):
@@ -31,8 +39,6 @@ class Classification(models.Model):
 
     def __str__(self):
         return self.nombre
-
-
 
 # Modelo para registrar los estados por los que pasa cada proyecto
 class ProjectState(models.Model):
@@ -65,9 +71,6 @@ class ProjectHistory(models.Model):
     def __str__(self):
         return f"{self.project.id} - {self.field_name} - {self.editor.username} : - ({self.old_value} - {self.new_value})"
 
-
-
-
 # Modelo para los proyectos    
 class Project(models.Model):
     title = models.CharField(max_length=200)
@@ -79,7 +82,7 @@ class Project(models.Model):
     project_status = models.ForeignKey(ProjectStatus, on_delete=models.CASCADE)
     host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_projects')
     assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_projets') 
-    attendees = models.ManyToManyField(User, through='ProjectAttendee', related_name='collaborating_projects',blank=True, null=True) 
+    attendees = models.ManyToManyField(User, through='ProjectAttendee', related_name='collaborating_projects',blank=True) 
 
     def change_status(self, new_status_id):
         # Obtener el nuevo estado
@@ -119,7 +122,6 @@ class Project(models.Model):
     def __str__(self):
         return f"{self.title} - {self.event}"
 
-
 # Modelo para registrar los asistentes al Proyecto
 class ProjectAttendee(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -128,8 +130,19 @@ class ProjectAttendee(models.Model):
     has_paid = models.BooleanField(default=False)  # Campo nuevo para el pago
     notes = models.TextField(blank=True, null=True)  # Campo nuevo para notas adicionales
 
+# Modelo para registrar las ediciones realizadas en los campos de la tarea
 
-    
+class TaskHistory(models.Model):
+    task = models.ForeignKey('Task', on_delete=models.CASCADE)
+    edited_at = models.DateTimeField(auto_now_add=True)
+    editor = models.ForeignKey(User, on_delete=models.CASCADE)
+    field_name = models.CharField(max_length=100)
+    old_value = models.TextField(null=True, blank=True)
+    new_value = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.task.id} - {self.field_name} - {self.editor.username} : - ({self.old_value} - {self.new_value})"
+
 # Modelo para las tareas
 class Task(models.Model):
     title = models.CharField(max_length=200)
@@ -142,8 +155,24 @@ class Task(models.Model):
     project = models.ForeignKey('Project', on_delete=models.CASCADE)  # Usa comillas si Project está definido más abajo en el mismo archivo
     event = models.ForeignKey('Event', on_delete=models.CASCADE, blank=True, null=True)
 
+    def record_edit(self, editor, field_name, old_value, new_value):
+        # Registrar la edición en el historial
+        task_history = TaskHistory.objects.create(
+            task=self,
+            editor=editor,
+            field_name=field_name,
+            old_value=old_value,
+            new_value=new_value
+        )
+        print(f"Registro de edición creado: {task_history}")
+        
+        # Si el campo editado es 'task_status', ejecutar change_status
+        if field_name == 'task_status':
+            new_status = TaskStatus.objects.get(status_name=new_value)
+            self.change_status(new_status.id)
+
     def __str__(self):
-        return f"{self.title} - {self.project.name}"
+        return f"{self.title} - {self.task.name}"
 
 # Modelo para registrar los estados por los que pasa cada evento
 class EventState(models.Model):
@@ -196,7 +225,7 @@ class Event(models.Model):
     max_attendees = models.IntegerField(default=0)
     ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
     assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_events') 
-    attendees = models.ManyToManyField(User, through='EventAttendee', related_name='collaborating_events') 
+    attendees = models.ManyToManyField(User, through='EventAttendee', related_name='collaborating_events', blank=True) 
     tags = models.ManyToManyField(Tag, blank=True)
     links = models.ManyToManyField('self', blank=True, symmetrical=False)
     classification = models.ForeignKey(Classification, on_delete=models.SET_NULL, null=True, blank=True)

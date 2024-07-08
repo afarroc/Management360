@@ -10,6 +10,7 @@
         </li><!-- End Dashboard Nav -->
         {% include 'layouts/includes/events.html' %}
         {% include 'layouts/includes/projects.html' %}
+        {% include 'layouts/includes/tasks.html' %}
         {% include 'layouts/includes/management.html' %}
         {% include 'layouts/includes/configuration.html' %}
 
@@ -52,7 +53,7 @@
         </li><!-- End Error 404 Page Nav -->
 
         <li class="nav-item">
-            <a class="nav-link collapsed" href="{% url 'about' %}">
+            <a class="nav-link collapsed" href="{% url 'blank' %}">
                 <i class="bi bi-file-earmark"></i>
                 <span>Blank</span>
             </a>
