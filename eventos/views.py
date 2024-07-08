@@ -20,7 +20,7 @@ from django.core.files.storage import FileSystemStorage
 from .models import Classification, Document, Event, EventAttendee, ProjectStatus, Image, Profile, Project, Status, Task
 
 # Local imports from .forms
-from .forms import (CreateNewEvent, CreateNewProject, CreateNewTask, DocumentForm, EditClassificationForm, EducationForm,  ExperienceForm, ImageForm, ProfileForm, SkillForm, EditStatusForm, Event)
+from .forms import (CreateNewEvent, CreateNewProject,CreateNewTask, CreateNewTask, DocumentForm, EditClassificationForm, EducationForm,  ExperienceForm, ImageForm, ProfileForm, SkillForm, EditStatusForm, Event)
 
 # Formsets
 EducationFormSet = formset_factory(EducationForm, extra=1, can_delete=True)
@@ -44,6 +44,12 @@ def about(request):
     username = "Nano"
     return render(request, "about/about.html",{
         'username':username
+    })
+
+def blank(request):
+        title="Blank Page"
+        return render(request, "layouts/blank.html",{
+            'title':title
     })
 
 # Sessions
@@ -99,11 +105,13 @@ def signin(request):
 # Proyects
             
 def projects(request):
+    title="Projects"
     statuses = ProjectStatus.objects.all().order_by('status_name')
     projects = Project.objects.all().order_by('-updated_at')
     return render(request, "projects/projects.html",{
         'projects':projects,
-        'statuses':statuses
+        'statuses':statuses,
+        'title':title,
     })
 
 def create_project(request):
@@ -231,16 +239,59 @@ def project_edit(request, project_id=None):
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
 
+
+def project_panel(request, project_id=None):
+    title="Project Panel"
+    if project_id:
+        try:
+            #somenthing
+            project = get_object_or_404(Project, id=project_id)
+            tasks=Task.objects.filter(project_id=project_id)
+            return render(request, "projects/project_panel.html",{
+                'title':title,
+                'project':project,
+                'tasks':tasks,
+                })
+        except Exception as e:
+            messages.error(request, 'Ha ocurrido un error: {}'.format(e))
+            return redirect('project_panel')
+    else:
+        if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
+            # Si el usuario es un 'SU', puede ver todos los proyectos
+            projects = Project.objects.all().order_by('-updated_at')
+        else:
+            # Si no, solo puede ver los proyectos que le están asignados o a los que asiste
+            projects = Project.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+        return render(request, 'projects/project_panel.html', {
+            'title':title,
+            'projects': projects
+            
+            })
+
+        
 # Tasks
      
-def task(request):
-    tasks = Task.objects.all()
-    return render(request, "tasks/tasks.html",{
-        'tasks':tasks
-    })
+def tasks(request, task_id=None):
+    
+  
+    title='Tasks'
+    if task_id:
+        task= get_object_or_404(Task, id=task_id)
+        
+        return render(request, "tasks/tasks.html",{
+            'title':title,
+            'task':task
+        })
+
+    else:  
+        tasks = Task.objects.all()
+        return render(request, "tasks/tasks.html",{
+            'title':title,
+            'tasks':tasks
+        })
 
 @login_required
-def create_task(request):
+def task_create(request):
     if request.method == 'GET':
         form = CreateNewTask()
     else:
@@ -260,6 +311,69 @@ def create_task(request):
             messages.error(request, 'Please correct the errors below.')
 
     return render(request, 'tasks/create_task.html', {'form': form})
+
+
+def task_edit(request, task_id=None):
+    try:
+        if task_id is not None:
+            # Estamos editando una tarea existente
+            try:
+                task = get_object_or_404(Task, pk=task_id)
+            except Http404:
+                messages.error(request, 'La Tarea con el ID "{}" no existe.'.format(task_id))
+                return redirect('index')
+
+            if request.method == 'POST':
+                form = CreateNewTask(request.POST, instance=task)
+                if form.is_valid():
+                    # Asigna el usuario autenticado como el editor
+                    task.editor = request.user
+                    print('guardando via post si es valido')
+
+                    # Guardar el proyecto con el editor actual (usuario que realiza la solicitud)
+                    for field in form.changed_data:
+                        old_value = getattr(task, field)
+                        new_value = form.cleaned_data.get(field)
+                        task.record_edit(
+                            editor=request.user,
+                            field_name=field,
+                            old_value=str(old_value),
+                            new_value=str(new_value)
+                        )
+                    form.save()
+
+                    messages.success(request, 'Tareato guardado con éxito.')
+                    return redirect('task_edit')  # Redirige a la página de lista de edición
+                else:
+                    messages.error(request, 'Hubo un error al guardar la tarea. Por favor, revisa el formulario.')
+            else:
+                form = CreateNewTask(instance=task)
+            return render(request, 'tasks/task_edit.html', {'form': form})
+        else:
+            # Estamos manejando una solicitud GET sin argumentos
+            # Verificar el rol del usuario
+            if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
+                # Si el usuario es un 'SU', puede ver todos los proyectos
+                tasks = Task.objects.all().order_by('-created_at')
+            else:
+                # Si no, solo puede ver los tareas que le están asignados o a los que asiste
+                tasks = Task.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-created_at')
+            return render(request, 'tasks/task_list.html', {'tasks': tasks})
+    except Exception as e:
+        messages.error(request, 'Ha ocurrido un error: {}'.format(e))
+        return redirect('index')
+
+def task_delete(request, task_id):
+    if request.method == 'POST':
+        task = get_object_or_404(Task, pk=task_id)
+        if request.user.profile.role != 'SU':
+            messages.error(request, 'No tienes permiso para eliminar esta tarea.')
+            return redirect(reverse('tasks'))
+        task.delete()
+        messages.success(request, 'La tarea ha sido eliminado exitosamente.')
+    else:
+        messages.error(request, 'Método no permitido.')
+    return redirect(reverse('tasks'))
 
 # Events
 @login_required
@@ -474,9 +588,9 @@ def create_event(request):
         messages.error(request, f'Ha ocurrido un error inesperado: {e}')
         return redirect('index')
 
-def event_detail(request, id):
-    event = get_object_or_404(Event, id=id)
-    return render(request, 'events/detail.html', {
+def event_detail(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    return render(request, 'events/event_detail.html', {
         'event' :event,
         'events':events
     })
@@ -579,6 +693,38 @@ def event_delete(request, event_id):
     else:
         messages.error(request, 'Método no permitido.')
     return redirect(reverse('events'))
+
+def event_panel(request, event_id=None):
+    title="Event Panel"
+    if event_id:
+        try:
+            print('Hay un evento', event_id)
+            event = get_object_or_404(Event, id=event_id)
+            try:
+                project = Project.objects.get(event_id=event_id)
+            except Project.DoesNotExist:
+                project = None
+            return render(request, "events/event_panel.html",{
+                'title':title,
+                'event':event,
+                'project':project,
+            })
+
+        except Exception as e:
+            messages.error(request, 'Ha ocurrido un error: {}'.format(e))
+            return redirect('event_panel')
+    else:
+        if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
+            # Si el usuario es un 'SU', puede ver todos los proyectos
+            events = Event.objects.all().order_by('-updated_at')
+        else:
+            # Si no, solo puede ver los proyectos que le están asignados o a los que asiste
+            events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+        return render(request, 'events/event_panel.html', {
+            'title':title,
+            'events': events
+            
+            })
 
 # Panel
 

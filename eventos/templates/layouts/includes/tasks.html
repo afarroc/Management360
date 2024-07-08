@@ -1,0 +1,25 @@
+<li class="nav-item">
+    <a class="nav-link collapsed" data-bs-target="#tasks-nav" data-bs-toggle="collapse" href="{% url 'tasks' %}">
+        <i class="bi bi-menu-button-wide"></i><span>Tasks</span><i class="bi bi-chevron-down ms-auto"></i>
+    </a>
+    <ul id="tasks-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+
+        <li>
+            <a href="{% url 'tasks' %}">
+                <i class="bi bi-circle"></i><span>Tasks</span>
+            </a>
+        </li>
+        {% if user.is_authenticated %}
+        <li>
+            <a href="{% url 'task_create' %}">
+                <i class="bi bi-circle"></i><span>Create tasks</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'task_edit' %}">
+                <i class="bi bi-circle"></i><span>Edit Task</span>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</li><!-- End tasks Nav -->

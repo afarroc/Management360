@@ -1,30 +1,126 @@
 {% extends 'layouts/base.html' %}
 
 {% block content %}
-
-<h1>Task</h1>
-
-{% for task in tasks %}
-
-<div>
-    {#note: esto es una tarea#}
-    <h1>{% if task.done == False %} ⌚ {% else %} ✅ {% endif %} {{task.title}}</h1>
-
-    {% if task.done == False %}
-    <p>Tarea pendiente</p>
-    {% else %}
-    <p>Tarea realizada</p>    
-    {% endif %}
-
-    <p>{{task.description}}</p>
-    <p>Project: {{task.project.name}}</p>
-    <button>
-        delete
-    </button>
-    <button>
-         Done
-    </button>
+<div class="pagetitle">
+    <h1>{{title}}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'tasks' %}">Tasks</a></li>
+            <li class="breadcrumb-item active">{{title}}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+<!-- Mensajes de confirmación y éxito -->
+{% if messages %}
+<div id="message-container" class="alert alert-info" role="alert">
+    {% for message in messages %}
+    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
+        {% endfor %}
 </div>
-{% endfor %}
+{% endif %}
+<section class="section">
+    <div class="row">
+
+        {% if tasks %}
+
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Nota</h5>
+                    <p>Seleccione uno de los elementos para ver el detalle.</p>
+                </div>
+            </div>
+        </div>
+
+        {% for task in tasks %}
+
+        <div class="col-lg-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><a href="{% url 'tasks' task.id %}">{{task.title}}</a></h5>
+                    <p>{{task.description}}</p>
+                    <p>Proyecto: <a href="{% url 'project_panel' task.project_id %}">{{task.project}}</a></p>
+                </div>
+                <div class="card-footer">
+                    <span>
+                        <a href="{% url 'task_edit' task.id %}" class="btn btn-primary"><i class="bi bi-pencil-fill"></i></a>
+                        <form method="post" action="{% url 'task_delete' task.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
+                        </form>
+                    </span>                   </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        {%else%}
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">Tarea</div>
+                <div class="card-body">
+                    <h5 class="card-title">{{task.title}}</h5>
+                    <p>{{task.description}}</p>
+                    
+                </div>
+                <div class="card-footer">
+                    <span>
+                        <a href="{% url 'task_edit' task.id %}" class="btn btn-primary"><i class="bi bi-pencil-fill"></i></a>
+                        <form method="post" action="{% url 'task_delete' task.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
+                        </form>
+                    </span>    
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">Proyecto</div>
+                <div class="card-body">
+                    <h5 class="card-title"><a href="{% url 'project_panel' task.project_id %}">{{task.project}}</a></h5>
+                    <p>{{task.project.description}}</p>
+                    <p>Otras tareas:
+                        {% for project_task in task.project.task_set.all %} 
+                            {% if project_task.id != task.id %}
+                                <a href="{% url 'tasks' project_task.id %}">{{project_task.title}}</a>
+                            {% endif %}
+                        {% endfor %}
+                    </p>
+                </div>
+                
+                <div class="card-footer">
+                    <span>
+                        <a href="{% url 'task_edit' task.id %}" class="btn btn-primary"><i class="bi bi-pencil-fill"></i></a>
+                        <form method="post" action="{% url 'task_delete' task.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
+                        </form>
+                    </span>    
+                </div>
+            </div>
+        </div>        
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Nota</h5>
+                    <p></p>
+                </div>
+            </div>
+        </div>
+        
+        {% endif %}
+
+    </div>
+</section>
+
 
 {% endblock %}

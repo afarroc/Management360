@@ -1,0 +1,106 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<div class="pagetitle">
+    <h1>{{title}}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects</a></li>
+            {% if project %}
+            <li class="breadcrumb-item active"><a href="{% url 'project_panel' %}">{{title}}</a></li>
+            {% else %}
+            <li class="breadcrumb-item active">{{title}}</li>
+
+            {% endif %}
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+<!-- Mensajes de confirmación y éxito -->
+{% if messages %}
+<div id="message-container" class="alert alert-info" role="alert">
+    {% for message in messages %}
+    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
+        {% endfor %}
+</div>
+{% endif %}
+
+<section class="section">
+    <div class="row">
+        {% if project %}
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">Proyecto</div>
+                <div class="card-body">
+                    <h5 class="card-title">{{project.title}}</h5>
+                    <p>{{project.description}}</p>
+                    <div class="card-footer">
+                        <p>
+                            <a href="{% url 'project_edit' project.id %}" class="btn btn-primary"><i class="bi bi-pencil-fill"></i></a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">Evento Origen</div>
+                <div class="card-body">
+                    <h5 class="card-title"><a href="{% url 'event_panel' project.event.id %}">{{project.event.title}}</a></h5>
+                    <p>{{project.event.description}}</p>
+                    <div class="card-footer">
+                        <p><a href="{% url 'event_edit' project.event.id %}" class="btn btn-primary"><i class="bi bi-pencil-fill"></i></a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% for task in tasks %}
+        <div class="col-lg-4">
+
+
+            <div class="card">
+                <div class="card-header">Task</div>
+                <div class="card-body">
+                    <h6 class="card-title"><a href="{% url 'tasks' task.id %}">{{ task.title}}</a></h6>
+                    <p>{{task.description}}</p>
+
+                </div>
+            <div class="card-footer">
+            <p><a href="{% url 'task_edit' task.id %}" class="btn btn-primary"><i class="bi bi-pencil-fill"></i></a></p>
+            </div>
+            </div>
+
+        </div>
+        {% endfor %}
+
+        {% else %}
+
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">Seleccione un elemento de la lista</h6>
+                    <p> Seleccione un elemento de la lista para interactuar con el elemento. </p>
+                </div>
+            </div>
+        </div>    
+        {% for project in projects %}
+
+        <div class="col-lg-3 stiky">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title"><a href="{% url 'project_panel' project.id %}">{{ project.title}}</a></h6>
+                    
+                    <p> {{ project.description }}</p>
+                </div>
+            </div>
+        </div>          
+        {% endfor %}
+            
+        
+        {% endif %}
+    </div>
+</section>
+
+
+{% endblock %}
