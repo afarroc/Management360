@@ -13,7 +13,7 @@ urlpatterns = [
     # Eventos
     path('events/', views.events, name="events"),
     path('events/detail/<int:event_id>', views.event_detail, name="event_detail"),
-    path('events/create', views.create_event, name="create_event"),
+    path('events/create/', views.event_create, name="event_create"),
     path('events/delete/<int:event_id>/', views.event_delete, name='event_delete'),    
     path('events/edit/', views.event_edit, name="event_edit"),
     path('events/edit/<int:event_id>', views.event_edit, name="event_edit"),
@@ -24,7 +24,7 @@ urlpatterns = [
     # Proyectos
     path('projects/', views.projects, name="projects"),
     path('projects/detail/<int:id>', views.project_detail, name="project_detail"),
-    path('projects/create/', views.create_project, name="create_project"),
+    path('projects/create/', views.project_create, name="project_create"),
     path('projects/delete/<int:project_id>', views.project_delete, name="project_delete"),
     path('projects/edit/', views.project_edit, name="project_edit"),
     path('projects/edit/<int:project_id>', views.project_edit, name="project_edit"),
@@ -38,6 +38,9 @@ urlpatterns = [
     path('tasks/edit/', views.task_edit, name="task_edit"),
     path('tasks/edit/<int:task_id>', views.task_edit, name="task_edit"),
     path('tasks/delete/<int:task_id>', views.task_delete, name="task_delete"),
+    path('tasks/panel/', views.task_panel, name="task_panel"),
+    path('tasks/panel/<int:tasks_id>', views.task_panel, name="task_panel"),
+
 
     # Cambio de estado y eliminación de eventos
     path('change_event_status/<int:event_id>/', views.change_event_status, name='change_event_status'),
