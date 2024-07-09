@@ -114,7 +114,8 @@ def projects(request):
         'title':title,
     })
 
-def create_project(request):
+def project_create(request):
+    tittle="Create New Project"
     if request.method == 'GET':
         form = CreateNewProject()
     else:
@@ -128,13 +129,16 @@ def create_project(request):
                     project.save()
                     form.save_m2m()
                     messages.success(request, 'Project created successfully!')
-                    return redirect('projects')
+                    return redirect('project_panel')
             except IntegrityError:
                 messages.error(request, 'There was a problem saving the project.')
         else:
             messages.error(request, 'Please correct the errors below.')
 
-    return render(request, 'projects/create_project.html', {'form': form})
+    return render(request, 'projects/project_create.html', {
+        'form': form,
+        'title':tittle,
+        })
 
 def project_detail(request, id):
     project = get_object_or_404(Project, id=id)
@@ -295,6 +299,7 @@ def tasks(request, task_id=None):
 
 @login_required
 def task_create(request):
+    title="Create New Task"
     if request.method == 'GET':
         form = CreateNewTask()
     else:
@@ -313,8 +318,10 @@ def task_create(request):
         else:
             messages.error(request, 'Please correct the errors below.')
 
-    return render(request, 'tasks/create_task.html', {'form': form})
-
+    return render(request, 'tasks/task_create.html', {
+        'form': form,
+        'title':title,
+        })
 
 def task_edit(request, task_id=None):
     try:
@@ -377,6 +384,39 @@ def task_delete(request, task_id):
     else:
         messages.error(request, 'Método no permitido.')
     return redirect(reverse('tasks'))
+
+def task_panel(request, task_id=None):
+    title="Task Panel"
+    if task_id:
+        try:
+            print('Hay una tarea', task_id)
+            task = get_object_or_404(Task,id=task_id)
+            try:
+                project = Project.objects.get(task_id=task_id)
+            except Project.DoesNotExist:
+                project = None
+            return render(request, "events/event_panel.html",{
+                'title':title,
+                'task':task,
+                'project':project,
+            })
+
+        except Exception as e:
+            messages.error(request, 'Ha ocurrido un error: {}'.format(e))
+            return redirect('event_panel')
+    else:
+        if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
+            # Si el usuario es un 'SU', puede ver todos los proyectos
+            events = Event.objects.all().order_by('-updated_at')
+        else:
+            # Si no, solo puede ver los proyectos que le están asignados o a los que asiste
+            events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+        return render(request, 'events/event_panel.html', {
+            'title':title,
+            'events': events
+            
+            })
+
 
 # Events
 @login_required
@@ -520,7 +560,8 @@ def assign_attendee_to_event(request, event_id, user_id):
         return redirect('index')
 
 @login_required
-def create_event(request):
+def event_create(request):
+    title="Create New Event"
     try:
         if request.method == 'GET':
             try:
@@ -582,7 +623,10 @@ def create_event(request):
                     for error in errors:
                         messages.error(request, f'Error en el campo {field}: {error}')
 
-        return render(request, 'events/create_event.html', {'form': form})
+        return render(request, 'events/event_create.html', {
+            'form': form,
+            'title':title,
+            })
     
     except ObjectDoesNotExist:
         messages.error(request, 'El objeto solicitado no existe.')
@@ -699,10 +743,13 @@ def event_delete(request, event_id):
 
 def event_panel(request, event_id=None):
     title="Event Panel"
+    statuses = Status.objects.all().order_by('status_name')
+
     if event_id:
         try:
             print('Hay un evento', event_id)
             event = get_object_or_404(Event, id=event_id)
+
             try:
                 project = Project.objects.get(event_id=event_id)
             except Project.DoesNotExist:
@@ -711,6 +758,8 @@ def event_panel(request, event_id=None):
                 'title':title,
                 'event':event,
                 'project':project,
+                'statuses':statuses,
+                
             })
 
         except Exception as e:
@@ -725,8 +774,9 @@ def event_panel(request, event_id=None):
             events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
         return render(request, 'events/event_panel.html', {
             'title':title,
-            'events': events
-            
+            'events': events,
+            'statuses':statuses,
+
             })
 
 # Panel

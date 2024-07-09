@@ -1,0 +1,76 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<div class="pagetitle">
+    <h1>{{title}}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'task_panel' %}">Tasks</a></li>
+            <li class="breadcrumb-item active">{{title}}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+<!-- Mensajes de confirmación y éxito -->
+{% if messages %}
+<div id="message-container" class="alert alert-info" role="alert">
+    {% for message in messages %}
+    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
+        {% endfor %}
+</div>
+{% endif %}
+<section class="section">
+    <div class="row">
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">Aviso</div>
+                <div class="card-body">
+                    <h5 class="card-title">Está creando una Tarea</h5>
+                    <ul>
+                        <li>Llene cuidadosamente el formulario</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">Enlaces</div>
+                <div class="card-body">
+                    <h5 class="card-title">Continue Navegando</h5>
+                    <span>
+                    <a href="{% url 'project_create' %}" class="btn btn-success">Project Create</a>   
+                    <a href="{% url 'event_create' %}" class="btn btn-success">Event Create</a>   
+                    <a href="{% url 'event_edit' %}" class="btn btn-primary">Event list</a>
+                    <a href="{% url 'project_edit' %}" class="btn btn-primary">Project list</a>
+                    </span>
+
+                </div>
+            </div>
+        </div>
+        <form method="POST">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Save Changes</button>
+        </form>
+
+    
+    
+    </div>
+</section>
+
+
+
+
+
+
+<script>
+$(document).ready(function(){
+    setTimeout(function() {
+        $("#alert-message").fadeOut("slow");
+    }, 5000 ); // 5000ms = 5s
+});
+</script>
+
+{% endblock %}
