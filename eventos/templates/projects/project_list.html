@@ -6,7 +6,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'blank' %}">Blank</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'project_panel' %}">Projects</a></li>
             <li class="breadcrumb-item active">{{title}}</li>
         </ol>
     </nav>
@@ -24,9 +24,15 @@
         <div class="col-lg-6">
 
             <div class="card">
+                <div class="card-header">Aviso</div>
                 <div class="card-body">
-                    <h5 class="card-title">Example Card</h5>
-                    <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.</p>
+                    <h5 class="card-title">Está en la lista de Proyectos</h5>
+                    <ul>
+                        <li>Seleccione un elemento dela lista para mas detalle.</li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-outline-primary"><a href="{% url 'project_panel' %}">Project Panel</a></button>
                 </div>
             </div>
 

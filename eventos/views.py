@@ -190,6 +190,7 @@ def change_project_status(request, project_id):
     return redirect('projects')
 
 def project_edit(request, project_id=None):
+    title="Projects list"
     try:
         if project_id is not None:
             # Estamos editando un proyecto existente
@@ -234,11 +235,13 @@ def project_edit(request, project_id=None):
             else:
                 # Si no, solo puede ver los proyectos que le están asignados o a los que asiste
                 projects = Project.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-            return render(request, 'projects/project_list.html', {'projects': projects})
+            return render(request, 'projects/project_list.html', {
+                'projects': projects,
+                'title':title,
+                })
     except Exception as e:
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
-
 
 def project_panel(request, project_id=None):
     title="Project Panel"
