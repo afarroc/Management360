@@ -1,7 +1,7 @@
 <div id="event-card-{{ event.id }}" class="col-lg-3">
 	<div class="card">
-		<div class="card-header" style="color: {{ event.event_status.color }};">
-			{{ event.event_status.icon }} - [{{ event.id }}] - {{ event.assigned_to.username|title }}
+		<div class="card-header" style="background-color: {{ event.event_status.color }};">
+			<span class="badge bg-light text-dark"> {{ event.event_status.icon }} {{ event.id }}</span>
 		</div>
 		<div class="card-body">
 			<h5 class="card-title text-center mb-1">{{ event.title }}</h5>

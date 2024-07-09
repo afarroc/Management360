@@ -146,8 +146,9 @@
                 </div>
                 <div class="card-footer">
 
-                    <button class="btn btn-outline-primary"><a href="{% url 'project_edit' %}">Project list</a></button>
-                    <button class="btn btn-outline-secondary">Do something else</button>
+                    <a href="{% url 'project_edit' %}" class="btn btn-primary rounded-pill">Project list</a>
+                    <a href="{% url 'project_create' %}" class="btn btn-success rounded-pill">Create New Project</a>
+                    <a href="{% url 'projects' %}" class="btn btn-info rounded-pill">Projects Cards</a>
 
 
 
