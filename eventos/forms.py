@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Task, Event, Profile, Experience, Education, Skill, Status, Document, Classification, Project
+from .models import Task, Event, Profile, Experience, Education, Skill, Status, ProjectStatus, TaskStatus, Classification, Project
 from django.core.validators import FileExtensionValidator
 
 
@@ -104,9 +104,31 @@ class SkillForm(forms.ModelForm):
         model = Skill
         fields = ['skill_name', 'proficiency_level']
 
-class EditStatusForm(forms.ModelForm):
+class EventStatusForm(forms.ModelForm):
+    color = forms.CharField(
+        widget=forms.TextInput(attrs={'type': 'color'}),
+        required=False,
+    )
     class Meta:
         model = Status
+        fields = ['status_name', 'icon', 'active', 'color']
+
+class TaskStatusForm(forms.ModelForm):
+    color = forms.CharField(
+        widget=forms.TextInput(attrs={'type': 'color'}),
+        required=False,
+    )
+    class Meta:
+        model = TaskStatus
+        fields = ['status_name', 'icon', 'active', 'color']
+
+class ProjectStatusForm(forms.ModelForm):
+    color = forms.CharField(
+        widget=forms.TextInput(attrs={'type': 'color'}),
+        required=False,
+    )
+    class Meta:
+        model = ProjectStatus
         fields = ['status_name', 'icon', 'active', 'color']
 
 # Formulario para subir documentos

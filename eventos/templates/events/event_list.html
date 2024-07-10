@@ -6,7 +6,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'blank' %}">Blank</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'event_panel' %}">Events</a></li>
             <li class="breadcrumb-item active">{{title}}</li>
         </ol>
     </nav>
@@ -24,21 +24,26 @@
         <div class="col-lg-6">
 
             <div class="card">
+                <div class="card-header">Info</div>
                 <div class="card-body">
-                    <h5 class="card-title">Example Card</h5>
-                    <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.</p>
+                    <h5 class="card-title">Events List</h5>
+                    <p>Select an item for more information</p>
                 </div>
+                <div class="card-footer"></div>
             </div>
 
         </div>
 
         <div class="col-lg-6">
-
             <div class="card">
+                <div class="card-header">Links</div>
+
                 <div class="card-body">
-                    <h5 class="card-title">Example Card</h5>
-                    <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.</p>
+                    <h5 class="card-title">Continue Browsing</h5>
+                        <a href="{% url 'event_panel' %}" class="btn btn-primary"> Events Panel</a>
+                        <a href="{% url 'events' %}" class="btn btn-primary"> Events Search</a>
                 </div>
+                <div class="card-footer"></div>
             </div>
 
         </div>
@@ -96,21 +101,5 @@
         </div>  <!-- Fin del contenedor independiente para la tabla -->
     </div>
 </section>
-
-
-
-
-<!-- Código de jQuery para desvanecer los mensajes de alerta -->
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<script type="text/javascript">
-
-    $(document).ready(function () {
-        // Oculta los mensajes de alerta después de 5 segundos (5000 milisegundos)
-        setTimeout(function () {
-            $('.alert').fadeOut('slow');
-        }, 5000);
-    });
-</script>
-
 
 {% endblock %}
