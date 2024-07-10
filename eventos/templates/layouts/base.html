@@ -94,6 +94,18 @@
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   
+  <!-- Código de jQuery para desvanecer los mensajes de alerta -->
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script type="text/javascript">
+
+    $(document).ready(function () {
+        // Oculta los mensajes de alerta después de 5 segundos (5000 milisegundos)
+        setTimeout(function () {
+            $('.alert').fadeOut('slow');
+        }, 10000);
+    });
+</script>
+
 </body>
 
 </html>

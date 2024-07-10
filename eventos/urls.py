@@ -63,9 +63,12 @@ urlpatterns = [
     
     # Configuración
     path('configuration/status_list/', views.status_list, name='status_list'),
-    path('configuration/edit_status/<int:status_id>/', views.edit_status, name='edit_status'),
     path('configuration/delete_status/<int:status_id>/', views.delete_status, name='delete_status'),
-    path('configuration/create_status/', views.create_status, name='create_status'),
+    path('configuration/status/create/', views.status_create, name='status_create'),
+    path('configuration/status/create/<int:model_id>/', views.status_create, name='status_create'),
+    path('configuration/status/edit/', views.status_edit, name='status_edit'),
+    path('configuration/status/edit/<int:model_id>/', views.status_edit, name='status_edit'),
+    path('configuration/status/edit/<int:model_id>/<int:status_id>', views.status_edit, name='status_edit'),
 
     # Document viewer
     path('documents/docsview/', views.document_view, name='docsview'),

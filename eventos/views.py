@@ -17,10 +17,11 @@ from django.views.generic import FormView
 from django.core.files.storage import FileSystemStorage
 
 # Local imports from .models
-from .models import Classification, Document, Event, EventAttendee, ProjectStatus, Image, Profile, Project, Status, Task
+from .models import Classification, Document, Event, EventAttendee, ProjectStatus,TaskStatus, Image, Profile, Project, Status, Task
 
 # Local imports from .forms
-from .forms import (CreateNewEvent, CreateNewProject,CreateNewTask, CreateNewTask, DocumentForm, EditClassificationForm, EducationForm,  ExperienceForm, ImageForm, ProfileForm, SkillForm, EditStatusForm, Event)
+from .forms import (CreateNewEvent, CreateNewProject,CreateNewTask, CreateNewTask, DocumentForm, EditClassificationForm, EducationForm,  ExperienceForm, ImageForm, ProfileForm, SkillForm, EventStatusForm, EventStatusForm, TaskStatusForm, ProjectStatusForm
+)
 
 # Formsets
 EducationFormSet = formset_factory(EducationForm, extra=1, can_delete=True)
@@ -194,9 +195,10 @@ def change_project_status(request, project_id):
     return redirect('projects')
 
 def project_edit(request, project_id=None):
-    title="Projects list"
     try:
         if project_id is not None:
+            title="Project Edit"
+
             # Estamos editando un proyecto existente
             try:
                 project = get_object_or_404(Project, pk=project_id)
@@ -229,8 +231,13 @@ def project_edit(request, project_id=None):
                     messages.error(request, 'Hubo un error al guardar el proyecto. Por favor, revisa el formulario.')
             else:
                 form = CreateNewProject(instance=project)
-            return render(request, 'projects/project_edit.html', {'form': form})
+            return render(request, 'projects/project_edit.html', {
+                'form': form,
+                'title':title,
+                })
         else:
+            title="Projects list"
+
             # Estamos manejando una solicitud GET sin argumentos
             # Verificar el rol del usuario
             if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
@@ -239,7 +246,7 @@ def project_edit(request, project_id=None):
             else:
                 # Si no, solo puede ver los proyectos que le están asignados o a los que asiste
                 projects = Project.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-            return render(request, 'projects/project_list.html', {
+            return render(request, 'projects/project_panel.html', {
                 'projects': projects,
                 'title':title,
                 })
@@ -248,10 +255,11 @@ def project_edit(request, project_id=None):
         return redirect('index')
 
 def project_panel(request, project_id=None):
-    title="Project Panel"
+
     if project_id:
+        title="Project Detail"        
         try:
-            #somenthing
+
             project = get_object_or_404(Project, id=project_id)
             tasks=Task.objects.filter(project_id=project_id)
             return render(request, "projects/project_panel.html",{
@@ -263,6 +271,7 @@ def project_panel(request, project_id=None):
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
             return redirect('project_panel')
     else:
+        title="Project Panel"
         if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
             # Si el usuario es un 'SU', puede ver todos los proyectos
             projects = Project.objects.all().order_by('-updated_at')
@@ -421,6 +430,7 @@ def task_panel(request, task_id=None):
 # Events
 @login_required
 def events(request):
+    title="Filtrar Eventos"
     if request.session['first_session'] == True:
         print('Esta la primera sesión')
         try:
@@ -526,6 +536,8 @@ def events(request):
             return render(request, 'events/events.html', {
                 'events': events,
                 'statuses': statuses,
+                'title': title,
+                
             })
             
     except Exception as e:
@@ -643,6 +655,7 @@ def event_detail(request, event_id):
     })
 
 def event_edit(request, event_id=None):
+    title="Event Edit"
     try:
         if event_id is not None:
             # Estamos editando un evento existente
@@ -657,7 +670,7 @@ def event_edit(request, event_id=None):
                 if form.is_valid():
                     # Asigna el usuario autenticado como el editor
                     event.editor = request.user
-                    print('gusardando via post si es valido')
+                    print('guardando via post si es valido')
 
                     # Guardar el evento con el editor actual (usuario que realiza la solicitud)
                     for field in form.changed_data:
@@ -672,12 +685,16 @@ def event_edit(request, event_id=None):
                     form.save()
 
                     messages.success(request, 'Evento guardado con éxito.')
-                    return redirect('event_edit')  # Redirige a la página de lista de edición
+                    return redirect('event_panel')  # Redirige a la página de lista de edición
                 else:
                     messages.error(request, 'Hubo un error al guardar el evento. Por favor, revisa el formulario.')
             else:
                 form = CreateNewEvent(instance=event)
-            return render(request, 'events/event_edit.html', {'form': form})
+            return render(request, 'events/event_panel.html', {
+                'form': form,
+                'title':title,
+                
+                })
         else:
             # Estamos manejando una solicitud GET sin argumentos
             # Verificar el rol del usuario
@@ -687,7 +704,10 @@ def event_edit(request, event_id=None):
             else:
                 # Si no, solo puede ver los eventos que le están asignados o a los que asiste
                 events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-            return render(request, 'events/event_list.html', {'events': events})
+            return render(request, 'events/event_list.html', {
+                'events': events,
+                'title': title,
+                })
     except Exception as e:
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
@@ -747,17 +767,17 @@ def event_panel(request, event_id=None):
 
     if event_id:
         try:
-            print('Hay un evento', event_id)
             event = get_object_or_404(Event, id=event_id)
-
+            print(event)
             try:
-                project = Project.objects.get(event_id=event_id)
+                projects = Project.objects.filter(event_id=event_id)
+                print(projects)
             except Project.DoesNotExist:
-                project = None
+                projects = None
             return render(request, "events/event_panel.html",{
                 'title':title,
                 'event':event,
-                'project':project,
+                'projects':projects,
                 'statuses':statuses,
                 
             })
@@ -765,6 +785,7 @@ def event_panel(request, event_id=None):
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
             return redirect('event_panel')
+
     else:
         if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
             # Si el usuario es un 'SU', puede ver todos los proyectos
@@ -884,26 +905,91 @@ class ViewProfileView(View):
 
 # Estatuses
 
-def create_status(request):
-    if request.method == 'POST':
-        form = EditStatusForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('status_list')
-    else:
-        form = EditStatusForm()
-    return render(request, 'configuration/create_status.html', {'form': form})
+def status_edit(request, model_id=None, status_id=None):
+    
+    title="Status Edit"
+    urls = [
+        {'url': 'events', 'name': 'Search for an Events'},
+        {'url': 'event_panel', 'name': 'Events Panel'},
+        {'url': 'event_create', 'name': 'Create a New Events'},
+        {'url': 'event_edit', 'name': 'Edit an Event'},
+    ]
+    form_urls = [
+        {'url': 'status_edit', 'form_id' : 1 ,'name': 'Event Status'},
+        {'url': 'status_edit', 'form_id' : 2 , 'name': 'Project Status'},
+        {'url': 'status_edit', 'form_id' : 3 , 'name': 'Task Status'},
 
-def edit_status(request, status_id):
-    status = get_object_or_404(Status, id=status_id)
-    if request.method == 'POST':
-        form = EditStatusForm(request.POST, instance=status)
-        if form.is_valid():
-            form.save()
-            return redirect('status_list')
+    ]
+    instructions = [
+        {'instruction': 'Fill carefully the metadata.', 'name': 'Form'},
+        {'instruction': 'Deletion is irreversible', 'name': 'Delete'},
+
+    ]
+    if model_id:
+        print('model id:', model_id)
+        if model_id == 1:
+            FormClass = EventStatusForm
+            status = get_object_or_404(Status, id=status_id)
+            
+        elif model_id == 2:
+            status = get_object_or_404(ProjectStatus, id=status_id)
+            FormClass = ProjectStatusForm
+            
+        elif model_id == 3: 
+            status = get_object_or_404(TaskStatus, id=status_id)
+            FormClass = TaskStatusForm
+            
+        else:
+            raise ValueError(f'Invalid model_id: {model_id}')
+        
+        if status_id:
+               
+            # Aquí es donde seleccionas el formulario basado en model_id
+
+
+            if request.method == 'POST':
+                form = FormClass(request.POST, instance=status)
+                if form.is_valid():
+                    form.save()
+                    return redirect('status_list')
+            else:
+                form = FormClass(instance=status)
+                
+            return render(request, 'configuration/edit_status.html', {
+                'form': form,
+                'urls': urls,
+                'form_urls': form_urls,
+                'instructions': instructions,
+                
+                })
+        else:
+            
+            
+            messaje = 'Metodo No permitido.'
+            messages.success(request, f'Aviso: {messaje} ')
+            return render(request, 'configuration/status_list.html', {
+                'title': title,
+                'urls': urls,
+                'form_urls': form_urls,
+                'instructions': instructions,
+                        })
+
     else:
-        form = EditStatusForm(instance=status)
-    return render(request, 'configuration/edit_status.html', {'form': form})
+        
+        messaje = 'Seleccione el modelo que desea editar.'
+        messages.success(request, f'Aviso: {messaje} ')
+
+        return render(request, 'configuration/status_list.html', {
+            'title': title,
+            'urls': urls,
+            'form_urls': form_urls,
+            'instructions': instructions,
+            })
+        
+
+    
+
+
 
 def delete_status(request, status_id):
     status = get_object_or_404(Status, id=status_id)
@@ -915,6 +1001,77 @@ def delete_status(request, status_id):
 def status_list(request):
     statuses = Status.objects.all()
     return render(request, 'configuration/status_list.html', {'statuses': statuses})
+
+
+
+def status_create(request, model_id=None):
+    
+    title = 'Status Create'
+    urls = [
+        {'url': 'events', 'name': 'Search for an Events'},
+        {'url': 'event_panel', 'name': 'Events Panel'},
+        {'url': 'event_create', 'name': 'Create a New Events'},
+        {'url': 'event_edit', 'name': 'Edit an Event'},
+    ]
+    form_urls = [
+        {'url': 'status_create', 'form_id' : 1 ,'name': 'New Event Status'},
+        {'url': 'status_create', 'form_id' : 2 , 'name': 'New Project Status'},
+        {'url': 'status_create', 'form_id' : 3 , 'name': 'New Task Status'},
+
+    ]
+    instructions = [
+        {'instruction': 'Fill carefully the metadata.', 'name': 'Form'},
+        {'instruction': 'Deletion is irreversible', 'name': 'Delete'},
+
+    ]
+
+    if model_id is None:
+        if request.method == 'GET':       
+            return render(request, 'configuration/status_create.html', {
+                'title':title,
+                'urls':urls,
+                'form_urls':form_urls,
+                'instructions':instructions,
+                })
+    else:
+        
+        # Aquí es donde seleccionas el modelo basado en model_id
+        if model_id == 1:
+            title = 'Event Status Create'
+            FormClass = EventStatusForm
+        elif model_id == 2: 
+            title = 'Project Status Create'
+            FormClass = ProjectStatusForm
+        elif model_id == 3:  
+            title = 'Task Status Create'
+            FormClass = TaskStatusForm
+        else:
+            raise ValueError(f'Invalid model_id: {model_id}')
+
+        if request.method == 'POST':
+            form = FormClass(request.POST)
+            if form.is_valid():
+                form.save()
+                return render(request, 'configuration/status_create.html', {
+                    'title':title,
+                    'urls':urls,
+                    'form_urls':form_urls,
+                    'instructions':instructions,
+                    })
+        else:
+            form = FormClass()
+
+        return render(request, 'configuration/status_create.html', {
+            'title':title,
+            'form': form,
+            'urls':urls,
+            'instructions':instructions,
+            'form_urls':form_urls,
+            })
+
+ 
+
+# Classifications
 
 def create_Classification(request):
     if request.method == 'POST':

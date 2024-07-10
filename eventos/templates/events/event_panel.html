@@ -28,6 +28,9 @@
 <section class="section">
     <div class="row">
         {% if event %}
+
+        {% include 'events/includes/project_links_card.html' %}
+
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-header">Evento</div>
@@ -43,8 +46,8 @@
             </div>
         </div>
 
-        {% if project %}
-
+        {% if projects %}
+        {% for project in projects %}
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-header">Projecto</div>
@@ -60,7 +63,7 @@
                 </div>
             </div>
         </div>
-
+        {% endfor %}
         {% else %}
         {% endif %}
 
@@ -91,10 +94,23 @@
                     <p>Seleccione un elemento para mas detalle</p>
                 </div>
                 <div class="card-footer">
-                    <a href="{% url 'event_edit' %}" class="btn btn-primary bi bi-pencil-fill"> Lista de Eventos</a>
                 </div>
             </div>
-        </div>    
+        </div>   
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">Links</div>
+                <div class="card-body">
+                    <h6 class="card-title">Continue navegando</h6>
+                    <a href="{% url 'event_edit' %}" class="btn btn-primary"> Events List</a>
+                    <a href="{% url 'events' %}" class="btn btn-primary"> Events Search</a>
+                </div>
+                <div class="card-footer"></div>
+            </div>
+        </div>   
+        
+        
+
         {% for event in events %}
 
         <div class="col-lg-3 stiky">
