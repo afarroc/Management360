@@ -62,8 +62,9 @@ urlpatterns = [
     path('create_profile/<int:user_id>', views.ProfileView.as_view(), name='create_profile'),
     
     # Configuración
-    path('configuration/status_list/', views.status_list, name='status_list'),
-    path('configuration/delete_status/<int:status_id>/', views.delete_status, name='delete_status'),
+    path('configuration/status/', views.status, name='status'),
+    path('configuration/status/delete/<int:model_id>/', views.status_delete, name='status_delete'),
+    path('configuration/status/delete/<int:model_id>/<int:status_id>/', views.status_delete, name='status_delete'),
     path('configuration/status/create/', views.status_create, name='status_create'),
     path('configuration/status/create/<int:model_id>/', views.status_create, name='status_create'),
     path('configuration/status/edit/', views.status_edit, name='status_edit'),
