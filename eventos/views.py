@@ -905,158 +905,170 @@ class ViewProfileView(View):
 
 # Estatuses
 
-def status_edit(request, model_id=None, status_id=None):
+def status(request):
     
+    title='Status Panel'
+    urls=[
+        {'url':'status_create','name':'Create Status'},
+        {'url':'status_edit','name':'Edit Status'},        
+    ]
+
+    form_urls = [
+        {'url': 'status_create', 'form_id' : 1 ,'name': 'Create Event Status'},
+        {'url': 'status_create', 'form_id' : 2 , 'name': 'Create Project Status'},
+        {'url': 'status_create', 'form_id' : 3 , 'name': 'Create Task Status'},
+        {'url': 'status_edit', 'form_id' : 1 ,'name': 'Edit Event Status'},
+        {'url': 'status_edit', 'form_id' : 2 , 'name': 'Edit Project Status'},
+        {'url': 'status_edit', 'form_id' : 3 , 'name': 'Edit Task Status'},
+        ]
+
+    return render(request, 'configuration/status.html', {
+        'form_urls':form_urls,
+        'title' : title,
+        'urls' : urls,
+        })
+
+def status_edit(request, model_id=None, status_id=None):
+    # Titulo de la Pagina
     title="Status Edit"
     urls = [
-        {'url': 'events', 'name': 'Search for an Events'},
-        {'url': 'event_panel', 'name': 'Events Panel'},
-        {'url': 'event_create', 'name': 'Create a New Events'},
-        {'url': 'event_edit', 'name': 'Edit an Event'},
-    ]
-    form_urls = [
-        {'url': 'status_edit', 'form_id' : 1 ,'name': 'Event Status'},
-        {'url': 'status_edit', 'form_id' : 2 , 'name': 'Project Status'},
-        {'url': 'status_edit', 'form_id' : 3 , 'name': 'Task Status'},
+        {'url': 'status', 'name': 'Status Panel'},
 
     ]
-    instructions = [
-        {'instruction': 'Fill carefully the metadata.', 'name': 'Form'},
-        {'instruction': 'Deletion is irreversible', 'name': 'Delete'},
-
-    ]
-    if model_id:
-        print('model id:', model_id)
-        if model_id == 1:
-            FormClass = EventStatusForm
-            status = get_object_or_404(Status, id=status_id)
+    try:
+        # Si se proporcina id del Modelo
+        if model_id:
             
-        elif model_id == 2:
-            status = get_object_or_404(ProjectStatus, id=status_id)
-            FormClass = ProjectStatusForm
-            
-        elif model_id == 3: 
-            status = get_object_or_404(TaskStatus, id=status_id)
-            FormClass = TaskStatusForm
-            
-        else:
-            raise ValueError(f'Invalid model_id: {model_id}')
-        
-        if status_id:
-               
-            # Aquí es donde seleccionas el formulario basado en model_id
-
-
-            if request.method == 'POST':
-                form = FormClass(request.POST, instance=status)
-                if form.is_valid():
-                    form.save()
-                    return redirect('status_list')
+            if model_id ==1:
+                model=Status
+                FormClass = EventStatusForm
+                title=f'Event {title}'
+            elif model_id ==2:
+                model=ProjectStatus
+                FormClass = ProjectStatusForm
+                title=f'Project {title}'
+            elif model_id ==3:
+                FormClass = TaskStatusForm
+                model=TaskStatus
+                title=f'Task {title}'
             else:
-                form = FormClass(instance=status)
-                
-            return render(request, 'configuration/edit_status.html', {
-                'form': form,
-                'urls': urls,
-                'form_urls': form_urls,
-                'instructions': instructions,
-                
-                })
-        else:
+                raise ValueError(f'Invalid model_id: {model_id}')
             
-            
-            messaje = 'Metodo No permitido.'
-            messages.success(request, f'Aviso: {messaje} ')
-            return render(request, 'configuration/status_list.html', {
-                'title': title,
-                'urls': urls,
-                'form_urls': form_urls,
-                'instructions': instructions,
+            print(model_id, FormClass, model)      
+            # Si se proporcina id del Estado
+            if status_id:
+                print('estatus id', status_id)
+                # Obtén la tipificación o muestra un error 404 si no se encuentra
+                status = get_object_or_404(model, id=status_id)
+                print(status)
+                if request.method == 'POST':
+                    # Si el formulario se envía, rellena el formulario con los datos enviados
+                    form = FormClass(request.POST, instance=status)
+
+                    if form.is_valid():
+                        # Si el formulario es válido, guárdalo y redirige al usuario a la lista de Status
+                        form.save()
+
+                        messages.success(request, 'El evento ha sido editado exitosamente.')
+                        return redirect('status_edit', model_id=model_id)
+                else:
+                    # Si el formulario no se envía, rellena el formulario con los datos actuales de la tipificación
+                    form = FormClass(instance=status)
+                    return render(request, 'configuration/status_edit.html', {
+                        'title' : title,
+                        'form' : form,
+
                         })
 
-    else:
+            else:
+                instructions = [
+                    {'instruction': 'Select the Status you want to edit.', 'name': 'Select status to edit'},
+                    ]
+ 
+                statuses = model.objects.all()
+                return render(request, 'configuration/status_list.html', {
+                    'title' : title,
+                    'statuses':statuses,
+                    'urls':urls,
+                    'instructions':instructions,
+                    'model_id':model_id,
+                    })
+                                    
+        else:
+
+            form_urls = [
+                {'url': 'status_edit', 'form_id' : 1 ,'name': 'Edit Event Status'},
+                {'url': 'status_edit', 'form_id' : 2 , 'name': 'Edit Project Status'},
+                {'url': 'status_edit', 'form_id' : 3 , 'name': 'Edit Task Status'},
+
+            ]
+            return render(request, 'configuration/status_edit.html', {
+                'title' : title,
+                'form_urls' : form_urls,
+                'urls' : urls,
+                })
+            
+    except ValueError as e:
+            messages.error(request, str(e))
+            return redirect('index')  
         
-        messaje = 'Seleccione el modelo que desea editar.'
-        messages.success(request, f'Aviso: {messaje} ')
-
-        return render(request, 'configuration/status_list.html', {
-            'title': title,
-            'urls': urls,
-            'form_urls': form_urls,
-            'instructions': instructions,
-            })
-        
-
-    
-
-
-
-def delete_status(request, status_id):
-    status = get_object_or_404(Status, id=status_id)
-    if request.method == 'POST':
-        status.delete()
-        return redirect('status_list')
-    return render(request, 'configuration/confirm_delete.html', {'object': status})
-
-def status_list(request):
-    statuses = Status.objects.all()
-    return render(request, 'configuration/status_list.html', {'statuses': statuses})
-
-
-
 def status_create(request, model_id=None):
     
     title = 'Status Create'
     urls = [
-        {'url': 'events', 'name': 'Search for an Events'},
-        {'url': 'event_panel', 'name': 'Events Panel'},
-        {'url': 'event_create', 'name': 'Create a New Events'},
-        {'url': 'event_edit', 'name': 'Edit an Event'},
-    ]
+        {'url': 'status', 'name': 'Status Panel'},
+        ]
     form_urls = [
-        {'url': 'status_create', 'form_id' : 1 ,'name': 'New Event Status'},
-        {'url': 'status_create', 'form_id' : 2 , 'name': 'New Project Status'},
-        {'url': 'status_create', 'form_id' : 3 , 'name': 'New Task Status'},
+        {'url': 'status_create', 'form_id' : 1 ,'name': 'Create Event Status'},
+        {'url': 'status_create', 'form_id' : 2 , 'name': 'Create Project Status'},
+        {'url': 'status_create', 'form_id' : 3 , 'name': 'Create Task Status'},
 
     ]
     instructions = [
         {'instruction': 'Fill carefully the metadata.', 'name': 'Form'},
-        {'instruction': 'Deletion is irreversible', 'name': 'Delete'},
-
     ]
 
     if model_id is None:
+        
         if request.method == 'GET':       
             return render(request, 'configuration/status_create.html', {
                 'title':title,
                 'urls':urls,
                 'form_urls':form_urls,
-                'instructions':instructions,
                 })
     else:
-        
+        form_urls_copy = [form for form in form_urls if form['form_id'] != model_id]
+        print(form_urls_copy)
         # Aquí es donde seleccionas el modelo basado en model_id
         if model_id == 1:
-            title = 'Event Status Create'
             FormClass = EventStatusForm
+            model=Status
+            title = 'Event Status Create'
         elif model_id == 2: 
-            title = 'Project Status Create'
             FormClass = ProjectStatusForm
+            model=ProjectStatus
+            title = 'Project Status Create'
         elif model_id == 3:  
             title = 'Task Status Create'
             FormClass = TaskStatusForm
+            model=TaskStatus
         else:
             raise ValueError(f'Invalid model_id: {model_id}')
 
         if request.method == 'POST':
+            statuses = model.objects.all()
             form = FormClass(request.POST)
             if form.is_valid():
+                
+                messages.success(request, 'El evento ha sido creado exitosamente.')
                 form.save()
-                return render(request, 'configuration/status_create.html', {
+                return render(request, 'configuration/status_list.html', {
+                    'model_id':model_id,
                     'title':title,
                     'urls':urls,
-                    'form_urls':form_urls,
+                    'form_urls':form_urls_copy,
                     'instructions':instructions,
+                    'statuses': statuses,
                     })
         else:
             form = FormClass()
@@ -1066,11 +1078,41 @@ def status_create(request, model_id=None):
             'form': form,
             'urls':urls,
             'instructions':instructions,
-            'form_urls':form_urls,
+            'form_urls':form_urls_copy,
             })
 
- 
-
+def status_delete(request, model_id, status_id):
+    try:
+        if model_id:
+            if status_id:
+                if model_id ==1:
+                    model=Status
+                elif model_id==2:
+                    model=ProjectStatus
+                elif model_id==3:
+                    model=TaskStatus
+                else:
+                    raise ValueError(f'Invalid model_id: {model_id}')
+  
+            status = get_object_or_404(model, id=status_id)
+            print(status)
+            if request.method == 'POST':
+                print(request.POST)
+                status.delete()
+                messages.success(request, 'El evento ha sido eliminado exitosamente.')
+                return redirect('status_edit', model_id=model_id)
+            
+            return render(request, 'configuration/confirm_delete.html', {
+                'object': status,
+                'model_id':model_id
+                })
+        else:
+            print('Nothing yet')
+            
+    except ValueError as e:
+            messages.error(request, str(e))
+            return redirect('index')  
+                
 # Classifications
 
 def create_Classification(request):
