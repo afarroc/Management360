@@ -154,6 +154,7 @@ class Task(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')  # Asegúrate de que esta línea esté presente
     project = models.ForeignKey('Project', on_delete=models.CASCADE)  # Usa comillas si Project está definido más abajo en el mismo archivo
     event = models.ForeignKey('Event', on_delete=models.CASCADE, blank=True, null=True)
+    task_status = models.ForeignKey(TaskStatus, on_delete=models.CASCADE)
 
     def record_edit(self, editor, field_name, old_value, new_value):
         # Registrar la edición en el historial

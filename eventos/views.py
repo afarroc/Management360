@@ -288,22 +288,20 @@ def project_panel(request, project_id=None):
 # Tasks
      
 def tasks(request, task_id=None):
-    
-  
     title='Tasks'
     if task_id:
         task= get_object_or_404(Task, id=task_id)
         
         return render(request, "tasks/tasks.html",{
             'title':title,
-            'task':task
+            'object':task
         })
 
     else:  
         tasks = Task.objects.all()
         return render(request, "tasks/tasks.html",{
             'title':title,
-            'tasks':tasks
+            'objecs':tasks
         })
 
 @login_required
