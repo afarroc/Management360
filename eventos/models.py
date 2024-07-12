@@ -83,6 +83,7 @@ class Project(models.Model):
     host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_projects')
     assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_projets') 
     attendees = models.ManyToManyField(User, through='ProjectAttendee', related_name='collaborating_projects',blank=True) 
+    ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
 
     def change_status(self, new_status_id):
         # Obtener el nuevo estado

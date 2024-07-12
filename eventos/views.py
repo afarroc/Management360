@@ -104,18 +104,58 @@ def signin(request):
             return redirect('events')
 
 # Proyects
-            
+
+# Project dashboard
 def projects(request):
-    title="Projects"
+    
+    title="Projects"   
+    urls=[
+        {'url':'project_create','name':'Project Create'},
+        {'url':'project_edit','name':'Project Edit'},   
+    ]
+    other_urls = [
+        {'url': 'events', 'id' : None ,'name': 'Events Panel'},
+        {'url': 'projects', 'id' : None , 'name': 'Projects Panel'},
+        {'url': 'tasks', 'id' : None , 'name': 'Tasks Panel'},
+        ]
+    
     statuses = ProjectStatus.objects.all().order_by('status_name')
     projects = Project.objects.all().order_by('-updated_at')
+    total_projects = Project.objects.count()
+
+
+
+    # Define la fecha de referencia
+    date = timezone.now() - timezone.timedelta(days=1)  # hace 30 días
+
+    # Cuenta cuántos proyectos se han creado desde la fecha de referencia
+    increase = Project.objects.filter(created_at__gte=date).count()
+    
+    print(increase)
+    
     return render(request, "projects/projects.html",{
+        'other_urls':other_urls,
+        'urls':urls,
+        'increase':increase,
         'projects':projects,
+        'total_projects':total_projects,
         'statuses':statuses,
         'title':title,
     })
 
 def project_create(request):
+    urls=[
+        {'url':'project_create','name':'Project Create'},
+        {'url':'project_edit','name':'Project Edit'},   
+    ]
+    other_urls = [
+        {'url': 'events', 'id' : None ,'name': 'Events Panel'},
+        {'url': 'projects', 'id' : None , 'name': 'Projects Panel'},
+        {'url': 'tasks', 'id' : None , 'name': 'Tasks Panel'},
+        ]
+    instructions = [
+        {'instruction': 'Fill carefully the metadata. XD', 'name': 'Form'},
+    ]
     tittle="Create New Project"
     if request.method == 'GET':
         form = CreateNewProject()
@@ -137,8 +177,11 @@ def project_create(request):
             messages.error(request, 'Please correct the errors below.')
 
     return render(request, 'projects/project_create.html', {
+        'instructions':instructions,
         'form': form,
         'title':tittle,
+        'urls':urls,
+        'other_urls':other_urls,
         })
 
 def project_detail(request, id):
@@ -191,6 +234,7 @@ def change_project_status(request, project_id):
     except Exception as e:
         print(f"Error: {str(e)}")
         return HttpResponse(f"Error: {str(e)}", status=500)
+    messages.success(request, 'Project status edited successfully!')
 
     return redirect('projects')
 
@@ -246,7 +290,7 @@ def project_edit(request, project_id=None):
             else:
                 # Si no, solo puede ver los proyectos que le están asignados o a los que asiste
                 projects = Project.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-            return render(request, 'projects/project_panel.html', {
+            return render(request, 'projects/project_list.html', {
                 'projects': projects,
                 'title':title,
                 })
@@ -257,15 +301,23 @@ def project_edit(request, project_id=None):
 def project_panel(request, project_id=None):
 
     if project_id:
-        title="Project Detail"        
+        title="Project Detail"      
+
+        statuses = ProjectStatus.objects.all().order_by('status_name')
+
         try:
+
 
             project = get_object_or_404(Project, id=project_id)
             tasks=Task.objects.filter(project_id=project_id)
+            tasks = Task.objects.filter(project_id=project_id)
+            count_tasks = tasks.count()
             return render(request, "projects/project_panel.html",{
+                'statuses':statuses,
                 'title':title,
                 'project':project,
                 'tasks':tasks,
+                'count_tasks':count_tasks,
                 })
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
@@ -289,24 +341,43 @@ def project_panel(request, project_id=None):
      
 def tasks(request, task_id=None):
     title='Tasks'
+    urls=[
+        {'url':'task_create','name':'Task Create'},
+        {'url':'task_edit','name':'Task Edit'},        
+    ]
+
+    other_urls = [
+        {'url': 'events', 'id' : None ,'name': 'Events Panel'},
+        {'url': 'projects', 'id' : None , 'name': 'Projects Panel'},
+        {'url': 'tasks', 'id' : None , 'name': 'Tasks Panel'},
+        ]
+    instructions = [
+        {'instruction': 'Fill carefully the metadata.', 'name': 'Form'},
+    ]
+    
     if task_id:
         task= get_object_or_404(Task, id=task_id)
         
         return render(request, "tasks/tasks.html",{
+            
+            'instructions':instructions,
             'title':title,
-            'object':task
+            'urls':urls,
+            'other_urls':other_urls,
+            'task':task,
         })
 
     else:  
         tasks = Task.objects.all()
         return render(request, "tasks/tasks.html",{
             'title':title,
-            'objecs':tasks
+            'tasks':tasks
         })
 
 @login_required
 def task_create(request):
     title="Create New Task"
+    
     if request.method == 'GET':
         form = CreateNewTask()
     else:
@@ -428,9 +499,8 @@ def task_panel(request, task_id=None):
 # Events
 @login_required
 def events(request):
-    title="Filtrar Eventos"
+    title="Events Search"
     if request.session['first_session'] == True:
-        print('Esta la primera sesión')
         try:
             status_en_curso = Status.objects.get(status_name='En curso').id
         except ObjectDoesNotExist:
@@ -439,16 +509,11 @@ def events(request):
         status = request.session.setdefault('filtered_status', status_en_curso)
         date = request.session.setdefault('filtered_date', timezone.now().date().isoformat())
         request.session['first_session'] = False  
-        print(cerrado, status, date)
-        print(request.session['filtered_cerrado'])
-        print(request.session['filtered_status'])
-        print(request.session['filtered_date'])
-        
+
     try:
         if hasattr(request.user, 'profile'):
             if request.user.profile.role == 'SU':
                 events = Event.objects.all().order_by('-updated_at')
-                
             else:
                 events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
                 
@@ -458,14 +523,10 @@ def events(request):
         statuses = Status.objects.all().order_by('status_name')
         
         if request.method == 'POST':
-            print('solicitud post')
-
-            cerrado = request.POST.get('cerrado') == 'True'
+            cerrado = request.POST.get('cerrado', 'False').lower() == 'true'
             status = int(request.POST.get('status')) if request.POST.get('status') else None
             date = request.POST.get('date')
-            
-            print('post:', cerrado, status, date)
-            
+                        
             try:
                 if cerrado:
                     status_cerrado = Status.objects.get(status_name='Cerrado')
@@ -483,16 +544,11 @@ def events(request):
             else:
                 request.session['filtered_status'] = status
                 
-                
             if date:
                 events = events.filter(updated_at__date=date)
                 request.session['filtered_date'] = date
             else:
                 request.session['filtered_date'] = date
-            
-            print("session cerrado:", request.session['filtered_cerrado'], type(request.session['filtered_cerrado']))
-            print("session estado:", request.session['filtered_status'], type(request.session['filtered_status']))
-            print("session fecha:", request.session['filtered_date'], type(request.session['filtered_date']))
             
             return render(request, 'events/events.html', {
                 'events': events,
@@ -500,36 +556,25 @@ def events(request):
             })
             
         else:
-            print('solcitud get')
             status = request.session['filtered_status'] 
             date = request.session['filtered_date']
             cerrado = request.session['filtered_cerrado']
-            print(cerrado, status, date)
-
-            
             try:
                 if cerrado:
                     status_cerrado = Status.objects.get(status_name='Cerrado')
-                    events = events.exclude(event_status_id=status_cerrado.id)
-                    print("filtrado los estados cerrados")
-                    
+                    events = events.exclude(event_status_id=status_cerrado.id)                    
                 if status:
                     events = events.filter(event_status_id=status)
-                    print("Filtrado por estado", status)                    
                 if date:
                     events = events.filter(updated_at__date=date)
-                    print("Filtrado por fecha", date)
-                    
+
+                                  
             except Status.DoesNotExist:
                 messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
                 
             except Exception as e:
                 messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
                 return redirect('index')
-            
-            print("session cerrado:", request.session['filtered_cerrado'], type(request.session['filtered_cerrado']))
-            print("session estado:", request.session['filtered_status'], type(request.session['filtered_status']))
-            print("session fecha:", request.session['filtered_date'], type(request.session['filtered_date']))
             
             return render(request, 'events/events.html', {
                 'events': events,
@@ -925,6 +970,8 @@ def status(request):
         'title' : title,
         'urls' : urls,
         })
+
+
 
 def status_edit(request, model_id=None, status_id=None):
     # Titulo de la Pagina
