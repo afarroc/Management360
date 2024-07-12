@@ -13,7 +13,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'projects' %}">Project Dasboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects</a></li>
             <li class="breadcrumb-item active">{{title}}</li>
         </ol>
     </nav>
@@ -26,9 +26,12 @@
         <div class="col-lg-8">
             <div class="row">
             
-            {% if projects %}
+            {% if projects_with_task_count %}
+
             {% include 'projects/includes/project_top.html' %}
+
             {% else %}
+            
             {% include 'projects/includes/project_card.html' %}
             {% endif %}
 
@@ -83,7 +86,6 @@
             {% if instructions %}
             {% include 'layouts/includes/information/info_links_card.html' %}
             {% endif %}
-
             {% include 'layouts/includes/information/info_acordeon.html' %}
 
         </div><!-- End Right side columns -->
