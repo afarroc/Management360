@@ -47,6 +47,7 @@ urlpatterns = [
     # Cambio de estado y eliminación de eventos
     path('change_event_status/<int:event_id>/', views.change_event_status, name='change_event_status'),
     path('change_project_status/<int:project_id>/', views.change_project_status, name='change_project_status'),
+    path('change_task_status/<int:project_id>/', views.change_task_status, name='change_task_status'),
 
     # Panel
     path('panel/', views.panel, name='panel'),

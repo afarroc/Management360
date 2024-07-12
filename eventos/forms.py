@@ -31,13 +31,15 @@ class AssignAttendeesForm(forms.Form):
 class CreateNewTask(forms.ModelForm):
     class Meta:
         model = Task
-        fields = ['title', 'description', 'important', 'project', 'task_status']
+        fields = ['title', 'description', 'important', 'project', 'task_status', 'event']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control'}),
             'important': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'project': forms.Select(attrs={'class': 'form-select'}),
             'task_status': forms.Select(attrs={'class': 'form-select'}),
+            'event': forms.Select(attrs={'class': 'form-select'}),
+
         }
 
 class CreateNewProject(forms.ModelForm):

@@ -493,11 +493,14 @@ def task_panel(request, task_id=None):
     title="Task Panel"
     if task_id:
         try:
+            
             print('Hay una tarea', task_id)
             task = get_object_or_404(Task,id=task_id)
-            
             project = task.project
+            statuses = TaskStatus.objects.all().order_by('status_name')
+            print('project: ',project)
             return render(request, "tasks/task_panel.html",{
+                'statuses':statuses,
                 'title':title,
                 'task':task,
                 'project':project,
@@ -521,6 +524,34 @@ def task_panel(request, task_id=None):
             'tasks': tasks
             
             })
+
+def change_task_status(request, task_id):
+    try:
+        if request.method != 'POST':
+            return HttpResponse("Método no permitido", status=405)
+        task = get_object_or_404(Task, pk=task_id)
+        new_status_id = request.POST.get('new_status_id')
+        new_status = get_object_or_404(TaskStatus, pk=new_status_id)
+        if request.user is None:
+            messages.error(request, "User is none: Usuario no autenticado")
+            return redirect('index')
+        if task.host is not None and (task.host == request.user or request.user in task.attendees.all()):
+            old_status = task.task_status
+            print("old_status:", old_status)
+            task.record_edit(
+                editor=request.user,
+                field_name='task_status',
+                old_value=str(old_status),
+                new_value=str(new_status)
+            )
+        else:
+            return HttpResponse("No tienes permiso para editar este task", status=403)
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return HttpResponse(f"Error: {str(e)}", status=500)
+    messages.success(request, 'task status edited successfully!')
+
+    return redirect('task_panel')
 
 
 # Events
