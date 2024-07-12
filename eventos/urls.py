@@ -23,13 +23,14 @@ urlpatterns = [
 
     # Proyectos
     path('projects/', views.projects, name="projects"),
+    path('projects/panel/', views.project_panel, name="project_panel"),
+    path('projects/panel/<int:project_id>', views.project_panel, name="project_panel"),
     path('projects/detail/<int:id>', views.project_detail, name="project_detail"),
     path('projects/create/', views.project_create, name="project_create"),
     path('projects/delete/<int:project_id>', views.project_delete, name="project_delete"),
     path('projects/edit/', views.project_edit, name="project_edit"),
     path('projects/edit/<int:project_id>', views.project_edit, name="project_edit"),
-    path('projects/panel/', views.project_panel, name="project_panel"),
-    path('projects/panel/<int:project_id>', views.project_panel, name="project_panel"),
+
 
     # Tareas
     path('tasks/', views.tasks, name="tasks"),

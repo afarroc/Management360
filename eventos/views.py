@@ -236,7 +236,7 @@ def change_project_status(request, project_id):
         return HttpResponse(f"Error: {str(e)}", status=500)
     messages.success(request, 'Project status edited successfully!')
 
-    return redirect('projects')
+    return redirect('project_panel')
 
 def project_edit(request, project_id=None):
     try:
@@ -302,12 +302,8 @@ def project_panel(request, project_id=None):
 
     if project_id:
         title="Project Detail"      
-
         statuses = ProjectStatus.objects.all().order_by('status_name')
-
         try:
-
-
             project = get_object_or_404(Project, id=project_id)
             tasks=Task.objects.filter(project_id=project_id)
             tasks = Task.objects.filter(project_id=project_id)
@@ -324,13 +320,37 @@ def project_panel(request, project_id=None):
             return redirect('project_panel')
     else:
         title="Project Panel"
+        urls=[
+            {'url':'task_create','name':'Task Create'},
+            {'url':'task_edit','name':'Task Edit'},        
+        ]       
+        instructions = [
+            {'instruction': 'Select an item for details', 'name': 'Items'},
+    ]   
         if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
             # Si el usuario es un 'SU', puede ver todos los proyectos
             projects = Project.objects.all().order_by('-updated_at')
         else:
             # Si no, solo puede ver los proyectos que le están asignados o a los que asiste
-            projects = Project.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+            projects = Project.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by
+            ('-updated_at')
+            
+
+        # Crea una lista para almacenar los proyectos y sus recuentos de tareas
+        projects_with_task_count = []
+
+        for project in projects:
+            # Cuenta las tareas para el proyecto actual
+            count_tasks = Task.objects.filter(project_id=project.id).count()
+            
+            # Almacena el proyecto y su recuento de tareas en la lista
+            projects_with_task_count.append((project, count_tasks))
+            
+        
         return render(request, 'projects/project_panel.html', {
+            'projects_with_task_count': projects_with_task_count,
+            'instructions':instructions,
+            'urls':urls,
             'title':title,
             'projects': projects
             
