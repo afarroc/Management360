@@ -149,13 +149,16 @@ class Task(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(null=True, blank=True)
     important = models.BooleanField(default=False)
-    created_at = models.DateField(auto_now_add=True)
-    updated_at = models.DateField(null=True, blank=True)  # Agregar blank=True para permitir que el campo sea opcional en formularios
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+# Agregar blank=True para permitir que el campo sea opcional en formularios
     done = models.BooleanField(default=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')  # Asegúrate de que esta línea esté presente
     project = models.ForeignKey('Project', on_delete=models.CASCADE)  # Usa comillas si Project está definido más abajo en el mismo archivo
     event = models.ForeignKey('Event', on_delete=models.CASCADE, blank=True, null=True)
     task_status = models.ForeignKey(TaskStatus, on_delete=models.CASCADE)
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_tasks') 
+
 
     def record_edit(self, editor, field_name, old_value, new_value):
         # Registrar la edición en el historial

@@ -359,7 +359,7 @@ def project_panel(request, project_id=None):
         
 # Tasks
      
-def tasks(request, task_id=None):
+def tasks(request, task_id=None, project_id=None):
     title='Tasks'
     urls=[
         {'url':'task_create','name':'Task Create'},
@@ -388,12 +388,18 @@ def tasks(request, task_id=None):
         })
 
     else:  
-        tasks = Task.objects.all()
+        
+        if not project_id:
+            tasks = Task.objects.all()
+        else:
+            tasks = Task.objects.filter(project_id=project_id)
+
         return render(request, "tasks/tasks.html",{
             'title':title,
             'tasks':tasks
         })
-
+            
+            
 @login_required
 def task_create(request):
     title="Create New Task"
@@ -489,11 +495,9 @@ def task_panel(request, task_id=None):
         try:
             print('Hay una tarea', task_id)
             task = get_object_or_404(Task,id=task_id)
-            try:
-                project = Project.objects.get(task_id=task_id)
-            except Project.DoesNotExist:
-                project = None
-            return render(request, "events/event_panel.html",{
+            
+            project = task.project
+            return render(request, "tasks/task_panel.html",{
                 'title':title,
                 'task':task,
                 'project':project,
@@ -501,17 +505,20 @@ def task_panel(request, task_id=None):
 
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
-            return redirect('event_panel')
+            print(e)
+            return redirect('task_panel')
     else:
         if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
             # Si el usuario es un 'SU', puede ver todos los proyectos
-            events = Event.objects.all().order_by('-updated_at')
+            tasks = Task.objects.all().order_by('-updated_at')
         else:
             # Si no, solo puede ver los proyectos que le están asignados o a los que asiste
-            events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-        return render(request, 'events/event_panel.html', {
+            tasks = Task.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+        
+        
+        return render(request, 'tasks/task_panel.html', {
             'title':title,
-            'events': events
+            'tasks': tasks
             
             })
 
