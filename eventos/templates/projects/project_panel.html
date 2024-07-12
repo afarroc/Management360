@@ -1,191 +1,94 @@
 {% extends 'layouts/base.html' %}
-
+{% load static %}
 {% block content %}
-<div class="pagetitle">
-    <h1>{{title}}</h1>
-    <nav>
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'project_panel' %}">Projects</a></li>
-            {% if project %}
-            <li class="breadcrumb-item active">{{title}}</a></li>
-            {% else %}
-            <li class="breadcrumb-item active">{{title}}</li>
-
-            {% endif %}
-        </ol>
-    </nav>
-</div><!-- End Page Title -->
-<!-- Mensajes de confirmación y éxito -->
 {% if messages %}
-<div id="message-container" class="alert alert-info" role="alert">
+<div class="alert alert-info" role="alert">
     {% for message in messages %}
     <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
         {% endfor %}
 </div>
 {% endif %}
+<div class="pagetitle">
+    <h1>{{title}}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'projects' %}">Project Dasboard</a></li>
+            <li class="breadcrumb-item active">{{title}}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
 
-<section class="section">
+<section class="section dashboard">
     <div class="row">
 
-        {% if project %}
-        {% include 'projects/includes/project_links_card.html' %}
+        <!-- Left side columns -->
+        <div class="col-lg-8">
+            <div class="row">
+            
+            {% if projects %}
+            {% include 'projects/includes/project_top.html' %}
+            {% else %}
+            {% include 'projects/includes/project_card.html' %}
+            {% endif %}
 
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">Proyecto</div>
-                <div class="card-body">
-                    <h5 class="card-title">{{project.title}}</h5>
-                    <p>{{project.description}}</p>
-                </div>
-                <div class="card-footer">
-                    <span>
-                        <!-- Basic Modal -->
-                        <a href="{% url 'project_edit' project.id %}" class="btn btn-primary"><i class="bi bi-pencil-fill"></i></a>
-                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#basicModal"><i class="bi bi-trash-fill"></i></button>
-                        <div class="modal fade" id="basicModal" tabindex="-1">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Delete</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        ¿Está seguro de quiere eliminar este elemento?.
-                                        Esto también eliminará algunos elementos asociados.
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                        <form method="post" action="{% url 'project_delete' project.id %}" style="display: inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-danger">
-                                                <i class="bi bi-trash-fill"></i>
-                                            </button>
-                                        </form>                                    
-                                    </div>
+            {% if tasks %}
+            {% for task in tasks %}
+
+                <!-- Revenue Card -->
+                <div class="col-xxl-4 col-md-6">
+                    <div class="card info-card revenue-card">
+
+                        <div class="filter">
+                            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                                <li class="dropdown-header text-start">
+                                    <h6>Filter</h6>
+                                </li>
+
+                                <li><a class="dropdown-item" href="#">Today</a></li>
+                                <li><a class="dropdown-item" href="#">This Month</a></li>
+                                <li><a class="dropdown-item" href="#">This Year</a></li>
+                            </ul>
+                        </div>
+
+                        <div class="card-body">
+                            <h5 class="card-title">{{task.title}} <span>| This Month</span></h5>
+
+                            <div class="d-flex align-items-center">
+                                <div
+                                    class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>$3,264</h6>
+                                    <span class="text-success small pt-1 fw-bold">8%</span> <span
+                                        class="text-muted small pt-2 ps-1">increase</span>
+
                                 </div>
                             </div>
-                        </div><!-- End Basic Modal-->
-                    </span>
+                        </div>
 
-                </div>
+                    </div>
+                </div><!-- End Revenue Card -->
+
+            {% endfor %}
+            {% endif %}
             </div>
-        </div>
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">Evento Origen</div>
-                <div class="card-body">
-                    <h5 class="card-title"><a
-                            href="{% url 'event_panel' project.event.id %}">{{project.event.title}}</a></h5>
-                    <p>{{project.event.description}}</p>
-                </div>
-                <div class="card-footer">
-                    <span>
-                        <!-- Basic Modal -->
-                        <a href="{% url 'event_edit' project.event.id %}" class="btn btn-primary"><i class="bi bi-pencil-fill"></i></a>
-                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#basicModal"><i class="bi bi-trash-fill"></i></button>
-                        <div class="modal fade" id="basicModal" tabindex="-1">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Delete</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        ¿Está seguro de quiere eliminar este elemento?.
-                                        Esto también eliminará algunos elementos asociados.
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                        <form method="post" action="{% url 'project_delete' project.id %}" style="display: inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-danger">
-                                                <i class="bi bi-trash-fill"></i>
-                                            </button>
-                                        </form>                                    
-                                    </div>
-                                </div>
-                            </div>
-                        </div><!-- End Basic Modal-->
-                    </span>
+        </div><!-- End Left side columns -->
 
-                </div>
-            </div>
-        </div>
-
-        {% for task in tasks %}
-        
+        <!-- Right side columns -->
         <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">Task</div>
-                <div class="card-body">
-                    <h6 class="card-title"><a href="{% url 'tasks' task.id %}">{{ task.title}}</a></h6>
-                    <p>{{task.description}}</p>
 
-                </div>
-                <div class="card-footer">
-                    <p><a href="{% url 'task_edit' task.id %}" class="btn btn-primary"><i
-                                class="bi bi-pencil-fill"></i></a></p>
-                </div>
-            </div>
-        </div>
+            {% if instructions %}
+            {% include 'layouts/includes/information/info_links_card.html' %}
+            {% endif %}
 
-        {% endfor %}
+            {% include 'layouts/includes/information/info_acordeon.html' %}
 
-        {% else %}
+        </div><!-- End Right side columns -->
 
-        {% include 'projects/includes/project_links_card.html' %}
-
-        {% for project in projects %}
-
-        <div class="col-lg-3 stiky">
-            <div class="card">
-                <div class="card-header">Proyecto</div>
-
-                <div class="card-body">
-                    <h6 class="card-title"><a href="{% url 'project_panel' project.id %}">{{ project.title}}</a></h6>
-
-                    <p> {{ project.description }}</p>
-                </div>
-                <div class="card-footer">
-                    <span>
-                        <!-- Basic Modal -->
-                        <a href="{% url 'project_edit' project.id %}" class="btn btn-primary"><i class="bi bi-pencil-fill"></i></a>
-                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#basicModal"><i class="bi bi-trash-fill"></i></button>
-                        <div class="modal fade" id="basicModal" tabindex="-1">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Delete</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        ¿Está seguro de quiere eliminar este elemento?.
-                                        Esto también eliminará algunos elementos asociados.
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                        <form method="post" action="{% url 'project_delete' project.id %}" style="display: inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-danger">
-                                                <i class="bi bi-trash-fill"></i>
-                                            </button>
-                                        </form>                                    
-                                    </div>
-                                </div>
-                            </div>
-                        </div><!-- End Basic Modal-->
-                    </span>
-
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-
-
-        {% endif %}
     </div>
 </section>
-
 
 {% endblock %}
