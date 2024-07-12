@@ -35,12 +35,13 @@ urlpatterns = [
     # Tareas
     path('tasks/', views.tasks, name="tasks"),
     path('tasks/<int:task_id>', views.tasks, name="tasks"),
+    path('tasks/<int:project_id>', views.tasks, name="tasks"),
     path('tasks/create/', views.task_create, name="task_create"),
     path('tasks/edit/', views.task_edit, name="task_edit"),
     path('tasks/edit/<int:task_id>', views.task_edit, name="task_edit"),
     path('tasks/delete/<int:task_id>', views.task_delete, name="task_delete"),
     path('tasks/panel/', views.task_panel, name="task_panel"),
-    path('tasks/panel/<int:tasks_id>', views.task_panel, name="task_panel"),
+    path('tasks/panel/<int:task_id>', views.task_panel, name="task_panel"),
 
 
     # Cambio de estado y eliminación de eventos
