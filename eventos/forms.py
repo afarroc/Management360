@@ -21,7 +21,6 @@ class CreateNewEvent(forms.ModelForm):
             'assigned_to': forms.Select(attrs={'class': 'form-select'}),
         }
 
-
 class AssignAttendeesForm(forms.Form):
     attendees = forms.ModelMultipleChoiceField(
         queryset=User.objects.all(),
@@ -43,28 +42,18 @@ class CreateNewTask(forms.ModelForm):
 
 class CreateNewProject(forms.ModelForm):
     
+
     class Meta:
         model = Project
-        fields = ['title', 'description', 'event', 'project_status', 'assigned_to', 'attendees']
+        fields = ['title', 'description', 'event', 'assigned_to', 'attendees', 'project_status', 'ticket_price', ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control'}),
             'event': forms.Select(attrs={'class': 'form-select'}),
-            'project_status': forms.Select(attrs={'class': 'form-select'}),
             'assigned_to': forms.Select(attrs={'class': 'form-select'}),
             'attendees': forms.SelectMultiple(attrs={'class': 'form-select'}),
-        }
-
-
-    
-    class Meta:
-        model = Task
-        fields = ['title', 'description', 'event', 'project']
-        widgets = {
-            'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control'}),
-            'event': forms.Select(attrs={'class': 'form-select'}),
-            'project': forms.Select(attrs={'class': 'form-select'}),
+            'project_status': forms.Select(attrs={'class': 'form-select'}),
+            'ticket_price': forms.NumberInput(attrs={'class': 'form-control'}),
 
         }
        

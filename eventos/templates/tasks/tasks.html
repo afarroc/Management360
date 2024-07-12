@@ -22,19 +22,18 @@
 <section class="section">
     <div class="row">
 
-        {% if objects %}
+        {% if tasks %}
 
         {% include 'layouts/includes/information/info_links_card.html' %}
 
-        {% for object in objects %}
+        {% for task in tasks %}
 
-        {% include 'layouts/includes/information/info_card.html'%}
+        {% include 'tasks/includes/task_card.html' %}
         
         {% endfor %}
 
         {% else %}
 
-        {% include 'tasks/includes/task_links_card.html' %}
 
         <div class="col-lg-6">
             <div class="card">
@@ -58,6 +57,9 @@
             </div>
         </div>
 
+        {% include 'layouts/includes/information/info_links_card.html' %}
+
+        
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-header">Proyecto</div>

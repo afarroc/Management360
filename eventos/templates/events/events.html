@@ -23,30 +23,9 @@
 
     
     <div class="row">
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">Aviso</div>
-                <div class="card-body">
-                    <h5 class="card-title">Está en el panel de busqueda de Eventos</h5>
-                    <p>Seleccione un elemento para mas detalle</p>
-                </div>
-                <div class="card-footer"></div>
-            </div>
-        </div>
 
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">Enlaces</div>
-                <div class="card-body">
-                    <h5 class="card-title">Continue navegando.</h5>
-                    <a href="{% url 'event_edit' %}" class="btn btn-primary"> Events List</a>
-                    <a href="{% url 'event_panel' %}" class="btn btn-primary"> Events Panel</a>
-                </div>
-                <div class="card-footer"></div>
-            </div>
-        </div>
 		<!-- Aquí va el código para mostrar los filtros -->
-		<div class="col-lg-12">
+		<div class="col-lg-6">
             <div class="card">
                 <div class="card-header">Filtros</div>
                 <div class="card-body">
@@ -84,6 +63,7 @@
 				</div>
             </div>
         </div>
+        {% include 'layouts/includes/information/info_links_card.html' %}
 
 
         {% if events %}
