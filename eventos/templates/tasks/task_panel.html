@@ -31,10 +31,17 @@
             {% include 'tasks/includes/task_top.html' %}
 
             {% else %}
+
             {% include 'tasks/includes/task_card.html' %}
+
             {% endif %}
+            
+            {% if project %}
 
+            {% include 'projects/includes/project_card.html' %}
 
+            {% endif %}
+            
             </div>
         </div><!-- End Left side columns -->
 
