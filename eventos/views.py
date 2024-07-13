@@ -299,34 +299,42 @@ def project_edit(request, project_id=None):
         return redirect('index')
 
 def project_panel(request, project_id=None):
-
+    title="Project Panel"
+    urls=[
+            {'url':'task_create','name':'Task Create'},
+            {'url':'task_edit','name':'Task Edit'},        
+        ]       
+    instructions = [
+            {'instruction': 'Select an item for details', 'name': 'Items'},
+        ]
     if project_id:
-        title="Project Detail"      
-        statuses = ProjectStatus.objects.all().order_by('status_name')
+        event_statuses = Status.objects.all().order_by('status_name')
+        task_statuses = TaskStatus.objects.all().order_by('status_name')
+        project_statuses = ProjectStatus.objects.all().order_by('status_name')
+        
         try:
             project = get_object_or_404(Project, id=project_id)
-            tasks=Task.objects.filter(project_id=project_id)
+            event = project.event  # Aquí es donde obtienes el objeto Event asociado con el proyecto
             tasks = Task.objects.filter(project_id=project_id)
             count_tasks = tasks.count()
             return render(request, "projects/project_panel.html",{
-                'statuses':statuses,
-                'title':title,
                 'project':project,
                 'tasks':tasks,
+                'event_statuses':event_statuses,
+                'task_statuses':task_statuses,
+                'project_statuses':project_statuses,
+                'title':title,
+                'urls':urls,
+                'instructions':instructions,
                 'count_tasks':count_tasks,
+                'event': event,  # Puedes pasar el objeto Event al template si lo necesitas
                 })
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
             return redirect('project_panel')
+
     else:
-        title="Project Panel"
-        urls=[
-            {'url':'task_create','name':'Task Create'},
-            {'url':'task_edit','name':'Task Edit'},        
-        ]       
-        instructions = [
-            {'instruction': 'Select an item for details', 'name': 'Items'},
-    ]   
+   
         if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
             # Si el usuario es un 'SU', puede ver todos los proyectos
             projects = Project.objects.all().order_by('-updated_at')
@@ -557,7 +565,9 @@ def change_task_status(request, task_id):
 # Events
 @login_required
 def events(request):
-    title="Events Search"
+    today = timezone.now().date()
+    title="Events Origen"
+    
     if request.session['first_session'] == True:
         try:
             status_en_curso = Status.objects.get(status_name='En curso').id
@@ -573,12 +583,11 @@ def events(request):
             if request.user.profile.role == 'SU':
                 events = Event.objects.all().order_by('-updated_at')
             else:
-                events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-                
+                events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')                
         else:
             events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
             
-        statuses = Status.objects.all().order_by('status_name')
+        event_statuses = Status.objects.all().order_by('status_name')
         
         if request.method == 'POST':
             cerrado = request.POST.get('cerrado', 'False').lower() == 'true'
@@ -608,9 +617,15 @@ def events(request):
             else:
                 request.session['filtered_date'] = date
             
+            count_events = events.count()  # Aquí es donde obtienes el recuento de eventos
+            # Filtra los eventos que fueron actualizados hoy y cuenta el número de esos eventos
+            events_updated_today = events.filter(updated_at__date=today).count()
             return render(request, 'events/events.html', {
+                'title': title,
+                'events_updated_today': events_updated_today,
+                'count_events': count_events,
                 'events': events,
-                'statuses': statuses,
+                'event_statuses': event_statuses,
             })
             
         else:
@@ -634,9 +649,14 @@ def events(request):
                 messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
                 return redirect('index')
             
+            count_events = events.count()  # Aquí es donde obtienes el recuento de eventos
+            events_updated_today = events.filter(updated_at__date=today).count()
+
             return render(request, 'events/events.html', {
+                'events_updated_today': events_updated_today,
+                'count_events': count_events,
                 'events': events,
-                'statuses': statuses,
+                'event_statuses': event_statuses,
                 'title': title,
                 
             })
@@ -864,7 +884,7 @@ def event_delete(request, event_id):
 
 def event_panel(request, event_id=None):
     title="Event Panel"
-    statuses = Status.objects.all().order_by('status_name')
+    event_statuses = Status.objects.all().order_by('status_name')
 
     if event_id:
         try:
@@ -879,7 +899,7 @@ def event_panel(request, event_id=None):
                 'title':title,
                 'event':event,
                 'projects':projects,
-                'statuses':statuses,
+                'event_statuses':event_statuses,
                 
             })
 
@@ -897,7 +917,7 @@ def event_panel(request, event_id=None):
         return render(request, 'events/event_panel.html', {
             'title':title,
             'events': events,
-            'statuses':statuses,
+            'event_statuses':event_statuses,
 
             })
 
