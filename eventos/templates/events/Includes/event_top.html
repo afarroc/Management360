@@ -16,9 +16,9 @@
         </div>
 
         <div class="card-body pb-0">
-            <h5 class="card-title">Projects <span>| Today</span></h5>
+            <h5 class="card-title">Events <span>| Today</span></h5>
 
-            <table class="table datatable table-striped" style="width:100%">
+            <table class="table table-borderless datatable">
                 <thead>
                     <tr>
                         <th scope="col">Id</th>
@@ -26,20 +26,25 @@
                         <th scope="col">Event</th>
                         <th scope="col">Status</th>
                         <th scope="col">Icon</th>
-                        <th scope="col">Tasks</th>
-
                     </tr>
                 </thead>
                 <tbody>
-                    {% for project, count_tasks in projects_with_task_count %}
+                    {% for event in events %}
                     <tr>
-                        <td><a href="{% url 'project_panel' project.id %}" class="text-primary">{{project.id}}</a></td>
-                        <td><a href="{% url 'project_panel' project.id %}" class="text-primary">{{project.title}}</a></td>
-                        <td><a href="{% url 'event_panel' project.event.id %}" class="text-primary">{{project.event.title}}</a></td>
-                        <td><span style="background-color: {{ project.project_status.color }}" class="badge">{{project.project_status.status_name}}</span></td>
-                        <td>{{project.project_status.icon}}</td>
-                        <td><a href="{% url 'task_panel'%}"  class="text-primary">{{count_tasks}}</a></td>
-
+                        <td><a href="{% url 'event_panel' event.id %}" class="text-primary">{{event.id}}</a></td>
+                        <td class="fw-bold"><a href="{% url 'event_panel' event.id %}">{{event.title}}</a></td>
+                        <td>
+                            {% if event.event %}
+                                <a href="{% url 'event_panel' event.event.id %}">{{ event.event.title }}</a>
+                            {% else %}
+                            
+                            {% endif %}
+                        </td>
+                        
+                        <td>
+                            <span style="background-color: {{ event.event_status.color }};" class="badge ">{{event.event_status.status_name}}</span>
+                            </td>
+                        <td>{{event.event_status.icon}}</td>
                     </tr>
                     {% endfor%}
 
