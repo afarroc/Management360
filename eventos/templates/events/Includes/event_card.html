@@ -1,5 +1,5 @@
 <!-- Sales Card -->
-<div class="col-xxl-4 col-md-6 " id="project-card-{{ project.id }}">
+<div class="col-xxl-4 col-md-6 " id="event-card-{{ event.id }}">
 	<div class="card info-card sales-card">
 
 		<div class="filter">
@@ -14,7 +14,7 @@
 					{% if request.user.profile.role == 'SU' %}
 					<div class="dropdown-item">
 						{% csrf_token %}
-						<a href="{% url 'project_edit' project.id %}" class="btn btn-primary">
+						<a href="{% url 'event_edit' event.id %}" class="btn btn-primary">
 							<i class="bi bi-pencil-fill"></i>
 						</a>
 					</div>
@@ -22,8 +22,8 @@
 				</li>
 					{% if request.user.profile.role == 'SU' %}
 					<div class="dropdown-item">
-						<form id="delete-form-{{ project.id }}" action="{% url 'project_delete' project.id %}" method="POST"
-						class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este projecto?');">
+						<form id="delete-form-{{ event.id }}" action="{% url 'event_delete' event.id %}" method="POST"
+						class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este evento?');">
 						{% csrf_token %}
 						<button type="submit" class="btn btn-danger">
 							<i class="bi bi-trash-fill"></i>
@@ -39,7 +39,7 @@
 		</div>
 
 		<div class="card-body">
-			<h5 class="card-title">{{ project.title }} <span>| Project id: {{project.id}}</span></h5>
+			<h5 class="card-title">{{ event.title }} <span>| event id: {{event.id}}</span></h5>
 			<div class="d-flex align-items-center">
 				<div
 					class="card-icon rounded-circle d-flex align-items-center justify-content-center">
@@ -49,29 +49,28 @@
 				<div class="ps-3">
 					<h6>{{ count_tasks }}</h6>
 					<span class="text-muted small pt-2 ps-1">Created</span>
-					<span class="text-success small pt-1 fw-bold">{{ project.created_at|date:"d-M H:i" }}</span> 
+					<span class="text-success small pt-1 fw-bold">{{ event.created_at|date:"d-M H:i" }}</span> 
 					<br>
 					<span class="text-muted small pt-2 ps-1">Updated</span>
-					<span class="text-success small pt-1 fw-bold">{{ project.updated_at|date:"d-M H:i" }}</span> 
+					<span class="text-success small pt-1 fw-bold">{{ event.updated_at|date:"d-M H:i" }}</span> 
 				</div>
 			</div>
-			<p class="card-text mb-1">{{ project.description }}</p>
+			
+			<p class="card-text mb-1">{{ event.description }}</p>
 			<p class="card-text mb-1"><strong>Asistentes:</strong>
-				{% for attendee in project.attendees.all %}
+				{% for attendee in event.attendees.all %}
 				{{ attendee.username|title }}{% if not forloop.last %},{% else %}.{% endif %}
 				{% endfor %}
 			</p>
-			<form id="form-{{ project.id }}" action="{% url 'change_project_status' project.id %}" method="POST"
+			<form id="form-{{ event.id }}" action="{% url 'change_event_status' event.id %}" method="POST"
 				class="mb-1">
 				{% csrf_token %}
 				<div class="mb-1">
 					<select name="new_status_id" class="form-select" aria-label="Default select example">
-						{% for status in project_statuses %}
-						<option value="{{ status.id }}" {% if
-							status.id|stringformat:"s"==project.project_status.id|stringformat:"s" %}selected{% endif
-							%}>
+						{% for status in event_statuses %}
+							<option value="{{ status.id }}" {% if status.id|stringformat:"s" == event.event_status.id|stringformat:"s" %}selected{% endif %}>
 							{{ status.status_name }}
-						</option>
+							</option>
 						{% endfor %}
 					</select>
 				</div>

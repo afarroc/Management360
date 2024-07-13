@@ -1,155 +1,76 @@
 {% extends 'layouts/base.html' %}
-
+{% load static %}
 {% block content %}
-<div class="pagetitle">
-    <h1>{{title}}</h1>
-    <nav>
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'event_panel' %}">Events</a></li>
-            {% if event %}
-            <li class="breadcrumb-item active"><a href="{% url 'event_panel' %}">{{title}}</a></li>
-            {% else %}
-            <li class="breadcrumb-item active">{{title}}</li>
-
-            {% endif %}
-        </ol>
-    </nav>
-</div><!-- End Page Title -->
-<!-- Mensajes de confirmación y éxito -->
 {% if messages %}
-<div id="message-container" class="alert alert-info" role="alert">
+<div class="alert alert-info" role="alert">
     {% for message in messages %}
     <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
         {% endfor %}
 </div>
 {% endif %}
+<div class="pagetitle">
+    <h1>{{title}}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'projects' %}">Events</a></li>
+            <li class="breadcrumb-item active">{{title}}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
 
-<section class="section">
+<section class="section dashboard">
     <div class="row">
-        {% if event %}
 
-        {% include 'events/includes/project_links_card.html' %}
-
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">Evento</div>
-                <div class="card-body">
-                    <h5 class="card-title">{{event.title}}</h5>
-                    <p>{{event.description}}</p>
-                    <div class="card-footer">
-                        <p>
-                            <a href="{% url 'event_edit' event.id %}" class="btn btn-primary"><i class="bi bi-pencil-fill"></i></a>
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {% if projects %}
-        {% for project in projects %}
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">Projecto</div>
-
-                <div class="card-body">
-                    <h5 class="card-title"><a href="{% url 'project_panel' project.id %}">{{project.title}}</a></h5>
-                    <p>{{project.description}}</p>
-                    <div class="card-footer">
-                        <p>
-                            <a href="{% url 'event_edit' event.id %}" class="btn btn-primary"><i class="bi bi-pencil-fill"></i></a>
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-        {% else %}
-        {% endif %}
-
-        {% for task in tasks %}
-        <div class="col-lg-4">
-            <div class="card">
-                <div class="card-body">
-                    <h6 class="card-title"><a href="{% url 'tasks' task.id %}">{{ task.title}}</a></h6>
-                    <h5 class="card-title">{{task.title}}</h5>
-                    <p>{{task.description}}</p>
-
-                </div>
-            <div class="card-footer">
-            <p><a href="{% url 'task_edit' task.id %}" class="btn btn-primary"><i class="bi bi-pencil-fill"></i></a></p>
-            </div>
-            </div>
-
-        </div>
-        {% endfor %}
-
-        {% else %}
-
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">Aviso</div>
-                <div class="card-body">
-                    <h6 class="card-title">Está en el Panel de Eventos</h6>
-                    <p>Seleccione un elemento para mas detalle</p>
-                </div>
-                <div class="card-footer">
-                </div>
-            </div>
-        </div>   
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header">Links</div>
-                <div class="card-body">
-                    <h6 class="card-title">Continue navegando</h6>
-                    <a href="{% url 'event_edit' %}" class="btn btn-primary"> Events List</a>
-                    <a href="{% url 'events' %}" class="btn btn-primary"> Events Search</a>
-                </div>
-                <div class="card-footer"></div>
-            </div>
-        </div>   
-        
-        
-
-        {% for event in events %}
-
-        <div class="col-lg-3 stiky">
-            <div class="card">
-                <div class="card-header " style="background-color: {{ event.event_status.color }};opacity: 0.8;">
-                    Evento</div>
-                <div class="card-body">
-                    <h6 class="card-title"><a href="{% url 'event_panel' event.id %}">{{ event.title}}</a></h6>
-                    <p> {{ event.description }}</p>
-
-                    <form id="form-{{ event.id }}" action="{% url 'change_event_status' event.id %}" method="POST">
-                        {% csrf_token %}
-                        <div class="form-floating mb-3">
-    
-                            <select name="new_status_id" class="form-select" aria-label="Default select example">
-                                {% for status in statuses %}
-                                    <option value="{{ status.id }}" {% if status.id|stringformat:"s" == event.event_status.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ status.status_name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                            <label for="floatingSelect">Estado</label>
-                        </div>
-                          <button type="submit" class="btn btn-primary">Cambiar Estado</button>
-                    </form> 
-
-                    
-                </div>
-                <div class="card-footer">
-                    <a href="{% url 'event_edit' event.id %}" class="btn btn-primary bi bi-pencil-fill"></a>
-                </div>
-            </div>
-        </div>          
-        {% endfor %}
+        <!-- Left side columns -->
+        <div class="col-lg-8">
+            <div class="row">
             
-        
-        {% endif %}
+            {% if events %}
+
+            {% include 'events/includes/event_top.html' %}
+
+            {% else %}
+            
+            {% include 'events/includes/event_card.html' %}
+
+            {% endif %}
+
+            {% if tasks %}
+            {% for task in tasks %}
+
+            {% include 'tasks/includes/task_card.html' %}
+
+
+            {% endfor %}
+            {% endif %}
+            </div>
+        </div><!-- End Left side columns -->
+
+        <!-- Right side columns -->
+        <div class="col-lg-4">
+
+            {% if instructions %}
+            {% include 'layouts/includes/information/info_links_card.html' %}
+            {% endif %}
+
+            {% include 'layouts/includes/information/info_acordeon.html' %}
+
+        </div><!-- End Right side columns -->
+
     </div>
 </section>
 
-
 {% endblock %}
+
+
+
+
+
+
+
+
+
+
+
+
