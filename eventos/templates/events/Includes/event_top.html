@@ -1,4 +1,4 @@
-<!-- Top Selling -->
+<!-- Top  -->
 <div class="col-12">
     <div class="card top-selling overflow-auto">
 
@@ -23,9 +23,7 @@
                     <tr>
                         <th scope="col">Id</th>
                         <th scope="col">Title</th>
-                        <th scope="col">Event</th>
                         <th scope="col">Status</th>
-                        <th scope="col">Icon</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -34,17 +32,8 @@
                         <td><a href="{% url 'event_panel' event.id %}" class="text-primary">{{event.id}}</a></td>
                         <td class="fw-bold"><a href="{% url 'event_panel' event.id %}">{{event.title}}</a></td>
                         <td>
-                            {% if event.event %}
-                                <a href="{% url 'event_panel' event.event.id %}">{{ event.event.title }}</a>
-                            {% else %}
-                            
-                            {% endif %}
-                        </td>
-                        
-                        <td>
-                            <span style="background-color: {{ event.event_status.color }};" class="badge ">{{event.event_status.status_name}}</span>
+                            <span style="background-color: {{ event.event_status.color }};" class="badge ">{{event.event_status.icon}} {{event.event_status.status_name}}</span>
                             </td>
-                        <td>{{event.event_status.icon}}</td>
                     </tr>
                     {% endfor%}
 

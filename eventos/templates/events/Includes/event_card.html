@@ -1,7 +1,6 @@
 <!-- Sales Card -->
 <div class="col-xxl-4 col-md-6 " id="event-card-{{ event.id }}">
 	<div class="card info-card sales-card">
-
 		<div class="filter">
 			<a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
 			<ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
@@ -20,34 +19,30 @@
 					</div>
 					{% endif %}
 				</li>
+				<li>
 					{% if request.user.profile.role == 'SU' %}
-					<div class="dropdown-item">
-						<form id="delete-form-{{ event.id }}" action="{% url 'event_delete' event.id %}" method="POST"
-						class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este evento?');">
+					<form id="delete-form-{{ event.id }}" action="{% url 'event_delete' event.id %}" method="POST"
+						class="dropdown-item d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta tarea?');">
 						{% csrf_token %}
-						<button type="submit" class="btn btn-danger">
-							<i class="bi bi-trash-fill"></i>
-						</button>
+							<button type="submit" class="btn btn-danger">
+								<i class="bi bi-trash-fill"></i>
+							</button>
 					</form>
-					</div>
 					{% endif %}
-
-
-
-
+				</li>
 			</ul>
 		</div>
 
 		<div class="card-body">
-			<h5 class="card-title">{{ event.title }} <span>| event id: {{event.id}}</span></h5>
+			<h5 class="card-title"><a href="{% url 'event_panel' event.id %}">{{ event.title }}</a><span>| Event id: {{event.id}}</span></h5>
 			<div class="d-flex align-items-center">
 				<div
+					style="color: {{event.event_status.color}};"
 					class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-					<i class="bi bi-card-checklist"></i>
+					<i class="bi bi-calendar2-event-fill"></i>
 				</div>
-
 				<div class="ps-3">
-					<h6>{{ count_tasks }}</h6>
+					<h6></h6>
 					<span class="text-muted small pt-2 ps-1">Created</span>
 					<span class="text-success small pt-1 fw-bold">{{ event.created_at|date:"d-M H:i" }}</span> 
 					<br>
@@ -55,14 +50,13 @@
 					<span class="text-success small pt-1 fw-bold">{{ event.updated_at|date:"d-M H:i" }}</span> 
 				</div>
 			</div>
-			
 			<p class="card-text mb-1">{{ event.description }}</p>
 			<p class="card-text mb-1"><strong>Asistentes:</strong>
 				{% for attendee in event.attendees.all %}
 				{{ attendee.username|title }}{% if not forloop.last %},{% else %}.{% endif %}
 				{% endfor %}
 			</p>
-			<form id="form-{{ event.id }}" action="{% url 'change_event_status' event.id %}" method="POST"
+			<form id="form-{{ event.id }}" action="{% url 'event_status_change' event.id %}" method="POST"
 				class="mb-1">
 				{% csrf_token %}
 				<div class="mb-1">
@@ -76,12 +70,6 @@
 				</div>
 				<button type="submit" class="btn btn-primary btn-sm">Cambiar Estado</button>
 			</form>
-
 		</div>
-
-
-
-
-
 	</div>
 </div><!-- End Sales Card -->

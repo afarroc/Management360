@@ -13,7 +13,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'projects' %}">Events</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'event_panel' %}">Events</a></li>
             <li class="breadcrumb-item active">{{title}}</li>
         </ol>
     </nav>
@@ -27,24 +27,26 @@
             <div class="row">
             
             {% if events %}
-
             {% include 'events/includes/event_top.html' %}
-
             {% else %}
             
             {% include 'events/includes/event_card.html' %}
 
             {% endif %}
 
-            {% if tasks %}
-            {% for task in tasks %}
-
-            {% include 'tasks/includes/task_card.html' %}
-
-
+            {% if projects %}
+            {% for project in projects %}
+            {% include 'projects/includes/project_card.html' %}
             {% endfor %}
             {% endif %}
-            </div>
+
+            {% if tasks %}
+            {% for task in tasks %}
+            {% include 'tasks/includes/task_card.html' %}
+            {% endfor %}
+            {% endif %}
+
+        </div>
         </div><!-- End Left side columns -->
 
         <!-- Right side columns -->
