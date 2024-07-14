@@ -1,7 +1,6 @@
 <!-- Sales Card -->
 <div class="col-xxl-4 col-md-6 " id="project-card-{{ project.id }}">
 	<div class="card info-card sales-card">
-
 		<div class="filter">
 			<a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
 			<ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
@@ -31,23 +30,18 @@
 					</form>
 					</div>
 					{% endif %}
-
-
-
-
 			</ul>
 		</div>
-
 		<div class="card-body">
-			<h5 class="card-title">{{ project.title }} <span>| Project id: {{project.id}}</span></h5>
+			<h5 class="card-title"><a href="{% url 'project_panel' project.id %}">{{ project.title }}</a> <span>| Project id: {{project.id}}</span></h5>
 			<div class="d-flex align-items-center">
 				<div
+					style="color: {{project.project_status.color}};"
 					class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-					<i class="bi bi-card-checklist"></i>
+					<i class="bi bi-calendar-range-fill"></i>
 				</div>
-
 				<div class="ps-3">
-					<h6>{{ count_tasks }}</h6>
+					<h6></h6>
 					<span class="text-muted small pt-2 ps-1">Created</span>
 					<span class="text-success small pt-1 fw-bold">{{ project.created_at|date:"d-M H:i" }}</span> 
 					<br>
@@ -77,12 +71,6 @@
 				</div>
 				<button type="submit" class="btn btn-primary btn-sm">Cambiar Estado</button>
 			</form>
-
 		</div>
-
-
-
-
-
 	</div>
 </div><!-- End Sales Card -->

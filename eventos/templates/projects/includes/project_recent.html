@@ -21,21 +21,23 @@
             <table class="table table-borderless datatable">
                 <thead>
                     <tr>
-                        <th scope="col">Id</th>
                         <th scope="col">Title</th>
-                        <th scope="col">Assigned to</th>
-                        <th scope="col">Date</th>
+                        <th scope="col">Ticket</th>
+                        <th scope="col">Updated at</th>
                         <th scope="col">Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for project in projects %}
                     <tr>
-                        <th scope="row"><a href="{% url 'project_panel' project.id %}">{{project.id}}</a></th>
                         <td><a href="{% url 'project_panel' project.id %}" class="text-primary">{{project.title}}</a></td>                        
-                        <td>{{project.assigned_to.get_full_name|title}}</td>
+                        <td>{{project.ticket_price|title}}</td>
                         <td>{{ project.updated_at|date:"d-M H:i" }}</td>
-                        <td><span class="badge bg-success">{{project.project_status.status_name}}</span></td>
+                        <td>
+                            <span style="background-color: {{ project.project_status.color }};" class="badge">
+                            {{project.project_status.icon}} {{project.project_status.status_name}}
+                            </span>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

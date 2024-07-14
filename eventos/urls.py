@@ -19,6 +19,7 @@ urlpatterns = [
     path('events/edit/<int:event_id>', views.event_edit, name="event_edit"),
     path('events/panel/', views.event_panel, name="event_panel"),
     path('events/panel/<int:event_id>', views.event_panel, name="event_panel"),
+    path('events/status_change/<int:event_id>/', views.event_status_change, name='event_status_change'),
 
 
     # Proyectos
@@ -45,13 +46,11 @@ urlpatterns = [
 
 
     # Cambio de estado y eliminación de eventos
-    path('change_event_status/<int:event_id>/', views.change_event_status, name='change_event_status'),
     path('change_project_status/<int:project_id>/', views.change_project_status, name='change_project_status'),
     path('change_task_status/<int:project_id>/', views.change_task_status, name='change_task_status'),
 
     # Panel
     path('panel/', views.panel, name='panel'),
-    path('panel/event_edit/<int:event_id>/', views.event_edit, name='event_edit'),
 
     # Sesión
     path('accounts/signup/', views.signup, name='signup'),
