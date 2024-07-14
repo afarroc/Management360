@@ -6,7 +6,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'blank' %}">Blank</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'event_panel' %}">Events</a></li>
             <li class="breadcrumb-item active">{{title}}</li>
         </ol>
     </nav>
@@ -19,37 +19,34 @@
         {% endfor %}
 </div>
 {% endif %}
-<section class="section">
+
+<section class="section dashboard">
     <div class="row">
 
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Example Card</h5>
-                    <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.</p>
-                </div>
+        <!-- Left side columns -->
+        <div class="col-lg-8">
+            <div class="row">
+                {% if event %}
+                {% include 'events/includes/event_form.html' %}
+                {% else %}
+                <p>No event data</p>
+                {% endif %}
             </div>
-        </div>
+        </div><!-- End Left side columns -->
 
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Example Card</h5>
-                    <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.</p>
-                </div>
-            </div>
-        </div>
-        <form method="POST">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit">Save Changes</button>
-        </form>
+        <!-- Right side columns -->
+        <div class="col-lg-4">
 
-    
-    
+            {% if instructions %}
+            {% include 'layouts/includes/information/info_links_card.html' %}
+            {% endif %}
+
+            {% include 'layouts/includes/information/info_acordeon.html' %}
+
+        </div><!-- End Right side columns -->
+
     </div>
 </section>
-
 
 {% endblock %}
 

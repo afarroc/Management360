@@ -119,7 +119,6 @@ class Project(models.Model):
             new_status = ProjectStatus.objects.get(status_name=new_value)
             self.change_status(new_status.id)
    
-
     def __str__(self):
         return f"{self.title} - {self.event}"
 
@@ -151,7 +150,7 @@ class Task(models.Model):
     important = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-# Agregar blank=True para permitir que el campo sea opcional en formularios
+    # Agregar blank=True para permitir que el campo sea opcional en formularios
     done = models.BooleanField(default=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')  # Asegúrate de que esta línea esté presente
     project = models.ForeignKey('Project', on_delete=models.CASCADE)  # Usa comillas si Project está definido más abajo en el mismo archivo
@@ -177,7 +176,7 @@ class Task(models.Model):
             self.change_status(new_status.id)
 
     def __str__(self):
-        return f"{self.title} - {self.task.name}"
+        return f"{self.title} - {self.event}"
 
 # Modelo para registrar los estados por los que pasa cada evento
 class EventState(models.Model):

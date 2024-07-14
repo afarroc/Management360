@@ -104,9 +104,53 @@ def signin(request):
             return redirect('events')
 
 # Proyects
-
+from django.db.models import Sum
+from django.db.models import Count
+from django.db.models.functions import TruncDate
+import pandas as pd
 # Project dashboard
 def projects(request):
+
+    # Obtén la cantidad de eventos, proyectos y tareas por día
+    events_per_day = Event.objects.annotate(date=TruncDate('created_at')).values('date').annotate(count=Count('id')).order_by('date')
+    projects_per_day = Project.objects.annotate(date=TruncDate('created_at')).values('date').annotate(count=Count('id')).order_by('date')
+    tasks_per_day = Task.objects.annotate(date=TruncDate('created_at')).values('date').annotate(count=Count('id')).order_by('date')
+
+    # Extrae solo los conteos y conviértelos en listas
+    events_data = [item['count'] for item in events_per_day]
+    projects_data = [item['count'] for item in projects_per_day]
+    tasks_data = [item['count'] for item in tasks_per_day]
+
+    # Obtén las fechas de los eventos, proyectos y tareas
+    event_dates = Event.objects.dates('created_at', 'day')
+    project_dates = Project.objects.dates('created_at', 'day')
+    task_dates = Task.objects.dates('created_at', 'day')
+
+    # Convierte los QuerySets a listas para usar en el gráfico
+    event_dates = [date.strftime('%Y-%m-%dT%H:%M:%S.000Z') for date in event_dates]
+    project_dates = [date.strftime('%Y-%m-%dT%H:%M:%S.000Z') for date in project_dates]
+    task_dates = [date.strftime('%Y-%m-%dT%H:%M:%S.000Z') for date in task_dates]
+
+
+
+
+    # Define la fecha de inicio y la fecha de fin
+    fecha_inicio = '2024-01-01'
+    fecha_fin = '2024-12-31'
+
+    # Genera un rango de fechas
+    rango_fechas = pd.date_range(start=fecha_inicio, end=fecha_fin)
+
+    # Convierte las fechas a formato ISO con precisión de milisegundos
+    rango_fechas = [fecha.strftime('%Y-%m-%dT%H:%M:%S.000Z') for fecha in rango_fechas]
+
+
+
+
+
+    print(projects_data)
+
+    print(project_dates)
     
     title="Projects"   
     urls=[
@@ -118,12 +162,14 @@ def projects(request):
         {'url': 'projects', 'id' : None , 'name': 'Projects Panel'},
         {'url': 'tasks', 'id' : None , 'name': 'Tasks Panel'},
         ]
-    
-    statuses = ProjectStatus.objects.all().order_by('status_name')
+    instructions = [
+        {'instruction': 'Fill carefully the metadata.', 'name': 'Form'},
+    ]
+    project_statuses = ProjectStatus.objects.all().order_by('status_name')
     projects = Project.objects.all().order_by('-updated_at')
     total_projects = Project.objects.count()
 
-
+    total_ticket_price = projects.aggregate(Sum('ticket_price'))
 
     # Define la fecha de referencia
     date = timezone.now() - timezone.timedelta(days=1)  # hace 30 días
@@ -131,16 +177,24 @@ def projects(request):
     # Cuenta cuántos proyectos se han creado desde la fecha de referencia
     increase = Project.objects.filter(created_at__gte=date).count()
     
-    print(increase)
+    print(total_ticket_price['ticket_price__sum'])
     
     return render(request, "projects/projects.html",{
+        'total_ticket_price':total_ticket_price['ticket_price__sum'],
         'other_urls':other_urls,
         'urls':urls,
+        'instructions':instructions,
         'increase':increase,
         'projects':projects,
         'total_projects':total_projects,
-        'statuses':statuses,
+        'project_statuses':project_statuses,
         'title':title,
+        'events_data':events_data,
+        'projects_data':projects_data,
+        'tasks_data':tasks_data,
+        'event_dates':event_dates,
+        'rango_fechas':rango_fechas
+        
     })
 
 def project_create(request):
@@ -270,7 +324,7 @@ def project_edit(request, project_id=None):
                     form.save()
 
                     messages.success(request, 'Proyecto guardado con éxito.')
-                    return redirect('project_edit')  # Redirige a la página de lista de edición
+                    return redirect('projects')  # Redirige a la página de lista de edición
                 else:
                     messages.error(request, 'Hubo un error al guardar el proyecto. Por favor, revisa el formulario.')
             else:
@@ -363,8 +417,7 @@ def project_panel(request, project_id=None):
             'projects': projects
             
             })
-
-        
+     
 # Tasks
      
 def tasks(request, task_id=None, project_id=None):
@@ -501,14 +554,17 @@ def task_panel(request, task_id=None):
     title="Task Panel"
     if task_id:
         try:
-            
             print('Hay una tarea', task_id)
             task = get_object_or_404(Task,id=task_id)
             project = task.project
-            statuses = TaskStatus.objects.all().order_by('status_name')
+            event_statuses = Status.objects.all().order_by('status_name')
+            project_statuses = ProjectStatus.objects.all().order_by('status_name')
+            task_statuses = TaskStatus.objects.all().order_by('status_name')
             print('project: ',project)
             return render(request, "tasks/task_panel.html",{
-                'statuses':statuses,
+                'event_statuses':event_statuses,
+                'project_statuses':project_statuses,
+                'task_statuses':task_statuses,
                 'title':title,
                 'task':task,
                 'project':project,
@@ -560,7 +616,6 @@ def change_task_status(request, task_id):
     messages.success(request, 'task status edited successfully!')
 
     return redirect('task_panel')
-
 
 # Events
 @login_required
@@ -809,12 +864,14 @@ def event_edit(request, event_id=None):
                     return redirect('event_panel')  # Redirige a la página de lista de edición
                 else:
                     messages.error(request, 'Hubo un error al guardar el evento. Por favor, revisa el formulario.')
+            
             else:
                 form = CreateNewEvent(instance=event)
-            return render(request, 'events/event_panel.html', {
+                print(event.title)
+            return render(request, 'events/event_edit.html', {
+                'event':event,
                 'form': form,
                 'title':title,
-                
                 })
         else:
             # Estamos manejando una solicitud GET sin argumentos
@@ -829,11 +886,12 @@ def event_edit(request, event_id=None):
                 'events': events,
                 'title': title,
                 })
+            
     except Exception as e:
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
 
-def change_event_status(request, event_id):
+def event_status_change(request, event_id):
     print("Inicio de vista change_event_status")
     try:
         if request.method != 'POST':
@@ -885,6 +943,8 @@ def event_delete(request, event_id):
 def event_panel(request, event_id=None):
     title="Event Panel"
     event_statuses = Status.objects.all().order_by('status_name')
+    project_statuses = ProjectStatus.objects.all().order_by('status_name')
+    task_statuses = TaskStatus.objects.all().order_by('status_name')
 
     if event_id:
         try:
@@ -892,19 +952,36 @@ def event_panel(request, event_id=None):
             print(event)
             try:
                 projects = Project.objects.filter(event_id=event_id)
-                print(projects)
             except Project.DoesNotExist:
-                projects = None
+                projects= None
+
+            try:
+                tasks = Task.objects.filter(event_id=event_id)
+            except Task.DoesNotExist:
+                tasks= None
+                
+            if projects:
+                print(projects)
+            else:
+                print('No projects')
+
+            if tasks:
+                print(tasks)
+            else:
+                print('No tasks')
+                
             return render(request, "events/event_panel.html",{
                 'title':title,
                 'event':event,
+                'tasks':tasks,
                 'projects':projects,
                 'event_statuses':event_statuses,
-                
+                'project_statuses':project_statuses,
+                'task_statuses':task_statuses,                
             })
 
         except Exception as e:
-            messages.error(request, 'Ha ocurrido un error: {}'.format(e))
+            messages.error(request, 'Ha ocurrido un error!: {}'.format(e))
             return redirect('event_panel')
 
     else:
@@ -914,6 +991,7 @@ def event_panel(request, event_id=None):
         else:
             # Si no, solo puede ver los proyectos que le están asignados o a los que asiste
             events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+            
         return render(request, 'events/event_panel.html', {
             'title':title,
             'events': events,
