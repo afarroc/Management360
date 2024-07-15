@@ -24,6 +24,7 @@
                         <th scope="col">Id</th>
                         <th scope="col">Title</th>
                         <th scope="col">Status</th>
+                        <th scope="col">Assign</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -33,7 +34,10 @@
                         <td class="fw-bold"><a href="{% url 'event_panel' event.id %}">{{event.title}}</a></td>
                         <td>
                             <span style="background-color: {{ event.event_status.color }};" class="badge ">{{event.event_status.icon}} {{event.event_status.status_name}}</span>
-                            </td>
+                        </td>
+                        <td>
+                            <a href="{% url 'event_assign' event.id %}" class="text-primary">Assign</a>
+                        </td>
                     </tr>
                     {% endfor%}
 

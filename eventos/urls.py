@@ -20,7 +20,8 @@ urlpatterns = [
     path('events/panel/', views.event_panel, name="event_panel"),
     path('events/panel/<int:event_id>', views.event_panel, name="event_panel"),
     path('events/status_change/<int:event_id>/', views.event_status_change, name='event_status_change'),
-
+    path('events/assign/', views.event_assign, name="event_assign"),
+    path('events/assign/<int:event_id>', views.event_assign, name="event_assign"),
 
     # Proyectos
     path('projects/', views.projects, name="projects"),
@@ -31,7 +32,8 @@ urlpatterns = [
     path('projects/delete/<int:project_id>', views.project_delete, name="project_delete"),
     path('projects/edit/', views.project_edit, name="project_edit"),
     path('projects/edit/<int:project_id>', views.project_edit, name="project_edit"),
-
+    path('projects/activate/',views.project_activate, name='project_activate'),
+    path('projects/activate/<int:project_id>',views.project_activate, name='project_activate'),
 
     # Tareas
     path('tasks/', views.tasks, name="tasks"),
@@ -47,7 +49,7 @@ urlpatterns = [
 
     # Cambio de estado y eliminación de eventos
     path('change_project_status/<int:project_id>/', views.change_project_status, name='change_project_status'),
-    path('change_task_status/<int:project_id>/', views.change_task_status, name='change_task_status'),
+    path('change_task_status/<int:task_id>/', views.change_task_status, name='change_task_status'),
 
     # Panel
     path('panel/', views.panel, name='panel'),
