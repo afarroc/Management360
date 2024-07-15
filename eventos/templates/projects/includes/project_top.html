@@ -27,6 +27,7 @@
                         <th scope="col">Status</th>
                         <th scope="col">Icon</th>
                         <th scope="col">Tasks</th>
+                        <th scope="col">Project Activate</th>
 
                     </tr>
                 </thead>
@@ -35,10 +36,17 @@
                     <tr>
                         <td><a href="{% url 'project_panel' project.id %}" class="text-primary">{{project.id}}</a></td>
                         <td><a href="{% url 'project_panel' project.id %}" class="text-primary">{{project.title}}</a></td>
+                        {% if project.event.id %}
                         <td><a href="{% url 'event_panel' project.event.id %}" class="text-primary">{{project.event.title}}</a></td>
+                        {% else %}
+                        <td><a href="#" class="text-primary">None</a></td>
+
+                        {% endif %}
+
                         <td><span style="background-color: {{ project.project_status.color }}" class="badge">{{project.project_status.status_name}}</span></td>
                         <td>{{project.project_status.icon}}</td>
                         <td><a href="{% url 'task_panel'%}"  class="text-primary">{{count_tasks}}</a></td>
+                        <td><a href="{% url 'project_activate' project.id %}"  class="text-primary">Activate</a></td>
 
                     </tr>
                     {% endfor%}

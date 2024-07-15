@@ -107,8 +107,8 @@ def signin(request):
 from django.db.models import Sum
 from django.db.models import Count
 from django.db.models.functions import TruncDate
-import pandas as pd
 # Project dashboard
+    
 def projects(request):
 
     # Obtén la cantidad de eventos, proyectos y tareas por día
@@ -130,23 +130,6 @@ def projects(request):
     event_dates = [date.strftime('%Y-%m-%dT%H:%M:%S.000Z') for date in event_dates]
     project_dates = [date.strftime('%Y-%m-%dT%H:%M:%S.000Z') for date in project_dates]
     task_dates = [date.strftime('%Y-%m-%dT%H:%M:%S.000Z') for date in task_dates]
-
-
-
-
-    # Define la fecha de inicio y la fecha de fin
-    fecha_inicio = '2024-01-01'
-    fecha_fin = '2024-12-31'
-
-    # Genera un rango de fechas
-    rango_fechas = pd.date_range(start=fecha_inicio, end=fecha_fin)
-
-    # Convierte las fechas a formato ISO con precisión de milisegundos
-    rango_fechas = [fecha.strftime('%Y-%m-%dT%H:%M:%S.000Z') for fecha in rango_fechas]
-
-
-
-
 
     print(projects_data)
 
@@ -193,7 +176,6 @@ def projects(request):
         'projects_data':projects_data,
         'tasks_data':tasks_data,
         'event_dates':event_dates,
-        'rango_fechas':rango_fechas
         
     })
 
@@ -417,7 +399,127 @@ def project_panel(request, project_id=None):
             'projects': projects
             
             })
-     
+
+
+
+from django.http import HttpResponseRedirect
+
+def project_activate(request, project_id=None):
+    title='Project Activate'
+    
+    if project_id:
+        project = get_object_or_404(Project, pk=project_id)
+        print(project)
+        try:
+            active_status = ProjectStatus.objects.get(status_name='En Curso')
+            print(active_status)
+            project.project_status = active_status
+            project.save()
+            messages.success(request, 'El proyecto ha sido activado exitosamente.')
+        except ProjectStatus.DoesNotExist:
+            messages.error(request, 'El estado "Activo" no existe en la base de datos.')
+        except Exception as e:
+            messages.error(request, f'Ocurrió un error al intentar activar el proyecto: {e}')
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
+
+    else:
+        projects = Project.objects.all().order_by('-updated_at')
+                # Crea una lista para almacenar los proyectos y sus recuentos de tareas
+        projects_with_task_count = []
+
+        for project in projects:
+            # Cuenta las tareas para el proyecto actual
+            count_tasks = Task.objects.filter(project_id=project.id).count()
+            
+            # Almacena el proyecto y su recuento de tareas en la lista
+            projects_with_task_count.append((project, count_tasks))
+
+        try:
+            return render(request, "projects/project_activate.html",{
+                'title':f'{title} (No iD)',
+                'projects_with_task_count':projects_with_task_count,
+            })
+            
+        except Exception as e:
+            messages.error(request, 'Ha ocurrido un error: {}'.format(e))
+            return redirect('project_panel')
+        
+def event_assign(request, event_id=None):
+    title="Event Assign"
+    try:
+        if event_id:
+            event = get_object_or_404(Event, id=event_id)
+            all_projects = Project.objects.all().order_by('-updated_at')
+            all_tasks = Task.objects.all().order_by('-updated_at')
+            event_projects = all_projects.filter(event_id=event_id)
+            event_tasks = all_tasks.filter(event_id=event_id)
+            event_statuses = Status.objects.all().order_by('status_name')
+            project_statuses = ProjectStatus.objects.all().order_by('status_name')
+            task_statuses = TaskStatus.objects.all().order_by('status_name')
+
+            # Excluimos los proyectos que ya están asociados a cualquier evento
+            assigned_projects = Project.objects.filter(event__isnull=False)
+            available_projects = all_projects.exclude(id__in=assigned_projects.values('id'))
+
+            # Excluimos las tareas que ya están asociadas a cualquier evento
+            assigned_tasks = Task.objects.filter(event__isnull=False)
+            print(assigned_tasks)
+            available_tasks = all_tasks.exclude(id__in=assigned_tasks.values('id'))
+
+            if request.method == 'POST':
+                assign_task_id = request.POST.get('assign_task_id')
+                assign_project_id = request.POST.get('assign_project_id')
+
+                if assign_task_id:
+                    # Aquí va el código para manejar la asignación de tareas
+                    task_to_assign = get_object_or_404(Task, id=assign_task_id)
+                    task_to_assign.event_id = event_id
+                    task_to_assign.save()
+                    messages.success(request, f'La tarea {task_to_assign.id} ha sido asignada al evento {event_id} exitosamente.')
+                    return redirect('event_assign')
+
+                elif assign_project_id:
+                    # Aquí va el código para manejar la asignación de proyectos
+                    project_to_assign = get_object_or_404(Project, id=assign_project_id)
+                    project_to_assign.event_id = event_id
+                    project_to_assign.save()
+                    messages.success(request, f'El proyecto {project_to_assign.id} ha sido asignado al evento {event_id} exitosamente.')
+                    return redirect('event_assign')
+
+                else:
+                    messages.error(request, 'No se proporcionó un id de tarea o proyecto válido.')
+                    return redirect('event_assign')
+
+                
+            else:
+                print('my tasks', event_tasks)
+                print('my projects',event_projects)
+                
+                return render(request, "events/event_assign.html", {
+                    'title': f'{title} (GET With Id)',                
+                    'event': event,
+                    'available_projects': available_projects,
+                    'available_tasks': available_tasks,
+                    'event_projects': event_projects,
+                    'event_tasks': event_tasks,
+                    'event_statuses': event_statuses,
+                    'project_statuses': project_statuses,
+                    'task_statuses': task_statuses,
+                })
+
+        else:
+            events = Event.objects.all().order_by('-updated_at')
+            return render(request, "events/event_assign.html",{
+                'title':f'{title} (No iD)',
+                'events':events,
+            })
+            
+    except Exception as e:
+        messages.error(request, f'Ha ocurrido un error: {e}')
+        return redirect('index')
+
+
 # Tasks
      
 def tasks(request, task_id=None, project_id=None):
@@ -435,7 +537,8 @@ def tasks(request, task_id=None, project_id=None):
     instructions = [
         {'instruction': 'Fill carefully the metadata.', 'name': 'Form'},
     ]
-    
+    task_statuses = TaskStatus.objects.all().order_by('status_name')
+
     if task_id:
         task= get_object_or_404(Task, id=task_id)
         
@@ -446,6 +549,8 @@ def tasks(request, task_id=None, project_id=None):
             'urls':urls,
             'other_urls':other_urls,
             'task':task,
+            'task_statuses':task_statuses,
+            
         })
 
     else:  
@@ -459,7 +564,6 @@ def tasks(request, task_id=None, project_id=None):
             'title':title,
             'tasks':tasks
         })
-            
             
 @login_required
 def task_create(request):
@@ -478,8 +582,8 @@ def task_create(request):
                     task.save()
                     messages.success(request, 'Task created successfully!')
                     return redirect('tasks')
-            except IntegrityError:
-                messages.error(request, 'There was a problem saving the task.')
+            except IntegrityError as e:
+                messages.error(request, f'There was a problem saving the task: {e}')
         else:
             messages.error(request, 'Please correct the errors below.')
 
