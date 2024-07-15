@@ -130,8 +130,26 @@ class ProjectAttendee(models.Model):
     has_paid = models.BooleanField(default=False)  # Campo nuevo para el pago
     notes = models.TextField(blank=True, null=True)  # Campo nuevo para notas adicionales
 
-# Modelo para registrar las ediciones realizadas en los campos de la tarea
+# Modelo para registrar los estados por los que pasa cada proyecto
+class TaskState(models.Model):
+    task = models.ForeignKey('Task', on_delete=models.CASCADE)
+    status = models.ForeignKey('TaskStatus', on_delete=models.CASCADE)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
 
+    def save(self, *args, **kwargs):
+        # Si es un nuevo estado, establecer la hora de inicio
+        if not self.id:
+            self.start_time = timezone.now()
+        # Si se está finalizando un estado, establecer la hora de finalización
+        else:
+            self.end_time = timezone.now()
+        super(TaskState, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.status.status_name} ({self.start_time} - {self.end_time})"
+    
+# Modelo para registrar las ediciones realizadas en los campos de la tarea
 class TaskHistory(models.Model):
     task = models.ForeignKey('Task', on_delete=models.CASCADE)
     edited_at = models.DateTimeField(auto_now_add=True)
@@ -157,7 +175,25 @@ class Task(models.Model):
     event = models.ForeignKey('Event', on_delete=models.CASCADE, blank=True, null=True)
     task_status = models.ForeignKey(TaskStatus, on_delete=models.CASCADE)
     assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_tasks') 
+    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_tasks')
 
+    def change_status(self, new_status_id):
+        # Obtener el nuevo estado
+        new_status = TaskStatus.objects.get(id=new_status_id)
+        
+        # Finalizar el estado actual
+        current_state = self.taskstate_set.filter(end_time__isnull=True).last()
+        if current_state:
+            current_state.end_time = timezone.now()
+            current_state.save()
+        
+        # Crear un nuevo estado con el nuevo estado proporcionado
+        TaskState.objects.create(task=self, status=new_status)
+        
+        # Actualizar el estado del evento
+        self.task_status = new_status
+        self.updated_at = timezone.now()
+        self.save()
 
     def record_edit(self, editor, field_name, old_value, new_value):
         # Registrar la edición en el historial
