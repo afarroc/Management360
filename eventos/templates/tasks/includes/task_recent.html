@@ -31,8 +31,8 @@
                 <tbody>
                     {% for task in tasks %}
                     <tr>
-                        <th scope="row"><a href="{% url 'task_panel' task.id %}">{{task.id}}</a></th>
-                        <td><a href="{% url 'task_panel' task.id %}" class="text-primary">{{task.title}}</a></td>                        
+                        <th scope="row"><a href="{% url 'tasks' task.id %}">{{task.id}}</a></th>
+                        <td><a href="{% url 'tasks' task.id %}" class="text-primary">{{task.title}}</a></td>                        
                         <td>{{task.assigned_to.get_full_name|title}}</td>
                         <td>{{ task.updated_at|date:"d-M H:i" }}</td>
                         <td><span class="badge bg-success">{{task.task_status.status_name}}</span></td>
