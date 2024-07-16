@@ -61,11 +61,9 @@
 				<div class="mb-1">
 					<select name="new_status_id" class="form-select" aria-label="Default select example">
 						{% for status in project_statuses %}
-						<option value="{{ status.id }}" {% if
-							status.id|stringformat:"s"==project.project_status.id|stringformat:"s" %}selected{% endif
-							%}>
+							<option value="{{ status.id }}" {% if status.id|stringformat:"s" == project.project_status.id|stringformat:"s" %}selected{% endif %}>
 							{{ status.status_name }}
-						</option>
+							</option>
 						{% endfor %}
 					</select>
 				</div>

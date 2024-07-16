@@ -170,12 +170,11 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     # Agregar blank=True para permitir que el campo sea opcional en formularios
     done = models.BooleanField(default=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')  # Asegúrate de que esta línea esté presente
     project = models.ForeignKey('Project', on_delete=models.CASCADE)  # Usa comillas si Project está definido más abajo en el mismo archivo
     event = models.ForeignKey('Event', on_delete=models.CASCADE, blank=True, null=True)
     task_status = models.ForeignKey(TaskStatus, on_delete=models.CASCADE)
     assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_tasks') 
-    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_tasks')
+    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_tasks')  # Asegúrate de que esta línea esté presente
 
     def change_status(self, new_status_id):
         # Obtener el nuevo estado
