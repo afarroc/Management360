@@ -48,8 +48,8 @@
 					<span class="text-muted small pt-2 ps-1">Created</span>
 					<span class="text-success small pt-1 fw-bold">{{ task.created_at|date:"d-M H:i" }}</span> 
 					<br>
-					<span class="text-muted small pt-2 ps-1">Edited</span>
-					<span class="text-success small pt-1 fw-bold">{{ task.edited_at|date:"d-M H:i" }}</span> 
+					<span class="text-muted small pt-2 ps-1">Updated</span>
+					<span class="text-success small pt-1 fw-bold">{{ task.updated_at|date:"d-M H:i" }}</span> 
 				</div>
 			</div>
 			<p class="card-text mb-1">{{ task.description }}</p>
@@ -58,17 +58,24 @@
 				{{ attendee.username|title }}{% if not forloop.last %},{% else %}.{% endif %}
 				{% endfor %}
 			</p>
+
+
+			{% if task.event_id %}
+
+			<div>
+				<h5 class="card-title"><a href="{% url 'event_panel' task.event_id %}">{{ task.event.title }}</a> <span>| Event id: {{task.event.id}}</span></h5>
+			</div>
+	
+			{% endif %}
 			<form id="form-{{ task.id }}" action="{% url 'change_task_status' task.id %}" method="POST"
 				class="mb-1">
 				{% csrf_token %}
 				<div class="mb-1">
 					<select name="new_status_id" class="form-select" aria-label="Default select example">
 						{% for status in task_statuses %}
-						<option value="{{ status.id }}" {% if
-							status.id|stringformat:"s"==task.task_status.id|stringformat:"s" %}selected{% endif
-							%}>
+							<option value="{{ status.id }}" {% if status.id|stringformat:"s" == task.task_status.id|stringformat:"s" %}selected{% endif %}>
 							{{ status.status_name }}
-						</option>
+							</option>
 						{% endfor %}
 					</select>
 				</div>
@@ -77,9 +84,6 @@
 
 		</div>
 
-
-
-
-
 	</div>
 </div><!-- End Sales Card -->
+

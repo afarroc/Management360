@@ -5,11 +5,15 @@
     <ul id="tasks-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
 
         <li>
+            <a href="{% url 'task_panel' %}">
+                <i class="bi bi-circle"></i><span>Task Panel</span>
+            </a>
+        </li>
+        <li>
             <a href="{% url 'tasks' %}">
                 <i class="bi bi-circle"></i><span>Tasks</span>
             </a>
-        </li>
-        {% if user.is_authenticated %}
+        </li>        {% if user.is_authenticated %}
         <li>
             <a href="{% url 'task_create' %}">
                 <i class="bi bi-circle"></i><span>Create tasks</span>

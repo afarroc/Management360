@@ -6,15 +6,16 @@ from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
-from django.db.models import Q
+from django.db.models import Q, Sum, Count
 from django.forms import formset_factory
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views import View
 from django.views.generic import FormView
 from django.core.files.storage import FileSystemStorage
+from django.db.models.functions import TruncDate
 
 # Local imports from .models
 from .models import Classification, Document, Event, EventAttendee, ProjectStatus,TaskStatus, Image, Profile, Project, Status, Task
@@ -104,12 +105,10 @@ def signin(request):
             return redirect('events')
 
 # Proyects
-from django.db.models import Sum
-from django.db.models import Count
-from django.db.models.functions import TruncDate
+
 # Project dashboard
     
-def projects(request):
+def projects(request, project_id=None):
 
     # Obtén la cantidad de eventos, proyectos y tareas por día
     events_per_day = Event.objects.annotate(date=TruncDate('created_at')).values('date').annotate(count=Count('id')).order_by('date')
@@ -162,22 +161,32 @@ def projects(request):
     
     print(total_ticket_price['ticket_price__sum'])
     
-    return render(request, "projects/projects.html",{
-        'total_ticket_price':total_ticket_price['ticket_price__sum'],
-        'other_urls':other_urls,
-        'urls':urls,
-        'instructions':instructions,
-        'increase':increase,
-        'projects':projects,
-        'total_projects':total_projects,
-        'project_statuses':project_statuses,
-        'title':title,
-        'events_data':events_data,
-        'projects_data':projects_data,
-        'tasks_data':tasks_data,
-        'event_dates':event_dates,
+    if project_id:
         
-    })
+        
+        return render(request, "projects/projects.html",{
+            'total_ticket_price':total_ticket_price['ticket_price__sum'],
+            'instructions':instructions,
+            'urls':urls,
+
+        })
+    else:
+        return render(request, "projects/projects.html",{
+            'total_ticket_price':total_ticket_price['ticket_price__sum'],
+            'other_urls':other_urls,
+            'urls':urls,
+            'instructions':instructions,
+            'increase':increase,
+            'projects':projects,
+            'total_projects':total_projects,
+            'project_statuses':project_statuses,
+            'title':title,
+            'events_data':events_data,
+            'projects_data':projects_data,
+            'tasks_data':tasks_data,
+            'event_dates':event_dates,
+        
+        })
 
 def project_create(request):
     urls=[
@@ -352,6 +361,10 @@ def project_panel(request, project_id=None):
             project = get_object_or_404(Project, id=project_id)
             event = project.event  # Aquí es donde obtienes el objeto Event asociado con el proyecto
             tasks = Task.objects.filter(project_id=project_id)
+            if tasks:
+                for task in tasks:
+                    task_event = Event.objects.filter(pk=task.event_id)
+                    print(task_event)
             count_tasks = tasks.count()
             return render(request, "projects/project_panel.html",{
                 'project':project,
@@ -399,10 +412,6 @@ def project_panel(request, project_id=None):
             'projects': projects
             
             })
-
-
-
-from django.http import HttpResponseRedirect
 
 def project_activate(request, project_id=None):
     title='Project Activate'
@@ -575,7 +584,7 @@ def task_create(request):
         form = CreateNewTask(request.POST)
         if form.is_valid():
             task = form.save(commit=False)
-            task.user = request.user  # Asignar el usuario actual como el creador de la tarea
+            task.host = request.user  # Asignar el usuario actual como el creador de la tarea
             task.project = form.cleaned_data['project']
             try:
                 with transaction.atomic():
@@ -658,21 +667,30 @@ def task_panel(request, task_id=None):
     title="Task Panel"
     if task_id:
         try:
-            print('Hay una tarea', task_id)
-            task = get_object_or_404(Task,id=task_id)
+            task = get_object_or_404(Task, id=task_id)
             project = task.project
+            if task.event_id:
+                event = get_object_or_404(Event, pk=task.event_id)
+                
             event_statuses = Status.objects.all().order_by('status_name')
             project_statuses = ProjectStatus.objects.all().order_by('status_name')
             task_statuses = TaskStatus.objects.all().order_by('status_name')
-            print('project: ',project)
-            return render(request, "tasks/task_panel.html",{
-                'event_statuses':event_statuses,
-                'project_statuses':project_statuses,
-                'task_statuses':task_statuses,
-                'title':title,
-                'task':task,
-                'project':project,
+            return render(request, "tasks/task_panel.html", {
+                'event_statuses': event_statuses,
+                'project_statuses': project_statuses,
+                'task_statuses': task_statuses,
+                'title': title,
+                'task': task,
+                'project': project,
+                'event': event,  # Pasa el evento a la plantilla
             })
+        except Task.DoesNotExist:
+            messages.error(request, 'La tarea no existe. Verifica el ID de la tarea.')
+            return redirect('task_panel')
+        except Exception as e:
+            messages.error(request, 'Ha ocurrido un error: {}'.format(e))
+            print(e)
+            return redirect('task_panel')
 
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
@@ -1230,8 +1248,6 @@ def status(request):
         'title' : title,
         'urls' : urls,
         })
-
-
 
 def status_edit(request, model_id=None, status_id=None):
     # Titulo de la Pagina

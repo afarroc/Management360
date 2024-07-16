@@ -1,4 +1,9 @@
+
+
+
+
 {% if projects %}
+
 <!-- Recent Sales -->
 <div class="col-12">
     <div class="card recent-sales overflow-auto">
@@ -15,31 +20,34 @@
                 <li><a class="dropdown-item" href="#">This Year</a></li>
             </ul>
         </div>
-        <div class="card-body pb-0">
-            <h5 class="card-title">Recent Projects <span>| Today</span></h5>
+
+        <div class="card-body">
+            <h5 class="card-title">Recent Sales <span>| Today</span></h5>
 
             <table class="table table-borderless datatable">
                 <thead>
                     <tr>
-                        <th scope="col">Title</th>
-                        <th scope="col">Ticket</th>
-                        <th scope="col">Updated at</th>
+                        <th scope="col">#</th>
+                        <th scope="col">Customer</th>
+                        <th scope="col">Product</th>
+                        <th scope="col">Price</th>
                         <th scope="col">Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for project in projects %}
                     <tr>
-                        <td><a href="{% url 'project_panel' project.id %}" class="text-primary">{{project.title}}</a></td>                        
-                        <td>{{project.ticket_price|title}}</td>
-                        <td>{{ project.updated_at|date:"d-M H:i" }}</td>
+                        <th scope="row"><a href="{% url 'projects' project.id %}">#{{project.id}}</a></th>
+                        <td>{{project.host}}</td>
+                        <td><a href="{% url 'projects' project.id %}" class="text-primary">{{project.title}}</a></td>
+                        <td>{{project.ticket_price}}</td>
                         <td>
                             <span style="background-color: {{ project.project_status.color }};" class="badge">
                             {{project.project_status.icon}} {{project.project_status.status_name}}
                             </span>
                         </td>
                     </tr>
-                    {% endfor %}
+                {% endfor %}
                 </tbody>
             </table>
 
@@ -47,4 +55,5 @@
 
     </div>
 </div><!-- End Recent Sales -->
+
 {% endif %}

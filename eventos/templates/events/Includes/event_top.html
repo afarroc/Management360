@@ -1,50 +1,53 @@
-<!-- Top  -->
+<!-- Recent Sales -->
 <div class="col-12">
-    <div class="card top-selling overflow-auto">
-
+    <div class="card recent-sales overflow-auto">
         <div class="filter">
             <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                 <li class="dropdown-header text-start">
-                    <h6>Filter</h6>
+                    <h6>Options</h6>
                 </li>
-
-                <li><a class="dropdown-item" href="#">--</a></li>
-                <li><a class="dropdown-item" href="#">-</a></li>
-                <li><a class="dropdown-item" href="#">--</a></li>
+                <li><a class="dropdown-item" href="#">Option1</a></li>
             </ul>
         </div>
 
-        <div class="card-body pb-0">
-            <h5 class="card-title">Events <span>| Today</span></h5>
+        <div class="card-body">
+            <h5 class="card-title">Recent Events <span>| by updated at</span></h5>
 
             <table class="table table-borderless datatable">
                 <thead>
                     <tr>
-                        <th scope="col">Id</th>
-                        <th scope="col">Title</th>
+                        <th scope="col">#</th>
+                        <th scope="col">Customer</th>
+                        <th scope="col">Product</th>
+                        <th scope="col">Price</th>
                         <th scope="col">Status</th>
                         <th scope="col">Assign</th>
                     </tr>
                 </thead>
                 <tbody>
+                    {% if events %}
                     {% for event in events %}
                     <tr>
-                        <td><a href="{% url 'event_panel' event.id %}" class="text-primary">{{event.id}}</a></td>
-                        <td class="fw-bold"><a href="{% url 'event_panel' event.id %}">{{event.title}}</a></td>
+                        <th scope="row"><a href="{{event.id}}">#{{event.id}}</a></th>
+                        <td>{{event.host}}</td>
+                        <td><a href="{% url 'event_panel' event.id %}" class="text-primary">{{event.title}}</a></td>
+                        <td>${{event.ticket_price}}</td>
                         <td>
-                            <span style="background-color: {{ event.event_status.color }};" class="badge ">{{event.event_status.icon}} {{event.event_status.status_name}}</span>
+                            <span style="background-color: {{ event.event_status.color }};"
+                                class="badge ">{{event.event_status.icon}} {{event.event_status.status_name}}</span>
                         </td>
                         <td>
                             <a href="{% url 'event_assign' event.id %}" class="text-primary">Assign</a>
                         </td>
                     </tr>
-                    {% endfor%}
-
+                    {% endfor %}
+                    {% else %}
+                    {% endif %}
                 </tbody>
             </table>
 
         </div>
 
     </div>
-</div><!-- End Top Selling -->
+</div><!-- End Recent Sales -->

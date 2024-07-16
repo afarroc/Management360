@@ -32,10 +32,10 @@
                     {% for task in tasks %}
                     <tr>
                         <td><a href="{% url 'task_panel' task.id %}" class="text-primary">{{task.id}}</a></td>
-                        <td class="fw-bold"><a href="{% url 'tasks' task.id %}">{{task.title}}</a></td>
+                        <td class="fw-bold"><a href="{% url 'task_panel' task.id %}">{{task.title}}</a></td>
                         <td>
                             {% if task.event %}
-                                <a href="{% url 'task_panel' task.event.id %}">{{ task.event.title }}</a>
+                                <a href="{% url 'event_panel' task.event.id %}">{{ task.event.title }}</a>
                             {% else %}
                             
                             {% endif %}
