@@ -7,13 +7,20 @@
 				<li class="dropdown-header text-start">
 					<h6>More</h6>
 				</li>
-				<li><a class="dropdown-item" href="#">Today</a></li>
-				<li><a class="dropdown-item" href="#">This Month</a></li>
+				<li>
+					<div class="dropdown-item">
+						{% csrf_token %}
+					<a class="btn btn-success btn-sm" href="{% url 'task_create' project.id %}">
+						<i class="bi bi-calendar-fill"></i>
+					</a>
+				</div>
+				
+				</li>
 				<li>
 					{% if request.user.profile.role == 'SU' %}
 					<div class="dropdown-item">
 						{% csrf_token %}
-						<a href="{% url 'project_edit' project.id %}" class="btn btn-primary">
+						<a class="btn btn-primary btn-sm" href="{% url 'project_edit' project.id %}">
 							<i class="bi bi-pencil-fill"></i>
 						</a>
 					</div>
@@ -24,7 +31,7 @@
 						<form id="delete-form-{{ project.id }}" action="{% url 'project_delete' project.id %}" method="POST"
 						class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este projecto?');">
 						{% csrf_token %}
-						<button type="submit" class="btn btn-danger">
+						<button type="submit" class="btn btn-danger btn-sm">
 							<i class="bi bi-trash-fill"></i>
 						</button>
 					</form>

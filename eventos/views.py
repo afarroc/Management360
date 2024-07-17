@@ -33,10 +33,58 @@ SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
 
 # Principal
 
+from datetime import timedelta
+from django.utils import timezone
+
+def calculate_percentage_increase(queryset, days):
+    # Filtra los objetos actualizados en los últimos 'days' días
+    end_date = timezone.now()
+    start_date = end_date - timedelta(days=days)
+    recent_objects = queryset.filter(created_at__range=(start_date, end_date))
+    # Filtra los objetos actualizados antes de ese período
+    previous_objects = queryset.filter(created_at__lt=start_date)
+    # Calcula el número total de objetos en cada período
+    count_recent_objects = recent_objects.count()
+    count_previous_objects = previous_objects.count()
+    print(count_recent_objects,count_previous_objects)
+    # Calcula el porcentaje de incremento
+    if count_previous_objects > 0:
+        percentage_increase = ((count_recent_objects - count_previous_objects) / count_previous_objects) * 100
+    else:
+        percentage_increase = 0
+
+    return percentage_increase
+
 def index(request):
-    title="Pagina Pricipal"
-    return render(request, "index/index.html",{
-        'title':title
+    title = "Pagina Principal"
+
+    projects = Project.objects.all()
+    count_projects = projects.count()  # Recuento de objetos en la lista
+    
+    tasks = Task.objects.all()
+    count_tasks = tasks.count()  # Recuento de objetos en la lista
+    
+    events = Event.objects.all()
+    count_events = events.count()  # Recuento de objetos en la lista
+    
+    # Ejemplo de uso:
+    days_to_check = 7  # Cambia esto al número de días que desees analizar
+    projects_increase = calculate_percentage_increase(projects, days_to_check)
+    tasks_increase = calculate_percentage_increase(tasks, days_to_check)
+    events_increase = calculate_percentage_increase(events, days_to_check)
+    
+    return render(request, "index/index.html", {
+        'projects': projects,
+        'tasks': tasks,
+        'days_to_check': days_to_check,
+        'events': events,
+        'projects_increase': f"{projects_increase:.2f}%",
+        'tasks_increase': f"{tasks_increase:.2f}%",
+        'events_increase': f"{events_increase:.2f}%",
+        'title': title,
+        'count_projects': count_projects,
+        'count_tasks': count_tasks,
+        'count_events': count_events,
     })
 
 def home(request):
@@ -206,20 +254,44 @@ def project_create(request):
         form = CreateNewProject()
     else:
         form = CreateNewProject(request.POST)
+
         if form.is_valid():
             project = form.save(commit=False)
-            project.host = request.user  # Asignar el usuario actual como el creador del projecto
+            project.host = request.user
             project.event = form.cleaned_data['event']
-            try:
-                with transaction.atomic():
-                    project.save()
-                    form.save_m2m()
-                    messages.success(request, 'Project created successfully!')
-                    return redirect('project_panel')
-            except IntegrityError:
-                messages.error(request, 'There was a problem saving the project.')
+
+            # Si el campo de evento está vacío, crea un nuevo objeto Evento
+            if not project.event:
+                status = get_object_or_404(Status,status_name='Creado')
+                try:
+                    with transaction.atomic():
+                        
+                        new_event = Event.objects.create(
+                            title =form.cleaned_data['title'],
+                            event_status=status,
+                            host = request.user,
+                            assigned_to = request.user,
+                            
+                            )
+                        project.event = new_event
+                        project.save()
+                        form.save_m2m()
+                        messages.success(request, 'Proyecto creado exitosamente!')
+                        return redirect('project_panel')
+                except IntegrityError as e:
+                    messages.error(request, f'Hubo un problema al guardar el proyecto o crear el evento: {e}')
+            else:
+                try:
+                    with transaction.atomic():
+                        project.save()
+                        form.save_m2m()
+                        messages.success(request, 'Proyecto creado exitosamente!')
+                        return redirect('project_panel')
+                except IntegrityError:
+                    messages.error(request, 'Hubo un problema al guardar el proyecto.')
+
         else:
-            messages.error(request, 'Please correct the errors below.')
+            messages.error(request, 'Por favor, corrige los errores.')
 
     return render(request, 'projects/project_create.html', {
         'instructions':instructions,
@@ -242,12 +314,12 @@ def project_delete(request, project_id):
         project = get_object_or_404(Project, pk=project_id)
         if request.user.profile.role != 'SU':
             messages.error(request, 'No tienes permiso para eliminar este projecto.')
-            return redirect(reverse('projects'))
+            return redirect(reverse('project_panel'))
         project.delete()
         messages.success(request, 'El pryecto ha sido eliminado exitosamente.')
     else:
         messages.error(request, 'Método no permitido.')
-    return redirect(reverse('projects'))
+    return redirect(reverse('project_panel'))
 
 def change_project_status(request, project_id):
     print("Inicio de vista change_project_status")
@@ -528,7 +600,6 @@ def event_assign(request, event_id=None):
         messages.error(request, f'Ha ocurrido un error: {e}')
         return redirect('index')
 
-
 # Tasks
      
 def tasks(request, task_id=None, project_id=None):
@@ -575,26 +646,58 @@ def tasks(request, task_id=None, project_id=None):
         })
             
 @login_required
-def task_create(request):
+def task_create(request, project_id=None):
     title="Create New Task"
     
     if request.method == 'GET':
-        form = CreateNewTask()
+        if project_id:
+            # Aquí debes asignar el formulario con el proyecto seleccionado
+            form = CreateNewTask(initial={'project': project_id})
+        else:
+            # Aquí puedes asignar el formulario sin ningún valor inicial
+            form = CreateNewTask()
+
     else:
+        print('POST data:', request.POST)
         form = CreateNewTask(request.POST)
         if form.is_valid():
             task = form.save(commit=False)
-            task.host = request.user  # Asignar el usuario actual como el creador de la tarea
-            task.project = form.cleaned_data['project']
-            try:
-                with transaction.atomic():
-                    task.save()
-                    messages.success(request, 'Task created successfully!')
-                    return redirect('tasks')
-            except IntegrityError as e:
-                messages.error(request, f'There was a problem saving the task: {e}')
-        else:
-            messages.error(request, 'Please correct the errors below.')
+            task.host = request.user
+            task.event = form.cleaned_data['event']
+
+            # Si el campo de evento está vacío, crea un nuevo objeto Evento
+            if not task.event:
+                status = get_object_or_404(Status, status_name='Creado')
+                try:
+                    with transaction.atomic():
+                        
+                        new_event = Event.objects.create(
+                            title =form.cleaned_data['title'],
+                            event_status=status,
+                            host = request.user,
+                            assigned_to = request.user,
+                            
+                            )
+                        task.event = new_event
+                        task.save()
+                        form.save_m2m()
+                        messages.success(request, 'Tarea creada exitosamente!')
+                        return redirect('task_panel')
+                    
+                except IntegrityError as e:
+                    messages.error(request, f'Hubo un problema al guardar la tarea o crear el evento: {e}')
+            else:
+                try:
+                    with transaction.atomic():
+                        task.save()
+                        form.save_m2m()
+                        messages.success(request, 'Tarea creado exitosamente!')
+                        return redirect('task_panel')
+                except IntegrityError:
+                    messages.error(request, 'Hubo un problema al guardar la Tarea.')
+
+
+
 
     return render(request, 'tasks/task_create.html', {
         'form': form,
@@ -669,9 +772,10 @@ def task_panel(request, task_id=None):
         try:
             task = get_object_or_404(Task, id=task_id)
             project = task.project
+            event = None  # Inicializa event
             if task.event_id:
                 event = get_object_or_404(Event, pk=task.event_id)
-                
+            
             event_statuses = Status.objects.all().order_by('status_name')
             project_statuses = ProjectStatus.objects.all().order_by('status_name')
             task_statuses = TaskStatus.objects.all().order_by('status_name')
@@ -691,6 +795,7 @@ def task_panel(request, task_id=None):
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
             print(e)
             return redirect('task_panel')
+
 
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
@@ -1054,13 +1159,13 @@ def event_delete(request, event_id):
         # Verificar si el usuario es un 'SU'
         if request.user.profile.role != 'SU':
             messages.error(request, 'No tienes permiso para eliminar este evento.')
-            return redirect(reverse('events'))
+            return redirect(reverse('event_panel'))
 
         event.delete()
         messages.success(request, 'El evento ha sido eliminado exitosamente.')
     else:
         messages.error(request, 'Método no permitido.')
-    return redirect(reverse('events'))
+    return redirect(reverse('event_panel'))
 
 def event_panel(request, event_id=None):
     title="Event Panel"
@@ -1227,7 +1332,6 @@ class ViewProfileView(View):
 # Estatuses
 
 def status(request):
-    
     title='Status Panel'
     urls=[
         {'url':'status_create','name':'Create Status'},
@@ -1333,8 +1437,7 @@ def status_edit(request, model_id=None, status_id=None):
             messages.error(request, str(e))
             return redirect('index')  
         
-def status_create(request, model_id=None):
-    
+def status_create(request, model_id=None):  
     title = 'Status Create'
     urls = [
         {'url': 'status', 'name': 'Status Panel'},
