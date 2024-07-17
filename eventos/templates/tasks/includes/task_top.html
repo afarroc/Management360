@@ -23,6 +23,7 @@
                     <tr>
                         <th scope="col">Id</th>
                         <th scope="col">Title</th>
+                        <th scope="col">Project</th>
                         <th scope="col">Event</th>
                         <th scope="col">Status</th>
                         <th scope="col">Icon</th>
@@ -34,13 +35,17 @@
                         <td><a href="{% url 'task_panel' task.id %}" class="text-primary">{{task.id}}</a></td>
                         <td class="fw-bold"><a href="{% url 'task_panel' task.id %}">{{task.title}}</a></td>
                         <td>
-                            {% if task.event %}
-                                <a href="{% url 'event_panel' task.event.id %}">{{ task.event.title }}</a>
+                            {% if task.project %}
+                            <a href="{% url 'project_panel' task.project.id %}">{{task.project.title}}</a>
                             {% else %}
-                            
                             {% endif %}
                         </td>
-                        
+                        <td>
+                            {% if task.event %}
+                            <a href="{% url 'event_panel' task.event.id %}">{{task.event.title}}</a>
+                            {% else %}
+                            {% endif %}
+                        </td>
                         <td>
                             <span style="background-color: {{ task.task_status.color }};" class="badge ">{{task.task_status.status_name}}</span>
                             </td>
