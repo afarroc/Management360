@@ -1655,6 +1655,12 @@ class UploadDatabase(FormView):
         db.save() # Guarda el archivo en la base de datos
         return super().form_valid(form) # Retorna la vista de éxito
 
+
+# Vista para subir bases de datos
+
+
+
+
 # about upload
 
 def upload_image(request):
