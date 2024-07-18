@@ -131,6 +131,8 @@ class DocumentForm(forms.Form):
 class ImageForm(forms.Form):
     file = forms.FileField(validators=[FileExtensionValidator(['jpg', 'bmp', 'png'])])
 
+class DatabaseForm(forms.Form):
+    file = forms.FileField(validators=[FileExtensionValidator(['csv', 'txt', 'xlsx', 'xlsm'])])
 
 class EditClassificationForm(forms.ModelForm):
     class Meta:
