@@ -18,10 +18,10 @@ from django.core.files.storage import FileSystemStorage
 from django.db.models.functions import TruncDate
 
 # Local imports from .models
-from .models import Classification, Document, Event, EventAttendee, ProjectStatus,TaskStatus, Image, Profile, Project, Status, Task
+from .models import Classification, Document, Image, Database, Event, EventAttendee, ProjectStatus,TaskStatus, Profile, Project, Status, Task
 
 # Local imports from .forms
-from .forms import (CreateNewEvent, CreateNewProject,CreateNewTask, CreateNewTask, DocumentForm, EditClassificationForm, EducationForm,  ExperienceForm, ImageForm, ProfileForm, SkillForm, EventStatusForm, EventStatusForm, TaskStatusForm, ProjectStatusForm
+from .forms import (CreateNewEvent, CreateNewProject,CreateNewTask, CreateNewTask, EditClassificationForm, EducationForm,  ExperienceForm, ImageForm, DocumentForm, DatabaseForm, ProfileForm, SkillForm, EventStatusForm, TaskStatusForm, ProjectStatusForm
 )
 
 # Formsets
@@ -1585,9 +1585,11 @@ def Classification_list(request):
 def document_view(request):
     documents = Document.objects.all()  # Obtiene todos los documentos
     images = Image.objects.all()        # Obtiene todas las imágenes
+    databases = Database.objects.all()        # Obtiene todas las imágenes
     context = {
         'documents': documents,
-        'images': images
+        'images': images,
+        'databases': databases,
     }
     return render(request, 'documents/docsview.html', context)
 
@@ -1635,6 +1637,22 @@ class ImageUploadView(FormView):
         file = form.cleaned_data['file'] # Obtiene el archivo del formulario
         image = Image(upload=file) # Crea una instancia de tu modelo con el archivo
         image.save() # Guarda el archivo en la base de datos
+        return super().form_valid(form) # Retorna la vista de éxito
+    
+    # Vista para subir db
+
+# Vista para subir bases de datos
+class UploadDatabase(FormView):
+    template_name = 'documents/upload.html' # El nombre del template que quieres usar
+    form_class = DatabaseForm # El formulario que quieres usar
+    success_url = reverse_lazy('docsview')# La url a la que quieres redirigir después de subir el archivo
+
+    def form_valid(self, form):
+        # Este método se ejecuta si el formulario es válido
+        # Aquí puedes guardar el archivo en tu modelo
+        file = form.cleaned_data['file'] # Obtiene el archivo del formulario
+        db = Database(upload=file) # Crea una instancia de tu modelo con el archivo
+        db.save() # Guarda el archivo en la base de datos
         return super().form_valid(form) # Retorna la vista de éxito
 
 # about upload

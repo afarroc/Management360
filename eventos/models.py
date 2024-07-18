@@ -383,3 +383,7 @@ class Document(models.Model):
 class Image(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     upload = models.FileField(upload_to=get_upload_path, validators=[FileExtensionValidator(['jpg', 'bmp', 'png'])])
+# Images
+class Database(models.Model):
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    upload = models.FileField(upload_to=get_upload_path, validators=[FileExtensionValidator(['csv', 'txt', 'xlsx', 'xlsm'])])
