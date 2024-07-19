@@ -83,6 +83,7 @@ urlpatterns = [
     path('documents/doc_upload/', views.DocumentUploadView.as_view(), name='document_upload'),
     path('documents/img_upload/', views.ImageUploadView.as_view(), name='image_upload'),
     path('documents/upload/database/', views.UploadDatabase.as_view(), name='upload_db'),
+    path('documents/upload/xlsx/', views.upload_xlsx, name='upload_xlsx'),
 
     # Url para subir pandas
     path('about/upload/', views.upload_image, name='upload_image'),
