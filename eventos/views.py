@@ -431,24 +431,16 @@ def project_panel(request, project_id=None):
         
         try:
             project = get_object_or_404(Project, id=project_id)
-            event = project.event  # Aquí es donde obtienes el objeto Event asociado con el proyecto
             tasks = Task.objects.filter(project_id=project_id)
-            if tasks:
-                for task in tasks:
-                    task_event = Event.objects.filter(pk=task.event_id)
-                    print(task_event)
-            count_tasks = tasks.count()
             return render(request, "projects/project_panel.html",{
+                'title':title,
+                'urls':urls,
+                'instructions':instructions,
                 'project':project,
                 'tasks':tasks,
                 'event_statuses':event_statuses,
                 'task_statuses':task_statuses,
                 'project_statuses':project_statuses,
-                'title':title,
-                'urls':urls,
-                'instructions':instructions,
-                'count_tasks':count_tasks,
-                'event': event,  # Puedes pasar el objeto Event al template si lo necesitas
                 })
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
@@ -1658,7 +1650,27 @@ class UploadDatabase(FormView):
 
 # Vista para subir bases de datos
 
+# views.py
 
+from django.shortcuts import render
+from openpyxl import load_workbook
+from io import BytesIO
+
+def upload_xlsx(request):
+    if request.method == 'POST':
+        form = DatabaseForm(request.POST, request.FILES)
+        if form.is_valid():
+            file_in_memory = request.FILES['file'].read()
+            wb = load_workbook(filename=BytesIO(file_in_memory))
+            print('Form is valid')
+            # Procesa el archivo y realiza las operaciones necesarias
+            # (filtrar columnas, cambiar títulos, etc.)
+            # Luego, crea un nuevo archivo o modelo con los datos finales.
+            # ...
+            # Devuelve una respuesta al usuario (descargar archivo o mostrar datos).
+    else:
+        form = DatabaseForm()
+    return render(request, 'documents/upload_xlsx.html', {'form': form})
 
 
 # about upload
