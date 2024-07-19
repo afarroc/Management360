@@ -5,7 +5,7 @@
 			<a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
 			<ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
 				<li class="dropdown-header text-start">
-					<h6>More</h6>
+					<h6>Options</h6>
 				</li>
 				<li>
 					<div class="dropdown-item">
@@ -62,6 +62,16 @@
 				{{ attendee.username|title }}{% if not forloop.last %},{% else %}.{% endif %}
 				{% endfor %}
 			</p>
+
+
+			{% if project.event_id %}
+
+			<div>
+				<h5 class="card-title"><a href="{% url 'event_panel' project.event_id %}">{{ project.event.title }}</a> <span>| Event id: {{project.event.id}} | {{project.event.event_status}}</span></h5>
+			</div>
+	
+			{% endif %}
+
 			<form id="form-{{ project.id }}" action="{% url 'change_project_status' project.id %}" method="POST"
 				class="mb-1">
 				{% csrf_token %}
