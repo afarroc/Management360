@@ -1218,6 +1218,31 @@ def event_panel(request, event_id=None):
 
             })
 
+from .models import EventState
+
+def event_history(request, event_id=None):
+    title = 'Event History'
+
+    if not event_id:
+
+        if request.method == 'POST':
+            pass
+        else:
+            events_history = EventState.objects.all().order_by('-start_time')
+            return render(request, 'events/event_history.html', {
+                'title':title,
+                'events_history':events_history,
+            })
+    else:
+        
+        events_history = EventState.objects.filter(Q(event_id=event_id)).order_by('-start_time')
+
+        return render(request, 'events/event_history.html', {
+            'title':title,
+            'events_history':events_history,
+        })
+    
+        
 # Panel
 
 def panel(request):
