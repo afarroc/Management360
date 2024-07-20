@@ -73,6 +73,9 @@ def index(request):
     tasks_increase = calculate_percentage_increase(tasks, days_to_check)
     events_increase = calculate_percentage_increase(events, days_to_check)
     
+    events_states = EventState.objects.all().order_by('-start_time')[:10]
+    
+    
     return render(request, "index/index.html", {
         'projects': projects,
         'tasks': tasks,
@@ -85,6 +88,7 @@ def index(request):
         'count_projects': count_projects,
         'count_tasks': count_tasks,
         'count_events': count_events,
+        'events_states': events_states,
     })
 
 def home(request):
