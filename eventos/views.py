@@ -18,7 +18,7 @@ from django.core.files.storage import FileSystemStorage
 from django.db.models.functions import TruncDate
 
 # Local imports from .models
-from .models import Classification, Document, Image, Database, Event, EventAttendee, ProjectStatus,TaskStatus, Profile, Project, Status, Task
+from .models import Classification, Document, Image, Database, Event, EventAttendee, ProjectStatus, TaskStatus, Profile, Project, Status, Task, EventState, ProjectState, TaskState
 
 # Local imports from .forms
 from .forms import (CreateNewEvent, CreateNewProject,CreateNewTask, CreateNewTask, EditClassificationForm, EducationForm,  ExperienceForm, ImageForm, DocumentForm, DatabaseForm, ProfileForm, SkillForm, EventStatusForm, TaskStatusForm, ProjectStatusForm
@@ -419,6 +419,7 @@ def project_edit(request, project_id=None):
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
 
+## Project Panel
 def project_panel(request, project_id=None):
     title="Project Panel"
     urls=[
@@ -428,6 +429,8 @@ def project_panel(request, project_id=None):
     instructions = [
             {'instruction': 'Select an item for details', 'name': 'Items'},
         ]
+    projects_states = ProjectState.objects.all().order_by('-start_time')[:10]
+
     if project_id:
         event_statuses = Status.objects.all().order_by('status_name')
         task_statuses = TaskStatus.objects.all().order_by('status_name')
@@ -445,6 +448,7 @@ def project_panel(request, project_id=None):
                 'event_statuses':event_statuses,
                 'task_statuses':task_statuses,
                 'project_statuses':project_statuses,
+                'projects_states':projects_states,
                 })
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
@@ -477,19 +481,17 @@ def project_panel(request, project_id=None):
             'instructions':instructions,
             'urls':urls,
             'title':title,
-            'projects': projects
-            
+            'projects': projects,
+            'projects_states':projects_states,
+
             })
 
 def project_activate(request, project_id=None):
     title='Project Activate'
-    
     if project_id:
         project = get_object_or_404(Project, pk=project_id)
-        print(project)
         try:
             active_status = ProjectStatus.objects.get(status_name='En Curso')
-            print(active_status)
             project.project_status = active_status
             project.save()
             messages.success(request, 'El proyecto ha sido activado exitosamente.')
@@ -498,26 +500,20 @@ def project_activate(request, project_id=None):
         except Exception as e:
             messages.error(request, f'Ocurrió un error al intentar activar el proyecto: {e}')
         return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
-
-
     else:
         projects = Project.objects.all().order_by('-updated_at')
-                # Crea una lista para almacenar los proyectos y sus recuentos de tareas
+        # Crea una lista para almacenar los proyectos y sus recuentos de tareas
         projects_with_task_count = []
-
         for project in projects:
             # Cuenta las tareas para el proyecto actual
             count_tasks = Task.objects.filter(project_id=project.id).count()
-            
             # Almacena el proyecto y su recuento de tareas en la lista
             projects_with_task_count.append((project, count_tasks))
-
         try:
             return render(request, "projects/project_activate.html",{
                 'title':f'{title} (No iD)',
                 'projects_with_task_count':projects_with_task_count,
             })
-            
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
             return redirect('project_panel')
@@ -595,6 +591,7 @@ def event_assign(request, event_id=None):
     except Exception as e:
         messages.error(request, f'Ha ocurrido un error: {e}')
         return redirect('index')
+
 
 # Tasks
      
@@ -763,7 +760,13 @@ def task_delete(request, task_id):
     return redirect(reverse('tasks'))
 
 def task_panel(request, task_id=None):
+    
     title="Task Panel"
+    event_statuses = Status.objects.all().order_by('status_name')
+    task_statuses = TaskStatus.objects.all().order_by('status_name')
+    project_statuses = ProjectStatus.objects.all().order_by('status_name')
+    tasks_states = TaskState.objects.all().order_by('-start_time')[:10]
+
     if task_id:
         try:
             task = get_object_or_404(Task, id=task_id)
@@ -798,18 +801,24 @@ def task_panel(request, task_id=None):
             print(e)
             return redirect('task_panel')
     else:
+        
         if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
             # Si el usuario es un 'SU', puede ver todos los proyectos
             tasks = Task.objects.all().order_by('-updated_at')
         else:
             # Si no, solo puede ver los proyectos que le están asignados o a los que asiste
             tasks = Task.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-        
-        
+        status_var = 'En Curso'
+        status = get_object_or_404(TaskStatus, status_name=status_var)
+        active_tasks=Task.objects.filter(Q(task_status=status)).distinct().order_by('-updated_at')
         return render(request, 'tasks/task_panel.html', {
             'title':title,
-            'tasks': tasks
-            
+            'event_statuses':event_statuses,
+            'task_statuses':task_statuses,
+            'project_statuses':project_statuses,
+            'tasks': tasks,
+            'active_tasks':active_tasks,
+            'tasks_states':tasks_states,
             })
 
 def change_task_status(request, task_id):
@@ -824,7 +833,6 @@ def change_task_status(request, task_id):
             return redirect('index')
         if task.host is not None and (task.host == request.user or request.user in task.attendees.all()):
             old_status = task.task_status
-            print("old_status:", old_status)
             task.record_edit(
                 editor=request.user,
                 field_name='task_status',
@@ -839,6 +847,49 @@ def change_task_status(request, task_id):
     messages.success(request, 'task status edited successfully!')
 
     return redirect('task_panel')
+
+def task_activate(request, task_id=None):
+    switch ='En Curso'
+    title='Task Activate'
+    if task_id:
+        deactivate=False
+        task = get_object_or_404(Task, pk=task_id)
+        event = get_object_or_404(Event, pk=task.event.id)
+        print(task.task_status.status_name)
+        if task.task_status.status_name == switch:
+            deactivate=True
+            switch ='Finalizado'
+ 
+        try:
+            active_task_status = TaskStatus.objects.get(status_name=switch)
+            active_event_status = Status.objects.get(status_name=switch)
+
+            task.task_status = active_task_status
+            event.event_status = active_event_status
+            
+            task.save()
+            event.save()
+            messages.success(request, 'La tarea ha sido activada exitosamente.')
+            
+            
+            
+        except TaskStatus.DoesNotExist:
+            messages.error(request, 'El estado "En Curso" no existe en la base de datos.')
+        except Exception as e:
+            messages.error(request, f'Ocurrió un error al intentar activar la tarea: {e}')
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+    else:
+        tasks = Task.objects.all().order_by('-updated_at')
+        # Crea una lista para almacenar los proyectos y sus recuentos de tareas
+        try:
+            return render(request, "tasks/task_activate.html",{
+                'title':f'{title} (No iD)',
+                'tasks':tasks,
+            })
+        except Exception as e:
+            messages.error(request, 'Ha ocurrido un error: {}'.format(e))
+            return redirect('task_panel')
+  
 
 # Events
 @login_required
@@ -1168,6 +1219,7 @@ def event_panel(request, event_id=None):
     event_statuses = Status.objects.all().order_by('status_name')
     project_statuses = ProjectStatus.objects.all().order_by('status_name')
     task_statuses = TaskStatus.objects.all().order_by('status_name')
+    events_states = EventState.objects.all().order_by('-start_time')[:10]
 
     if event_id:
         try:
@@ -1219,10 +1271,9 @@ def event_panel(request, event_id=None):
             'title':title,
             'events': events,
             'event_statuses':event_statuses,
+            'events_states':events_states,
 
             })
-
-from .models import EventState
 
 def event_history(request, event_id=None):
     title = 'Event History'
