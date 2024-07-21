@@ -31,7 +31,7 @@ class AssignAttendeesForm(forms.Form):
 class CreateNewTask(forms.ModelForm):
     class Meta:
         model = Task
-        fields = ['title', 'description', 'important', 'project', 'task_status', 'event', 'assigned_to']
+        fields = ['title', 'description', 'important', 'project', 'task_status', 'event', 'assigned_to','ticket_price']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control'}),
@@ -40,6 +40,7 @@ class CreateNewTask(forms.ModelForm):
             'task_status': forms.Select(attrs={'class': 'form-select'}),
             'event': forms.Select(attrs={'class': 'form-select'}),
             'assigned_to': forms.Select(attrs={'class': 'form-select'}),
+            'ticket_price': forms.NumberInput(attrs={'class': 'form-control'}),
 
         }
 

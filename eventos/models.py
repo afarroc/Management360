@@ -175,6 +175,7 @@ class Task(models.Model):
     task_status = models.ForeignKey(TaskStatus, on_delete=models.CASCADE)
     assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_tasks') 
     host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_tasks')  # Asegúrate de que esta línea esté presente
+    ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
 
     def change_status(self, new_status_id):
         # Obtener el nuevo estado

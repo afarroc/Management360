@@ -49,6 +49,8 @@ urlpatterns = [
     path('tasks/delete/<int:task_id>', views.task_delete, name="task_delete"),
     path('tasks/panel/', views.task_panel, name="task_panel"),
     path('tasks/panel/<int:task_id>', views.task_panel, name="task_panel"),
+    path('tasks/activate/',views.task_activate, name='task_activate'),
+    path('tasks/activate/<int:task_id>',views.task_activate, name='task_activate'),
 
 
     # Cambio de estado y eliminación de eventos
