@@ -26,7 +26,8 @@
                         <th scope="col">Project</th>
                         <th scope="col">Event</th>
                         <th scope="col">Status</th>
-                        <th scope="col">Icon</th>
+                        <th scope="col">Ticket</th>
+
                     </tr>
                 </thead>
                 <tbody>
@@ -34,7 +35,7 @@
                     <tr>
                         <td><a href="{% url 'task_panel' task.id %}" class="text-primary">{{task.id}}</a></td>
                         <td class="fw-bold"><a href="{% url 'task_panel' task.id %}">{{task.title}}</a></td>
-                        <td>
+                        <td > 
                             {% if task.project %}
                             <a href="{% url 'project_panel' task.project.id %}">{{task.project.title}}</a>
                             {% else %}
@@ -42,15 +43,16 @@
                         </td>
                         <td>
                             {% if task.event %}
-                            <a href="{% url 'event_panel' task.event.id %}">{{task.event.title}}</a>
+                            <a href="{% url 'event_panel' task.event.id %}">{{task.event.title}} 
+                                <br><i class="bi bi-circle-fill" style="color: {{ task.event.event_status.color }};" > {{task.event.event_status}} </i></a>
                             {% else %}
                             {% endif %}
                         </td>
                         <td>
-                            <span style="background-color: {{ task.task_status.color }};" class="badge ">{{task.task_status.status_name}}</span>
+                            <span style="background-color: {{ task.task_status.color }};" class="badge "> <a href="{% url 'task_activate' task.id %}"  class="text-primary">{{task.task_status.icon}} </a>{{task.task_status.status_name}}</span>
                             </td>
-                        <td>{{task.task_status.icon}}</td>
-                    </tr>
+                            <td><a href="{% url 'task_activate' task.id %}"  class="text-primary">${{task.ticket_price}}</a></td>
+                        </tr>
                     {% endfor%}
 
                 </tbody>

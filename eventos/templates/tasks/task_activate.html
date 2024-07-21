@@ -13,7 +13,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'task_panel' %}">Tasks</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'task_panel' %}">Task Panel</a></li>
             <li class="breadcrumb-item active">{{title}}</li>
         </ol>
     </nav>
@@ -25,43 +25,22 @@
         <!-- Left side columns -->
         <div class="col-lg-8">
             <div class="row">
-            
-            {% if tasks %}
+                
+                
 
-            {% include 'tasks/control/control.html' %}
+                {% if tasks %}
+                {% include 'tasks/includes/task_top.html' %}
+                {% else %}
+                {% include 'tasks/includes/task_card.html' %}
 
-            {% include 'tasks/includes/task_top.html' %}
-
-            {% else %}
-
-            {% include 'tasks/includes/task_card.html' %}
-
-            {% endif %}
-
-            {% if event %}
-            {% include 'events/includes/event_card.html' %}
-            {% endif %}
-            
-            {% if project %}
-
-            {% include 'projects/includes/project_card.html' %}
-
-            {% endif %}
-            
-
-
+                {% endif %}
+                
 
             </div>
         </div><!-- End Left side columns -->
 
         <!-- Right side columns -->
         <div class="col-lg-4">
-
-            {% if instructions %}
-            {% include 'layouts/includes/information/info_links_card.html' %}
-            {% endif %}
-            {% include 'layouts/includes/information/info_acordeon.html' %}
-            {% include 'tasks/includes/task_recent_activity.html' %}
 
         </div><!-- End Right side columns -->
 
