@@ -965,12 +965,16 @@ def events(request):
             count_events = events.count()  # Aquí es donde obtienes el recuento de eventos
             # Filtra los eventos que fueron actualizados hoy y cuenta el número de esos eventos
             events_updated_today = events.filter(updated_at__date=today).count()
+            
+            events_states = EventState.objects.all().order_by('-start_time')[:10]
+
             return render(request, 'events/events.html', {
                 'title': title,
                 'events_updated_today': events_updated_today,
                 'count_events': count_events,
                 'events': events,
                 'event_statuses': event_statuses,
+                'events_states': events_states,
             })
             
         else:
@@ -996,6 +1000,7 @@ def events(request):
             
             count_events = events.count()  # Aquí es donde obtienes el recuento de eventos
             events_updated_today = events.filter(updated_at__date=today).count()
+            events_states = EventState.objects.all().order_by('-start_time')[:10]
 
             return render(request, 'events/events.html', {
                 'events_updated_today': events_updated_today,
@@ -1003,6 +1008,7 @@ def events(request):
                 'events': events,
                 'event_statuses': event_statuses,
                 'title': title,
+                'events_states': events_states,
                 
             })
             
@@ -1230,6 +1236,11 @@ def event_panel(request, event_id=None):
     project_statuses = ProjectStatus.objects.all().order_by('status_name')
     task_statuses = TaskStatus.objects.all().order_by('status_name')
     events_states = EventState.objects.all().order_by('-start_time')[:10]
+    
+    status_var = 'En Curso'
+    status = get_object_or_404(Status, status_name=status_var)
+    active_events=Event.objects.filter(Q(event_status=status)).distinct().order_by('-updated_at')
+
 
     if event_id:
         try:
@@ -1282,6 +1293,7 @@ def event_panel(request, event_id=None):
             'events': events,
             'event_statuses':event_statuses,
             'events_states':events_states,
+            'active_events':active_events,
 
             })
 
