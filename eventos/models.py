@@ -270,7 +270,6 @@ class Event(models.Model):
     links = models.ManyToManyField('self', blank=True, symmetrical=False)
     classification = models.ForeignKey(Classification, on_delete=models.SET_NULL, null=True, blank=True)
 
-
     def change_status(self, new_status_id):
         # Obtener el nuevo estado
         new_status = Status.objects.get(id=new_status_id)
@@ -288,7 +287,6 @@ class Event(models.Model):
         self.event_status = new_status
         self.updated_at = timezone.now()
         self.save()
-
 
     def record_edit(self, editor, field_name, old_value, new_value):
         # Registrar la edición en el historial
