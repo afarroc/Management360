@@ -852,25 +852,42 @@ def task_activate(request, task_id=None):
     switch ='En Curso'
     title='Task Activate'
     if task_id:
-        deactivate=False
         task = get_object_or_404(Task, pk=task_id)
         event = get_object_or_404(Event, pk=task.event.id)
-        print(task.task_status.status_name)
         if task.task_status.status_name == switch:
-            deactivate=True
             switch ='Finalizado'
- 
+            
         try:
-            active_task_status = TaskStatus.objects.get(status_name=switch)
-            active_event_status = Status.objects.get(status_name=switch)
-
-            task.task_status = active_task_status
-            event.event_status = active_event_status
+            new_task_status = TaskStatus.objects.get(status_name=switch)
+            old_value = task.task_status.status_name
+            task.task_status = new_task_status            
+            new_value = task.task_status.status_name
             
+            task.record_edit(
+                editor=request.user,
+                field_name='task_status',
+                old_value=str(old_value),
+                new_value=str(new_value),
+                )
             task.save()
-            event.save()
-            messages.success(request, 'La tarea ha sido activada exitosamente.')
+            messages.success(request, f'La tarea ha sido cambiada a estado {switch} exitosamente.')
+
+
+            new_event_status = Status.objects.get(status_name=switch)
+            old_value = event.event_status.status_name
+            event.event_status = new_event_status
+            new_value = event.event_status.status_name
+
+            event.record_edit(
+                editor=request.user,
+                field_name='event_status',
+                old_value=str(old_value),
+                new_value=str(new_value),
+                )
             
+            event.save()
+            messages.success(request, f'El evento ha sido cambiado a estado {switch} exitosamente.')
+
             
             
         except TaskStatus.DoesNotExist:
@@ -890,7 +907,6 @@ def task_activate(request, task_id=None):
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
             return redirect('task_panel')
   
-
 # Events
 @login_required
 def events(request):
@@ -1130,8 +1146,8 @@ def event_edit(request, event_id=None):
                             editor=request.user,
                             field_name=field,
                             old_value=str(old_value),
-                            new_value=str(new_value)
-                        )
+                            new_value=str(new_value),
+                            )
                     form.save()
 
                     messages.success(request, 'Evento guardado con éxito.')
@@ -1166,19 +1182,13 @@ def event_edit(request, event_id=None):
         return redirect('index')
 
 def event_status_change(request, event_id):
-    print("Inicio de vista change_event_status")
     try:
         if request.method != 'POST':
-            print("solicitud GET")
             return HttpResponse("Método no permitido", status=405)
-        print("solicitud Post:", request.POST)
         event = get_object_or_404(Event, pk=event_id)
-        print("ID a cambiar:", str(event.id))
         new_status_id = request.POST.get('new_status_id')
         new_status = get_object_or_404(Status, pk=new_status_id)
-        print("new_status_id", str(new_status))
         if request.user is None:
-            print("User is none: Usuario no autenticado")
             messages.error(request, "User is none: Usuario no autenticado")
             return redirect('index')
         if event.host is not None and (event.host == request.user or request.user in event.attendees.all()):
