@@ -27,6 +27,8 @@
             <div class="row">
             
             {% if events %}
+            {% include 'events/control/control.html' %}
+
             {% include 'events/includes/event_top.html' %}
             {% else %}
             {% include 'events/includes/event_card.html' %}
