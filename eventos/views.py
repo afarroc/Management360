@@ -419,72 +419,142 @@ def project_edit(request, project_id=None):
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
 
-## Project Panel
-def project_panel(request, project_id=None):
-    title="Project Panel"
-    urls=[
-            {'url':'task_create','name':'Task Create'},
-            {'url':'task_edit','name':'Task Edit'},        
-        ]       
+
+
+### Panel de Proyectos ###
+### V2 ###
+
+from django.db.models import Q
+from .models import Project, Task, ProjectStatus
+
+
+def statuses_get():
+    event_statuses = Status.objects.all().order_by('status_name')
+    project_statuses = ProjectStatus.objects.all().order_by('status_name')
+    task_statuses = TaskStatus.objects.all().order_by('status_name')
+    return event_statuses, project_statuses, task_statuses
+
+def projects_get(user):
+    if hasattr(user, 'profile') and hasattr(user.profile, 'role') and user.profile.role == 'SU':
+        user_projects = Project.objects.all().order_by('-updated_at')
+    else:
+        user_projects = Project.objects.filter(
+            Q(assigned_to=user) | Q(attendees=user)
+        ).distinct().order_by('-updated_at')
+    tasks_by_project = {}
+    for project in user_projects:
+        tasks_by_project[project.id] = Task.objects.filter(project_id=project.id)
+    projects = []
+    active_status = ProjectStatus.objects.get(status_name='En Curso')
+    for project in user_projects:
+        tasks = tasks_by_project.get(project.id, [])
+        project_data = {
+            'project': project,
+            'count_tasks': len(tasks),
+            'tasks': tasks
+        }
+        projects.append(project_data)
+    active_projects = [
+        project_data for project_data in projects
+        if project_data['project'].project_status_id == active_status.id
+    ]
+    return projects, active_projects
+
+
+def project_panel(request, proeject_id=None):
+    # Título de la página
+    title = 'Projects Panel'
+    objects = projects_get(request.user)
+    statuses = statuses_get()
+    # Creando el contexto para la plantilla
+
+    try:
+        if request.method=='POST':
+            pass
+        else:
+            context = {
+                'title': title,
+                'event_statuses': statuses[0],
+                'project_statuses': statuses[1],
+                'task_statuses': statuses[2],
+                'projects': objects[0],
+                'active_projects': objects[1]
+            }
+
+            return render(request, 'projects/project_panel.html',context)
+    except Exception  as e:
+        messages.error(request,f'Ha ocurrido un error:({e})')
+        return redirect('index')
+
+
+
+
+
+
+
+def project_panel_(request, project_id=None):
+    # Título del Proyecto
+    title = "Panel de Proyectos"
+    # Diccionarios de URLs e instrucciones
+    urls = [
+        {'url': 'task_create', 'name': 'Crear Tarea'},
+        {'url': 'task_edit', 'name': 'Editar Tarea'},
+    ]
     instructions = [
-            {'instruction': 'Select an item for details', 'name': 'Items'},
-        ]
+        {'instruction': 'Selecciona un elemento para ver detalles', 'name': 'Elementos'},
+    ]
     projects_states = ProjectState.objects.all().order_by('-start_time')[:10]
 
-    if project_id:
-        event_statuses = Status.objects.all().order_by('status_name')
-        task_statuses = TaskStatus.objects.all().order_by('status_name')
-        project_statuses = ProjectStatus.objects.all().order_by('status_name')
-        
-        try:
-            project = get_object_or_404(Project, id=project_id)
-            tasks = Task.objects.filter(project_id=project_id)
-            return render(request, "projects/project_panel.html",{
-                'title':title,
-                'urls':urls,
-                'instructions':instructions,
-                'project':project,
-                'tasks':tasks,
-                'event_statuses':event_statuses,
-                'task_statuses':task_statuses,
-                'project_statuses':project_statuses,
-                'projects_states':projects_states,
-                })
-        except Exception as e:
-            messages.error(request, 'Ha ocurrido un error: {}'.format(e))
-            return redirect('project_panel')
+    # Obtener las tareas para todos los proyectos
+    tasks_by_project = {project.id: Task.objects.filter(project_id=project.id) for project in Project.objects.all()}
 
-    else:
-   
-        if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
-            # Si el usuario es un 'SU', puede ver todos los proyectos
-            projects = Project.objects.all().order_by('-updated_at')
-        else:
-            # Si no, solo puede ver los proyectos que le están asignados o a los que asiste
-            projects = Project.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by
-            ('-updated_at')
-            
+    status_var = 'En Curso'
+    status = get_object_or_404(ProjectStatus, status_name=status_var)
+    active_projects=Project.objects.filter(Q(project_status=status)).distinct().order_by('-updated_at')
 
-        # Crea una lista para almacenar los proyectos y sus recuentos de tareas
-        projects_with_task_count = []
+    event_statuses = Status.objects.all().order_by('status_name')
+    task_statuses = TaskStatus.objects.all().order_by('status_name')
+    project_statuses = ProjectStatus.objects.all().order_by('status_name')
 
-        for project in projects:
-            # Cuenta las tareas para el proyecto actual
-            count_tasks = Task.objects.filter(project_id=project.id).count()
-            
-            # Almacena el proyecto y su recuento de tareas en la lista
-            projects_with_task_count.append((project, count_tasks))
-            
-        
-        return render(request, 'projects/project_panel.html', {
-            'projects_with_task_count': projects_with_task_count,
-            'instructions':instructions,
-            'urls':urls,
-            'title':title,
-            'projects': projects,
-            'projects_states':projects_states,
-
+    try:
+        if project_id:
+            project = Project.objects.get(id=project_id)
+            tasks = tasks_by_project.get(project_id, [])
+            return render(request, "projects/project_panel.html", {
+                'title': title,
+                'urls': urls,
+                'instructions': instructions,
+                'project': project,
+                'tasks': tasks,
+                'event_statuses': event_statuses,
+                'task_statuses': task_statuses,
+                'project_statuses': project_statuses,
+                'projects_states': projects_states,
             })
+        else:
+            # Verificar si el usuario es un superusuario ('SU')
+            if request.user.is_superuser:
+                user_projects = Project.objects.all().order_by('-updated_at')
+            else:
+                user_projects = Project.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+
+            projects_with_task_count = [(project, tasks_by_project.get(project.id, []).count()) for project in user_projects]
+            return render(request, 'projects/project_panel.html', {
+                'active_projects': active_projects,
+                'projects_with_task_count': projects_with_task_count,
+                'instructions': instructions,
+                'urls': urls,
+                'title': title,
+                'projects': user_projects,
+                'event_statuses': event_statuses,
+                'task_statuses': task_statuses,
+                'project_statuses': project_statuses,
+                'projects_states': projects_states,
+            })
+    except (Project.DoesNotExist, Task.DoesNotExist) as e:
+        messages.error(request, f'Ha ocurrido un error: {e}')
+        return redirect('project_panel')
+
 
 def project_activate(request, project_id=None):
     title='Project Activate'
@@ -591,7 +661,6 @@ def event_assign(request, event_id=None):
     except Exception as e:
         messages.error(request, f'Ha ocurrido un error: {e}')
         return redirect('index')
-
 
 # Tasks
      

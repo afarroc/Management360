@@ -1,5 +1,5 @@
 <!-- Sales Card -->
-<div class="col-xxl-4 col-md-6 " id="project-card-{{ project.id }}">
+<div class="col-xxl-4 col-md-6 " id="project-card-{{ project_info.project.id }}">
 	<div class="card info-card sales-card">
 		<div class="filter">
 			<a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
@@ -10,7 +10,7 @@
 				<li>
 					<div class="dropdown-item">
 						{% csrf_token %}
-					<a class="btn btn-success btn-sm" href="{% url 'task_create' project.id %}">
+					<a class="btn btn-success btn-sm" href="{% url 'task_create' project_info.project.id %}">
 						<i class="bi bi-calendar-fill"></i>
 					</a>
 				</div>
@@ -20,7 +20,7 @@
 					{% if request.user.profile.role == 'SU' %}
 					<div class="dropdown-item">
 						{% csrf_token %}
-						<a class="btn btn-primary btn-sm" href="{% url 'project_edit' project.id %}">
+						<a class="btn btn-primary btn-sm" href="{% url 'project_edit' project_info.project.id %}">
 							<i class="bi bi-pencil-fill"></i>
 						</a>
 					</div>
@@ -28,7 +28,7 @@
 				</li>
 					{% if request.user.profile.role == 'SU' %}
 					<div class="dropdown-item">
-						<form id="delete-form-{{ project.id }}" action="{% url 'project_delete' project.id %}" method="POST"
+						<form id="delete-form-{{ project_info.project.id }}" action="{% url 'project_delete' project_info.project.id %}" method="POST"
 						class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este projecto?');">
 						{% csrf_token %}
 						<button type="submit" class="btn btn-danger btn-sm">
@@ -40,45 +40,45 @@
 			</ul>
 		</div>
 		<div class="card-body">
-			<h5 class="card-title"><a href="{% url 'project_panel' project.id %}">{{ project.title }}</a> <span>| Project id: {{project.id}}</span></h5>
+			<h5 class="card-title"><a href="{% url 'project_panel' project_info.project.id %}">{{ project_info.project.title }}</a> <span>| Project id: {{project_info.project.id}}</span></h5>
 			<div class="d-flex align-items-center">
 				<div
-					style="color: {{project.project_status.color}};"
+					style="color: {{project_info.project.project_status.color}};"
 					class="card-icon rounded-circle d-flex align-items-center justify-content-center">
 					<i class="bi bi-calendar-range-fill"></i>
 				</div>
 				<div class="ps-3">
 					<h6></h6>
 					<span class="text-muted small pt-2 ps-1">Created</span>
-					<span class="text-success small pt-1 fw-bold">{{ project.created_at|date:"d-M H:i" }}</span> 
+					<span class="text-success small pt-1 fw-bold">{{ project_info.project.created_at|date:"d-M H:i" }}</span> 
 					<br>
 					<span class="text-muted small pt-2 ps-1">Updated</span>
-					<span class="text-success small pt-1 fw-bold">{{ project.updated_at|date:"d-M H:i" }}</span> 
+					<span class="text-success small pt-1 fw-bold">{{ project_info.project.updated_at|date:"d-M H:i" }}</span> 
 				</div>
 			</div>
-			<p class="card-text mb-1">{{ project.description }}</p>
+			<p class="card-text mb-1">{{ project_info.project.description }}</p>
 			<p class="card-text mb-1"><strong>Asistentes:</strong>
-				{% for attendee in project.attendees.all %}
+				{% for attendee in project_info.project.attendees.all %}
 				{{ attendee.username|title }}{% if not forloop.last %},{% else %}.{% endif %}
 				{% endfor %}
 			</p>
 
 
-			{% if project.event_id %}
+			{% if project_info.project.event_id %}
 
 			<div>
-				<h5 class="card-title"><a href="{% url 'event_panel' project.event_id %}">{{ project.event.title }}</a> <span>| Event id: {{project.event.id}} | {{project.event.event_status}}</span></h5>
+				<h5 class="card-title"><a href="{% url 'event_panel' project_info.project.event_id %}">{{ project_info.project.event.title }}</a> <span>| Event id: {{project_info.project.event.id}} | {{project_info.project.event.event_status}}</span></h5>
 			</div>
 	
 			{% endif %}
 
-			<form id="form-{{ project.id }}" action="{% url 'change_project_status' project.id %}" method="POST"
+			<form id="form-{{ project_info.project.id }}" action="{% url 'change_project_status' project_info.project.id %}" method="POST"
 				class="mb-1">
 				{% csrf_token %}
 				<div class="mb-1">
 					<select name="new_status_id" class="form-select" aria-label="Default select example">
 						{% for status in project_statuses %}
-							<option value="{{ status.id }}" {% if status.id|stringformat:"s" == project.project_status.id|stringformat:"s" %}selected{% endif %}>
+							<option value="{{ status.id }}" {% if status.id|stringformat:"s" == project_info.project.project_status.id|stringformat:"s" %}selected{% endif %}>
 							{{ status.status_name }}
 							</option>
 						{% endfor %}
