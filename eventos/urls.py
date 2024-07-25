@@ -10,6 +10,8 @@ urlpatterns = [
     path('about/', views.about, name="about"),
     path('blank/', views.blank, name="blank"),
 
+    path('planning/task/', views.planning_task, name="planning_task"),
+    
     # Eventos
     path('events/', views.events, name="events"),
     path('events/detail/<int:event_id>', views.event_detail, name="event_detail"),
