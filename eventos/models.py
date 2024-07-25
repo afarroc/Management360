@@ -130,7 +130,7 @@ class ProjectAttendee(models.Model):
     has_paid = models.BooleanField(default=False)  # Campo nuevo para el pago
     notes = models.TextField(blank=True, null=True)  # Campo nuevo para notas adicionales
 
-# Modelo para registrar los estados por los que pasa cada proyecto
+# Modelo para registrar los estados por los que pasa cada tarea
 class TaskState(models.Model):
     task = models.ForeignKey('Task', on_delete=models.CASCADE)
     status = models.ForeignKey('TaskStatus', on_delete=models.CASCADE)
@@ -177,6 +177,7 @@ class Task(models.Model):
     host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_tasks')  # Asegúrate de que esta línea esté presente
     ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
 
+
     def change_status(self, new_status_id):
         # Obtener el nuevo estado
         new_status = TaskStatus.objects.get(id=new_status_id)
@@ -213,6 +214,36 @@ class Task(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.event}"
+
+
+
+
+
+from django.core.exceptions import ValidationError
+
+class TaskProgram(models.Model):
+    title = models.CharField(max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_programs')
+    task = models.ForeignKey('Task', on_delete=models.CASCADE)
+
+    def clean(self):
+        # Ensure end_time is after start_time
+        if self.start_time >= self.end_time:
+            raise ValidationError('End time must be after start time')
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name = "Task Program"
+        verbose_name_plural = "Task Programs"
+
+
+
+
 
 # Modelo para registrar los estados por los que pasa cada evento
 class EventState(models.Model):

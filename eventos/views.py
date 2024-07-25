@@ -18,7 +18,7 @@ from django.core.files.storage import FileSystemStorage
 from django.db.models.functions import TruncDate
 
 # Local imports from .models
-from .models import Classification, Document, Image, Database, Event, EventAttendee, ProjectStatus, TaskStatus, Profile, Project, Status, Task, EventState, ProjectState, TaskState
+from .models import Classification, Document, Image, Database, Event, EventAttendee, ProjectStatus, TaskStatus, Profile, Project, Status, Task, EventState, ProjectState, TaskState, TaskProgram
 
 # Local imports from .forms
 from .forms import (CreateNewEvent, CreateNewProject,CreateNewTask, CreateNewTask, EditClassificationForm, EducationForm,  ExperienceForm, ImageForm, DocumentForm, DatabaseForm, ProfileForm, SkillForm, EventStatusForm, TaskStatusForm, ProjectStatusForm
@@ -975,7 +975,9 @@ def task_activate(request, task_id=None):
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
             return redirect('task_panel')
-  
+
+
+
 # Events
 @login_required
 def events(request):
@@ -1907,3 +1909,56 @@ def update_event(request):
         return JsonResponse({'success': True})
 
     return JsonResponse({'success': False})
+
+
+
+
+# views.py
+from django.shortcuts import render
+from django.utils import timezone
+from datetime import timedelta
+from .models import TaskProgram
+
+def planning_task(request):
+    # Define el rango de fechas para el horario (por ejemplo, una semana desde hoy)
+    start_date = timezone.now().date()
+    end_date = start_date + timedelta(days=7)
+    
+    # Obtener todas las tareas programadas dentro del rango de fechas
+    task_programs = TaskProgram.objects.filter(start_time__date__range=(start_date, end_date))
+    
+    if not task_programs.exists():
+        context = {
+            'schedule': {},
+            'days': [],
+            'hours': range(0, 24),
+        }
+        return render(request, 'program/program.html', context)
+    
+    # Crear una matriz para el horario
+    days = [(start_date + timedelta(days=i)) for i in range((end_date - start_date).days)]
+    schedule = {day: {hour: [] for hour in range(24)} for day in days}
+    
+    min_hour = 24
+    max_hour = 0
+    
+    # Llenar la matriz con las tareas programadas y determinar las horas mínimas y máximas
+    for program in task_programs:
+        day = program.start_time.date()
+        hour = program.start_time.hour
+        schedule[day][hour].append(program)
+        if hour < min_hour:
+            min_hour = hour
+        if hour > max_hour:
+            max_hour = hour
+    
+    # Ajustar las horas a mostrar
+    hours = range(min_hour, max_hour + 1)
+    
+    context = {
+        'schedule': schedule,
+        'days': days,
+        'hours': hours,
+    }
+    
+    return render(request, 'program/program.html', context)

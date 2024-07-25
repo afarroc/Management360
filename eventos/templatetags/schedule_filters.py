@@ -1,9 +1,14 @@
+# templatetags/schedule_filters.py
 # my_tags.py
 
 from django import template
 from django.template.defaultfilters import stringfilter
 
 register = template.Library()
+
+@register.filter
+def dict_item(dictionary, key):
+    return dictionary.get(key)
 
 @register.filter
 @stringfilter
