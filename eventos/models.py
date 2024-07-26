@@ -417,3 +417,30 @@ class Image(models.Model):
 class Database(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     upload = models.FileField(upload_to=get_upload_path, validators=[FileExtensionValidator(['csv', 'txt', 'xlsx', 'xlsm'])])
+
+# models.py
+
+from django.db import models
+from django.contrib.auth.models import User
+from decimal import Decimal
+
+class CreditAccount(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+
+    def __str__(self):
+        return f"{self.user.username} - {self.balance} créditos"
+
+    def add_credits(self, amount):
+        if not isinstance(amount, Decimal):
+            amount = Decimal(amount)
+        self.balance += amount
+        self.save()
+
+    def subtract_credits(self, amount):
+        if not isinstance(amount, Decimal):
+            amount = Decimal(amount)
+        if amount > self.balance:
+            raise ValueError("No hay suficientes créditos")
+        self.balance -= amount
+        self.save()
