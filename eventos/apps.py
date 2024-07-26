@@ -1,5 +1,5 @@
+# apps.py
 from django.apps import AppConfig
-
 
 class EventosConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
@@ -7,3 +7,5 @@ class EventosConfig(AppConfig):
 
     def ready(self):
         import eventos.templatetags.schedule_filters
+        import eventos.signals
+
