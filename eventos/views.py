@@ -419,14 +419,11 @@ def project_edit(request, project_id=None):
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
 
-
-
 ### Panel de Proyectos ###
 ### V2 ###
 
 from django.db.models import Q
 from .models import Project, Task, ProjectStatus
-
 
 def statuses_get():
     event_statuses = Status.objects.all().order_by('status_name')
@@ -460,7 +457,6 @@ def projects_get(user):
     ]
     return projects, active_projects
 
-
 def project_panel(request, proeject_id=None):
     # Título de la página
     title = 'Projects Panel'
@@ -485,12 +481,6 @@ def project_panel(request, proeject_id=None):
     except Exception  as e:
         messages.error(request,f'Ha ocurrido un error:({e})')
         return redirect('index')
-
-
-
-
-
-
 
 def project_panel_(request, project_id=None):
     # Título del Proyecto
@@ -554,7 +544,6 @@ def project_panel_(request, project_id=None):
     except (Project.DoesNotExist, Task.DoesNotExist) as e:
         messages.error(request, f'Ha ocurrido un error: {e}')
         return redirect('project_panel')
-
 
 def project_activate(request, project_id=None):
     title='Project Activate'
@@ -1910,9 +1899,6 @@ def update_event(request):
 
     return JsonResponse({'success': False})
 
-
-
-
 # views.py
 from django.shortcuts import render
 from django.utils import timezone
@@ -1989,3 +1975,68 @@ def add_credits(request):
             return render(request, 'credits/add_credits.html', {'error': 'Monto no válido'})
 
     return render(request, 'credits/add_credits.html')
+
+
+
+from django.shortcuts import render, get_object_or_404
+from .models import Project, Task, TaskStatus, ProjectStatus, Event
+
+def project_tasks_status_check(request, project_id):
+    task_active_status = TaskStatus.objects.filter(status_name='En curso').first()
+    task_finished_status = TaskStatus.objects.filter(status_name='Finalizado').first()
+    project_active_status = ProjectStatus.objects.filter(status_name='En curso').first()
+    project_finished_status = ProjectStatus.objects.filter(status_name='Finalizado').first()
+
+    if not task_active_status or not task_finished_status or not project_active_status or not project_finished_status:
+        return render(request, 'projects/projects_check.html', {
+            'error': 'Statuses not found'
+        })
+
+    project = get_object_or_404(Project, id=project_id)
+    project_tasks = Task.objects.filter(project_id=project.id)
+    active_tasks = project_tasks.filter(task_status=task_active_status)
+
+    if active_tasks.exists():
+        # Preguntar al usuario si desea forzar el cierre de las tareas activas
+        if request.method == 'POST' and 'force_close' in request.POST:
+            # Forzar el cierre de todas las tareas activas
+            for task in active_tasks:
+                old_status = task.task_status
+                task.record_edit(
+                    editor=request.user,
+                    field_name='task_status',
+                    old_value=str(old_status),
+                    new_value=str(task_finished_status)
+                )
+                # Ejecutar event.record_edit para el evento de cada tarea
+                if hasattr(task, 'event'):
+                    print('have event')
+                    event = task.event
+                    event_old_status = event.event_status  # Suponiendo que 'status' es el campo relevante en el evento
+                    event.record_edit(
+                        editor=request.user,
+                        field_name='event_status',
+                        old_value=str(event_old_status),
+                        new_value=str(task_finished_status)  # O el estado que corresponda para el evento
+                    )
+                else:
+                    print('doesnt have event')
+
+            # Actualizar el estado del proyecto a finalizado
+            old_status = project.project_status
+            project.record_edit(
+                editor=request.user,
+                field_name='project_status',
+                old_value=str(old_status),
+                new_value=str(project_finished_status)
+            )
+        else:
+            # Renderizar una plantilla que pregunte al usuario si desea forzar el cierre
+            return render(request, 'projects/confirm_force_close.html', {
+                'project': project,
+                'active_tasks': active_tasks
+            })
+
+    return render(request, 'projects/projects_check.html', {
+        'project_tasks': project_tasks
+    })

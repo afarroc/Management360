@@ -1,0 +1,10 @@
+<!-- templates/projects/confirm_force_close.html -->
+
+<h1>Forzar Cierre de Tareas Activas</h1>
+<p>El proyecto "{{ project.title }}" tiene tareas activas en curso. ¿Desea forzar el cierre de estas tareas?</p>
+
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" name="force_close">Forzar Cierre</button>
+    <a href="{% url 'project_detail' project.id %}">Cancelar</a>
+</form>

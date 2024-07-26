@@ -11,11 +11,13 @@ urlpatterns = [
     path('blank/', views.blank, name="blank"),
 
     path('credits/', views.add_credits, name='add_credits'),
+    
     path('credits/add_credits/', views.add_credits, name='add_credits'),
 
-
     path('planning/task/', views.planning_task, name="planning_task"),
-    
+      
+    path('projects/check/<int:project_id>', views.project_tasks_status_check, name="project_check"),
+
     # Eventos
     path('events/', views.events, name="events"),
     path('events/detail/<int:event_id>', views.event_detail, name="event_detail"),
