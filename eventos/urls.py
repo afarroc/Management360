@@ -10,6 +10,10 @@ urlpatterns = [
     path('about/', views.about, name="about"),
     path('blank/', views.blank, name="blank"),
 
+    path('credits/', views.add_credits, name='add_credits'),
+    path('credits/add_credits/', views.add_credits, name='add_credits'),
+
+
     path('planning/task/', views.planning_task, name="planning_task"),
     
     # Eventos

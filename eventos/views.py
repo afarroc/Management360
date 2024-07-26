@@ -1962,3 +1962,30 @@ def planning_task(request):
     }
     
     return render(request, 'program/program.html', context)
+
+# views.py
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from .models import CreditAccount
+from decimal import Decimal
+
+@login_required
+def add_credits(request):
+    user = request.user
+    if not hasattr(user, 'creditaccount'):
+        CreditAccount.objects.create(user=user)
+
+    if request.method == 'POST':
+        amount = request.POST['amount']
+        try:
+            amount = Decimal(amount)  # Convertir a Decimal
+            user.creditaccount.add_credits(amount)
+            messages.success(request,"Monto agregado")
+
+            return redirect('index')  # Redirige a alguna página de perfil u otra página adecuada
+            
+        except (ValueError, Decimal.InvalidOperation):
+            return render(request, 'credits/add_credits.html', {'error': 'Monto no válido'})
+
+    return render(request, 'credits/add_credits.html')
