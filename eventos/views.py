@@ -431,16 +431,31 @@ def statuses_get():
     task_statuses = TaskStatus.objects.all().order_by('status_name')
     return event_statuses, project_statuses, task_statuses
 
-def projects_get(user):
+def projects_get(user, project_id=None):
     if hasattr(user, 'profile') and hasattr(user.profile, 'role') and user.profile.role == 'SU':
         user_projects = Project.objects.all().order_by('-updated_at')
     else:
         user_projects = Project.objects.filter(
             Q(assigned_to=user) | Q(attendees=user)
         ).distinct().order_by('-updated_at')
+
     tasks_by_project = {}
     for project in user_projects:
         tasks_by_project[project.id] = Task.objects.filter(project_id=project.id)
+    
+    if project_id is not None:
+        try:
+            project = Project.objects.get(id=project_id)
+            tasks = tasks_by_project.get(project.id, [])
+            project_data = {
+                'project': project,
+                'count_tasks': len(tasks),
+                'tasks': tasks
+            }
+            return project_data, project_data if project.project_status_id == ProjectStatus.objects.get(status_name='En Curso').id else None
+        except Project.DoesNotExist:
+            return None, None
+
     projects = []
     active_status = ProjectStatus.objects.get(status_name='En Curso')
     for project in user_projects:
@@ -451,36 +466,61 @@ def projects_get(user):
             'tasks': tasks
         }
         projects.append(project_data)
+    
     active_projects = [
         project_data for project_data in projects
         if project_data['project'].project_status_id == active_status.id
     ]
+    
     return projects, active_projects
 
-def project_panel(request, proeject_id=None):
-    # Título de la página
+def project_panel(request, project_id=None):
+    # Title of the page
     title = 'Projects Panel'
+
+    # Retrieve projects and statuses
     objects = projects_get(request.user)
     statuses = statuses_get()
-    # Creando el contexto para la plantilla
 
     try:
-        if request.method=='POST':
-            pass
+        if project_id:
+            # If a specific project_id is provided, handle it here
+            project = next((proj for proj in objects[0] if proj['project'].id == project_id), None)
+            if project:
+                context = {
+                    'title': title,
+                    'project': project,
+                    'event_statuses': statuses[0],
+                    'project_statuses': statuses[1],
+                    'task_statuses': statuses[2],
+                    'projects_info': objects[0],
+                    'active_projects': objects[1]
+                }
+                return render(request, 'projects/project_panel.html', context)
+            else:
+                messages.error(request, f'Project with id {project_id} not found')
+                return redirect('index')
         else:
-            context = {
-                'title': title,
-                'event_statuses': statuses[0],
-                'project_statuses': statuses[1],
-                'task_statuses': statuses[2],
-                'projects': objects[0],
-                'active_projects': objects[1]
-            }
+            # If no specific project_id is provided
+            if request.method == 'POST':
+                # Handle POST request logic here
+                pass
+            else:
+                # Create context for the template for GET requests
+                context = {
+                    'title': title,
+                    'event_statuses': statuses[0],
+                    'project_statuses': statuses[1],
+                    'task_statuses': statuses[2],
+                    'projects_info': objects[0],
+                    'active_projects': objects[1]
+                }
+                return render(request, 'projects/project_panel.html', context)
 
-            return render(request, 'projects/project_panel.html',context)
-    except Exception  as e:
-        messages.error(request,f'Ha ocurrido un error:({e})')
+    except Exception as e:
+        messages.error(request, f'An error occurred: ({e})')
         return redirect('index')
+
 
 def project_panel_(request, project_id=None):
     # Título del Proyecto
@@ -818,66 +858,57 @@ def task_delete(request, task_id):
     return redirect(reverse('tasks'))
 
 def task_panel(request, task_id=None):
-    
-    title="Task Panel"
-    event_statuses = Status.objects.all().order_by('status_name')
-    task_statuses = TaskStatus.objects.all().order_by('status_name')
-    project_statuses = ProjectStatus.objects.all().order_by('status_name')
+    title = "Task Panel"
+    statuses = statuses_get()
     tasks_states = TaskState.objects.all().order_by('-start_time')[:10]
 
     if task_id:
         try:
             task = get_object_or_404(Task, id=task_id)
-            project = task.project
-            event = None  # Inicializa event
+            project_info, _ = projects_get(request.user, task.project.id)
+            event = None
             if task.event_id:
                 event = get_object_or_404(Event, pk=task.event_id)
             
-            event_statuses = Status.objects.all().order_by('status_name')
-            project_statuses = ProjectStatus.objects.all().order_by('status_name')
-            task_statuses = TaskStatus.objects.all().order_by('status_name')
             return render(request, "tasks/task_panel.html", {
-                'event_statuses': event_statuses,
-                'project_statuses': project_statuses,
-                'task_statuses': task_statuses,
+                'event_statuses': statuses[0],
+                'project_statuses': statuses[1],
+                'task_statuses': statuses[2],
                 'title': title,
                 'task': task,
-                'project': project,
-                'event': event,  # Pasa el evento a la plantilla
+                'project_info': project_info,
+                'event': event,
             })
         except Task.DoesNotExist:
             messages.error(request, 'La tarea no existe. Verifica el ID de la tarea.')
             return redirect('task_panel')
-        except Exception as e:
-            messages.error(request, 'Ha ocurrido un error: {}'.format(e))
-            print(e)
+        except Project.DoesNotExist:
+            messages.error(request, 'El proyecto no existe. Verifica el ID del proyecto.')
             return redirect('task_panel')
-
-
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
             print(e)
             return redirect('task_panel')
     else:
-        
         if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
-            # Si el usuario es un 'SU', puede ver todos los proyectos
             tasks = Task.objects.all().order_by('-updated_at')
         else:
-            # Si no, solo puede ver los proyectos que le están asignados o a los que asiste
             tasks = Task.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+
         status_var = 'En Curso'
         status = get_object_or_404(TaskStatus, status_name=status_var)
-        active_tasks=Task.objects.filter(Q(task_status=status)).distinct().order_by('-updated_at')
+        active_tasks = Task.objects.filter(Q(task_status=status)).distinct().order_by('-updated_at')
+
         return render(request, 'tasks/task_panel.html', {
-            'title':title,
-            'event_statuses':event_statuses,
-            'task_statuses':task_statuses,
-            'project_statuses':project_statuses,
+            'title': title,
+            'event_statuses': statuses[0],
+            'task_statuses': statuses[2],
+            'project_statuses': statuses[1],
             'tasks': tasks,
-            'active_tasks':active_tasks,
-            'tasks_states':tasks_states,
-            })
+            'active_tasks': active_tasks,
+            'tasks_states': tasks_states,
+        })
+
 
 def change_task_status(request, task_id):
     try:
