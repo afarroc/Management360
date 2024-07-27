@@ -24,9 +24,15 @@
         <div class="col-lg-8">
             <div class="row">
 
+                {% if projects_info %}
+
+                {% include 'projects/control/control.html' %}
+                {% include 'projects/includes/project_top.html' %}
+
+                {% else %}
 
                 
-                {% include 'projects/control/control.html' %}
+                {% endif %}
 
 
 
