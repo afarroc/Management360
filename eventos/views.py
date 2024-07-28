@@ -476,25 +476,25 @@ def projects_get(user, project_id=None):
 
 def project_panel(request, project_id=None):
     # Title of the page
-    title = 'Projects Panel'
 
     # Retrieve projects and statuses
     objects = projects_get(request.user)
     statuses = statuses_get()
 
     try:
+
         if project_id:
             # If a specific project_id is provided, handle it here
-            project = next((proj for proj in objects[0] if proj['project'].id == project_id), None)
-            if project:
+            project_info = next((proj for proj in objects[0] if proj['project'].id == project_id), None)
+            
+            if project_info:
+                title = "Project detail"
                 context = {
                     'title': title,
-                    'project': project,
+                    'project_info': project_info,
                     'event_statuses': statuses[0],
                     'project_statuses': statuses[1],
                     'task_statuses': statuses[2],
-                    'projects_info': objects[0],
-                    'active_projects': objects[1]
                 }
                 return render(request, 'projects/project_panel.html', context)
             else:
@@ -507,12 +507,13 @@ def project_panel(request, project_id=None):
                 pass
             else:
                 # Create context for the template for GET requests
+                title = "Projects Panel"
                 context = {
                     'title': title,
                     'event_statuses': statuses[0],
                     'project_statuses': statuses[1],
                     'task_statuses': statuses[2],
-                    'projects_info': objects[0],
+                    'projects': objects[0],
                     'active_projects': objects[1]
                 }
                 return render(request, 'projects/project_panel.html', context)
