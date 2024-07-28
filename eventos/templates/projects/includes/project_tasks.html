@@ -1,0 +1,35 @@
+<div class="col-xxl-4 col-md-6 " id="project-card-{{ project_info.project.id }}">
+    <div class="card">
+        <div class="card-header">
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Tasks</h5>
+            <ul class="list-group">
+                {% for task in project_info.tasks %}
+
+
+
+                <li class="list-group-item d-flex justify-content-between align-items-start">
+                    <div class="ms-2 me-auto">
+                      <div class="fw-bold">
+                        <i class="bi bi-calendar-fill" style="font-size:15px; color:{{task.task_status.color}};"></i>
+                        <a class="card-subtitle" href="{% url 'task_panel' task.id %}" style="font-size:15px;">{{task.title}}</a>
+
+                      </div>
+                      <span style="font-size:12px; color:{{task.task_status.color}};"> | {{task.task_status}}</span>
+                      <a  href="{% url 'task_activate' task.id %}"></a>
+                    </div>
+                    <span class="badge bg-info rounded-pill"><a class="badge " href="{% url 'task_activate' task.id %}">Switch</a></span>
+                </li>
+                
+                
+                {% endfor%}
+            </ul>
+            {% if project_info.tasks %}
+            {% else %}
+            {% endif%}
+        </div>
+        <div class="card-footer">
+        </div>
+    </div>
+</div>
