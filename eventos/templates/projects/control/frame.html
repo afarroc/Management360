@@ -1,33 +1,26 @@
-<div class="card-body">
-    <!--h5 class="card-title">Active projects</h5-->
+<!-- Default Tabs -->
+<ul class="nav nav-tabs" id="myTab" role="tablist">
 
-    <!-- Bordered Tabs Justified -->
-    <ul class="nav nav-tabs nav-tabs-bordered d-flex" id="borderedTabJustified" role="tablist">
-        {% for project_info in active_projects %}
-        <li class="nav-item flex-fill" role="presentation">
-            <button class="nav-link w-100 {% if forloop.first %}active{% endif %}" id="{{project_info.project.id}}-tab"
-                data-bs-toggle="tab" data-bs-target="#bordered-justified-{{project_info.project.id}}" type="button" role="tab"
-                aria-controls="{{project_info.project.id}}"
-                aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">{{project_info.project.title}}</button>
-            {% endfor %}
-    </ul>
+{% for project_info in active_projects %}
+<li class="nav-item" role="presentation">
+    <button class="nav-link {% if forloop.first %}active{% endif %}" id="{{project_info.project.id}}-tab" data-bs-toggle="tab" data-bs-target="#{{project_info.project.id}}" type="button" role="tab" aria-controls="{{project_info.project.id}}" aria-selected="{% if forloop.first %}true{% endif %}" {% if forloop.first %}{% else %} tabindex="-1"{% endif %}>{{project_info.project.title}} {% if project_info.count_tasks_in_progress %}({{project_info.count_tasks_in_progress }}){% endif %}</button>
+</li>
+{% endfor %}
 
+</ul>
+<div class="tab-content pt-2" id="myTabContent">
+{% for project_info in active_projects %}
+<div class="tab-pane fade {% if forloop.first %}active show{% endif %}" id="{{project_info.project.id}}" role="tabpanel" aria-labelledby="{{project_info.project.id}}-tab">
 
-
-    
-    <div class="tab-content pt-2" id="borderedTabJustifiedContent">
-
-        {% for project_info in active_projects %}
-        <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="bordered-justified-{{project_info.project.id}}"
-            role="tabpanel" aria-labelledby="{{project_info.project.id}}-tab">    
-                    
-                {% include 'projects/includes/project_card.html' %}
-        </div>
-
-
-        {% endfor %}
-
-
-    </div><!-- End Bordered Tabs Justified -->
+    <div class="row">
+        {% include 'projects/includes/project_card.html' %} 
+        {% include 'projects/includes/project_tasks.html' %}
+    </div>
 
 </div>
+
+{% endfor %}
+
+</div><!-- End Default Tabs -->
+
+

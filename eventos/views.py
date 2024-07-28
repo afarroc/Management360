@@ -443,26 +443,31 @@ def projects_get(user, project_id=None):
     for project in user_projects:
         tasks_by_project[project.id] = Task.objects.filter(project_id=project.id)
     
+    active_status = ProjectStatus.objects.get(status_name='En Curso')
+
     if project_id is not None:
         try:
             project = Project.objects.get(id=project_id)
             tasks = tasks_by_project.get(project.id, [])
+            tasks_in_progress = [task for task in tasks if task.task_status == 'En Curso']
             project_data = {
                 'project': project,
                 'count_tasks': len(tasks),
+                'count_tasks_in_progress': len(tasks_in_progress),
                 'tasks': tasks
             }
-            return project_data, project_data if project.project_status_id == ProjectStatus.objects.get(status_name='En Curso').id else None
+            return project_data, project_data if project.project_status_id == active_status.id else None
         except Project.DoesNotExist:
             return None, None
 
     projects = []
-    active_status = ProjectStatus.objects.get(status_name='En Curso')
     for project in user_projects:
         tasks = tasks_by_project.get(project.id, [])
+        tasks_in_progress = [task for task in tasks if task.task_status.status_name == 'En Curso']
         project_data = {
             'project': project,
             'count_tasks': len(tasks),
+            'count_tasks_in_progress': len(tasks_in_progress),
             'tasks': tasks
         }
         projects.append(project_data)
@@ -910,7 +915,6 @@ def task_panel(request, task_id=None):
             'tasks_states': tasks_states,
         })
 
-
 def change_task_status(request, task_id):
     try:
         if request.method != 'POST':
@@ -996,8 +1000,6 @@ def task_activate(request, task_id=None):
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
             return redirect('task_panel')
-
-
 
 # Events
 @login_required
@@ -1337,24 +1339,26 @@ def event_panel(request, event_id=None):
     if event_id:
         try:
             event = get_object_or_404(Event, id=event_id)
-            print(event)
+            print(f"Events: {event}")
+            
             try:
-                projects = Project.objects.filter(event_id=event_id)
+                objects = projects_get(request.user)
+                project_info = next((proj for proj in objects[0] if proj['project'].event.id == event_id), None)
+                
             except Project.DoesNotExist:
-                projects= None
-
+                project_info= None
+                
+            if project_info:
+                print(f"project: {project_info}")
+            else:
+                print('No projects')
+                
             try:
                 tasks = Task.objects.filter(event_id=event_id)
             except Task.DoesNotExist:
                 tasks= None
-                
-            if projects:
-                print(projects)
-            else:
-                print('No projects')
-
             if tasks:
-                print(tasks)
+                print(f"Tasks: {tasks}")
             else:
                 print('No tasks')
                 
@@ -1362,7 +1366,7 @@ def event_panel(request, event_id=None):
                 'title':title,
                 'event':event,
                 'tasks':tasks,
-                'projects':projects,
+                'project_info':project_info,
                 'event_statuses':event_statuses,
                 'project_statuses':project_statuses,
                 'task_statuses':task_statuses,                
