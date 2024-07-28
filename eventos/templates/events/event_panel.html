@@ -34,10 +34,8 @@
             {% include 'events/includes/event_card.html' %}
             {% endif %}
 
-            {% if projects %}
-            {% for project in projects %}
+            {% if project_info %}
             {% include 'projects/includes/project_card.html' %}
-            {% endfor %}
             {% endif %}
 
             {% if tasks %}
