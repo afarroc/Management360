@@ -25,10 +25,7 @@
                         <th scope="col">Title</th>
                         <th scope="col">Event</th>
                         <th scope="col">Status</th>
-                        <th scope="col">Icon</th>
                         <th scope="col">Tasks</th>
-                        <th scope="col">Project Activate</th>
-
                     </tr>
                 </thead>
                 <tbody>
@@ -43,10 +40,10 @@
 
                         {% endif %}
 
-                        <td><span style="background-color: {{ project_info.project.project_status.color }}" class="badge">{{project_info.project.project_status.status_name}}</span></td>
-                        <td>{{project_info.project.project_status.icon}}</td>
+                        <td><span style="background-color: {{ project_info.project.project_status.color }}" class="badge">
+                            {{project_info.project.project_status.icon}} 
+                            {{project_info.project.project_status.status_name}}</span></td>
                         <td><a href="{% url 'task_panel'%}"  class="text-primary">{{project_info.count_tasks}}</a></td>
-                        <td><a href="{% url 'project_activate' project_info.project.id %}"  class="text-primary">Activate</a></td>
 
                     </tr>
                     {% endfor%}
