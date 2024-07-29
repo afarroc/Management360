@@ -527,7 +527,6 @@ def project_panel(request, project_id=None):
         messages.error(request, f'An error occurred: ({e})')
         return redirect('index')
 
-
 def project_panel_(request, project_id=None):
     # Título del Proyecto
     title = "Panel de Proyectos"
@@ -945,9 +944,13 @@ def change_task_status(request, task_id):
 def task_activate(request, task_id=None):
     switch ='En Curso'
     title='Task Activate'
+    
     if task_id:
         task = get_object_or_404(Task, pk=task_id)
         event = get_object_or_404(Event, pk=task.event.id)
+        project = get_object_or_404(Project, pk=task.project.id)
+        project_event = get_object_or_404(Event, pk=project.event.id)
+        
         if task.task_status.status_name == switch:
             switch ='Finalizado'
             
@@ -980,10 +983,45 @@ def task_activate(request, task_id=None):
                 )
             
             event.save()
-            messages.success(request, f'El evento ha sido cambiado a estado {switch} exitosamente.')
+            messages.success(request, f'El evento de la tarea ha sido cambiado a estado {switch} exitosamente.')
 
+            tasks = Task.objects.filter(project_id=project.id)
+            tasks_in_progress = [task for task in tasks if task.task_status.status_name == 'En Curso']
+
+            if switch=='Finalizado' and len(tasks_in_progress)>=1:
+                print(tasks_in_progress)
+                messages.success(request, f'tasks in progress: {switch}')
+
+            else:
+                new_project_status = ProjectStatus.objects.get(status_name=switch)
+                old_value = project.project_status.status_name
+                project.project_status = new_project_status
+                new_value = project.project_status.status_name
+
+                project.record_edit(
+                    editor=request.user,
+                    field_name='project_status',
+                    old_value=str(old_value),
+                    new_value=str(new_value),
+                    )
+                
+                project.save()
+                messages.success(request, f'El projecto ha sido cambiado a estado {switch} exitosamente.')            
             
-            
+                old_value = project_event.event_status.status_name
+                project_event.event_status = new_event_status
+                new_value = project_event.event_status.status_name
+
+                project_event.record_edit(
+                    editor=request.user,
+                    field_name='event_status',
+                    old_value=str(old_value),
+                    new_value=str(new_value),
+                    )
+                
+                project_event.save()
+                messages.success(request, f'El evento del proyecto ha sido cambiado a estado {switch} exitosamente.')
+
         except TaskStatus.DoesNotExist:
             messages.error(request, 'El estado "En Curso" no existe en la base de datos.')
         except Exception as e:
