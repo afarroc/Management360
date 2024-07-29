@@ -829,8 +829,8 @@ def task_edit(request, task_id=None):
                         )
                     form.save()
 
-                    messages.success(request, 'Tareato guardado con éxito.')
-                    return redirect('task_edit')  # Redirige a la página de lista de edición
+                    messages.success(request, 'Tarea guardada con éxito.')
+                    return redirect('task_panel')  # Redirige a la página de lista de edición
                 else:
                     messages.error(request, 'Hubo un error al guardar la tarea. Por favor, revisa el formulario.')
             else:
@@ -845,7 +845,7 @@ def task_edit(request, task_id=None):
             else:
                 # Si no, solo puede ver los tareas que le están asignados o a los que asiste
                 tasks = Task.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-created_at')
-            return render(request, 'tasks/task_list.html', {'tasks': tasks})
+            return render(request, 'tasks/task_panel.html', {'tasks': tasks})
     except Exception as e:
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
@@ -941,103 +941,122 @@ def change_task_status(request, task_id):
 
     return redirect('task_panel')
 
+
+
+
+# views.py
+
+from django.shortcuts import render, get_object_or_404, HttpResponseRedirect
+from django.utils import timezone
+from django.contrib import messages
+from decimal import Decimal
+from .models import Task, Event, Project, TaskStatus, Status, ProjectStatus, TaskState
+import math
+
+def update_status(obj, field_name, new_status, editor):
+    old_value = getattr(obj, field_name).status_name
+    setattr(obj, field_name, new_status)
+    new_value = getattr(obj, field_name).status_name
+
+    obj.record_edit(
+        editor=editor,
+        field_name=field_name,
+        old_value=str(old_value),
+        new_value=str(new_value),
+    )
+    obj.save()
+
 def task_activate(request, task_id=None):
-    switch ='En Curso'
-    title='Task Activate'
+    switch = 'En Curso'
+    title = 'Task Activate'
     
     if task_id:
         task = get_object_or_404(Task, pk=task_id)
-        event = get_object_or_404(Event, pk=task.event.id)
-        project = get_object_or_404(Project, pk=task.project.id)
-        project_event = get_object_or_404(Event, pk=project.event.id)
+        event = task.event
+        project = task.project
+        project_event = project.event
+        amount = 0
         
         if task.task_status.status_name == switch:
-            switch ='Finalizado'
-            
+            switch = 'Finalizado'
+            amount += 1           
+
         try:
             new_task_status = TaskStatus.objects.get(status_name=switch)
-            old_value = task.task_status.status_name
-            task.task_status = new_task_status            
-            new_value = task.task_status.status_name
-            
-            task.record_edit(
-                editor=request.user,
-                field_name='task_status',
-                old_value=str(old_value),
-                new_value=str(new_value),
-                )
-            task.save()
+            update_status(task, 'task_status', new_task_status, request.user)
             messages.success(request, f'La tarea ha sido cambiada a estado {switch} exitosamente.')
 
-
             new_event_status = Status.objects.get(status_name=switch)
-            old_value = event.event_status.status_name
-            event.event_status = new_event_status
-            new_value = event.event_status.status_name
-
-            event.record_edit(
-                editor=request.user,
-                field_name='event_status',
-                old_value=str(old_value),
-                new_value=str(new_value),
-                )
-            
-            event.save()
+            update_status(event, 'event_status', new_event_status, request.user)
             messages.success(request, f'El evento de la tarea ha sido cambiado a estado {switch} exitosamente.')
 
-            tasks = Task.objects.filter(project_id=project.id)
-            tasks_in_progress = [task for task in tasks if task.task_status.status_name == 'En Curso']
+            tasks_in_progress = Task.objects.filter(project_id=project.id, task_status__status_name='En Curso')
 
-            if switch=='Finalizado' and len(tasks_in_progress)>=1:
-                print(tasks_in_progress)
-                messages.success(request, f'tasks in progress: {switch}')
-
+            if switch == 'Finalizado' and tasks_in_progress.exists():
+                messages.success(request, f'There are tasks in progress: {tasks_in_progress}')
             else:
                 new_project_status = ProjectStatus.objects.get(status_name=switch)
-                old_value = project.project_status.status_name
-                project.project_status = new_project_status
-                new_value = project.project_status.status_name
-
-                project.record_edit(
-                    editor=request.user,
-                    field_name='project_status',
-                    old_value=str(old_value),
-                    new_value=str(new_value),
-                    )
+                update_status(project, 'project_status', new_project_status, request.user)
+                messages.success(request, f'El proyecto ha sido cambiado a estado {switch} exitosamente.')
                 
-                project.save()
-                messages.success(request, f'El projecto ha sido cambiado a estado {switch} exitosamente.')            
-            
-                old_value = project_event.event_status.status_name
-                project_event.event_status = new_event_status
-                new_value = project_event.event_status.status_name
-
-                project_event.record_edit(
-                    editor=request.user,
-                    field_name='event_status',
-                    old_value=str(old_value),
-                    new_value=str(new_value),
-                    )
-                
-                project_event.save()
+                update_status(project_event, 'event_status', new_event_status, request.user)
                 messages.success(request, f'El evento del proyecto ha sido cambiado a estado {switch} exitosamente.')
 
+            if task.task_status.status_name == "Finalizado":
+                task_state = TaskState.objects.filter(
+                    task=task,
+                    status__status_name='En Curso'
+                ).latest('start_time')
+                
+                if task_state.end_time:
+                    elapsed_time = (task_state.end_time - task_state.start_time).total_seconds()
+            else:
+                elapsed_time = 0
+
+            elapsed_minutes = Decimal(elapsed_time) / Decimal(60)
+            total_cost = elapsed_minutes * task.ticket_price
+            print(total_cost)
+            amount += total_cost
+            
+            if amount > 0:
+                success, message = add_credits_to_user(request.user, amount)
+                if success:
+                    messages.success(request, f"Commission:")
+                    messages.success(request, message)
+                    messages.success(request, f"Total Credits: {request.user.creditaccount.balance}")
+                else:
+                    return render(request, 'credits/add_credits.html', {'error': message})
+        
         except TaskStatus.DoesNotExist:
             messages.error(request, 'El estado "En Curso" no existe en la base de datos.')
+        except TaskState.DoesNotExist:
+            messages.error(request, 'No se encontró un estado "En Curso" para la tarea.')
         except Exception as e:
             messages.error(request, f'Ocurrió un error al intentar activar la tarea: {e}')
+        
         return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+    
     else:
         tasks = Task.objects.all().order_by('-updated_at')
-        # Crea una lista para almacenar los proyectos y sus recuentos de tareas
         try:
             return render(request, "tasks/task_activate.html",{
-                'title':f'{title} (No iD)',
-                'tasks':tasks,
+                'title': f'{title} (No ID)',
+                'tasks': tasks,
             })
         except Exception as e:
-            messages.error(request, 'Ha ocurrido un error: {}'.format(e))
+            messages.error(request, f'Ha ocurrido un error: {e}')
             return redirect('task_panel')
+
+
+
+
+
+
+
+
+
+
+
 
 # Events
 @login_required
@@ -2030,26 +2049,26 @@ from django.contrib.auth.decorators import login_required
 from .models import CreditAccount
 from decimal import Decimal
 
+
+# views.py
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from .utils import add_credits_to_user
+
 @login_required
 def add_credits(request):
-    user = request.user
-    if not hasattr(user, 'creditaccount'):
-        CreditAccount.objects.create(user=user)
-
     if request.method == 'POST':
         amount = request.POST['amount']
-        try:
-            amount = Decimal(amount)  # Convertir a Decimal
-            user.creditaccount.add_credits(amount)
-            messages.success(request,"Monto agregado")
-
-            return redirect('index')  # Redirige a alguna página de perfil u otra página adecuada
-            
-        except (ValueError, Decimal.InvalidOperation):
-            return render(request, 'credits/add_credits.html', {'error': 'Monto no válido'})
+        success, message = add_credits_to_user(request.user, amount)
+        
+        if success:
+            messages.success(request, message)
+            return redirect('index')
+        else:
+            return render(request, 'credits/add_credits.html', {'error': message})
 
     return render(request, 'credits/add_credits.html')
-
 
 
 from django.shortcuts import render, get_object_or_404

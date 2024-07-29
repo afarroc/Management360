@@ -21,7 +21,6 @@
             <table class="table datatable table-striped" style="width:100%">
                 <thead>
                     <tr>
-                        <th scope="col">Id</th>
                         <th scope="col">Title</th>
                         <th scope="col">Event</th>
                         <th scope="col">Status</th>
@@ -31,7 +30,6 @@
                 <tbody>
                     {% for project_info in projects %}
                     <tr>
-                        <td><a href="{% url 'project_panel' project_info.project.id %}" class="text-primary">{{project_info.project.id}}</a></td>
                         <td><a href="{% url 'project_panel' project_info.project.id %}" class="text-primary">{{project_info.project.title}}</a></td>
                         {% if project_info.project.event.id %}
                         <td><a href="{% url 'event_panel' project_info.project.event.id %}" class="text-primary">{{project_info.project.event.title}}</a></td>

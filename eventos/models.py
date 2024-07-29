@@ -215,10 +215,6 @@ class Task(models.Model):
     def __str__(self):
         return f"{self.title} - {self.event}"
 
-
-
-
-
 from django.core.exceptions import ValidationError
 
 class TaskProgram(models.Model):
@@ -240,10 +236,6 @@ class TaskProgram(models.Model):
     class Meta:
         verbose_name = "Task Program"
         verbose_name_plural = "Task Programs"
-
-
-
-
 
 # Modelo para registrar los estados por los que pasa cada evento
 class EventState(models.Model):
