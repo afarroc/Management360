@@ -1,5 +1,5 @@
 <!-- Sales Card -->
-<div class="col-xxl-4 col-md-6 " id="project-card-{{ project_info.project.id }}">
+<div class="col-xxl-6 col-md-6 " id="project-card-{{ project_info.project.id }}">
 	<div class="card info-card sales-card">
 		<div class="filter">
 			<a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
@@ -48,7 +48,7 @@
 					<i class="bi bi-calendar-range-fill"></i>
 				</div>
 				<div class="ps-3">
-					<h6></h6>
+					<h6><i class="bi bi-coin"></i>	{{project_info.project.ticket_price}}</h6>
 					<span class="text-muted small pt-2 ps-1">Created</span>
 					<span class="text-primary small pt-1 fw-bold">{{ project_info.project.created_at|date:"d-M H:i" }}</span> 
 					<br>
@@ -57,12 +57,13 @@
 				</div>
 			</div>
 			<p class="card-text mb-1">{{ project_info.project.description }}</p>
-			<p class="card-text mb-1"><strong>Asistentes:</strong>
+			{% if project_info.project.attendees %}
+			<p class="card-text mb-1"><strong>Asistssentes:</strong>
 				{% for attendee in project_info.project.attendees.all %}
 				{{ attendee.username|title }}{% if not forloop.last %},{% else %}.{% endif %}
 				{% endfor %}
 			</p>
-
+			{% endif %}
 
 			{% if project_info.project.event_id %}
 
