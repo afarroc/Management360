@@ -16,6 +16,10 @@ from django.views import View
 from django.views.generic import FormView
 from django.core.files.storage import FileSystemStorage
 from django.db.models.functions import TruncDate
+from .utils import add_credits_to_user
+from datetime import timedelta
+from decimal import Decimal
+
 
 # Local imports from .models
 from .models import Classification, Document, Image, Database, Event, EventAttendee, ProjectStatus, TaskStatus, Profile, Project, Status, Task, EventState, ProjectState, TaskState, TaskProgram
@@ -32,9 +36,6 @@ SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
 # Create your views here.
 
 # Principal
-
-from datetime import timedelta
-from django.utils import timezone
 
 def calculate_percentage_increase(queryset, days):
     # Filtra los objetos actualizados en los últimos 'days' días
@@ -56,7 +57,7 @@ def calculate_percentage_increase(queryset, days):
     return percentage_increase
 
 def index(request):
-    title = "Pagina Principal"
+    title = "Dashboard"
 
     projects = Project.objects.all()
     count_projects = projects.count()  # Recuento de objetos en la lista
@@ -72,9 +73,11 @@ def index(request):
     projects_increase = calculate_percentage_increase(projects, days_to_check)
     tasks_increase = calculate_percentage_increase(tasks, days_to_check)
     events_increase = calculate_percentage_increase(events, days_to_check)
+        
+    productive_status_name='En Curso'
+    productive_status=get_object_or_404(Status, status_name=productive_status_name)
     
-    events_states = EventState.objects.all().order_by('-start_time')[:10]
-    
+    events_states = EventState.objects.filter(Q(status=productive_status) & Q(end_time__isnull=False)).order_by('-start_time')[:10]
     
     return render(request, "index/index.html", {
         'projects': projects,
@@ -746,12 +749,28 @@ def task_create(request, project_id=None):
     title="Create New Task"
     
     if request.method == 'GET':
+        initial_status_name = 'Creado'
+        initial_task_status = get_object_or_404(TaskStatus, status_name=initial_status_name)
+        initial_ticket_price = 0.07
         if project_id:
             # Aquí debes asignar el formulario con el proyecto seleccionado
-            form = CreateNewTask(initial={'project': project_id})
+            form = CreateNewTask(initial={
+                'project': project_id,
+                'task_status': initial_task_status,
+                'assigned_to': request.user,
+                'ticket_price': initial_ticket_price,
+
+                })
         else:
             # Aquí puedes asignar el formulario sin ningún valor inicial
-            form = CreateNewTask()
+
+            form = CreateNewTask(initial={
+                'project': project_id,
+                'task_status':initial_task_status,
+                'assigned_to': request.user,
+                'ticket_price': initial_ticket_price,
+
+                })
 
     else:
         print('POST data:', request.POST)
@@ -941,17 +960,7 @@ def change_task_status(request, task_id):
 
     return redirect('task_panel')
 
-
-
-
 # views.py
-
-from django.shortcuts import render, get_object_or_404, HttpResponseRedirect
-from django.utils import timezone
-from django.contrib import messages
-from decimal import Decimal
-from .models import Task, Event, Project, TaskStatus, Status, ProjectStatus, TaskState
-import math
 
 def update_status(obj, field_name, new_status, editor):
     old_value = getattr(obj, field_name).status_name
@@ -1046,17 +1055,6 @@ def task_activate(request, task_id=None):
         except Exception as e:
             messages.error(request, f'Ha ocurrido un error: {e}')
             return redirect('task_panel')
-
-
-
-
-
-
-
-
-
-
-
 
 # Events
 @login_required
@@ -1464,15 +1462,15 @@ def event_history(request, event_id=None):
                 'events_history':events_history,
             })
     else:
-        
-        events_history = EventState.objects.filter(Q(event_id=event_id)).order_by('-start_time')
+        productive_status_name='En Curso'
+        productive_status=get_object_or_404(Status, status_name=productive_status_name)
+        events_history = EventState.objects.filter(Q(event_id=event_id, event_status=productive_status)).order_by('-start_time')
 
         return render(request, 'events/event_history.html', {
             'title':title,
             'events_history':events_history,
         })
-    
-        
+         
 # Panel
 
 def panel(request):
@@ -1902,7 +1900,6 @@ class UploadDatabase(FormView):
         db.save() # Guarda el archivo en la base de datos
         return super().form_valid(form) # Retorna la vista de éxito
 
-
 # Vista para subir bases de datos
 
 # views.py
@@ -1926,7 +1923,6 @@ def upload_xlsx(request):
     else:
         form = DatabaseForm()
     return render(request, 'documents/upload_xlsx.html', {'form': form})
-
 
 # about upload
 
@@ -2042,20 +2038,6 @@ def planning_task(request):
     
     return render(request, 'program/program.html', context)
 
-# views.py
-
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from .models import CreditAccount
-from decimal import Decimal
-
-
-# views.py
-
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from .utils import add_credits_to_user
-
 @login_required
 def add_credits(request):
     if request.method == 'POST':
@@ -2069,10 +2051,6 @@ def add_credits(request):
             return render(request, 'credits/add_credits.html', {'error': message})
 
     return render(request, 'credits/add_credits.html')
-
-
-from django.shortcuts import render, get_object_or_404
-from .models import Project, Task, TaskStatus, ProjectStatus, Event
 
 def project_tasks_status_check(request, project_id):
     task_active_status = TaskStatus.objects.filter(status_name='En curso').first()

@@ -1,22 +1,29 @@
-# templatetags/schedule_filters.py
-# my_tags.py
-
 from django import template
-from django.template.defaultfilters import stringfilter
+import re
 
 register = template.Library()
 
 @register.filter
-def dict_item(dictionary, key):
-    return dictionary.get(key)
-
-@register.filter
-@stringfilter
 def only_hours(value):
     """
-    Filtro: elimina los minutos, segundos y microsegundos de un objeto datetime.
-    Ejemplo de uso en la plantilla: {{ my_datetime|only_hours|timesince }}
-    Esto mostrará las horas en my_datetime sin mostrar los minutos ni los segundos.
+    Filtro: convierte una cadena de tiempo en formato 'X days X hours X minutes'
+    a un formato 'X hrs XX min'.
+    Ejemplo de uso en la plantilla: {{ my_datetime|timesince:item.end_time|only_hours }}
     """
-    # replace devuelve un nuevo objeto en lugar de modificarlo directamente
-    return value.replace(minute=0, second=0, microsecond=0)
+    if isinstance(value, str):
+        hours = 0
+        minutes = 0
+
+        # Buscar horas en la cadena
+        hour_match = re.search(r'(\d+)\s*hour', value)
+        if hour_match:
+            hours = int(hour_match.group(1))
+
+        # Buscar minutos en la cadena
+        minute_match = re.search(r'(\d+)\s*minute', value)
+        if minute_match:
+            minutes = int(minute_match.group(1))
+
+        # Formatear la cadena en 'X hrs XX min'
+        return f'{hours} hr{"s" if hours != 1 else ""} {minutes} min'
+    return value
