@@ -9,6 +9,8 @@ urlpatterns = [
     path('', views.index, name="index"),
     path('about/', views.about, name="about"),
     path('blank/', views.blank, name="blank"),
+    path('test/', views.test_board, name="test"),
+    path('test/<int:event_id>/', views.test_board, name="test"),
 
     path('credits/', views.add_credits, name='add_credits'),
     
@@ -16,15 +18,15 @@ urlpatterns = [
 
     path('planning/task/', views.planning_task, name="planning_task"),
       
-    path('projects/check/<int:project_id>', views.project_tasks_status_check, name="project_check"),
+    path('projects/check/<int:project_id>/', views.project_tasks_status_check, name="project_check"),
 
     # Eventos
     path('events/', views.events, name="events"),
-    path('events/detail/<int:event_id>', views.event_detail, name="event_detail"),
+    path('events/detail/<int:event_id>/', views.event_detail, name="event_detail"),
     path('events/create/', views.event_create, name="event_create"),
     path('events/delete/<int:event_id>/', views.event_delete, name='event_delete'),    
     path('events/edit/', views.event_edit, name="event_edit"),
-    path('events/edit/<int:event_id>', views.event_edit, name="event_edit"),
+    path('events/edit/<int:event_id>/', views.event_edit, name="event_edit"),
     path('events/panel/', views.event_panel, name="event_panel"),
     path('events/panel/<int:event_id>', views.event_panel, name="event_panel"),
     path('events/status_change/<int:event_id>/', views.event_status_change, name='event_status_change'),

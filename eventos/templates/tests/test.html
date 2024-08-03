@@ -1,0 +1,27 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<section class="section dashboard">
+    <div class="row">
+
+        <!-- Left side columns -->
+        <div class="col-lg-8">
+            <div class="row">
+            {% if event_info %}
+            {% include 'events/includes/event_card.html' %}
+            {% if event_info.tasks %}
+            {% for task in event_info.tasks %}
+            {% include 'tasks/includes/task_card.html' %}
+            {% endfor%}
+            {% endif %}
+            {% if event_info.projects %}
+            {% for project in event_info.projects %}
+            {% include 'projects/includes/project_card.html' %}
+            {% endfor %}
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
