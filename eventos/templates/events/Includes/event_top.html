@@ -1,23 +1,28 @@
 <!-- Recent Sales -->
 <div class="col-12">
     <div class="card recent-sales overflow-auto">
+
         <div class="filter">
             <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                 <li class="dropdown-header text-start">
-                    <h6>Options</h6>
+                    <h6>Filter</h6>
                 </li>
-                <li><a class="dropdown-item" href="#">Option1</a></li>
+
+                <li><a class="dropdown-item" href="#">Today</a></li>
+                <li><a class="dropdown-item" href="#">This Month</a></li>
+                <li><a class="dropdown-item" href="#">This Year</a></li>
             </ul>
         </div>
 
         <div class="card-body">
-            <h5 class="card-title">Recent Events <span>| by updated at</span></h5>
+            <h5 class="card-title">Recent Sales <span>| Today</span></h5>
 
             <table class="table table-borderless datatable">
                 <thead>
                     <tr>
-                        <th scope="col">Customer</th>
+                        <th scope="col">#</th>
+                        <th scope="col">Title</th>
                         <th scope="col">Product</th>
                         <th scope="col">Price</th>
                         <th scope="col">Status</th>
@@ -27,17 +32,13 @@
                     {% if events %}
                     {% for event in events %}
                     <tr>
-                        <td>{{event.host}}</td>
-                        <td><a href="{% url 'event_panel' event.id %}" class="text-primary">{{event.title}}</a></td>
-                        <td>${{event.ticket_price}}</td>
-                        <td>
-                            <span style="background-color: {{ event.event_status.color }};"
-                                class="badge ">{{event.event_status.icon}} {{event.event_status.status_name}}</span>
-                        </td>
-
+                        <th scope="row"><a href="#">{{event.id}}</a></th>
+                        <td>{{event.title}}</td>
+                        <td><a href="#" class="text-primary">At praesentium minu</a></td>
+                        <td>$64</td>
+                        <td><span class="badge bg-success">Approved</span></td>
                     </tr>
                     {% endfor %}
-                    {% else %}
                     {% endif %}
                 </tbody>
             </table>
@@ -46,3 +47,4 @@
 
     </div>
 </div><!-- End Recent Sales -->
+

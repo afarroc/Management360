@@ -1379,74 +1379,84 @@ def event_delete(request, event_id):
         messages.error(request, 'Método no permitido.')
     return redirect(reverse('event_panel'))
 
-def event_panel(request, event_id=None):
-    title="Event Panel"
-    event_statuses = Status.objects.all().order_by('status_name')
-    project_statuses = ProjectStatus.objects.all().order_by('status_name')
-    task_statuses = TaskStatus.objects.all().order_by('status_name')
-    events_states = EventState.objects.all().order_by('-start_time')[:10]
+
+def event_get(event_id, user):
+    user=get_object_or_404(User, id=user.id)
+    event = get_object_or_404(Event, id=event_id)
+    projects = Project.objects.filter(event=event)
+    tasks = Task.objects.filter(event=event)
+
+    event_info = {
+        'event':event,
+        'projects':projects,
+        'tasks':tasks,
+    }
     
+    return event_info
+
+def test_board(request, event_id):
+    event_statuses,_,task_statuses  = statuses_get()
+    user = get_object_or_404(User, pk=request.user.id)
+    event_info = event_get(event_id, user)
+    print(event_info['event'].id)
+    context={
+        'event_info' : event_info,
+        'event_statuses':event_statuses,
+        'task_statuses':task_statuses,
+        
+    }
+    return render(request, 'tests/test.html', context)
+
+def event_panel(request, event_id=None):
+    title = "Event Panel"
+    event_statuses, project_statuses, task_statuses = statuses_get()
+    events_states = EventState.objects.all().order_by('-start_time')[:10]
     status_var = 'En Curso'
     status = get_object_or_404(Status, status_name=status_var)
-    active_events=Event.objects.filter(Q(event_status=status)).distinct().order_by('-updated_at')
-
+    active_events = Event.objects.filter(Q(event_status=status)).distinct().order_by('-updated_at')
 
     if event_id:
-        try:
-            event = get_object_or_404(Event, id=event_id)
-            print(f"Events: {event}")
-            
-            try:
-                objects = projects_get(request.user)
-                project_info = next((proj for proj in objects[0] if proj['project'].event.id == event_id), None)
-                
-            except Project.DoesNotExist:
-                project_info= None
-                
-            if project_info:
-                print(f"project: {project_info}")
-            else:
-                print('No projects')
-                
-            try:
-                tasks = Task.objects.filter(event_id=event_id)
-            except Task.DoesNotExist:
-                tasks= None
-            if tasks:
-                print(f"Tasks: {tasks}")
-            else:
-                print('No tasks')
-                
-            return render(request, "events/event_panel.html",{
-                'title':title,
-                'event':event,
-                'tasks':tasks,
-                'project_info':project_info,
-                'event_statuses':event_statuses,
-                'project_statuses':project_statuses,
-                'task_statuses':task_statuses,                
-            })
+        event = get_object_or_404(Event, id=event_id)
+        
+        # Obtener proyectos y tareas asociadas de manera segura
+        projects = Project.objects.filter(event=event)
+        tasks = Task.objects.filter(event=event)
 
-        except Exception as e:
-            messages.error(request, 'Ha ocurrido un error!: {}'.format(e))
-            return redirect('event_panel')
+        print(projects, tasks)
+
+        return render(request, "events/event_panel.html", {
+            'title': title,
+            'event': event,
+            'tasks': tasks,
+            'projects': projects,
+            'event_statuses': event_statuses,
+            'project_statuses': project_statuses,
+            'task_statuses': task_statuses,
+        })
 
     else:
-        if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
-            # Si el usuario es un 'SU', puede ver todos los proyectos
+        if hasattr(request.user, 'profile') and request.user.profile.role == 'SU':
             events = Event.objects.all().order_by('-updated_at')
         else:
-            # Si no, solo puede ver los proyectos que le están asignados o a los que asiste
             events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-            
-        return render(request, 'events/event_panel.html', {
-            'title':title,
-            'events': events,
-            'event_statuses':event_statuses,
-            'events_states':events_states,
-            'active_events':active_events,
 
-            })
+        event_details = {}
+        for event in events:
+            # Usar filtros seguros para obtener proyectos y tareas
+            event_details[event.id] = {
+                'projects': Project.objects.filter(event=event),
+                'tasks': Task.objects.filter(event=event)
+            }
+
+        return render(request, 'events/event_panel.html', {
+            'title': title,
+            'events': events,
+            'event_details': event_details,
+            'event_statuses': event_statuses,
+            'events_states': events_states,
+            'active_events': active_events,
+        })
+
 
 def event_history(request, event_id=None):
     title = 'Event History'
