@@ -27,20 +27,21 @@
             <div class="row">
             
             {% if events %}
-            {% include 'events/control/control.html' %}
 
+            {% include 'events/control/control.html' %}
             {% include 'events/includes/event_top.html' %}
+
             {% else %}
+
             {% include 'events/includes/event_card.html' %}
+
             {% endif %}
 
             {% if project_info %}
-            {% include 'projects/includes/project_card.html' %}
             {% endif %}
 
             {% if tasks %}
             {% for task in tasks %}
-            {% include 'tasks/includes/task_card.html' %}
             {% endfor %}
             {% endif %}
 
