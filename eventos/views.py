@@ -422,8 +422,6 @@ def project_edit(request, project_id=None):
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
 
-### Panel de Proyectos ###
-### V2 ###
 
 from django.db.models import Q
 from .models import Project, Task, ProjectStatus
@@ -481,6 +479,9 @@ def projects_get(user, project_id=None):
     ]
     
     return projects, active_projects
+
+### Panel de Proyectos ###
+### V2 ###
 
 def project_panel(request, project_id=None):
     # Title of the page
@@ -1420,6 +1421,14 @@ def event_panel(request, event_id=None):
         
         # Obtener proyectos y tareas asociadas de manera segura
         projects = Project.objects.filter(event=event)
+        projects_info = []
+        if projects:
+            for project in  projects:
+                project_data = projects_get(request.user, project.id)
+                print(project) 
+                projects_info.append(project_data)
+
+        
         tasks = Task.objects.filter(event=event)
 
         print(projects, tasks)
@@ -1914,7 +1923,6 @@ class UploadDatabase(FormView):
 
 # views.py
 
-from django.shortcuts import render
 from openpyxl import load_workbook
 from io import BytesIO
 
