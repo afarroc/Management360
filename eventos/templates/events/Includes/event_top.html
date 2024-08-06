@@ -24,19 +24,19 @@
                         <th scope="col">#</th>
                         <th scope="col">Title</th>
                         <th scope="col">Product</th>
-                        <th scope="col">Price</th>
+                        <th scope="col">Ticket Price</th>
                         <th scope="col">Status</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% if events %}
-                    {% for event in events %}
+                    {% for event_data in events %}
                     <tr>
-                        <th scope="row"><a href="#">{{event.id}}</a></th>
-                        <td>{{event.title}}</td>
+                        <th scope="row"><a href="{% url 'event_panel' event_data.event.id %}">{{event_data.event.id}}</a></th>
+                        <td>{{event_data.event.title}}</td>
                         <td><a href="#" class="text-primary">At praesentium minu</a></td>
-                        <td>$64</td>
-                        <td><span class="badge bg-success">Approved</span></td>
+                        <td>${{event_data.event.ticket_price}}</td>
+                        <td><span class="badge bg-success">{{event_data.event.event_status}}</span></td>
                     </tr>
                     {% endfor %}
                     {% endif %}

@@ -34,9 +34,6 @@ ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
 SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
 
 # Create your views here.
-
-# Principal
-
 def calculate_percentage_increase(queryset, days):
     # Filtra los objetos actualizados en los últimos 'days' días
     end_date = timezone.now()
@@ -55,6 +52,8 @@ def calculate_percentage_increase(queryset, days):
         percentage_increase = 0
 
     return percentage_increase
+
+# Principal
 
 def index(request):
     title = "Dashboard"
@@ -422,63 +421,11 @@ def project_edit(request, project_id=None):
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
 
-
-from django.db.models import Q
-from .models import Project, Task, ProjectStatus
-
 def statuses_get():
     event_statuses = Status.objects.all().order_by('status_name')
     project_statuses = ProjectStatus.objects.all().order_by('status_name')
     task_statuses = TaskStatus.objects.all().order_by('status_name')
     return event_statuses, project_statuses, task_statuses
-
-def projects_get(user, project_id=None):
-    if hasattr(user, 'profile') and hasattr(user.profile, 'role') and user.profile.role == 'SU':
-        user_projects = Project.objects.all().order_by('-updated_at')
-    else:
-        user_projects = Project.objects.filter(
-            Q(assigned_to=user) | Q(attendees=user)
-        ).distinct().order_by('-updated_at')
-
-    tasks_by_project = {}
-    for project in user_projects:
-        tasks_by_project[project.id] = Task.objects.filter(project_id=project.id)
-    
-    active_status = ProjectStatus.objects.get(status_name='En Curso')
-
-    if project_id is not None:
-        try:
-            project = Project.objects.get(id=project_id)
-            tasks = tasks_by_project.get(project.id, [])
-            tasks_in_progress = [task for task in tasks if task.task_status == 'En Curso']
-            project_data = {
-                'project': project,
-                'count_tasks': len(tasks),
-                'count_tasks_in_progress': len(tasks_in_progress),
-                'tasks': tasks
-            }
-            return project_data, project_data if project.project_status_id == active_status.id else None
-        except Project.DoesNotExist:
-            return None, None
-
-    projects = []
-    for project in user_projects:
-        tasks = tasks_by_project.get(project.id, [])
-        tasks_in_progress = [task for task in tasks if task.task_status.status_name == 'En Curso']
-        project_data = {
-            'project': project,
-            'count_tasks': len(tasks),
-            'count_tasks_in_progress': len(tasks_in_progress),
-            'tasks': tasks
-        }
-        projects.append(project_data)
-    
-    active_projects = [
-        project_data for project_data in projects
-        if project_data['project'].project_status_id == active_status.id
-    ]
-    
-    return projects, active_projects
 
 ### Panel de Proyectos ###
 ### V2 ###
@@ -487,14 +434,16 @@ def project_panel(request, project_id=None):
     # Title of the page
 
     # Retrieve projects and statuses
-    objects = projects_get(request.user)
+    project_manager = ProjectManager(request.user)
     statuses = statuses_get()
+
 
     try:
 
         if project_id:
             # If a specific project_id is provided, handle it here
-            project_info = next((proj for proj in objects[0] if proj['project'].id == project_id), None)
+            project_info, active_project_data = project_manager.get_project_by_id(project_id)
+
             
             if project_info:
                 title = "Project detail"
@@ -510,6 +459,8 @@ def project_panel(request, project_id=None):
                 messages.error(request, f'Project with id {project_id} not found')
                 return redirect('index')
         else:
+            projects, active_projects = project_manager.get_all_projects()
+
             # If no specific project_id is provided
             if request.method == 'POST':
                 # Handle POST request logic here
@@ -522,14 +473,16 @@ def project_panel(request, project_id=None):
                     'event_statuses': statuses[0],
                     'project_statuses': statuses[1],
                     'task_statuses': statuses[2],
-                    'projects': objects[0],
-                    'active_projects': objects[1]
+                    'projects': projects,
+                    'active_projects': active_projects
                 }
                 return render(request, 'projects/project_panel.html', context)
 
     except Exception as e:
         messages.error(request, f'An error occurred: ({e})')
         return redirect('index')
+
+
 
 def project_panel_(request, project_id=None):
     # Título del Proyecto
@@ -1380,21 +1333,7 @@ def event_delete(request, event_id):
         messages.error(request, 'Método no permitido.')
     return redirect(reverse('event_panel'))
 
-
-def event_get(event_id, user):
-    user=get_object_or_404(User, id=user.id)
-    event = get_object_or_404(Event, id=event_id)
-    projects = Project.objects.filter(event=event)
-    tasks = Task.objects.filter(event=event)
-
-    event_info = {
-        'event':event,
-        'projects':projects,
-        'tasks':tasks,
-    }
     
-    return event_info
-
 def test_board(request, event_id):
     event_statuses,_,task_statuses  = statuses_get()
     user = get_object_or_404(User, pk=request.user.id)
@@ -1408,53 +1347,53 @@ def test_board(request, event_id):
     }
     return render(request, 'tests/test.html', context)
 
+
+
+from django.shortcuts import render, get_object_or_404
+from .event_manager import EventManager
+from .project_manager import ProjectManager
+from .task_manager import TaskManager
+from .models import EventState, Status
+
 def event_panel(request, event_id=None):
     title = "Event Panel"
     event_statuses, project_statuses, task_statuses = statuses_get()
     events_states = EventState.objects.all().order_by('-start_time')[:10]
     status_var = 'En Curso'
     status = get_object_or_404(Status, status_name=status_var)
-    active_events = Event.objects.filter(Q(event_status=status)).distinct().order_by('-updated_at')
+
+    event_manager = EventManager(request.user)
+    project_manager = ProjectManager(request.user)
+    task_manager = TaskManager(request.user)
 
     if event_id:
-        event = get_object_or_404(Event, id=event_id)
+        event_data, active_event_data = event_manager.get_event_by_id(event_id)
         
-        # Obtener proyectos y tareas asociadas de manera segura
-        projects = Project.objects.filter(event=event)
-        projects_info = []
-        if projects:
-            for project in  projects:
-                project_data = projects_get(request.user, project.id)
-                print(project) 
-                projects_info.append(project_data)
+        if event_data:
 
-        
-        tasks = Task.objects.filter(event=event)
-
-        print(projects, tasks)
-
-        return render(request, "events/event_panel.html", {
-            'title': title,
-            'event': event,
-            'tasks': tasks,
-            'projects': projects,
-            'event_statuses': event_statuses,
-            'project_statuses': project_statuses,
-            'task_statuses': task_statuses,
-        })
+            projects_info = [project_manager.get_project_data(project) for project in event_data['projects']]
+            tasks_info = [task_manager.get_task_data(task) for task in event_data['tasks']]
+            
+            return render(request, "events/event_panel.html", {
+                'title': title,
+                'event_data': event_data,
+                'projects_info': projects_info,
+                'tasks_info': tasks_info,
+                'event_statuses': event_statuses,
+                'project_statuses': project_statuses,
+                'task_statuses': task_statuses,
+            })
+        else:
+            return render(request, '404.html', status=404)
 
     else:
-        if hasattr(request.user, 'profile') and request.user.profile.role == 'SU':
-            events = Event.objects.all().order_by('-updated_at')
-        else:
-            events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-
+        events, active_events = event_manager.get_all_events()
+        
         event_details = {}
-        for event in events:
-            # Usar filtros seguros para obtener proyectos y tareas
-            event_details[event.id] = {
-                'projects': Project.objects.filter(event=event),
-                'tasks': Task.objects.filter(event=event)
+        for event_data in events:
+            event_details[event_data['event'].id] = {
+                'projects': event_data['projects'],
+                'tasks': event_data['tasks']
             }
 
         return render(request, 'events/event_panel.html', {
@@ -1465,6 +1404,8 @@ def event_panel(request, event_id=None):
             'events_states': events_states,
             'active_events': active_events,
         })
+
+
 
 
 def event_history(request, event_id=None):
