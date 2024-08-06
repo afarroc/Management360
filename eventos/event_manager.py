@@ -61,9 +61,9 @@ class EventManager:
         try:
             event = Event.objects.get(id=event_id)
             event_data = self.get_event_data(event)
-            return event_data if event.event_status_id == self.active_status.id else None
+            return event_data
         except Event.DoesNotExist:
-            return None, None
+            return None
 
     def get_all_events(self):
         events = []
