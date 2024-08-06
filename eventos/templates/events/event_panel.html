@@ -32,18 +32,13 @@
             {% include 'events/includes/event_top.html' %}
 
             {% else %}
-
+            
+            {% if event_data %}
             {% include 'events/includes/event_card.html' %}
+            {% endif%}
 
             {% endif %}
 
-            {% if project_info %}
-            {% endif %}
-
-            {% if tasks %}
-            {% for task in tasks %}
-            {% endfor %}
-            {% endif %}
 
         </div>
         </div><!-- End Left side columns -->
