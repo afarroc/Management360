@@ -45,3 +45,6 @@ class TaskManager:
                 active_tasks.append(task_data)
         
         return tasks, active_tasks
+
+    def get_active_tasks(self):
+        return [task for task in self.user_tasks if task.task_status_id == self.active_status.id]
