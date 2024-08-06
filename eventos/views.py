@@ -833,14 +833,6 @@ def task_delete(request, task_id):
         messages.error(request, 'Método no permitido.')
     return redirect(reverse('tasks'))
 
-
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib import messages
-from .project_manager import ProjectManager
-from .task_manager import TaskManager
-from .event_manager import EventManager
-from .models import Task, TaskState, TaskStatus
-
 def task_panel(request, task_id=None):
     title = "Task Panel"
     statuses = statuses_get()
@@ -866,7 +858,7 @@ def task_panel(request, task_id=None):
                 'project_statuses': statuses[1],
                 'task_statuses': statuses[2],
                 'title': title,
-                'task': task,
+                'task_data': task_data,
                 'project_info': project_info,
                 'event_info': event_info,
             })
@@ -886,9 +878,6 @@ def task_panel(request, task_id=None):
             'active_tasks': active_tasks,
             'tasks_states': tasks_states,
         })
-
-
-
 
 def change_task_status(request, task_id):
     try:
@@ -1370,8 +1359,8 @@ def event_panel(request, event_id=None):
     task_manager = TaskManager(request.user)
 
     if event_id:
-        event_data, active_event_data = event_manager.get_event_by_id(event_id)
-        
+        event_data = event_manager.get_event_by_id(event_id)
+        print(event_data)
         if event_data:
 
             projects_info = [project_manager.get_project_data(project) for project in event_data['projects']]
