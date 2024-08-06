@@ -482,8 +482,6 @@ def project_panel(request, project_id=None):
         messages.error(request, f'An error occurred: ({e})')
         return redirect('index')
 
-
-
 def project_panel_(request, project_id=None):
     # Título del Proyecto
     title = "Panel de Proyectos"
@@ -835,18 +833,33 @@ def task_delete(request, task_id):
         messages.error(request, 'Método no permitido.')
     return redirect(reverse('tasks'))
 
+
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
+from .project_manager import ProjectManager
+from .task_manager import TaskManager
+from .event_manager import EventManager
+from .models import Task, TaskState, TaskStatus
+
 def task_panel(request, task_id=None):
     title = "Task Panel"
     statuses = statuses_get()
     tasks_states = TaskState.objects.all().order_by('-start_time')[:10]
 
+    task_manager = TaskManager(request.user)
+    project_manager = ProjectManager(request.user)
+    event_manager = EventManager(request.user)
+
     if task_id:
         try:
-            task = get_object_or_404(Task, id=task_id)
-            project_info, _ = projects_get(request.user, task.project.id)
-            event = None
-            if task.event_id:
-                event = get_object_or_404(Event, pk=task.event_id)
+            task_data, active_task_data = task_manager.get_task_by_id(task_id)
+            if not task_data:
+                messages.error(request, 'La tarea no existe. Verifica el ID de la tarea.')
+                return redirect('task_panel')
+
+            task = task_data['task']
+            project_info = project_manager.get_project_data(task.project) if task.project else None
+            event_info = event_manager.get_event_data(task.event) if task.event else None
             
             return render(request, "tasks/task_panel.html", {
                 'event_statuses': statuses[0],
@@ -855,27 +868,14 @@ def task_panel(request, task_id=None):
                 'title': title,
                 'task': task,
                 'project_info': project_info,
-                'event': event,
+                'event_info': event_info,
             })
-        except Task.DoesNotExist:
-            messages.error(request, 'La tarea no existe. Verifica el ID de la tarea.')
-            return redirect('task_panel')
-        except Project.DoesNotExist:
-            messages.error(request, 'El proyecto no existe. Verifica el ID del proyecto.')
-            return redirect('task_panel')
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
             print(e)
             return redirect('task_panel')
     else:
-        if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
-            tasks = Task.objects.all().order_by('-updated_at')
-        else:
-            tasks = Task.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-
-        status_var = 'En Curso'
-        status = get_object_or_404(TaskStatus, status_name=status_var)
-        active_tasks = Task.objects.filter(Q(task_status=status)).distinct().order_by('-updated_at')
+        tasks, active_tasks = task_manager.get_all_tasks()
 
         return render(request, 'tasks/task_panel.html', {
             'title': title,
@@ -886,6 +886,9 @@ def task_panel(request, task_id=None):
             'active_tasks': active_tasks,
             'tasks_states': tasks_states,
         })
+
+
+
 
 def change_task_status(request, task_id):
     try:
@@ -1404,9 +1407,6 @@ def event_panel(request, event_id=None):
             'events_states': events_states,
             'active_events': active_events,
         })
-
-
-
 
 def event_history(request, event_id=None):
     title = 'Event History'
