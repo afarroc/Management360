@@ -1325,27 +1325,9 @@ def event_delete(request, event_id):
         messages.error(request, 'Método no permitido.')
     return redirect(reverse('event_panel'))
 
-    
-def test_board(request, event_id):
-    event_statuses,_,task_statuses  = statuses_get()
-    user = get_object_or_404(User, pk=request.user.id)
-    event_info = event_get(event_id, user)
-    print(event_info['event'].id)
-    context={
-        'event_info' : event_info,
-        'event_statuses':event_statuses,
-        'task_statuses':task_statuses,
-        
-    }
-    return render(request, 'tests/test.html', context)
-
-
-
-from django.shortcuts import render, get_object_or_404
 from .event_manager import EventManager
 from .project_manager import ProjectManager
 from .task_manager import TaskManager
-from .models import EventState, Status
 
 def event_panel(request, event_id=None):
     title = "Event Panel"
@@ -2059,3 +2041,49 @@ def project_tasks_status_check(request, project_id):
     return render(request, 'projects/projects_check.html', {
         'project_tasks': project_tasks
     })
+
+
+
+
+
+
+def test_board(request, id=None):
+    page_title = 'Test Board'
+    event_statuses, _, task_statuses = statuses_get()
+    user = get_object_or_404(User, pk=request.user.id)
+    messages.success(request, f'{page_title}: Este mensaje se cerrará en 60 segundos')
+    
+    state = get_object_or_404(TaskStatus, status_name='En Curso')
+    task_states = TaskState.objects.filter(status=state).order_by('-start_time')
+    
+    # Calculate the duration in seconds, minutes, and hours
+    task_states_with_duration = []
+    for task in task_states:
+        if task.end_time:
+            duration_seconds = round((task.end_time - task.start_time).total_seconds(), 2)
+            duration_minutes = round(duration_seconds / 60, 2)
+            duration_hours = round(duration_minutes / 60, 2)
+        else:
+            duration_seconds = None
+            duration_minutes = None
+            duration_hours = None  # Handle the case where end_time is not set
+        
+        task_states_with_duration.append({
+            'task': task,
+            'duration_seconds': duration_seconds,
+            'duration_minutes': duration_minutes,
+            'duration_hours': duration_hours,
+            'start_date': task.start_time.date(),
+            'start_time': task.start_time.strftime('%H:%M'),
+            'end_time': task.end_time.strftime('%H:%M') if task.end_time else None,
+        })
+
+    context = {
+        'page_title': page_title,
+        'event_statuses': event_statuses,
+        'task_statuses': task_statuses,
+        'task_states_with_duration': task_states_with_duration,
+    }
+    return render(request, 'tests/test.html', context)
+
+
