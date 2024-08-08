@@ -30,7 +30,7 @@
             <div class="row">
          
                 <!-- Customers Card -->
-                <div class="col-xxl-4 col-xl-12">
+                <div class="col-xxl-12 col-xl-12">
                     <div class="card info-card customers-card">
                         <div class="filter">
                             <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
@@ -46,14 +46,12 @@
                         </div>
                         <div class="card-body">
                             <h5 class="card-title">Form <span>| {{title}}</span></h5>
-                            <div class="d-flex align-items-center">
 
                                     <form method="POST">
                                         {% csrf_token %}
                                         {{ form.as_p }}
                                         <button type="submit">Save Changes</button>
                                     </form>
-                            </div>
 
                         </div>
                     </div>

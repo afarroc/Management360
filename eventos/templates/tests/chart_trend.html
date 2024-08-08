@@ -1,0 +1,38 @@
+<!-- -->
+<div class="col-lg-12">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Trend Chart</h5>
+
+            <!-- Bar Chart -->
+            <div id="lineChart"></div>
+
+            <!-- End Bar Chart -->
+
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        var options = {
+            series: [{
+                name: 'Tareas En Curso',
+                data: {{ line_chart_data.counts_over_time | safe }}
+    }],
+        chart: {
+        type: 'line',
+        height: 400
+    },
+        xaxis: {
+        categories: {{ line_chart_data.dates | safe }},
+        },
+        title: {
+        text: 'Tendencia de Tareas En Curso a lo largo del tiempo',
+        align: 'left'
+    }
+      };
+
+    var chart = new ApexCharts(document.querySelector("#lineChart"), options);
+    chart.render();
+    });
+</script>
