@@ -2042,9 +2042,7 @@ def project_tasks_status_check(request, project_id):
         'project_tasks': project_tasks
     })
 
-
-
-
+from django.db.models import Count, F, ExpressionWrapper, fields
 
 
 def test_board(request, id=None):
@@ -2053,21 +2051,29 @@ def test_board(request, id=None):
     user = get_object_or_404(User, pk=request.user.id)
     messages.success(request, f'{page_title}: Este mensaje se cerrará en 60 segundos')
     
-    state = get_object_or_404(TaskStatus, status_name='En Curso')
-    task_states = TaskState.objects.filter(status=state).order_by('-start_time')
+    # Obtener el estado 'En Curso'
+    in_progress_status = get_object_or_404(TaskStatus, status_name='En Curso')
     
-    # Calculate the duration in seconds, minutes, and hours
+    # Calcular la duración directamente en la consulta
+    task_states = TaskState.objects.filter(status=in_progress_status).annotate(
+        duration_seconds=ExpressionWrapper(
+            (F('end_time') - F('start_time')),
+            output_field=fields.DurationField()
+        )
+    ).order_by('-start_time')
+
+    # Preparar los datos con duraciones calculadas
     task_states_with_duration = []
     for task in task_states:
-        if task.end_time:
-            duration_seconds = round((task.end_time - task.start_time).total_seconds(), 2)
-            duration_minutes = round(duration_seconds / 60, 2)
-            duration_hours = round(duration_minutes / 60, 2)
+        if task.duration_seconds:
+            duration_seconds = round(task.duration_seconds.total_seconds())
+            duration_minutes = round(duration_seconds / 60, 1)
+            duration_hours = round(duration_minutes / 60, 4)
         else:
             duration_seconds = None
             duration_minutes = None
-            duration_hours = None  # Handle the case where end_time is not set
-        
+            duration_hours = None
+
         task_states_with_duration.append({
             'task': task,
             'duration_seconds': duration_seconds,
@@ -2078,12 +2084,26 @@ def test_board(request, id=None):
             'end_time': task.end_time.strftime('%H:%M') if task.end_time else None,
         })
 
+    # Datos para el gráfico de barras por tarea
+    task_counts = TaskState.objects.filter(status=in_progress_status).values('task__title').annotate(count=Count('id')).order_by('-count')[:15]
+    bar_chart_data = {
+        'categories': [item['task__title'] for item in task_counts],
+        'counts': [item['count'] for item in task_counts],
+    }
+    
+    # Datos para el gráfico de líneas a lo largo del tiempo
+    date_counts = TaskState.objects.filter(status=in_progress_status).values('start_time__date').annotate(count=Count('id')).order_by('start_time__date')
+    line_chart_data = {
+        'dates': [item['start_time__date'].strftime('%Y-%m-%d') for item in date_counts],
+        'counts_over_time': [item['count'] for item in date_counts],
+    }
+    
     context = {
         'page_title': page_title,
         'event_statuses': event_statuses,
         'task_statuses': task_statuses,
         'task_states_with_duration': task_states_with_duration,
+        'bar_chart_data': bar_chart_data,
+        'line_chart_data': line_chart_data,
     }
     return render(request, 'tests/test.html', context)
-
-

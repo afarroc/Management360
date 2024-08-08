@@ -1,0 +1,73 @@
+
+            <!-- Top Selling -->
+            <div class="col-12">
+                <div class="card top-selling overflow-auto">
+
+                    <div class="filter">
+                        <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            <li class="dropdown-header text-start">
+                                <h6>Filter</h6>
+                            </li>
+
+                            <li><a class="dropdown-item" href="#">--</a></li>
+                            <li><a class="dropdown-item" href="#">-</a></li>
+                            <li><a class="dropdown-item" href="#">--</a></li>
+                        </ul>
+                    </div>
+
+                    <div class="card-body pb-4">
+                        <h5 class="card-title">Tasks <span>| Today</span></h5>
+
+
+                        <table class="table table-hover table-borderless datatable"> 
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Start Date</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Duration (seconds)</th>
+                                    <th>Duration (minutes)</th>
+                                    <th>Duration (hours)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in task_states_with_duration %}
+                                    <tr>
+                                        <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{item.task.task.id}}" href="{% url 'task_panel' item.task.task.id %}">{{ item.task.task.title }}</a></td>
+
+                                        <td>{{ item.start_date|date:"d-m"}}</td>
+                                        <td>{{ item.start_time }}</td>
+                                        <td>{{ item.end_time }}</td>
+                                        {% if item.duration_seconds %}
+                                        <td>{{ item.duration_seconds }}</td>
+                                            {% else %}
+                                        <td style="color: green;">In progress</td>
+                                        {% endif %}
+                                        <td>
+                                            {% if item.duration_minutes %}
+                                                {{ item.duration_minutes }}
+                                            {% else %}
+                                                In progress
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if item.duration_hours %}
+                                                {{ item.duration_hours }}
+                                            {% else %}
+                                                In progress
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <td colspan="9">No hay tareas disponibles.</td>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+
+                    </div>
+
+                </div>
+            </div><!-- End Top Selling -->
+
