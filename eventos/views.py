@@ -2042,62 +2042,122 @@ def project_tasks_status_check(request, project_id):
         'project_tasks': project_tasks
     })
 
-from django.db.models import Count, F, ExpressionWrapper, fields
 
+
+
+
+from django.shortcuts import render, get_object_or_404
+from django.contrib import messages
+from django.db.models import Count, F, ExpressionWrapper, DurationField
+from .models import User, TaskState, TaskStatus
+from collections import defaultdict
+import datetime
 
 def test_board(request, id=None):
     page_title = 'Test Board'
-    event_statuses, _, task_statuses = statuses_get()
+    event_statuses, project_statuses, task_statuses = statuses_get()
     user = get_object_or_404(User, pk=request.user.id)
     messages.success(request, f'{page_title}: Este mensaje se cerrará en 60 segundos')
     
     # Obtener el estado 'En Curso'
     in_progress_status = get_object_or_404(TaskStatus, status_name='En Curso')
     
-    # Calcular la duración directamente en la consulta
+    # Obtener las tareas en curso y calcular duraciones
     task_states = TaskState.objects.filter(status=in_progress_status).annotate(
         duration_seconds=ExpressionWrapper(
-            (F('end_time') - F('start_time')),
-            output_field=fields.DurationField()
+            F('end_time') - F('start_time'),
+            output_field=DurationField()
         )
     ).order_by('-start_time')
 
-    # Preparar los datos con duraciones calculadas
-    task_states_with_duration = []
-    for task in task_states:
-        if task.duration_seconds:
-            duration_seconds = round(task.duration_seconds.total_seconds())
-            duration_minutes = round(duration_seconds / 60, 1)
-            duration_hours = round(duration_minutes / 60, 4)
-        else:
-            duration_seconds = None
-            duration_minutes = None
-            duration_hours = None
+    task_states_with_duration = [
+        {
+            'task_state': task_state,
+            'duration_seconds': (duration_seconds := round(task_state.duration_seconds.total_seconds())) if task_state.duration_seconds else None,
+            'duration_minutes': round(duration_seconds / 60, 1) if task_state.duration_seconds else None,
+            'duration_hours': round(duration_seconds / 3600, 4) if task_state.duration_seconds else None,
+            'start_date': task_state.start_time.date(),
+            'start_time': task_state.start_time.strftime('%H:%M'),
+            'end_time': task_state.end_time.strftime('%H:%M') if task_state.end_time else None,
+        }
+        for task_state in task_states
+    ]
 
-        task_states_with_duration.append({
-            'task': task,
-            'duration_seconds': duration_seconds,
-            'duration_minutes': duration_minutes,
-            'duration_hours': duration_hours,
-            'start_date': task.start_time.date(),
-            'start_time': task.start_time.strftime('%H:%M'),
-            'end_time': task.end_time.strftime('%H:%M') if task.end_time else None,
-        })
-
-    # Datos para el gráfico de barras por tarea
-    task_counts = TaskState.objects.filter(status=in_progress_status).values('task__title').annotate(count=Count('id')).order_by('-count')[:15]
+    # Datos para el gráfico de barras por tarea (sin cambios)
+    task_counts = task_states.values('task__title').annotate(count=Count('id')).order_by('-count')[:15]
     bar_chart_data = {
         'categories': [item['task__title'] for item in task_counts],
         'counts': [item['count'] for item in task_counts],
     }
     
+    # Calcular el rango de fechas del último mes
+    today = datetime.date.today()
+    start_date = today - datetime.timedelta(days=30)
+    
+    # Filtrar tareas en curso por el último mes
+    task_states_last_month = task_states.filter(start_time__date__gte=start_date)
+    
     # Datos para el gráfico de líneas a lo largo del tiempo
-    date_counts = TaskState.objects.filter(status=in_progress_status).values('start_time__date').annotate(count=Count('id')).order_by('start_time__date')
+    date_counts = task_states_last_month.values('start_time__date').annotate(count=Count('id')).order_by('start_time__date')
     line_chart_data = {
         'dates': [item['start_time__date'].strftime('%Y-%m-%d') for item in date_counts],
         'counts_over_time': [item['count'] for item in date_counts],
     }
     
+    # Crear instancias de los managers 
+    project_manager = ProjectManager(user)
+    task_manager = TaskManager(user)
+    event_manager = EventManager(user)
+    
+    # Obtener proyectos, tareas y eventos
+    projects, _ = project_manager.get_all_projects()
+    tasks, _ = task_manager.get_all_tasks()
+    events, _ = event_manager.get_all_events()
+
+    # Recuento de proyectos, tareas y eventos creados por día
+    def count_created_per_day(data, key_name):
+        counts = defaultdict(int)
+        for item in data:
+            created_date = getattr(item[key_name], 'created_at', None).date()
+            if created_date:
+                counts[created_date] += 1
+        return counts
+
+    # Filtrar proyectos, tareas y eventos por el último mes
+    def filter_data_last_month(data, key_name):
+        filtered_data = [item for item in data if getattr(item[key_name], 'created_at', None).date() >= start_date]
+        return count_created_per_day(filtered_data, key_name)
+    
+    projects_created_per_day = filter_data_last_month(projects, 'project')
+    tasks_created_per_day = filter_data_last_month(tasks, 'task')
+    events_created_per_day = filter_data_last_month(events, 'event')
+
+    # Encontrar el rango de fechas dentro del último mes
+    all_dates = set(projects_created_per_day.keys()) | set(tasks_created_per_day.keys()) | set(events_created_per_day.keys())
+    date_range = [start_date + datetime.timedelta(days=x) for x in range((today - start_date).days + 1)]
+
+    def fill_data_for_dates(date_range, counts):
+        return [counts.get(date, 0) for date in date_range]
+
+    combined_chart_data = {
+        'dates': [date.strftime('%Y-%m-%d') for date in date_range],
+        'projects': fill_data_for_dates(date_range, projects_created_per_day),
+        'tasks': fill_data_for_dates(date_range, tasks_created_per_day),
+        'events': fill_data_for_dates(date_range, events_created_per_day),
+    }
+
+    # Calcular la duración total en horas por tarea
+    task_durations = defaultdict(float)
+    for task_state in task_states:
+        task_name = task_state.task.title
+        if task_state.duration_seconds:
+            task_durations[task_name] += round(task_state.duration_seconds.total_seconds() / 3600, 4)  # Convertir a horas
+    
+    duration_chart_data = {
+        'task_names': list(task_durations.keys()),
+        'durations': list(task_durations.values()),
+    }
+
     context = {
         'page_title': page_title,
         'event_statuses': event_statuses,
@@ -2105,5 +2165,7 @@ def test_board(request, id=None):
         'task_states_with_duration': task_states_with_duration,
         'bar_chart_data': bar_chart_data,
         'line_chart_data': line_chart_data,
+        'combined_chart_data': combined_chart_data,
+        'duration_chart_data': duration_chart_data,  # Añadir los datos del gráfico de duración
     }
     return render(request, 'tests/test.html', context)
