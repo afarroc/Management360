@@ -30,9 +30,10 @@ class ProjectManager:
     def get_active_status(self):
         return ProjectStatus.objects.get(status_name='En Curso')
 
-    def get_project_data(self, project):
-        tasks = self.tasks_by_project.get(project.id, [])
+    def get_project_data(self, project_id):
+        tasks = self.tasks_by_project.get(project_id, [])
         tasks_in_progress = [task for task in tasks if task.task_status.status_name == 'En Curso']
+        project = self.user_projects.filter(id=project_id).first()
         return {
             'project': project,
             'count_tasks': len(tasks),
@@ -40,20 +41,11 @@ class ProjectManager:
             'tasks': tasks
         }
 
-    def get_project_by_id(self, project_id):
-        try:
-            project = Project.objects.get(id=project_id)
-            project_data = self.get_project_data(project)
-            active_project_data = project_data if project.project_status_id == self.active_status.id else None
-            return project_data, active_project_data
-        except Project.DoesNotExist:
-            return None, None
-
     def get_all_projects(self):
         projects = []
         active_projects = []
         for project in self.user_projects:
-            project_data = self.get_project_data(project)
+            project_data = self.get_project_data(project.id)
             projects.append(project_data)
             if project.project_status_id == self.active_status.id:
                 active_projects.append(project_data)
