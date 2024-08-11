@@ -1,0 +1,111 @@
+<!-- Projects Card -->
+<div class="col-xxl-4 col-md-6">
+    <div class="card info-card sales-card">
+        <div class="filter">
+            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                <li class="dropdown-header text-start">
+                    <h6>Options</h6>
+                </li>
+                <li><a class="dropdown-item" href="#">Today</a></li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title"><a class="dropdown-item" href="{% url 'project_panel' %}">Projects<span> | Today</span></a></h5>
+            <div class="d-flex align-items-center">
+                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                    <i class="bi bi-calendar-range"></i>
+                </div>
+                <div class="ps-3">
+                    <h6>{{ projects.count }}</h6>
+                    <span class="{% if projects.increase > 0 %}text-success{% else %}text-danger{% endif %} small pt-1 fw-bold">
+                        {{ projects.increase }}%
+                    </span>
+                    <span class="text-muted small pt-2 ps-1">
+                        {% if projects.increase > 0 %}increase{% else %}decrease{% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="small text-muted pt-2">
+                <p><span class="text-info">Dates: </span>{{ projects.start_date|date:"d-M" }} | {{ projects.end_date|date:"d-M" }}</p>
+                <p><span class="text-info">Recent: </span>{{ projects.recent_count }} | <span class="text-muted">Previous: {{ projects.previous_count }}</span></p>
+            </div>
+        </div>
+    </div>
+</div><!-- End Projects Card -->
+
+<!-- Tasks Card -->
+<div class="col-xxl-4 col-md-6">
+    <div class="card info-card sales-card">
+        <div class="filter">
+            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                <li class="dropdown-header text-start">
+                    <h6>Filter</h6>
+                </li>
+                <li><a class="dropdown-item" href="#">Today</a></li>
+                <li><a class="dropdown-item" href="#">This Month</a></li>
+                <li><a class="dropdown-item" href="#">This Year</a></li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title"><a class="dropdown-item" href="{% url 'task_panel' %}">Tasks<span> | Today</span></a></h5>
+            <div class="d-flex align-items-center">
+                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                    <i class="bi bi-calendar"></i>
+                </div>
+                <div class="ps-3">
+                    <h6>{{ tasks.count }}</h6>
+                    <span class="{% if tasks.increase > 0 %}text-success{% else %}text-danger{% endif %} small pt-1 fw-bold">
+                        {{ tasks.increase }}%
+                    </span>
+                    <span class="text-muted small pt-2 ps-1">
+                        {% if tasks.increase > 0 %}increase{% else %}decrease{% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="small text-muted pt-2">
+                <p><span class="text-info">Dates: </span>{{ tasks.start_date|date:"d-M" }} | {{ tasks.end_date|date:"d-M" }}</p>
+                <p><span class="text-info">Recent: </span>{{ tasks.recent_count }} | <span class="text-muted">Previous: {{ tasks.previous_count }}</span></p>
+            </div>
+        </div>
+    </div>
+</div><!-- End Tasks Card -->
+
+<!-- Events Card -->
+<div class="col-xxl-4 col-md-6">
+    <div class="card info-card sales-card">
+        <div class="filter">
+            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                <li class="dropdown-header text-start">
+                    <h6>Filter</h6>
+                </li>
+                <li><a class="dropdown-item" href="#">Today</a></li>
+                <li><a class="dropdown-item" href="#">This Month</a></li>
+                <li><a class="dropdown-item" href="#">This Year</a></li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title"><a class="dropdown-item" href="{% url 'event_panel' %}">Events<span> | Today</span></a></h5>
+            <div class="d-flex align-items-center">
+                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                    <i class="bi bi-calendar-event"></i>
+                </div>
+                <div class="ps-3">
+                    <h6>{{ events.count }}</h6>
+                    <span class="{% if events.increase > 0 %}text-success{% else %}text-danger{% endif %} small pt-1 fw-bold">
+                        {{ events.increase }}%
+                    </span>
+                    <span class="text-muted small pt-2 ps-1">
+                        {% if events.increase > 0 %}increase{% else %}decrease{% endif %}
+                    </span>
+                </div>
+            </div>
+            <div class="small text-muted pt-2">
+                <p><span class="text-info">Dates: </span>{{ events.start_date|date:"d-M" }} | {{ events.end_date|date:"d-M" }}</p>
+                <p><span class="text-info">Recent: </span>{{ events.recent_count }} | <span class="text-muted">Previous: {{ events.previous_count }}</span></p>
+            </div>
+        </div>
+    </div>
+</div><!-- End Events Card -->

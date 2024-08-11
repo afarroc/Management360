@@ -19,7 +19,9 @@ from django.db.models.functions import TruncDate
 from .utils import add_credits_to_user
 from datetime import timedelta
 from decimal import Decimal
-
+from .event_manager import EventManager
+from .project_manager import ProjectManager
+from .task_manager import TaskManager
 
 # Local imports from .models
 from .models import Classification, Document, Image, Database, Event, EventAttendee, ProjectStatus, TaskStatus, Profile, Project, Status, Task, EventState, ProjectState, TaskState, TaskProgram
@@ -34,64 +36,121 @@ ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
 SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
 
 # Create your views here.
+from django.utils import timezone
+from datetime import timedelta
+
 def calculate_percentage_increase(queryset, days):
-    # Filtra los objetos actualizados en los últimos 'days' días
+    # Obtiene la fecha y hora actuales
     end_date = timezone.now()
+    # Calcula la fecha de inicio del período reciente
     start_date = end_date - timedelta(days=days)
+    
+    # Define el período anterior, equivalente en duración
+    previous_end_date = start_date
+    previous_start_date = previous_end_date - timedelta(days=days)
+    
+    # Filtra los objetos creados en los últimos 'days' días
     recent_objects = queryset.filter(created_at__range=(start_date, end_date))
-    # Filtra los objetos actualizados antes de ese período
-    previous_objects = queryset.filter(created_at__lt=start_date)
+    # Filtra los objetos creados en el mismo rango de días anterior
+    previous_objects = queryset.filter(created_at__range=(previous_start_date, previous_end_date))
+    
     # Calcula el número total de objetos en cada período
     count_recent_objects = recent_objects.count()
     count_previous_objects = previous_objects.count()
-    print(count_recent_objects,count_previous_objects)
+    
     # Calcula el porcentaje de incremento
     if count_previous_objects > 0:
         percentage_increase = ((count_recent_objects - count_previous_objects) / count_previous_objects) * 100
     else:
-        percentage_increase = 0
+        # Si no hay objetos en el período anterior, se asume un incremento del 100%
+        percentage_increase = 100 if count_recent_objects > 0 else 0
 
-    return percentage_increase
+    return {
+        'percentage_increase': percentage_increase,
+        'count_recent_objects': count_recent_objects,
+        'count_previous_objects': count_previous_objects,
+        'start_date': start_date,
+        'end_date': end_date,
+        'previous_start_date': previous_start_date,
+        'previous_end_date': previous_end_date,
+    }
+
+
 
 # Principal
 
-def index(request):
-    title = "Dashboard"
 
-    projects = Project.objects.all()
-    count_projects = projects.count()  # Recuento de objetos en la lista
+def index(request, days=None):
+    title = "Dashboard"
     
-    tasks = Task.objects.all()
-    count_tasks = tasks.count()  # Recuento de objetos en la lista
+    # Establecer el número de días a analizar; si no se proporciona, usar 7 días por defecto
+    try:
+        days_to_check = int(days) if days is not None else 7
+    except ValueError:
+        days_to_check = 7
     
-    events = Event.objects.all()
-    count_events = events.count()  # Recuento de objetos en la lista
+    # Crear instancias de los managers
+    project_manager = ProjectManager(request.user)
+    task_manager = TaskManager(request.user)
+    event_manager = EventManager(request.user)
     
-    # Ejemplo de uso:
-    days_to_check = 7  # Cambia esto al número de días que desees analizar
-    projects_increase = calculate_percentage_increase(projects, days_to_check)
-    tasks_increase = calculate_percentage_increase(tasks, days_to_check)
-    events_increase = calculate_percentage_increase(events, days_to_check)
-        
-    productive_status_name='En Curso'
-    productive_status=get_object_or_404(Status, status_name=productive_status_name)
+    # Obtener proyectos, tareas y eventos procesados
+    projects, active_projects = project_manager.get_all_projects()
+    tasks, active_tasks = task_manager.get_all_tasks()
+    events, active_events = event_manager.get_all_events()
     
-    events_states = EventState.objects.filter(Q(status=productive_status) & Q(end_time__isnull=False)).order_by('-start_time')[:10]
+    # Contar los objetos en la lista
+    count_projects = len(projects)
+    count_tasks = len(tasks)
+    count_events = len(events)
     
-    return render(request, "index/index.html", {
-        'projects': projects,
-        'tasks': tasks,
-        'days_to_check': days_to_check,
-        'events': events,
-        'projects_increase': f"{projects_increase:.2f}%",
-        'tasks_increase': f"{tasks_increase:.2f}%",
-        'events_increase': f"{events_increase:.2f}%",
+    # Calcular el incremento porcentual usando la función existente
+    project_stats = calculate_percentage_increase(Project.objects.all(), days_to_check)
+    task_stats = calculate_percentage_increase(Task.objects.all(), days_to_check)
+    event_stats = calculate_percentage_increase(Event.objects.all(), days_to_check)
+    
+    # Obtener eventos con estado productivo
+    productive_status_name = 'En Curso'
+    productive_status = get_object_or_404(Status, status_name=productive_status_name)
+    events_states = EventState.objects.filter(
+        Q(status=productive_status) & Q(end_time__isnull=False)
+    ).order_by('-start_time')[:10]
+    
+    # Crear diccionarios para agrupar los datos
+    context = {
         'title': title,
-        'count_projects': count_projects,
-        'count_tasks': count_tasks,
-        'count_events': count_events,
+        'days_to_check': days_to_check,
+        'projects': {
+            'count': count_projects,
+            'increase': round(project_stats['percentage_increase'],2),
+            'recent_count': project_stats['count_recent_objects'],
+            'previous_count': project_stats['count_previous_objects'],
+            'start_date': project_stats['start_date'],
+            'end_date': project_stats['end_date'],
+        },
+        'tasks': {
+            'count': count_tasks,
+            'increase': round(task_stats['percentage_increase'],2),
+            'recent_count': task_stats['count_recent_objects'],
+            'previous_count': task_stats['count_previous_objects'],
+            'start_date': task_stats['start_date'],
+            'end_date': task_stats['end_date'],
+        },
+        'events': {
+            'count': count_events,
+            'increase': round(event_stats['percentage_increase'],2),
+            'recent_count': event_stats['count_recent_objects'],
+            'previous_count': event_stats['count_previous_objects'],
+            'start_date': event_stats['start_date'],
+            'end_date': event_stats['end_date'],
+        },
         'events_states': events_states,
-    })
+    }
+    
+    # Renderizar la plantilla con el contexto
+    return render(request, "index/index.html", context)
+
+
 
 def home(request):
     return render(request, 'layouts/main.html')
@@ -432,24 +491,22 @@ def statuses_get():
 
 def project_panel(request, project_id=None):
     # Title of the page
+    title = "Project detail"
 
     # Retrieve projects and statuses
     project_manager = ProjectManager(request.user)
     statuses = statuses_get()
 
-
     try:
 
         if project_id:
             # If a specific project_id is provided, handle it here
-            project_info, active_project_data = project_manager.get_project_by_id(project_id)
-
+            project_data = project_manager.get_project_data(project_id)
             
-            if project_info:
-                title = "Project detail"
+            if project_data:
                 context = {
                     'title': title,
-                    'project_info': project_info,
+                    'project_data': project_data,
                     'event_statuses': statuses[0],
                     'project_statuses': statuses[1],
                     'task_statuses': statuses[2],
@@ -482,7 +539,7 @@ def project_panel(request, project_id=None):
         messages.error(request, f'An error occurred: ({e})')
         return redirect('index')
 
-def project_panel_(request, project_id=None):
+def project_panel____(request, project_id=None):
     # Título del Proyecto
     title = "Panel de Proyectos"
     # Diccionarios de URLs e instrucciones
@@ -841,16 +898,20 @@ def task_panel(request, task_id=None):
     task_manager = TaskManager(request.user)
     project_manager = ProjectManager(request.user)
     event_manager = EventManager(request.user)
-
+    print(f"Contexto cargado: {request.user}")
     if task_id:
+
+        print(f"Task Id: {task_id}")
+        task_data = task_manager.get_task_data(task_id)
+
         try:
-            task_data, active_task_data = task_manager.get_task_by_id(task_id)
+            print(f"Trying: {type(task_data)}")
             if not task_data:
                 messages.error(request, 'La tarea no existe. Verifica el ID de la tarea.')
                 return redirect('task_panel')
 
             task = task_data['task']
-            project_info = project_manager.get_project_data(task.project) if task.project else None
+            project_info = project_manager.get_project_data(task.project.id) if task.project else None
             event_info = event_manager.get_event_data(task.event) if task.event else None
             
             return render(request, "tasks/task_panel.html", {
@@ -1325,10 +1386,6 @@ def event_delete(request, event_id):
         messages.error(request, 'Método no permitido.')
     return redirect(reverse('event_panel'))
 
-from .event_manager import EventManager
-from .project_manager import ProjectManager
-from .task_manager import TaskManager
-
 def event_panel(request, event_id=None):
     title = "Event Panel"
     event_statuses, project_statuses, task_statuses = statuses_get()
@@ -1345,7 +1402,7 @@ def event_panel(request, event_id=None):
         print(event_data)
         if event_data:
 
-            projects_info = [project_manager.get_project_data(project) for project in event_data['projects']]
+            projects_info = [project_manager.get_project_data(project.id) for project in event_data['projects']]
             tasks_info = [task_manager.get_task_data(task) for task in event_data['tasks']]
             
             return render(request, "events/event_panel.html", {
@@ -2090,9 +2147,9 @@ def test_board(request, id=None):
         'counts': [item['count'] for item in task_counts],
     }
     
-    # Calcular el rango de fechas del último mes
+    # Calcular el rango de fechas de los ultimos dias
     today = datetime.date.today()
-    start_date = today - datetime.timedelta(days=30)
+    start_date = today - datetime.timedelta(days=7)
     
     # Filtrar tareas en curso por el último mes
     task_states_last_month = task_states.filter(start_time__date__gte=start_date)
@@ -2151,11 +2208,14 @@ def test_board(request, id=None):
     for task_state in task_states:
         task_name = task_state.task.title
         if task_state.duration_seconds:
-            task_durations[task_name] += round(task_state.duration_seconds.total_seconds() / 3600, 4)  # Convertir a horas
+            task_durations[task_name] += (task_state.duration_seconds.total_seconds() / 3600)
     
+    for x in task_durations:
+        print(task_durations[x])
+        
     duration_chart_data = {
         'task_names': list(task_durations.keys()),
-        'durations': list(task_durations.values()),
+        'durations': [round(duration, 2) for duration in task_durations.values()],
     }
 
     context = {
