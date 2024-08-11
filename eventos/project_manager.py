@@ -31,9 +31,9 @@ class ProjectManager:
         return ProjectStatus.objects.get(status_name='En Curso')
 
     def get_project_data(self, project_id):
+        project = self.user_projects.filter(id=project_id).first()
         tasks = self.tasks_by_project.get(project_id, [])
         tasks_in_progress = [task for task in tasks if task.task_status.status_name == 'En Curso']
-        project = self.user_projects.filter(id=project_id).first()
         return {
             'project': project,
             'count_tasks': len(tasks),

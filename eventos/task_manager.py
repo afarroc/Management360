@@ -18,7 +18,9 @@ class TaskManager:
     def get_active_status(self):
         return TaskStatus.objects.get(status_name='En Curso')
 
-    def get_task_data(self, task):
+    def get_task_data(self, task_id):
+        task = self.user_tasks.filter(id=task_id).first()
+
         return {
             'task': task,
             'project': task.project,
@@ -26,20 +28,11 @@ class TaskManager:
             'status': task.task_status
         }
 
-    def get_task_by_id(self, task_id):
-        try:
-            task = Task.objects.get(id=task_id)
-            task_data = self.get_task_data(task)
-            active_task_data = task_data if task.task_status_id == self.active_status.id else None
-            return task_data, active_task_data
-        except Task.DoesNotExist:
-            return None, None
-
     def get_all_tasks(self):
         tasks = []
         active_tasks = []
         for task in self.user_tasks:
-            task_data = self.get_task_data(task)
+            task_data = self.get_task_data(task.id)
             tasks.append(task_data)
             if task.task_status_id == self.active_status.id:
                 active_tasks.append(task_data)
