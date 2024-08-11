@@ -1,16 +1,16 @@
 <!-- Default Tabs -->
 <ul class="nav nav-tabs" id="myTab" role="tablist">
 
-{% for project_info in active_projects %}
+{% for project_data in active_projects %}
 <li class="nav-item" role="presentation">
-    <button class="nav-link {% if forloop.first %}active{% endif %}" id="{{project_info.project.id}}-tab" data-bs-toggle="tab" data-bs-target="#{{project_info.project.id}}" type="button" role="tab" aria-controls="{{project_info.project.id}}" aria-selected="{% if forloop.first %}true{% endif %}" {% if forloop.first %}{% else %} tabindex="-1"{% endif %}>{{project_info.project.title}} {% if project_info.count_tasks_in_progress %}({{project_info.count_tasks_in_progress }}){% endif %}</button>
+    <button class="nav-link {% if forloop.first %}active{% endif %}" id="{{project_data.project.id}}-tab" data-bs-toggle="tab" data-bs-target="#{{project_data.project.id}}" type="button" role="tab" aria-controls="{{project_data.project.id}}" aria-selected="{% if forloop.first %}true{% endif %}" {% if forloop.first %}{% else %} tabindex="-1"{% endif %}>{{project_data.project.title}} {% if project_data.count_tasks_in_progress %}({{project_data.count_tasks_in_progress }}){% endif %}</button>
 </li>
 {% endfor %}
 
 </ul>
 <div class="tab-content pt-2" id="myTabContent">
-{% for project_info in active_projects %}
-<div class="tab-pane fade {% if forloop.first %}active show{% endif %}" id="{{project_info.project.id}}" role="tabpanel" aria-labelledby="{{project_info.project.id}}-tab">
+{% for project_data in active_projects %}
+<div class="tab-pane fade {% if forloop.first %}active show{% endif %}" id="{{project_data.project.id}}" role="tabpanel" aria-labelledby="{{project_data.project.id}}-tab">
 
     <div class="row">
         {% include 'projects/includes/project_card.html' %} 
