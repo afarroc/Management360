@@ -19,8 +19,9 @@
             <h5 class="card-title">Reports <span>/Today</span></h5>
 
             <!-- Line Chart -->
-            <div id="reportsChart"></div>
+            <div id="reportsChart" style="height: 350px;"></div>
 
+            <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
             <script>
                 document.addEventListener("DOMContentLoaded", () => {
                     const combinedChartData = {
@@ -29,7 +30,9 @@
                         tasks: {{ combined_chart_data.tasks|safe }},
                         events: {{ combined_chart_data.events|safe }},
                     };
-                    new ApexCharts(document.querySelector("#reportsChart"), {
+
+                    // Configuración del gráfico
+                    const options = {
                         series: [{
                             name: 'Projects',
                             data: combinedChartData.projects,
@@ -68,7 +71,7 @@
                             width: 2
                         },
                         xaxis: {
-                            type: 'datetime',
+                            type: 'category', // Cambiado de 'datetime' a 'category'
                             categories: combinedChartData.dates
                         },
                         tooltip: {
@@ -76,7 +79,10 @@
                                 format: 'dd/MM'
                             },
                         }
-                    }).render();
+                    };
+
+                    // Inicializar y renderizar el gráfico
+                    new ApexCharts(document.querySelector("#reportsChart"), options).render();
                 });
             </script>
             <!-- End Line Chart -->

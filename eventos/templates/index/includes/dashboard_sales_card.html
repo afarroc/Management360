@@ -21,7 +21,7 @@
                     <i class="bi bi-calendar-range"></i>
                 </div>
                 <div class="ps-3">
-                    <h6>{{ projects.count }}</h6>
+                    <h6>{{ projects.recent_count }}</h6>
                     <span class="{% if projects.increase > 0 %}text-success{% else %}text-danger{% endif %} small pt-1 fw-bold">
                         {{ projects.increase }}%
                     </span>
@@ -37,7 +37,7 @@
                 </div>
             </div>
             <div class="small text pt-2">
-                <span class="text-primary">Recent: {{ projects.recent_count }}</span> |
+                <span class="text-primary">Total: {{ projects.count }}</span> |
                 <span class="text-secondary">Previous: {{ projects.previous_count }}</span> 
             </div>
         </div>
@@ -69,7 +69,7 @@
                     <i class="bi bi-calendar"></i>
                 </div>
                 <div class="ps-3">
-                    <h6>{{ tasks.count }}</h6>
+                    <h6>{{ tasks.recent_count }}</h6>
                     <span class="{% if tasks.increase > 0 %}text-success{% else %}text-danger{% endif %} small pt-1 fw-bold">
                         {{ tasks.increase }}%
                     </span>
@@ -85,7 +85,7 @@
                 </div>
             </div>
             <div class="small text-muted pt-2">
-                <span class="text-primary">Recent: {{ tasks.recent_count }}</span> |
+                <span class="text-primary">Total: {{ tasks.count }}</span> |
                 <span class="text-secondary">Previous: {{ tasks.previous_count }}</span>
             </div>
         </div>
@@ -117,7 +117,7 @@
                     <i class="bi bi-calendar-event"></i>
                 </div>
                 <div class="ps-3">
-                    <h6>{{ events.count }}</h6>
+                    <h6>{{ events.recent_count }}</h6>
                     <span class="{% if events.increase > 0 %}text-success{% else %}text-danger{% endif %} small pt-1 fw-bold">
                         {{ events.increase }}%
                     </span>
@@ -133,7 +133,7 @@
                 </div>
             </div>
             <div class="small text-muted pt-2">
-                <span class="text-primary">Recent: {{ events.recent_count }}</span> |
+                <span class="text-primary">Total: {{ events.count }}</span> |
                 <span class="text-secondary">Previous: {{ events.previous_count }}</span>
             </div>
         </div>
