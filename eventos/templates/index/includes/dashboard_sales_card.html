@@ -11,7 +11,11 @@
             </ul>
         </div>
         <div class="card-body">
-            <h5 class="card-title"><a class="dropdown-item" href="{% url 'project_panel' %}">Projects<span> | Today</span></a></h5>
+            <h5 class="card-title">
+                <a class="dropdown-item" href="{% url 'project_panel' %}">Projects
+                  <span> | {{ projects.start_date|date:"d.m" }} - {{ projects.end_date|date:"d.m" }}</span>
+                </a>
+            </h5>
             <div class="d-flex align-items-center">
                 <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
                     <i class="bi bi-calendar-range"></i>
@@ -21,14 +25,20 @@
                     <span class="{% if projects.increase > 0 %}text-success{% else %}text-danger{% endif %} small pt-1 fw-bold">
                         {{ projects.increase }}%
                     </span>
-                    <span class="text-muted small pt-2 ps-1">
-                        {% if projects.increase > 0 %}increase{% else %}decrease{% endif %}
+                    {% if projects.increase > 0 %}
+                    <span class="text-success small pt-2 ps-1">
+                    <i class="bi bi-arrow-up-short"></i>
                     </span>
+                    {% else %}
+                    <span class="text-danger small pt-2 ps-1">
+                    <i class="bi bi-arrow-down-short"></i>
+                    </span>
+                    {% endif %}
                 </div>
             </div>
-            <div class="small text-muted pt-2">
-                <p><span class="text-info">Dates: </span>{{ projects.start_date|date:"d-M" }} | {{ projects.end_date|date:"d-M" }}</p>
-                <p><span class="text-info">Recent: </span>{{ projects.recent_count }} | <span class="text-muted">Previous: {{ projects.previous_count }}</span></p>
+            <div class="small text pt-2">
+                <span class="text-primary">Recent: {{ projects.recent_count }}</span> |
+                <span class="text-secondary">Previous: {{ projects.previous_count }}</span> 
             </div>
         </div>
     </div>
@@ -49,7 +59,11 @@
             </ul>
         </div>
         <div class="card-body">
-            <h5 class="card-title"><a class="dropdown-item" href="{% url 'task_panel' %}">Tasks<span> | Today</span></a></h5>
+            <h5 class="card-title">
+                <a class="dropdown-item" href="{% url 'task_panel' %}">Tasks
+                  <span> | {{ tasks.start_date|date:"d.m" }} - {{ tasks.end_date|date:"d.m" }}</span>
+                </a>
+            </h5>
             <div class="d-flex align-items-center">
                 <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
                     <i class="bi bi-calendar"></i>
@@ -59,14 +73,20 @@
                     <span class="{% if tasks.increase > 0 %}text-success{% else %}text-danger{% endif %} small pt-1 fw-bold">
                         {{ tasks.increase }}%
                     </span>
-                    <span class="text-muted small pt-2 ps-1">
-                        {% if tasks.increase > 0 %}increase{% else %}decrease{% endif %}
+                    {% if tasks.increase > 0 %}
+                    <span class="text-success small pt-2 ps-1">
+                    <i class="bi bi-arrow-up-short"></i>
                     </span>
+                    {% else %}
+                    <span class="text-danger small pt-2 ps-1">
+                    <i class="bi bi-arrow-down-short"></i>
+                    </span>
+                    {% endif %}
                 </div>
             </div>
             <div class="small text-muted pt-2">
-                <p><span class="text-info">Dates: </span>{{ tasks.start_date|date:"d-M" }} | {{ tasks.end_date|date:"d-M" }}</p>
-                <p><span class="text-info">Recent: </span>{{ tasks.recent_count }} | <span class="text-muted">Previous: {{ tasks.previous_count }}</span></p>
+                <span class="text-primary">Recent: {{ tasks.recent_count }}</span> |
+                <span class="text-secondary">Previous: {{ tasks.previous_count }}</span>
             </div>
         </div>
     </div>
@@ -87,7 +107,11 @@
             </ul>
         </div>
         <div class="card-body">
-            <h5 class="card-title"><a class="dropdown-item" href="{% url 'event_panel' %}">Events<span> | Today</span></a></h5>
+            <h5 class="card-title">
+                <a class="dropdown-item" href="{% url 'event_panel' %}">Events
+                  <span> | {{ events.start_date|date:"d.m" }} - {{ events.end_date|date:"d.m" }}</span>
+                </a>
+            </h5>
             <div class="d-flex align-items-center">
                 <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
                     <i class="bi bi-calendar-event"></i>
@@ -97,14 +121,20 @@
                     <span class="{% if events.increase > 0 %}text-success{% else %}text-danger{% endif %} small pt-1 fw-bold">
                         {{ events.increase }}%
                     </span>
-                    <span class="text-muted small pt-2 ps-1">
-                        {% if events.increase > 0 %}increase{% else %}decrease{% endif %}
+                    {% if events.increase > 0 %}
+                    <span class="text-success small pt-2 ps-1">
+                    <i class="bi bi-arrow-up-short"></i>
                     </span>
+                    {% else %}
+                    <span class="text-danger small pt-2 ps-1">
+                    <i class="bi bi-arrow-down-short"></i>
+                    </span>
+                    {% endif %}
                 </div>
             </div>
             <div class="small text-muted pt-2">
-                <p><span class="text-info">Dates: </span>{{ events.start_date|date:"d-M" }} | {{ events.end_date|date:"d-M" }}</p>
-                <p><span class="text-info">Recent: </span>{{ events.recent_count }} | <span class="text-muted">Previous: {{ events.previous_count }}</span></p>
+                <span class="text-primary">Recent: {{ events.recent_count }}</span> |
+                <span class="text-secondary">Previous: {{ events.previous_count }}</span>
             </div>
         </div>
     </div>
