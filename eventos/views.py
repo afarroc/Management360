@@ -80,75 +80,59 @@ def calculate_percentage_increase(queryset, days):
 # Principal
 
 
-def index(request, days=None):
-    title = "Dashboard"
+# views.py
+
+from django.shortcuts import render, get_object_or_404
+from django.contrib import messages
+from django.utils import timezone
+from .models import User
+from .utils import (get_task_states_with_duration, get_bar_chart_data, get_line_chart_data,
+                    get_combined_chart_data, get_duration_chart_data, get_card_data)
+
+def index(request, days=7):
+    page_title = 'Dashboard'
+    event_statuses, project_statuses, task_statuses = statuses_get()
+    user = get_object_or_404(User, pk=request.user.id)
+    # messages.success(request, f'{page_title}: This message will close in 60 seconds')
     
-    # Establecer el número de días a analizar; si no se proporciona, usar 7 días por defecto
-    try:
-        days_to_check = int(days) if days is not None else 7
-    except ValueError:
-        days_to_check = 7
+    today = timezone.now().date()
+    start_date = today - datetime.timedelta(days=days)
+
+    # Lógica para test_board
+    task_states = get_task_states_with_duration()
+    bar_chart_data = get_bar_chart_data(task_states)
+    task_states_last_month = [task_state for task_state in task_states if task_state['start_date'] >= start_date]
+    line_chart_data = get_line_chart_data(task_states_last_month)
     
-    # Crear instancias de los managers
-    project_manager = ProjectManager(request.user)
-    task_manager = TaskManager(request.user)
-    event_manager = EventManager(request.user)
-    
-    # Obtener proyectos, tareas y eventos procesados
-    projects, active_projects = project_manager.get_all_projects()
-    tasks, active_tasks = task_manager.get_all_tasks()
-    events, active_events = event_manager.get_all_events()
-    
-    # Contar los objetos en la lista
-    count_projects = len(projects)
-    count_tasks = len(tasks)
-    count_events = len(events)
-    
-    # Calcular el incremento porcentual usando la función existente
-    project_stats = calculate_percentage_increase(Project.objects.all(), days_to_check)
-    task_stats = calculate_percentage_increase(Task.objects.all(), days_to_check)
-    event_stats = calculate_percentage_increase(Event.objects.all(), days_to_check)
-    
-    # Obtener eventos con estado productivo
-    productive_status_name = 'En Curso'
-    productive_status = get_object_or_404(Status, status_name=productive_status_name)
-    events_states = EventState.objects.filter(
-        Q(status=productive_status) & Q(end_time__isnull=False)
-    ).order_by('-start_time')[:10]
-    
-    # Crear diccionarios para agrupar los datos
+    # Obtener datos para las tarjetas
+    card_data = get_card_data(user, days)
+
+    # Obtener datos combinados para gráficos
+    combined_chart_data = get_combined_chart_data(
+        projects=card_data['projects'],
+        tasks=card_data['tasks'],
+        events=card_data['events'],
+        start_date=start_date,
+        end_date=today
+    )
+
+    # Obtener datos para el gráfico de duración
+    duration_chart_data = get_duration_chart_data(task_states)
+
     context = {
-        'title': title,
-        'days_to_check': days_to_check,
-        'projects': {
-            'count': count_projects,
-            'increase': round(project_stats['percentage_increase'],2),
-            'recent_count': project_stats['count_recent_objects'],
-            'previous_count': project_stats['count_previous_objects'],
-            'start_date': project_stats['start_date'],
-            'end_date': project_stats['end_date'],
-        },
-        'tasks': {
-            'count': count_tasks,
-            'increase': round(task_stats['percentage_increase'],2),
-            'recent_count': task_stats['count_recent_objects'],
-            'previous_count': task_stats['count_previous_objects'],
-            'start_date': task_stats['start_date'],
-            'end_date': task_stats['end_date'],
-        },
-        'events': {
-            'count': count_events,
-            'increase': round(event_stats['percentage_increase'],2),
-            'recent_count': event_stats['count_recent_objects'],
-            'previous_count': event_stats['count_previous_objects'],
-            'start_date': event_stats['start_date'],
-            'end_date': event_stats['end_date'],
-        },
-        'events_states': events_states,
+        'page_title': page_title,
+        'event_statuses': event_statuses,
+        'task_statuses': task_statuses,
+        'task_states_with_duration': task_states,
+        'bar_chart_data': bar_chart_data,
+        'line_chart_data': line_chart_data,
+        'combined_chart_data': combined_chart_data,
+        'duration_chart_data': duration_chart_data,
+        'projects': card_data['projects'],
+        'tasks': card_data['tasks'],
+        'events': card_data['events'],
     }
-    
-    # Renderizar la plantilla con el contexto
-    return render(request, "index/index.html", context)
+    return render(request, 'index/index.html', context)
 
 
 
