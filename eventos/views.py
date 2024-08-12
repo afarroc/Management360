@@ -83,42 +83,62 @@ def calculate_percentage_increase(queryset, days):
 # views.py
 
 from django.shortcuts import render, get_object_or_404
-from django.contrib import messages
 from django.utils import timezone
-from .models import User
-from .utils import (get_task_states_with_duration, get_bar_chart_data, get_line_chart_data,
-                    get_combined_chart_data, get_duration_chart_data, get_card_data)
+from datetime import timedelta
+from .utils import (
+    get_task_states_with_duration,
+    get_bar_chart_data,
+    get_line_chart_data,
+    get_card_data,
+    get_combined_chart_data,
+    get_duration_chart_data
+)
+from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+from datetime import timedelta
+from .utils import (
+    get_task_states_with_duration,
+    get_bar_chart_data,
+    get_line_chart_data,
+    get_combined_chart_data,
+    get_duration_chart_data,
+    get_card_data
+)
 
 def index(request, days=7):
     page_title = 'Dashboard'
     event_statuses, project_statuses, task_statuses = statuses_get()
     user = get_object_or_404(User, pk=request.user.id)
-    # messages.success(request, f'{page_title}: This message will close in 60 seconds')
     
     today = timezone.now().date()
-    start_date = today - datetime.timedelta(days=days)
+    start_date = today - timedelta(days=days)
 
-    # Lógica para test_board
-    task_states = get_task_states_with_duration()
+    # Obtener estados de tareas con duración filtrados por el rango de fechas
+    task_states = get_task_states_with_duration(start_date=start_date, end_date=today)
+    
+    # Filtrar task_states por el rango de fechas
+    task_states_last_month = [
+        task_state for task_state in task_states if start_date <= task_state['start_date'] <= today
+    ]
+    
+    # Obtener datos para gráficos
     bar_chart_data = get_bar_chart_data(task_states)
-    task_states_last_month = [task_state for task_state in task_states if task_state['start_date'] >= start_date]
     line_chart_data = get_line_chart_data(task_states_last_month)
     
     # Obtener datos para las tarjetas
     card_data = get_card_data(user, days)
-
-    # Obtener datos combinados para gráficos
+    
+    # Obtener datos para gráficos combinados
     combined_chart_data = get_combined_chart_data(
-        projects=card_data['projects'],
-        tasks=card_data['tasks'],
-        events=card_data['events'],
-        start_date=start_date,
-        end_date=today
+        user,
+        start_date,
+        today
     )
-
+    
     # Obtener datos para el gráfico de duración
     duration_chart_data = get_duration_chart_data(task_states)
 
+    # Contexto para la plantilla
     context = {
         'page_title': page_title,
         'event_statuses': event_statuses,
@@ -132,9 +152,8 @@ def index(request, days=7):
         'tasks': card_data['tasks'],
         'events': card_data['events'],
     }
+    
     return render(request, 'index/index.html', context)
-
-
 
 def home(request):
     return render(request, 'layouts/main.html')
@@ -2157,9 +2176,12 @@ def test_board(request, id=None):
 
     # Recuento de proyectos, tareas y eventos creados por día
     def count_created_per_day(data, key_name):
+        print(key_name)
         counts = defaultdict(int)
         for item in data:
+            print(item )
             created_date = getattr(item[key_name], 'created_at', None).date()
+            
             if created_date:
                 counts[created_date] += 1
         return counts
@@ -2174,7 +2196,6 @@ def test_board(request, id=None):
     events_created_per_day = filter_data_last_month(events, 'event')
 
     # Encontrar el rango de fechas dentro del último mes
-    all_dates = set(projects_created_per_day.keys()) | set(tasks_created_per_day.keys()) | set(events_created_per_day.keys())
     date_range = [start_date + datetime.timedelta(days=x) for x in range((today - start_date).days + 1)]
 
     def fill_data_for_dates(date_range, counts):
@@ -2193,9 +2214,7 @@ def test_board(request, id=None):
         task_name = task_state.task.title
         if task_state.duration_seconds:
             task_durations[task_name] += (task_state.duration_seconds.total_seconds() / 3600)
-    
-    for x in task_durations:
-        print(task_durations[x])
+
         
     duration_chart_data = {
         'task_names': list(task_durations.keys()),
@@ -2212,4 +2231,5 @@ def test_board(request, id=None):
         'combined_chart_data': combined_chart_data,
         'duration_chart_data': duration_chart_data,  # Añadir los datos del gráfico de duración
     }
+    
     return render(request, 'tests/test.html', context)
