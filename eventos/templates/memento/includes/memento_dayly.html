@@ -1,0 +1,19 @@
+<body>
+    <div id="header">
+        <h1>Birth Date: {{ birth_date }}</h1>
+        <h1>Death Date: {{ death_date }} ( {{ total_years }} years)</h1>
+    </div>
+
+    <div id="content">
+        <ul>
+            <li><h2>Daily-based Death Calendar</h2></li>
+            {% for i in passed_days|range_filter %}
+                <div id="passed"></div>
+            {% endfor %}
+            {% for i in left_days|range_filter %}
+                <div id="left"></div>
+            {% endfor %}
+        </ul>
+    </div>
+</body>
+
