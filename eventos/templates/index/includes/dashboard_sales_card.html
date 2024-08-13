@@ -1,3 +1,6 @@
+<!-- dashboard_sales_card.html -->
+{% load custom_tags %}
+
 <!-- Events Card -->
 <div class="col-xxl-4 col-md-6">
     <div class="card info-card sales-card">
@@ -7,14 +10,14 @@
                 <li class="dropdown-header text-start">
                     <h6>Filter</h6>
                 </li>
-                <li><a class="dropdown-item" href="#">Today</a></li>
-                <li><a class="dropdown-item" href="#">This Month</a></li>
-                <li><a class="dropdown-item" href="#">This Year</a></li>
+                <li><a class="dropdown-item" href="{% url 'index' 1 %}">Today</a></li>
+                <li><a class="dropdown-item" href="{% days_transcurridos_del_mes as days %}{% url 'index' days %}">This Month ({{ days }} days ago)</a></li>
+                <li><a class="dropdown-item" href="{% url 'index' 365 %}">This Year</a></li>
             </ul>
         </div>
         <div class="card-body">
             <h5 class="card-title">
-                <a class="dropdown-item" href="{% url 'event_panel' %}">Events
+                <a class="dropdown-item" href="{% url 'event_panel' %}">
                   <span> | {{ events.start_date|date:"d.m" }} - {{ events.end_date|date:"d.m" }}</span>
                 </a>
             </h5>
@@ -55,7 +58,9 @@
                 <li class="dropdown-header text-start">
                     <h6>Options</h6>
                 </li>
-                <li><a class="dropdown-item" href="#">Today</a></li>
+                <li><a class="dropdown-item" href="{% url 'index' 1 %}">Today</a></li>
+                <li><a class="dropdown-item" href="{% days_transcurridos_del_mes as days %}{% url 'index' days %}">This Month</a></li>
+                <li><a class="dropdown-item" href="{% url 'index' 365 %}">This Year</a></li>
             </ul>
         </div>
         <div class="card-body">
@@ -84,9 +89,9 @@
                     {% endif %}
                 </div>
             </div>
-            <div class="small text pt-2">
+            <div class="small text-muted pt-2">
                 <span class="text-primary">Total: {{ projects.count }}</span> |
-                <span class="text-secondary">Previous: {{ projects.previous_count }}</span> 
+                <span class="text-secondary">Previous: {{ projects.previous_count }}</span>
             </div>
         </div>
     </div>
@@ -101,9 +106,9 @@
                 <li class="dropdown-header text-start">
                     <h6>Filter</h6>
                 </li>
-                <li><a class="dropdown-item" href="#">Today</a></li>
-                <li><a class="dropdown-item" href="#">This Month</a></li>
-                <li><a class="dropdown-item" href="#">This Year</a></li>
+                <li><a class="dropdown-item" href="{% url 'index' 1 %}">Today</a></li>
+                <li><a class="dropdown-item" href="{% days_transcurridos_del_mes as days %}{% url 'index' days %}">This Month</a></li>
+                <li><a class="dropdown-item" href="{% url 'index' 365 %}">This Year</a></li>
             </ul>
         </div>
         <div class="card-body">
@@ -139,4 +144,3 @@
         </div>
     </div>
 </div><!-- End Tasks Card -->
-

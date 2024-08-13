@@ -7,5 +7,6 @@ class EventosConfig(AppConfig):
 
     def ready(self):
         import eventos.templatetags.schedule_filters
+        import eventos.templatetags.custom_tags
         import eventos.signals
 
