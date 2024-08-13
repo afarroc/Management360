@@ -60,7 +60,7 @@ SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
 # views.py
 from django.shortcuts import render
 from datetime import datetime
-from .lifecalendar.app import memento_mori
+from .life_calendar.appp import memento_mori
 
 def memento(request, birth_date, death_date):
     # Convertir las cadenas de fecha a objetos datetime
