@@ -57,10 +57,20 @@ ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
 SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
 
 
-# Importar los managers y la función de estados
-from .event_manager import EventManager
-from .project_manager import ProjectManager
-from .task_manager import TaskManager
+# views.py
+from django.shortcuts import render
+from datetime import datetime
+from .lifecalendar.app import memento_mori
+
+def memento(request, birth_date, death_date):
+    # Convertir las cadenas de fecha a objetos datetime
+    birth_date = datetime.strptime(birth_date, '%Y-%m-%d')
+    death_date = datetime.strptime(death_date, '%Y-%m-%d')
+    
+    # Generar el contexto utilizando las fechas
+    context = memento_mori(birth_date, death_date)
+    return render(request, "memento/memento_mori.html", context)
+
 
 def event_assign(request, event_id=None):
     """
@@ -181,9 +191,6 @@ def calculate_percentage_increase(queryset, days):
         'previous_end_date': previous_end_date,
     }
 
-from django.contrib import messages
-
-from django.contrib import messages
 
 def index(request, days=7, days_ago=None):
     page_title = 'Dashboard'
