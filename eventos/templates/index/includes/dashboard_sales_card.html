@@ -8,11 +8,12 @@
             <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                 <li class="dropdown-header text-start">
-                    <h6>Filter</h6>
+                    <h6>Last</h6>
                 </li>
-                <li><a class="dropdown-item" href="{% url 'index' 1 %}">Today</a></li>
+                <li><a class="dropdown-item" href="{% url 'index' 6 %}">Week</a></li>
+                <li><a class="dropdown-item" href="{% url 'index' 30 %}">Month</a></li>
                 <li><a class="dropdown-item" href="{% days_transcurridos_del_mes as days %}{% url 'index' days %}">This Month ({{ days }} days ago)</a></li>
-                <li><a class="dropdown-item" href="{% url 'index' 365 %}">This Year</a></li>
+                <li><a class="dropdown-item" href="{% url 'index' 365 %}">Year</a></li>
             </ul>
         </div>
         <div class="card-body">
