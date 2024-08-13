@@ -8,3 +8,4 @@ register = template.Library()
 def days_transcurridos_del_mes():
     today = datetime.today()
     return today.day - 1
+
