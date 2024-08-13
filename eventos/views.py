@@ -1,12 +1,24 @@
-# Django imports
+# Standard Library Imports
+from datetime import timedelta
+from decimal import Decimal
+from io import BytesIO
+import datetime
+from collections import defaultdict
+
+# Third-Party Imports
+from openpyxl import load_workbook
+
+# Django Imports
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.files.storage import FileSystemStorage
 from django.db import IntegrityError, transaction
-from django.db.models import Q, Sum, Count
+from django.db.models import Q, Sum, Count, F, ExpressionWrapper, DurationField
+from django.db.models.functions import TruncDate
 from django.forms import formset_factory
 from django.http import Http404, HttpResponse, JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
@@ -14,20 +26,29 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.views import View
 from django.views.generic import FormView
-from django.core.files.storage import FileSystemStorage
-from django.db.models.functions import TruncDate
-from .utils import add_credits_to_user
-from datetime import timedelta
-from decimal import Decimal
+
+# Local Imports
+from .utils import (
+    add_credits_to_user,
+    get_task_states_with_duration,
+    get_bar_chart_data,
+    get_line_chart_data,
+    get_combined_chart_data,
+    get_duration_chart_data,
+    get_card_data
+)
 from .event_manager import EventManager
 from .project_manager import ProjectManager
 from .task_manager import TaskManager
-
-# Local imports from .models
-from .models import Classification, Document, Image, Database, Event, EventAttendee, ProjectStatus, TaskStatus, Profile, Project, Status, Task, EventState, ProjectState, TaskState, TaskProgram
-
-# Local imports from .forms
-from .forms import (CreateNewEvent, CreateNewProject,CreateNewTask, CreateNewTask, EditClassificationForm, EducationForm,  ExperienceForm, ImageForm, DocumentForm, DatabaseForm, ProfileForm, SkillForm, EventStatusForm, TaskStatusForm, ProjectStatusForm
+from .models import (
+    Classification, Document, Image, Database, Event, EventAttendee, ProjectStatus,
+    TaskStatus, Profile, Project, Status, Task, EventState, ProjectState, TaskState,
+    TaskProgram
+)
+from .forms import (
+    CreateNewEvent, CreateNewProject, CreateNewTask, EditClassificationForm,
+    EducationForm, ExperienceForm, ImageForm, DocumentForm, DatabaseForm, ProfileForm,
+    SkillForm, EventStatusForm, TaskStatusForm, ProjectStatusForm
 )
 
 # Formsets
@@ -35,9 +56,94 @@ EducationFormSet = formset_factory(EducationForm, extra=1, can_delete=True)
 ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
 SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
 
-# Create your views here.
-from django.utils import timezone
-from datetime import timedelta
+
+# Importar los managers y la función de estados
+from .event_manager import EventManager
+from .project_manager import ProjectManager
+from .task_manager import TaskManager
+
+def event_assign(request, event_id=None):
+    """
+    Vista para asignar proyectos y tareas a un evento específico.
+    Si no se proporciona un event_id, se muestra una lista de eventos disponibles.
+    """
+    title = "Event Assign"
+    
+    try:
+        # Obtener los estados utilizando la función statuses_get
+        event_statuses, project_statuses, task_statuses = statuses_get()
+
+        if event_id:
+            # Obtener el evento específico utilizando EventManager
+            event_manager = EventManager(request.user)
+            event_data = event_manager.get_event_by_id(event_id)
+            
+            if not event_data:
+                messages.error(request, 'El evento no existe.')
+                return redirect('index')
+
+            # Obtener los proyectos y tareas disponibles utilizando ProjectManager y TaskManager
+            project_manager = ProjectManager(request.user)
+            task_manager = TaskManager(request.user)
+            
+            available_projects = project_manager.user_projects.exclude(id__in=[project.id for project in event_data['projects']])
+            available_tasks = task_manager.user_tasks.exclude(id__in=[task.id for task in event_data['tasks']])
+
+            if request.method == 'POST':
+                assign_task_id = request.POST.get('assign_task_id')
+                assign_project_id = request.POST.get('assign_project_id')
+
+                if assign_task_id:
+                    # Asignar tarea al evento
+                    task_to_assign = get_object_or_404(Task, id=assign_task_id)
+                    task_to_assign.event_id = event_id
+                    task_to_assign.save()
+                    messages.success(request, f'La tarea {task_to_assign.id} ha sido asignada al evento {event_id} exitosamente.')
+                    return redirect('event_assign', event_id=event_id)
+
+                elif assign_project_id:
+                    # Asignar proyecto al evento
+                    project_to_assign = get_object_or_404(Project, id=assign_project_id)
+                    project_to_assign.event_id = event_id
+                    project_to_assign.save()
+                    messages.success(request, f'El proyecto {project_to_assign.id} ha sido asignado al evento {event_id} exitosamente.')
+                    return redirect('event_assign', event_id=event_id)
+
+                else:
+                    messages.error(request, 'No se proporcionó un id de tarea o proyecto válido.')
+                    return redirect('event_assign', event_id=event_id)
+
+            else:
+                # Renderizar la plantilla con los datos necesarios
+                return render(request, "events/event_assign.html", {
+                    'title': f'{title} (GET With Id)',
+                    'event': event_data,
+                    'available_projects': available_projects,
+                    'available_tasks': available_tasks,
+                    'event_statuses': event_statuses,
+                    'project_statuses': project_statuses,
+                    'task_statuses': task_statuses,
+                })
+
+        else:
+            # Si no se proporciona event_id, mostrar todos los eventos disponibles
+            event_manager = EventManager(request.user)
+            events, _ = event_manager.get_all_events()
+            return render(request, "events/event_assign.html", {
+                'title': f'{title} (No ID)',
+                'events': events,
+            })
+
+    except Exception as e:
+        # Manejo de errores
+        messages.error(request, f'Ha ocurrido un error: {e}')
+        return redirect('index')
+
+def statuses_get():
+    event_statuses = Status.objects.all().order_by('status_name')
+    project_statuses = ProjectStatus.objects.all().order_by('status_name')
+    task_statuses = TaskStatus.objects.all().order_by('status_name')
+    return event_statuses, project_statuses, task_statuses
 
 def calculate_percentage_increase(queryset, days):
     # Obtiene la fecha y hora actuales
@@ -75,50 +181,42 @@ def calculate_percentage_increase(queryset, days):
         'previous_end_date': previous_end_date,
     }
 
+from django.contrib import messages
 
+from django.contrib import messages
 
-# Principal
-
-
-# views.py
-
-from django.shortcuts import render, get_object_or_404
-from django.utils import timezone
-from datetime import timedelta
-from .utils import (
-    get_task_states_with_duration,
-    get_bar_chart_data,
-    get_line_chart_data,
-    get_card_data,
-    get_combined_chart_data,
-    get_duration_chart_data
-)
-from django.shortcuts import render, get_object_or_404
-from django.utils import timezone
-from datetime import timedelta
-from .utils import (
-    get_task_states_with_duration,
-    get_bar_chart_data,
-    get_line_chart_data,
-    get_combined_chart_data,
-    get_duration_chart_data,
-    get_card_data
-)
-
-def index(request, days=7):
+def index(request, days=7, days_ago=None):
     page_title = 'Dashboard'
     event_statuses, project_statuses, task_statuses = statuses_get()
-    user = get_object_or_404(User, pk=request.user.id)
+    
+    if request.user.is_authenticated:
+        user = get_object_or_404(User, pk=request.user.id)
+    else:
+        user = None
+        messages.success(request, "usuario invitado")
+        page_title = 'Dashboard - Invitado'
     
     today = timezone.now().date()
-    start_date = today - timedelta(days=days)
+    
+    # Determinar la fecha final basada en days_ago o usar hoy como fecha final
+    if days_ago is not None:
+        try:
+            days_ago = int(days_ago)
+            end_date = today - timedelta(days=days_ago)
+        except ValueError:
+            end_date = today  # Fallback a today si days_ago no es válido
+    else:
+        end_date = today
+
+    # Calcular la fecha de inicio basada en el rango de días
+    start_date = end_date - timedelta(days=days)
 
     # Obtener estados de tareas con duración filtrados por el rango de fechas
-    task_states = get_task_states_with_duration(start_date=start_date, end_date=today)
+    task_states = get_task_states_with_duration(start_date=start_date, end_date=end_date)
     
     # Filtrar task_states por el rango de fechas
     task_states_last_month = [
-        task_state for task_state in task_states if start_date <= task_state['start_date'] <= today
+        task_state for task_state in task_states if start_date <= task_state['start_date'] <= end_date
     ]
     
     # Obtener datos para gráficos
@@ -126,14 +224,10 @@ def index(request, days=7):
     line_chart_data = get_line_chart_data(task_states_last_month)
     
     # Obtener datos para las tarjetas
-    card_data = get_card_data(user, days)
+    card_data = get_card_data(user, days, days_ago) if user else {'projects': [], 'tasks': [], 'events': []}
     
     # Obtener datos para gráficos combinados
-    combined_chart_data = get_combined_chart_data(
-        user,
-        start_date,
-        today
-    )
+    combined_chart_data = get_combined_chart_data(user, start_date, end_date) if user else {}
     
     # Obtener datos para el gráfico de duración
     duration_chart_data = get_duration_chart_data(task_states)
@@ -155,6 +249,7 @@ def index(request, days=7):
     
     return render(request, 'index/index.html', context)
 
+
 def home(request):
     return render(request, 'layouts/main.html')
 
@@ -169,6 +264,7 @@ def blank(request):
         return render(request, "layouts/blank.html",{
             'title':title
     })
+
 
 # Sessions
 
@@ -220,9 +316,8 @@ def signin(request):
             request.session.setdefault('first_session', True)
             return redirect('events')
 
-# Proyects
 
-# Project dashboard
+# Proyects
     
 def projects(request, project_id=None):
 
@@ -483,15 +578,6 @@ def project_edit(request, project_id=None):
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
 
-def statuses_get():
-    event_statuses = Status.objects.all().order_by('status_name')
-    project_statuses = ProjectStatus.objects.all().order_by('status_name')
-    task_statuses = TaskStatus.objects.all().order_by('status_name')
-    return event_statuses, project_statuses, task_statuses
-
-### Panel de Proyectos ###
-### V2 ###
-
 def project_panel(request, project_id=None):
     # Title of the page
     title = "Project detail"
@@ -542,69 +628,6 @@ def project_panel(request, project_id=None):
         messages.error(request, f'An error occurred: ({e})')
         return redirect('index')
 
-def project_panel____(request, project_id=None):
-    # Título del Proyecto
-    title = "Panel de Proyectos"
-    # Diccionarios de URLs e instrucciones
-    urls = [
-        {'url': 'task_create', 'name': 'Crear Tarea'},
-        {'url': 'task_edit', 'name': 'Editar Tarea'},
-    ]
-    instructions = [
-        {'instruction': 'Selecciona un elemento para ver detalles', 'name': 'Elementos'},
-    ]
-    projects_states = ProjectState.objects.all().order_by('-start_time')[:10]
-
-    # Obtener las tareas para todos los proyectos
-    tasks_by_project = {project.id: Task.objects.filter(project_id=project.id) for project in Project.objects.all()}
-
-    status_var = 'En Curso'
-    status = get_object_or_404(ProjectStatus, status_name=status_var)
-    active_projects=Project.objects.filter(Q(project_status=status)).distinct().order_by('-updated_at')
-
-    event_statuses = Status.objects.all().order_by('status_name')
-    task_statuses = TaskStatus.objects.all().order_by('status_name')
-    project_statuses = ProjectStatus.objects.all().order_by('status_name')
-
-    try:
-        if project_id:
-            project = Project.objects.get(id=project_id)
-            tasks = tasks_by_project.get(project_id, [])
-            return render(request, "projects/project_panel.html", {
-                'title': title,
-                'urls': urls,
-                'instructions': instructions,
-                'project': project,
-                'tasks': tasks,
-                'event_statuses': event_statuses,
-                'task_statuses': task_statuses,
-                'project_statuses': project_statuses,
-                'projects_states': projects_states,
-            })
-        else:
-            # Verificar si el usuario es un superusuario ('SU')
-            if request.user.is_superuser:
-                user_projects = Project.objects.all().order_by('-updated_at')
-            else:
-                user_projects = Project.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-
-            projects_with_task_count = [(project, tasks_by_project.get(project.id, []).count()) for project in user_projects]
-            return render(request, 'projects/project_panel.html', {
-                'active_projects': active_projects,
-                'projects_with_task_count': projects_with_task_count,
-                'instructions': instructions,
-                'urls': urls,
-                'title': title,
-                'projects': user_projects,
-                'event_statuses': event_statuses,
-                'task_statuses': task_statuses,
-                'project_statuses': project_statuses,
-                'projects_states': projects_states,
-            })
-    except (Project.DoesNotExist, Task.DoesNotExist) as e:
-        messages.error(request, f'Ha ocurrido un error: {e}')
-        return redirect('project_panel')
-
 def project_activate(request, project_id=None):
     title='Project Activate'
     if project_id:
@@ -637,80 +660,6 @@ def project_activate(request, project_id=None):
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
             return redirect('project_panel')
         
-def event_assign(request, event_id=None):
-    title="Event Assign"
-    try:
-        if event_id:
-            event = get_object_or_404(Event, id=event_id)
-            all_projects = Project.objects.all().order_by('-updated_at')
-            all_tasks = Task.objects.all().order_by('-updated_at')
-            event_projects = all_projects.filter(event_id=event_id)
-            event_tasks = all_tasks.filter(event_id=event_id)
-            event_statuses = Status.objects.all().order_by('status_name')
-            project_statuses = ProjectStatus.objects.all().order_by('status_name')
-            task_statuses = TaskStatus.objects.all().order_by('status_name')
-
-            # Excluimos los proyectos que ya están asociados a cualquier evento
-            assigned_projects = Project.objects.filter(event__isnull=False)
-            available_projects = all_projects.exclude(id__in=assigned_projects.values('id'))
-
-            # Excluimos las tareas que ya están asociadas a cualquier evento
-            assigned_tasks = Task.objects.filter(event__isnull=False)
-            print(assigned_tasks)
-            available_tasks = all_tasks.exclude(id__in=assigned_tasks.values('id'))
-
-            if request.method == 'POST':
-                assign_task_id = request.POST.get('assign_task_id')
-                assign_project_id = request.POST.get('assign_project_id')
-
-                if assign_task_id:
-                    # Aquí va el código para manejar la asignación de tareas
-                    task_to_assign = get_object_or_404(Task, id=assign_task_id)
-                    task_to_assign.event_id = event_id
-                    task_to_assign.save()
-                    messages.success(request, f'La tarea {task_to_assign.id} ha sido asignada al evento {event_id} exitosamente.')
-                    return redirect('event_assign')
-
-                elif assign_project_id:
-                    # Aquí va el código para manejar la asignación de proyectos
-                    project_to_assign = get_object_or_404(Project, id=assign_project_id)
-                    project_to_assign.event_id = event_id
-                    project_to_assign.save()
-                    messages.success(request, f'El proyecto {project_to_assign.id} ha sido asignado al evento {event_id} exitosamente.')
-                    return redirect('event_assign')
-
-                else:
-                    messages.error(request, 'No se proporcionó un id de tarea o proyecto válido.')
-                    return redirect('event_assign')
-
-                
-            else:
-                print('my tasks', event_tasks)
-                print('my projects',event_projects)
-                
-                return render(request, "events/event_assign.html", {
-                    'title': f'{title} (GET With Id)',                
-                    'event': event,
-                    'available_projects': available_projects,
-                    'available_tasks': available_tasks,
-                    'event_projects': event_projects,
-                    'event_tasks': event_tasks,
-                    'event_statuses': event_statuses,
-                    'project_statuses': project_statuses,
-                    'task_statuses': task_statuses,
-                })
-
-        else:
-            events = Event.objects.all().order_by('-updated_at')
-            return render(request, "events/event_assign.html",{
-                'title':f'{title} (No iD)',
-                'events':events,
-            })
-            
-    except Exception as e:
-        messages.error(request, f'Ha ocurrido un error: {e}')
-        return redirect('index')
-
 # Tasks
      
 def tasks(request, task_id=None, project_id=None):
@@ -1461,15 +1410,14 @@ def event_history(request, event_id=None):
             'title':title,
             'events_history':events_history,
         })
+
          
-# Panel
+# Otros
 
 def panel(request):
     events = Event.objects.all().order_by('-created_at')
     #events = events.filter(event_status_id = 2)
     return render(request, 'panel/panel.html', {'events': events})    
-
-# Vistas para perfil de usuario
 
 class ProfileView(View):
     def get(self, request, user_id=None):
@@ -1895,9 +1843,6 @@ class UploadDatabase(FormView):
 
 # views.py
 
-from openpyxl import load_workbook
-from io import BytesIO
-
 def upload_xlsx(request):
     if request.method == 'POST':
         form = DatabaseForm(request.POST, request.FILES)
@@ -1960,7 +1905,7 @@ def management(request):
         'classifications': classifications
         })
 
-# Añade esta función a tu vista
+# Añade esta función a tu vista 
 def update_event(request):
     if request.method == 'POST':
         # Obtén el ID del evento y si está seleccionado o no
@@ -1977,12 +1922,6 @@ def update_event(request):
         return JsonResponse({'success': True})
 
     return JsonResponse({'success': False})
-
-# views.py
-from django.shortcuts import render
-from django.utils import timezone
-from datetime import timedelta
-from .models import TaskProgram
 
 def planning_task(request):
     # Define el rango de fechas para el horario (por ejemplo, una semana desde hoy)
@@ -2101,17 +2040,6 @@ def project_tasks_status_check(request, project_id):
     return render(request, 'projects/projects_check.html', {
         'project_tasks': project_tasks
     })
-
-
-
-
-
-from django.shortcuts import render, get_object_or_404
-from django.contrib import messages
-from django.db.models import Count, F, ExpressionWrapper, DurationField
-from .models import User, TaskState, TaskStatus
-from collections import defaultdict
-import datetime
 
 def test_board(request, id=None):
     page_title = 'Test Board'

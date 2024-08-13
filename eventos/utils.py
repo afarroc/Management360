@@ -143,9 +143,21 @@ def get_duration_chart_data(task_states):
         'durations': [round(duration, 2) for duration in task_durations.values()],
     }
 
-def get_card_data(user, days):
+def get_card_data(user, days, days_ago=None):
     today = timezone.now().date()
-    start_date = today - datetime.timedelta(days=days)
+    
+    # Determinar la fecha final basada en days_ago o usar hoy como fecha final
+    if days_ago is not None:
+        try:
+            days_ago = int(days_ago)
+            end_date = today - datetime.timedelta(days=days_ago)
+        except ValueError:
+            end_date = today  # Fallback a today si days_ago no es válido
+    else:
+        end_date = today
+
+    # Calcular la fecha de inicio basada en el rango de días
+    start_date = end_date - datetime.timedelta(days=days)
 
     project_manager = ProjectManager(user)
     task_manager = TaskManager(user)
@@ -155,8 +167,7 @@ def get_card_data(user, days):
     tasks, _ = task_manager.get_all_tasks()
     events, _ = event_manager.get_all_events()
     
-    def calculate_percentage_increase(queryset, days):
-        end_date = timezone.now()
+    def calculate_percentage_increase(queryset, days, end_date):
         start_date = end_date - datetime.timedelta(days=days)
         previous_end_date = start_date
         previous_start_date = previous_end_date - datetime.timedelta(days=days)
@@ -168,7 +179,7 @@ def get_card_data(user, days):
         count_previous_objects = previous_objects.count()
         
         if count_previous_objects > 0:
-            percentage_increase = round(((count_recent_objects - count_previous_objects) / count_previous_objects) * 100,2)
+            percentage_increase = round(((count_recent_objects - count_previous_objects) / count_previous_objects) * 100, 2)
         else:
             percentage_increase = 100 if count_recent_objects > 0 else 0
 
@@ -178,33 +189,33 @@ def get_card_data(user, days):
             'total_previous': count_previous_objects
         }
 
-    projects_increase_data = calculate_percentage_increase(Project.objects.all(), days)
-    tasks_increase_data = calculate_percentage_increase(Task.objects.all(), days)
-    events_increase_data = calculate_percentage_increase(Event.objects.all(), days)
+    projects_increase_data = calculate_percentage_increase(Project.objects.all(), days, end_date)
+    tasks_increase_data = calculate_percentage_increase(Task.objects.all(), days, end_date)
+    events_increase_data = calculate_percentage_increase(Event.objects.all(), days, end_date)
 
     return {
         'projects': {
-            'count': len(projects),
+            'count': projects_increase_data['total_recent']+projects_increase_data['total_previous'],
             'increase': projects_increase_data['percentage_increase'],
             'recent_count': projects_increase_data['total_recent'],
             'previous_count': projects_increase_data['total_previous'],
             'start_date': start_date,
-            'end_date': today,
+            'end_date': end_date,
         },
         'tasks': {
-            'count': len(tasks),
+            'count': tasks_increase_data['total_recent']+tasks_increase_data['total_previous'],
             'increase': tasks_increase_data['percentage_increase'],
             'recent_count': tasks_increase_data['total_recent'],
             'previous_count': tasks_increase_data['total_previous'],
             'start_date': start_date,
-            'end_date': today,
+            'end_date': end_date,
         },
         'events': {
-            'count': len(events),
+            'count': events_increase_data['total_recent']+events_increase_data['total_previous'],
             'increase': events_increase_data['percentage_increase'],
             'recent_count': events_increase_data['total_recent'],
             'previous_count': events_increase_data['total_previous'],
             'start_date': start_date,
-            'end_date': today,
+            'end_date': end_date,
         },
     }

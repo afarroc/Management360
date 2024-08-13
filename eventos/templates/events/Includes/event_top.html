@@ -32,7 +32,7 @@
                     {% if events %}
                     {% for event_data in events %}
                     <tr>
-                        <th scope="row"><a href="{% url 'event_panel' event_data.event.id %}">{{event_data.event.id}}</a></th>
+                        <th scope="row"><a href="{% url 'event_panel'  %}">{{event_data.event.id}}</a></th>
                         <td>{{event_data.event.title}}</td>
                         <td><a href="#" class="text-primary">At praesentium minu</a></td>
                         <td>${{event_data.event.ticket_price}}</td>
