@@ -8,8 +8,10 @@ urlpatterns = [
     # Páginas principales
     path('', views.index, name="index"),
     path('<int:days>/', views.index, name="index"),
+    path('<int:days>/<int:days_ago>/', views.index, name="index"),
     path('dashboard/', views.index, name='dashboard'),  # Sin especificar 'days', usará el valor por defecto
     path('dashboard/<int:days>/', views.index, name='dashboard_with_days'),  # 
+    path('dashboard/<int:days>/<int:days_ago>/', views.index, name='dashboard_with_days'),  # 
     path('about/', views.about, name="about"),
     path('blank/', views.blank, name="blank"),
     path('test/', views.test_board, name="test"),
