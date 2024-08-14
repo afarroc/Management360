@@ -8,11 +8,14 @@ from .models import CreditAccount, Project, Task, Event, TaskState, TaskStatus
 from .event_manager import EventManager
 from .project_manager import ProjectManager
 from .task_manager import TaskManager
-from datetime import datetime
+
+
+
+
 
 def memento_mori(birth_date, death_date):
     # Define the birth and death dates
-    now = datetime.now()
+    now = datetime.datetime.now()
 
     # Calculate the total days, passed days, and left days
     total_days = (death_date - birth_date).days
