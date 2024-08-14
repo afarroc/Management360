@@ -8,6 +8,39 @@ from .models import CreditAccount, Project, Task, Event, TaskState, TaskStatus
 from .event_manager import EventManager
 from .project_manager import ProjectManager
 from .task_manager import TaskManager
+from datetime import datetime
+
+def memento_mori(birth_date, death_date):
+    # Define the birth and death dates
+    now = datetime.now()
+
+    # Calculate the total days, passed days, and left days
+    total_days = (death_date - birth_date).days
+    passed_days = (now - birth_date).days
+    left_days = total_days - passed_days
+
+    # Calculate the total years
+    total_years = int(total_days / 365)
+
+    # Calculate the total weeks, passed weeks, and left weeks
+    total_weeks = int(total_days / 7)
+    passed_weeks = int(passed_days / 7)
+    left_weeks = int(left_days / 7)
+
+    context = {
+        'total_years': total_years,
+        'now': now.strftime("%B %d, %Y"),
+        'total_days': total_days,
+        'passed_days': passed_days,
+        'left_days': left_days,
+        'total_weeks': total_weeks,
+        'passed_weeks': passed_weeks,
+        'left_weeks': left_weeks
+    }
+
+    return context
+
+
 
 def add_credits_to_user(user, amount):
     if not hasattr(user, 'creditaccount'):
