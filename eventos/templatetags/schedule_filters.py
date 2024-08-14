@@ -1,5 +1,5 @@
+# d:\Users\Mia\Documents\pyvirtual\eventos\templatetags\schedule_filters.py
 from django import template
-import re
 
 register = template.Library()
 
@@ -27,3 +27,11 @@ def only_hours(value):
         # Formatear la cadena en 'X hrs XX min'
         return f'{hours} hr{"s" if hours != 1 else ""} {minutes} min'
     return value
+
+@register.filter
+def dict_item(dictionary, key):
+    """
+    Filtro: obtiene un elemento de un diccionario.
+    Ejemplo de uso en la plantilla: {{ my_dict|dict_item:key }}
+    """
+    return dictionary.get(key)

@@ -1,19 +1,72 @@
-<body>
-    <div id="header">
-        <h1>Birth Date: {{ birth_date }}</h1>
-        <h1>Death Date: {{ death_date }} ( {{ total_years }} years)</h1>
-    </div>
+<!-- Revenue Card -->
+<div class="col-xxl-12 col-md-12">
 
-    <div id="content">
-        <ul>
-            <li><h2>Daily-based Death Calendar</h2></li>
-            {% for i in passed_days|range_filter %}
-                <div id="passed"></div>
-            {% endfor %}
-            {% for i in left_days|range_filter %}
-                <div id="left"></div>
-            {% endfor %}
-        </ul>
+    <div class="card info-card revenue-card">
+
+        <div class="filter">
+            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                <li class="dropdown-header text-start">
+                    <h6>Frequency</h6>
+                </li>
+
+                <li><a class="dropdown-item" href="{url 'memento' 'dayly'}">Daily</a></li>
+                <li><a class="dropdown-item" href="#">Weekly</a></li>
+                <li><a class="dropdown-item" href="#">Monhtly</a></li>
+            </ul>
+        </div>
+
+        <div class="card-body">
+            <h5 class="card-title">{{title}} <span>|
+                    
+                    ( {{ total_years }} years)
+                </span></h5>
+
+            <div class="d-flex align-items-center">
+
+                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                    <i class="bi bi-coin"></i>
+                </div>
+                <div class="ps-3">
+                    <h6>Birth Date: {{ birth_date }}</h6>
+                    <span class="text-success small pt-1 fw-bold">Death Date: {{ death_date }} </span> <span
+                        class="text-muted small pt-2 ps-1">{{left_days}} Days left</span>
+
+                </div>
+
+
+
+            </div>
+            <div id="content">
+
+                {% load custom_tags %}
+                {% for i in passed_days|range_filter %}
+                <div id="passed" data-bs-toggle="tooltip" data-bs-placement="left"
+                    data-bs-original-title="Day N° {{i}}">
+                </div>
+                {% endfor %}
+                {% for i in left_days|range_filter %}
+                <div id="left" data-bs-toggle="tooltip" data-bs-placement="left"
+                    data-bs-original-title="Day N° {{i}}">
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
     </div>
-</body>
+</div><!-- End Revenue Card -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

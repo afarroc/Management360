@@ -57,11 +57,15 @@
             <div class="row">
 
 
+                {% if total_days %}
+                {% include 'memento/includes/memento_dayly.html' %}
 
-
-
-
+                {% elif total_weeks %}
                 {% include 'memento/includes/memento_weekly.html' %}
+
+                {% endif %}
+
+
 
             </div>
         </div><!-- End Left side columns -->
