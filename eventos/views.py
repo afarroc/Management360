@@ -35,7 +35,8 @@ from .utils import (
     get_line_chart_data,
     get_combined_chart_data,
     get_duration_chart_data,
-    get_card_data
+    get_card_data,
+    memento_mori,
 )
 from .event_manager import EventManager
 from .project_manager import ProjectManager
@@ -60,7 +61,6 @@ SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
 # views.py
 from django.shortcuts import render
 from datetime import datetime
-from .lifecalendar.app import memento_mori
 
 def memento(request, frequency, birth_date, death_date):
     # Convertir las cadenas de fecha a objetos datetime
