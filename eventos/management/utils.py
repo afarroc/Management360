@@ -4,7 +4,7 @@ from django.utils import timezone
 from django.db.models import Count, F, ExpressionWrapper, DurationField
 from collections import defaultdict
 import datetime
-from .models import CreditAccount, Project, Task, Event, TaskState, TaskStatus
+from ..models import CreditAccount, Project, Task, Event, TaskState, TaskStatus
 from .event_manager import EventManager
 from .project_manager import ProjectManager
 from .task_manager import TaskManager
