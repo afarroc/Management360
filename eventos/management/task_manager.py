@@ -1,5 +1,5 @@
 from django.db.models import Q
-from .models import Task, TaskStatus, Project, Event
+from ..models import Task, TaskStatus, Project, Event
 
 class TaskManager:
     def __init__(self, user):

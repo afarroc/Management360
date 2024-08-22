@@ -1,5 +1,5 @@
 from django.db.models import Q
-from .models import Event, Status, Project, Task
+from ..models import Event, Status, Project, Task
 
 class EventManager:
     def __init__(self, user):

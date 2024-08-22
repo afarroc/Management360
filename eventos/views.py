@@ -28,7 +28,7 @@ from django.views import View
 from django.views.generic import FormView
 
 # Local Imports
-from .utils import (
+from .management.utils import (
     add_credits_to_user,
     get_task_states_with_duration,
     get_bar_chart_data,
@@ -38,9 +38,9 @@ from .utils import (
     get_card_data,
     memento_mori,
 )
-from .event_manager import EventManager
-from .project_manager import ProjectManager
-from .task_manager import TaskManager
+from .management.event_manager import EventManager
+from .management.project_manager import ProjectManager
+from .management.task_manager import TaskManager
 from .models import (
     Classification, Document, Image, Database, Event, EventAttendee, ProjectStatus,
     TaskStatus, Profile, Project, Status, Task, EventState, ProjectState, TaskState,
