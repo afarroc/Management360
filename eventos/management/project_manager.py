@@ -1,5 +1,5 @@
 from django.db.models import Q
-from .models import Project, Task, ProjectStatus
+from ..models import Project, Task, ProjectStatus
 
 class ProjectManager:
     def __init__(self, user):
