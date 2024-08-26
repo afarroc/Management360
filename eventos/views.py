@@ -354,23 +354,29 @@ def signout(request):
     return(redirect('index'))
 
 def signin(request):
-    if request.method == "GET":
-        return render(request,'accounts/signin.html',{
-            'form':AuthenticationForm,
-            })
-    else:
-        user = authenticate(
-            request, username=request.POST['username'], password=request.POST['password'])
-        if user is None:
-            print('user is none')
+    
+    try:    
+        if request.method == "GET":
             return render(request,'accounts/signin.html',{
                 'form':AuthenticationForm,
-                'error':'Username or password is incorrect'
-            })
+                })
         else:
-            login(request, user)
-            request.session.setdefault('first_session', True)
-            return redirect('events')
+            user = authenticate(
+                request, username=request.POST['username'], password=request.POST['password'])
+            if user is None:
+                print('user is none')
+                return render(request,'accounts/signin.html',{
+                    'form':AuthenticationForm,
+                    'error':'Username or password is incorrect'
+                })
+            else:
+                login(request, user)
+                request.session.setdefault('first_session', True)
+                return redirect('events')
+    except Exception as e:
+        # Manejo de errores
+        messages.error(request, f'Ha ocurrido un error: {e}')
+        return redirect('index')        
 
 
 # Proyects
