@@ -1183,7 +1183,7 @@ def events(request):
             })
             
     except Exception as e:
-        messages.error(request, 'Ha ocurrido un error al obtener los eventos: {}'.format(e))
+        messages.error(request, 'Ha ocurrido un error al obtener los eventosssss: {}'.format(e))
         return redirect('index')
 
 @login_required

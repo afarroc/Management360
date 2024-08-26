@@ -25,18 +25,15 @@
                 <div class="activite-label">
                     {{ item.start_time|timesince:item.end_time|only_hours }}
                 </div>
-                
+
                 <i style="color:{{ item.status.color }};" class="bi bi-circle-fill activity-badge text align-self-start"></i>
                 <div class="activity-content">
                     <a href="#" class="fw-bold text-dark">{{ item.event.title }}</a>
-                    
-                    <span style="font-size:12px; color:{{task.task_status.color}};"> | <span><a href="" >{{ item.status }}</a></span></span>
+
+                    <span style="font-size:12px; color:{{task.task_status.color}};"> sss| <span><a href="">{{ item.status }}</a></span></span>
 
                 </div>
             </div><!-- Fin del elemento de actividad -->
-
-            
-            
             {% endfor %}
             {% endif %}
 
