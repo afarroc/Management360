@@ -9,3 +9,6 @@ __pycache__/
 
 # Ignora todos los vscode
 .vscode 
+
+# Ignora todos los vscode
+.vs
