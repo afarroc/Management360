@@ -8,11 +8,16 @@
                 <span>Dashboard</span>
             </a>
         </li><!-- End Dashboard Nav -->
+        {% if user.username %}
+
+
         {% include 'layouts/includes/projects.html' %}
         {% include 'layouts/includes/tasks.html' %}
         {% include 'layouts/includes/events.html' %}
         {% include 'layouts/includes/management.html' %}
         {% include 'layouts/includes/configuration.html' %}
+
+        {% endif %}
 
         <li class="nav-heading">Pages</li>
         {% if user.is_authenticated %}
@@ -37,10 +42,8 @@
                 <span>Contact</span>
             </a>
         </li><!-- End Contact Page Nav -->
-
         {% include 'layouts/includes/register.html' %}
         <!-- End Register Page Nav -->
-
         {% include 'layouts/includes/login.html' %}
         <!-- End Login Page Nav -->
 

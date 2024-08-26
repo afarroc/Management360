@@ -1,4 +1,5 @@
 {
-  "TestFramework": "Pytest",
-  "Interpreter": "Workspace|Workspace|venv_django"
+  "Interpreter": "Workspace|Workspace|venv_django",
+  "SuppressConfigureTestFrameworkPrompt": "true",
+  "SuppressEnvironmentCreationPrompt": true
 }
