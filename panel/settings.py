@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'eventos',
     'crispy_forms',
+    'channels',
+
 ]
 
 MIDDLEWARE = [
@@ -84,7 +86,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'panel.wsgi.application'
 
+ASGI_APPLICATION = 'panel.asgi.application'
 
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
+        },
+    },
+}
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
