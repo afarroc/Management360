@@ -1,0 +1,114 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load schedule_filters %}
+
+{% block content %}
+
+<!-- Confirmation and success messages -->
+{% if messages %}
+
+{% include 'layouts/includes/alert.html' %}
+
+{% endif %}
+
+<div class="pagetitle">
+    <h1>{{title}}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+            <li class="breadcrumb-item active">{{title}}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+
+<section class="section dashboard">
+    <div class="row">
+
+        <!-- Left side columns -->
+        <div class="col-lg-12">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>Chat Messages</h5>
+                            <div id="chat-messages" class="chat-messages">
+                                <!-- Chat messages will be displayed here -->
+                            </div>
+                            <form id="chat-form">
+                                <input type="text" id="message-input" placeholder="Type a message...">
+                                <button id="send-button">Send</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- End Left side columns -->
+
+
+    </div>
+</section>
+
+<style>
+    .chat-messages {
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    #message-input {
+        width: 75%;
+        height: 30px;
+        padding: 10px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+    #send-button {
+        width: 20%;
+        height: 30px;
+        padding: 10px;
+        font-size: 16px;
+        background-color: #333;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+</style>
+
+<script>
+    document.getElementById('send-button').addEventListener('click', () => {
+        const messageInput = document.getElementById('message-input');
+        const message = messageInput.value.trim();
+        if (message) {
+            fetch('/send_message/', {
+                method: 'POST',
+                body: JSON.stringify({ message }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            messageInput.value = '';
+        }
+    });
+
+    setInterval(() => {
+        fetch('/get_messages/')
+            .then(response => response.json())
+            .then(data => {
+                const chatMessages = document.getElementById('chat-messages');
+                chatMessages.innerHTML = '';
+                data.messages.forEach(message => {
+                    const messageHTML = `
+                        <div class="message">
+                            <p>${message}</p>
+                        </div>
+                    `;
+                    chatMessages.innerHTML += messageHTML;
+                });
+            });
+    }, 1000);
+</script>
+
+{% endblock %}

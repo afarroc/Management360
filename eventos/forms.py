@@ -71,10 +71,14 @@ class EventEditForm(forms.ModelForm):
         model = Event
         fields = ['title', 'description', 'event_status']
 
+from django import forms
+from .models import Profile
+
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ['bio', 'location', 'profile_picture', 'linkedin_url']
+        fields = ['bio', 'company', 'job_title', 'country', 'address', 'phone', 'email', 'twitter_url', 'facebook_url', 'instagram_url', 'linkedin_url']
+
 
 class ExperienceForm(forms.ModelForm):
     class Meta:

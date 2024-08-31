@@ -5,6 +5,9 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
+    path('get_messages/', views.get_messages, name='get_messages'),
+    path('chat/', views.chat, name='chat'),
+
     # Páginas principales
     path('memento/<str:frequency>/<str:birth_date>/<str:death_date>/', views.memento, name='memento'),
     
@@ -115,6 +118,5 @@ urlpatterns = [
     path('configuration/edit_classification/<int:Classification_id>/', views.edit_Classification, name='edit_classification'),
     path('configuration/delete_classification/<int:Classification_id>/', views.delete_Classification, name='delete_classification'),
     path('configuration/classification_list/', views.Classification_list, name='classification_list'),
-
 
 ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
