@@ -339,13 +339,16 @@ class EventAttendee(models.Model):
     notes = models.TextField(blank=True, null=True)  # Campo nuevo para notas adicionales
 
 # modelos para el perfil del usuario
-
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
     location = models.CharField(max_length=30, blank=True)
     profile_picture = models.ImageField(upload_to='profile_pics/', null=True, blank=True)
     linkedin_url = models.URLField(blank=True)
+    github_url = models.URLField(blank=True)
+    twitter_url = models.URLField(blank=True)
+    facebook_url = models.URLField(blank=True)
+    instagram_url = models.URLField(blank=True)
     ROLE_CHOICES = [
         ('SU', 'Supervisor'),
         ('GE', 'Gestor de Eventos'),
@@ -353,7 +356,13 @@ class Profile(models.Model):
         ('US', 'Usuario Estándar'),
     ]
     role = models.CharField(max_length=2, choices=ROLE_CHOICES, default='US')
-    
+    company = models.CharField(max_length=100, blank=True)
+    job_title = models.CharField(max_length=100, blank=True)
+    country = models.CharField(max_length=100, blank=True)
+    address = models.CharField(max_length=200, blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(max_length=100, blank=True)
+
     def __str__(self):
         return self.user.username
 
