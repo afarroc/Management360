@@ -148,3 +148,12 @@ class EditClassificationForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['nombre'].label = "Nombre de la Tipificación"
         self.fields['descripcion'].label = "Descripción de la Tipificación"
+
+
+from django import forms
+from .models import Room
+
+class RoomForm(forms.ModelForm):
+    class Meta:
+        model = Room
+        fields = ('name', 'description')

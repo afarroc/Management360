@@ -5,10 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('get_messages/', views.get_messages, name='get_messages'),
-    path('chat/', views.chat, name='chat'),
 
-    # Páginas principales
     path('memento/<str:frequency>/<str:birth_date>/<str:death_date>/', views.memento, name='memento'),
     
     path('', views.index, name="index"),

@@ -44,7 +44,7 @@ from .management.task_manager import TaskManager
 from .models import (
     Classification, Document, Image, Database, Event, EventAttendee, ProjectStatus,
     TaskStatus, Profile, Project, Status, Task, EventState, ProjectState, TaskState,
-    TaskProgram
+    TaskProgram, Room, Message
 )
 from .forms import (
     CreateNewEvent, CreateNewProject, CreateNewTask, EditClassificationForm,
@@ -56,37 +56,6 @@ from .forms import (
 EducationFormSet = formset_factory(EducationForm, extra=1, can_delete=True)
 ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
 SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
-
-
-# views.py
-from django.shortcuts import render
-from datetime import datetime
-
-
-
-
-
-from django.shortcuts import render
-from django.http import JsonResponse
-import json
-
-def chat(request):
-    if request.method == 'POST':
-        message = request.POST.get('message')
-        # Procesar el mensaje aquí
-        return JsonResponse({'message': message})
-    return render(request, 'chat/chat.html')
-
-def send_message(request):
-    if request.method == 'POST':
-        message = request.POST.get('message')
-        # Enviar el mensaje aquí
-        return JsonResponse({'message': message})
-
-def get_messages(request):
-    # Obtener los mensajes aquí
-    messages = []
-    return JsonResponse({'messages': messages})
 
 
 def memento(request, frequency, birth_date, death_date):
