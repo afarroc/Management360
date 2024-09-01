@@ -40,17 +40,23 @@ if RENDER_EXTERNAL_HOSTNAME:
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
+
+    'eventos',
+    'chat',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'eventos',
     'crispy_forms',
-    'channels',
 
 ]
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -84,18 +90,22 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'panel.wsgi.application'
+# WSGI_APPLICATION = 'panel.wsgi.application'
 
+# Daphne
 ASGI_APPLICATION = 'panel.asgi.application'
 
+
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("192.168.18.40", 6379)],
         },
     },
 }
+
+
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
@@ -203,3 +213,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+
+
+
+LOGIN_REDIRECT_URL = "chat"
+
+LOGOUT_REDIRECT_URL = "login"
