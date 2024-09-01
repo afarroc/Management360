@@ -1,0 +1,84 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load schedule_filters %}
+
+{% block content %}
+
+<!-- Confirmation and success messages -->
+{% if messages %}
+    {% include 'layouts/includes/alert.html' %}
+{% endif %}
+
+<div class="pagetitle">
+    <h1>{{ title }}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+            <li class="breadcrumb-item active">{{ title }}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section dashboard">
+    <div class="row">
+        <!-- Left side columns -->
+        <div class="col-lg-12">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="card">
+                        <div class="card-body">
+
+                            <p>Chat Room</p>
+
+                            <textarea id="chat-log" cols="100" rows="20"></textarea><br>
+                            <input id="chat-message-input" type="text" size="100"><br>
+                            <input id="chat-message-submit" type="button" value="Send">
+                            {{ room_name|json_script:"room-name" }}
+                            <script>
+                                const roomName = JSON.parse(document.getElementById('room-name').textContent);
+
+                                const chatSocket = new WebSocket(
+                                    'ws://'
+                                    + window.location.host
+                                    + '/ws/chat/'
+                                    + roomName
+                                    + '/'
+                                );
+
+                                chatSocket.onmessage = function(e) {
+                                    const data = JSON.parse(e.data);
+                                    document.querySelector('#chat-log').value += (data.message + '\n');
+                                };
+
+                                chatSocket.onclose = function(e) {
+                                    console.error('Chat socket closed unexpectedly');
+                                };
+
+                                document.querySelector('#chat-message-input').focus();
+                                document.querySelector('#chat-message-input').onkeyup = function(e) {
+                                    if (e.key === 'Enter') {  // enter, return
+                                        document.querySelector('#chat-message-submit').click();
+                                    }
+                                };
+
+                                document.querySelector('#chat-message-submit').onclick = function(e) {
+                                    const messageInputDom = document.querySelector('#chat-message-input');
+                                    const message = messageInputDom.value;
+                                    chatSocket.send(JSON.stringify({
+                                        'message': message
+                                    }));
+                                    messageInputDom.value = '';
+                                };
+                            </script>
+
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- End Left side columns -->
+    </div>
+</section>
+
+{% endblock %}

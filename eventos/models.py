@@ -445,3 +445,18 @@ class CreditAccount(models.Model):
             raise ValueError("No hay suficientes créditos")
         self.balance -= amount
         self.save()
+
+
+class Room(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+class Message(models.Model):
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
