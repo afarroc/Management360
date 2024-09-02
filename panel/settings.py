@@ -1,3 +1,5 @@
+# panel/settings.py
+
 """
 Django settings for panel project.
 
@@ -90,22 +92,21 @@ TEMPLATES = [
     },
 ]
 
-# WSGI_APPLICATION = 'panel.wsgi.application'
+from redis import ConnectionPool
 
+# WSGI_APPLICATION = 'panel.wsgi.application'
 # Daphne
 ASGI_APPLICATION = 'panel.asgi.application'
-
-
+# Channels
+CHANNELS_DEBUG = True
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("192.168.18.40", 6379)],
+            "hosts": [("redis://:Peru+123@192.168.18.40:6379/0")],
         },
     },
 }
-
-
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
