@@ -14,9 +14,6 @@ __pycache__/
 **/.vs/
 
 # Ignora el contenido de las carpetas
-media/documents/*
-!media/documents/
-media/images/*
-!media/images/
+
 media/profile_pics/*
 !media/profile_pics/
