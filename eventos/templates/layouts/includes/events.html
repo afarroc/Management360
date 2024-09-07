@@ -1,0 +1,30 @@
+<li class="nav-item">
+    <a class="nav-link collapsed" data-bs-target="#events-nav" data-bs-toggle="collapse" href="{% url 'events' %}">
+        <i class="bi bi-calendar-event"></i><span>Events</span><i class="bi bi-chevron-down ms-auto"></i>
+    </a>
+    <ul id="events-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+        <li>
+            <a href="{% url 'event_panel' %}">
+                <i class="bi bi-circle"></i><span>Event Panel</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'events' %}">
+                <i class="bi bi-circle"></i><span>Events</span>
+            </a>
+        </li>
+        {% if user.is_authenticated %}
+        <li>
+            <a href="{% url 'event_create' %}">
+                <i class="bi bi-circle"></i><span>Create Event</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="{% url 'event_edit' %}">
+                <i class="bi bi-circle"></i><span>Edit Event</span>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</li><!-- End events Nav -->

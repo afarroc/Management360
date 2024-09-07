@@ -1,0 +1,50 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<div class="pagetitle">
+    <h1>{{title}}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'status_create' %}">Status</a></li>
+            <li class="breadcrumb-item active">{{title}}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+<!-- Mensajes de confirmación y éxito -->
+{% if messages %}
+<div id="message-container" class="alert alert-info" role="alert">
+    {% for message in messages %}
+    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
+        {% endfor %}
+</div>
+{% endif %}
+<section class="section">
+    <div class="row">
+
+        {% include 'layouts/includes/information/info_links_card.html' %}
+        {% for status in statuses %}
+        <div class="col-lg-3">
+            <div class="card">
+                <div class="card-header"><i class="bi bi-info-circle"></i> Status</div>
+                <div class="card-body">
+                    <h5 class="card-title">[{{ status.id }}] {{ status.status_name }}</h5>
+                    <p class="card-text">{{ status.icon }}</p>
+                    <p class="card-text">{{ status.active }}</p>
+                    <p class="card-text">{{ status.color }}</p>
+                    <a href="{% url 'status_edit' model_id status.id %}" class="btn btn-primary">Editar</a>
+                    <a href="{% url 'status_delete' model_id status.id %}" class="btn btn-danger">Eliminar</a>
+                </div>
+                <div class="card-footer"></div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>        
+
+        {% empty %}
+        {% endfor %}
+
+    </div>
+</section>
+
+
+{% endblock %}
