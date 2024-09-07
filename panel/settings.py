@@ -116,7 +116,7 @@ from django.db import connections
 from dj_database_url import config as dj_config
 
 DATABASES = {
-    'default': {
+    'default-': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'projects',
         'USER': 'admin',
@@ -127,7 +127,7 @@ DATABASES = {
             'charset': 'utf8mb4',
         },
     },
-    'mysql2': {
+    'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'projects',
         'USER': 'root',
