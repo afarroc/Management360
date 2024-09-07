@@ -1,0 +1,26 @@
+<!-- navbar.html -->
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'index' %}">My Panel</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                {% include 'layouts/includes/panel_link.html' %}
+                {% include 'layouts/includes/projects_dropdown.html' %}
+                {% include 'layouts/includes/tasks_dropdown.html' %}
+                {% include 'layouts/includes/documents_dropdown.html' %}
+                {% include 'layouts/includes/events_dropdown.html' %}
+                {% include 'layouts/includes/about_link.html' %}
+                {% include 'layouts/includes/configuration_button.html' %}
+                {% include 'layouts/includes/session.html' %}
+            </ul>
+            <form class="d-flex" role="search">
+                <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+                <button class="btn btn-outline-success" type="submit">Search</button>
+            </form>
+        </div>
+    </div>
+</nav>

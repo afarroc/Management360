@@ -1,0 +1,18 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">Crear Nuevo Estado</h1>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <form method="POST" class="form-signin">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button class="btn btn-lg btn-primary btn-block" type="submit">
+                    Guardar
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

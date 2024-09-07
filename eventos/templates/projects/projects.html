@@ -1,0 +1,138 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+
+<!-- Mensajes de confirmación y éxito -->
+{% if messages %}
+<div class="alert alert-info" role="alert">
+    {% for message in messages %}
+    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
+        {% endfor %}
+</div>
+{% endif %}
+
+<div class="pagetitle">
+    <h1>Dashboard</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+            <li class="breadcrumb-item active">Dashboard</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section dashboard">
+    <div class="row">
+
+        <!-- Left side columns -->
+        <div class="col-lg-8">
+            <div class="row">
+         
+                {% include 'projects/includes/project_total_card.html' %}
+                {% include 'projects/includes/project_revenue.html' %}
+                {% include 'projects/includes/project_recent_sales.html' %}
+                
+
+
+                <!-- Reports -->
+                <div class="col-12">
+                    <div class="card">
+
+                        <div class="filter">
+                            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                                <li class="dropdown-header text-start">
+                                    <h6>Filter</h6>
+                                </li>
+
+                                <li><a class="dropdown-item" href="#">Today</a></li>
+                                <li><a class="dropdown-item" href="#">This Month</a></li>
+                                <li><a class="dropdown-item" href="#">This Year</a></li>
+                            </ul>
+                        </div>
+
+                        <div class="card-body">
+                            <h5 class="card-title">Reports <span>/Today</span></h5>
+
+                            <!-- Line Chart -->
+                            <div id="reportsChart"></div>
+
+                            <script>
+                                document.addEventListener("DOMContentLoaded", () => {
+                                    new ApexCharts(document.querySelector("#reportsChart"), {
+                                        series: [{
+                                            name: 'Events',
+                                            data: {{ events_data|safe }},  // Usa la variable events_data
+                                        }, {
+                                            name: 'Projects',
+                                            data: {{ projects_data|safe }},  // Usa la variable projects_data
+                                        }, {
+                                            name: 'Tasks',
+                                            data: {{ tasks_data|safe }},  // Usa la variable tasks_data
+                                        }],
+                                        chart: {
+                                            height: 350,
+                                            type: 'area',
+                                            toolbar: {
+                                                show: false
+                                            },
+                                        },
+                                        markers: {
+                                            size: 4
+                                        },
+                                        colors: ['#4154f1', '#2eca6a', '#ff771d'],
+                                        fill: {
+                                            type: "gradient",
+                                            gradient: {
+                                                shadeIntensity: 1,
+                                                opacityFrom: 0.3,
+                                                opacityTo: 0.4,
+                                                stops: [0, 90, 100]
+                                            }
+                                        },
+                                        dataLabels: {
+                                            enabled: false
+                                        },
+                                        stroke: {
+                                            curve: 'smooth',
+                                            width: 2
+                                        },
+                                        xaxis: {
+                                            type: 'datetime',
+                                            categories: {{ event_dates|safe }}  // Usa la variable event_dates
+                                        },
+                                        tooltip: {
+                                            x: {
+                                                format: 'dd/MM/yy HH:mm'
+                                            },
+                                        }
+                                    }).render();
+                                });
+
+                            </script>
+                            <!-- End Line Chart -->
+
+                        </div>
+
+                    </div>
+                </div><!-- End Reports -->
+
+            </div>
+        </div><!-- End Left side columns -->
+
+        <!-- Right side columns -->
+        <div class="col-lg-4">
+
+            {% if instructions %} 
+            {% include 'layouts/includes/information/info_links_card.html' %}
+            {% endif %}
+
+            {% include 'layouts/includes/information/info_acordeon.html' %}
+
+        </div><!-- End Right side columns -->
+
+    </div>
+</section>
+
+{% endblock %}
+

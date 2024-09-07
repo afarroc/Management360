@@ -1,0 +1,31 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<div class="pagetitle">
+    <h1>{{title}}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'status' %}">Status</a></li>
+            <li class="breadcrumb-item active">{{title}}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+{% if messages %}
+<div id="message-container" class="alert alert-info" role="alert">
+    {% for message in messages %}
+    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
+        {% endfor %}
+</div>
+{% endif %}
+
+<section class="section">
+    <div class="row">
+        {% include 'layouts/includes/information/info_links_card.html' %}
+        {% include 'layouts/includes/information/info_acordeon.html' %}
+    </div>
+</section>
+
+
+{% endblock %}
