@@ -1,0 +1,94 @@
+
+
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Full-Time Equivalent Calculator</h5>
+        <!-- Floating Labels Form -->
+        <form method="post" class="row g-3">
+            {% csrf_token %}
+
+            <div class="col-md-3">
+                <div class="col-sm-12">
+                    <div class="form-floating">
+                        <input type="number" class="form-control" id="floatingCalls" placeholder="Calls" name="calls" required>
+                        <label for="floatingCalls">Calls</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="col-sm-12">
+                    <div class="form-floating">
+                        <select class="form-select" id="floatingPeriod" aria-label="State" name="reporting_period" required>
+                            <option value=60 selected="selected">1 Hou</option>
+                            <option value=30>30 Min</option>
+                            <option value=15>15 Min</option>
+                        </select>
+                        <label for="floatingPeriod">Period</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="col-sm-12">
+                    <div class="form-floating">
+                        <input type="number" class="form-control" id="floatingAHT" placeholder="AHT" step="0.01" name="average_handling_time" required>
+                        <label for="floatingAHT">AHT</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="col-sm-12">
+                    <div class="form-floating">
+                        <input type="number" class="form-control" id="floatingSLA" placeholder="SLA" step="0.01" name="service_level_agreement" required>
+                        <label for="floatingSLA">SLA</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="col-sm-12">
+                    <div class="form-floating">
+                        <input type="number" class="form-control" id="floatingSLA" placeholder="Response" step="0.01" name="service_level_time" required>
+                        <label for="floatingResponse">Response Time</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="col-sm-12">
+                    <div class="form-floating">
+                        <input type="number" class="form-control" id="floatingShrinkage" placeholder="Shrinkage" step="0.01" name="shrinkage" required>
+                        <label for="floatingShrinkage">Shrinkage</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <button type="submit" class="btn btn-primary">Calculate</button>
+                <button type="reset" class="btn btn-secondary">Reset</button>
+            </div>
+        </form><!-- End floating Labels Form -->
+    </div>
+</div>
+
+
+
+
+<div id="result">
+    <p>Required FTE: {{ agents_required }}</p>
+    <p>Utilization: {{ utilization }}</p>
+</div>
+
+<script>
+    $(document).ready(function() {
+        $('form').submit(function(event) {
+            event.preventDefault();
+            $.ajax({
+                type: 'POST',
+                url: '{% url "calculate_agents" %}',
+                data: $(this).serialize(),
+                success: function(data) {
+                    $('#result').html('Agents Required: ' + data.agents_required + '<br>Utilization: ' + data.utilization);
+                }
+            });
+        });
+    });
+</script>
