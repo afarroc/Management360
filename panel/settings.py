@@ -47,6 +47,7 @@ INSTALLED_APPS = [
 
     'eventos',
     'chat',
+    'tools',
 
     'django.contrib.admin',
     'django.contrib.auth',
