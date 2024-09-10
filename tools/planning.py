@@ -27,6 +27,7 @@ def ServiceLevel(Calls, Reporting_Period, average_handling_time, service_level_t
     Intensity = (Calls / (Reporting_Period * 60)) * average_handling_time
     return 1 - (ProbCallWaits(Calls, Reporting_Period, average_handling_time, agents) * np.exp(-(agents - Intensity) * service_level_time / average_handling_time))
 
+
 def ProbCallWaits(Calls, Reporting_Period, average_handling_time, agents):
     Intensity = (Calls / (Reporting_Period * 60)) * average_handling_time
     Occupancy = Intensity / agents
