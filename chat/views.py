@@ -15,18 +15,33 @@ def room(request, room_name):
 
 from django.shortcuts import render
 from django.http import StreamingHttpResponse
-from .ollama_api import generate_response
 from django.views.decorators.csrf import csrf_exempt
+import asyncio
 
-# Create your views here.
+from .ollama_api import generate_response
 
 @csrf_exempt
 def chat_view(request):
-   if request.method == "POST":
-       user_input = request.POST["user_input"]
-       prompt = f"User: {user_input}\nAI:"
-       response = generate_response(prompt)
-       #print(response['message']['content'])
-       print(response)
-       return StreamingHttpResponse(response, content_type='text/plain')
-   return render(request, "chat/assistant.html")
+    if request.method == "POST":
+        user_input = request.POST["user_input"]
+        prompt = f"User: {user_input}\nAI:"
+
+        async def async_chat_view():
+            async for chunk in generate_response(prompt):
+                yield chunk['response'].replace('\n', '<br>')
+
+        async def stream():
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            async_generator = async_chat_view()
+            while True:
+                try:
+                    chunk = await async_generator.asend(None)
+                    yield chunk
+                except StopAsyncIteration:
+                    break
+
+        return StreamingHttpResponse(stream(), content_type='text/event-stream charset=utf-8')
+
+    return render(request, "chat/assistant.html" ,{
+        "pagetitle":"Chat IA"})
