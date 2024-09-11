@@ -20,70 +20,119 @@
         </ol>
     </nav>
 </div><!-- End Page Title -->
+<style>
+    #chat-history {
+        padding: 20px;
+        overflow-y: auto;
+        height: 400px;
+    }
+
+    .chat-bubble {
+        margin-bottom: 20px;
+        padding: 10px;
+        border-radius: 10px;
+        width: fit-content;
+    }
+
+    .user-bubble {
+        background-color: #007bff;
+        color: #fff;
+        align-self: flex-end;
+    }
+
+    .ai-bubble {
+        background-color: #28a745;
+        color: #fff;
+        align-self: flex-start;
+    }
+
+    .chat-message {
+        display: flex;
+        flex-direction: column;
+    }
+
+        .chat-message p:first-child {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+    #chat-history {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+</style>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $("#chat-form").submit(function(event) {
+            event.preventDefault();
+            var userInput = $("#user-input").val();
+            $("#user-input").val("");
+            $("#chat-history").append("<div class='chat-bubble user-bubble'><div class='chat-message'><p><strong>User:</strong></p><p>" + userInput + "</p></div></div>");
+            var chatHistory = document.getElementById('chat-history');
+            chatHistory.scrollTop = chatHistory.scrollHeight; // Actualiza el scroll despues de agregar el mensaje del usuario
+
+            var aiResponseElement = $("<div class='chat-bubble ai-bubble'><div class='chat-message'><p><strong>AI:</strong></p><p></p></div></div>");
+            $("#chat-history").append(aiResponseElement);
+
+            // Agrega el spinner solo mientras se espera la respuesta
+            aiResponseElement.find(".chat-message p:last-child").html("<div class='spinner-border' role='status'><span class='visually-hidden'>Loading...</span></div>");
+            chatHistory.scrollTop = chatHistory.scrollHeight; // Actualiza el scroll despues de agregar el spinner
+
+            $.ajax({
+                type: "POST",
+                url: "/chat/assistant/",
+                data: { user_input: userInput },
+                xhrFields: {
+                    onprogress: function(xhr) {
+                        var response = xhr.target.responseText;
+                        aiResponseElement.find(".chat-message p:last-child").html(response);
+                        chatHistory.scrollTop = chatHistory.scrollHeight; // Actualiza el scroll mientras se recibe la respuesta
+                    }
+                },
+                success: function(data) {
+                    aiResponseElement.find(".chat-message p:last-child").empty(); // Elimina el spinner y cualquier contenido previo
+                    aiResponseElement.find(".chat-message p:last-child").html(data);
+                    chatHistory.scrollTop = chatHistory.scrollHeight; // Actualiza el scroll despues de recibir la respuesta
+                }
+            });
+        });
+    });
+</script>
+
+
 
 <section class="section dashboard">
     <div class="row">
+
+
+
         <!-- Left side columns -->
         <div class="col-lg-12">
             <div class="row">
                 <div class="col-lg-12">
                     <div class="card">
                         <div class="card-body">
-
-
-
-
-                            <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-                            <script>
-                                $(document).ready(function() {
-                                    $("#chat-form").submit(function(event) {
-                                        event.preventDefault();
-                                        var userInput = $("#user-input").val();
-                                        $("#user-input").val("");
-                                        $("#chat-history").append(
-                                            "<p><strong>User:</strong></p><p>" + userInput + "</p>"
-                                        );
-                                        var aiResponseElement = $("<p>");
-                                        $("#chat-history").append($("<strong>").text("AI:"));
-                                        $("#chat-history").append(aiResponseElement);
-                                        $.ajax({
-                                            type: "POST",
-                                            url: "/chat/assistant/",
-                                            data: { user_input: userInput },
-                                            xhrFields: {
-                                                onprogress: function(xhr) {
-                                                    var response = xhr.target.responseText;
-                                                    console.log(xhr);
-                                                    console.log(response);
-                                                    aiResponseElement.html(function(i, oldHtml) {
-                                                        return response;
-                                                    });
-                                                },
-                                            },
-                                        });
-                                    });
-                                });
-                            </script>
-
-                            <div id="chat-history"></div>
-                            <form id="chat-form">
-                                <input type="text" id="user-input" name="user_input" required />
-                                <button type="submit">Send</button>
-                            </form>
-
-
-
-
-
-
-
-
+                            <h5 class="card-title">Ask Ollama {{some}}</h5>
+                            <div id="chat-history" class="overflow-auto" style="max-height: 230px; padding-bottom: 20px;"></div>
                         </div>
                     </div>
+                    <div class="mt-3">
+                        <form id="chat-form">
+                            <div class="input-group">
+                                <input type="text" id="user-input" class="form-control" placeholder="Escribe tu mensaje...">
+                                <button class="btn btn-primary" type="submit">Enviar</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-            </div><!-- End Left side columns -->
+            </div>
         </div>
 
+        <!-- End Left side columns -->
+
+    </div>
 </section>
 
 
