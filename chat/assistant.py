@@ -1,18 +1,13 @@
-import asyncio
-import aiohttp
-import json
-import sys
+import asyncio, aiohttp, json, sys
 
 async def enviar_solicitud(pregunta):
     async with aiohttp.ClientSession() as session:
-        async with session.post('http://localhost:11434/api/chat', json={
+        async with session.post('http://localhost:11434/api/generate', json={
             "model": "gemma2:2b",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": pregunta
-                }
-            ]
+            "format": "json",
+            "stream": "false",
+
+
         }) as respuesta:
             async for linea in respuesta.content:
                 if linea:

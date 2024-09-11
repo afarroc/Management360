@@ -1,13 +1,16 @@
-from ollama import Client
-client = Client(host='192.168.18.40:11434')
+from ollama import AsyncClient
 
-def generate_response(prompt):
-    stream = client.chat(
+client = AsyncClient(host='192.168.18.40:11434')
+
+async def generate_response(prompt):
+    stream = await client.generate(
         model='gemma2:2b',  # Utiliza el modelo configurado
-        messages=[{'role': 'user', 'content': prompt}],
+        prompt=prompt,
         stream=True,
+        options= {
+            "temperature": 0.7,
+          }
     )
-    for chunk in stream:
-        yield chunk['message']['content']
-
-   
+    async for chunk in stream:
+        print(chunk)
+        yield chunk
