@@ -115,13 +115,13 @@
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">Ask Ollama {{some}}</h5>
-                            <div id="chat-history" class="overflow-auto" style="max-height: 230px; padding-bottom: 20px;"></div>
+                            <div id="chat-history" class="overflow-auto" style="max-height: 230px; padding-bottom: 0px;"></div>
                         </div>
                     </div>
                     <div class="mt-3">
                         <form id="chat-form">
-                            <div class="input-group">
-                                <input type="text" id="user-input" class="form-control" placeholder="Escribe tu mensaje...">
+                            <div class="input-group" >
+                                <textarea dir="ltr" autocomplete="off" maxlength="15000" aria-invalid="false" id="user-input" class="form-control" placeholder="Pregunta lo que quieras a gemma2:2b AI..."></textarea>
                                 <button class="btn btn-primary" type="submit">Enviar</button>
                             </div>
                         </form>
