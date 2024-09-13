@@ -28,7 +28,7 @@ def chat_view(request):
 
         async def async_chat_view():
             async for chunk in generate_response(prompt):
-                yield chunk['message']['content'].replace('\n', '<br>')
+                yield chunk['message']['content'].replace('\n', '   ')
 
         async def stream():
             loop = asyncio.new_event_loop()
