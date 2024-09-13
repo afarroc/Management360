@@ -29,10 +29,9 @@ SECRET_KEY = os.environ.get('SECRET_KEY', default='your secret key')
 DEBUG = 'RENDER' not in os.environ
 
 ALLOWED_HOSTS = [
-    '192.168.18.6',
     '127.0.0.1',
     'localhost',
-    '192.168.18.40'
+    '0.0.0.0'
 ]
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
@@ -120,17 +119,6 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'projects',
-        'USER': 'admin',
-        'PASSWORD': 'Admin+123',
-        'HOST': '192.168.18.40',
-        'PORT': '3306',
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-        },
-    },
-    'local': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'projects',
         'USER': 'root',
         'PASSWORD': 'Peru+123',
         'HOST': '127.0.0.1',
@@ -139,14 +127,6 @@ DATABASES = {
             'charset': 'utf8mb4',
         },
     },
-    'postgres': dj_config(
-        default='postgresql://admin:Admin+123@192.168.18.40:5432/projects',
-        conn_max_age=600
-    ),
-    'postgres_online': dj_config(
-        default='postgresql://admin:Admin+123@db-server.example.com:5432/projects',
-        conn_max_age=600
-    ),
     'sqlite': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
