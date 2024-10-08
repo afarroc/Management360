@@ -1,4 +1,4 @@
-# Proyecto de Gestión de Eventos y Tareas con Zettelkasten
+# Proyecto de Gestión de Eventos y Tareas
 
 Este proyecto forma parte de mi portafolio como analista de datos. A continuación, se describen las características principales y los modelos utilizados en la aplicación:
 
