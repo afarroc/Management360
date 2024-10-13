@@ -56,9 +56,17 @@ def add_credits_to_user(user, amount):
     except (ValueError, Decimal.InvalidOperation):
         return False, "Monto no válido"
 
+from django.core.exceptions import ObjectDoesNotExist
+
 def get_task_states_with_duration(start_date=None, end_date=None):
-    in_progress_status = TaskStatus.objects.get(status_name='En Curso')
     
+    try:
+        in_progress_status = TaskStatus.objects.get(status_name="En Curso")
+    except ObjectDoesNotExist:
+        # Manejar el caso cuando no existe el estado "En Curso"
+        return []
+
+
     # Construir la consulta para obtener solo los registros en el rango de fechas
     queryset = TaskState.objects.filter(status=in_progress_status).annotate(
         duration_seconds=ExpressionWrapper(
