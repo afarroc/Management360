@@ -40,13 +40,21 @@ if RENDER_EXTERNAL_HOSTNAME:
 
 # Application definition
 
+
+# settings.py
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 INSTALLED_APPS = [
+    
+    'eventos.apps.EventosConfig',  # <--- Agrega esto
+
     'daphne',
     'channels',
 
-    'eventos',
     'chat',
     'tools',
+    'rooms',
 
     'django.contrib.admin',
     'django.contrib.auth',

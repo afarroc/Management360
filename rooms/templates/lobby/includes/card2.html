@@ -1,0 +1,32 @@
+<div class="card">
+    <div class="card-body">
+
+
+        <h5 class="card-title">{{ room.name }}</h5>
+        <img src="{{ room.image.url }}" alt="Imagen de la sala" width="50" height="50">
+        <div>
+
+
+            <p>{{ room.description }}</p>
+
+            <p>Capacidad: {{ room.capacity }}</p>
+
+            <p>Direccion: {{ room.address }}</p>
+
+            <p>Permisos: {{ room.permissions }}</p>
+
+            <p>Creada por: {{ room.creator.username }}</p>
+
+            <p>Propietario: {{ room.owner.username }}</p>
+
+            <p>Calificacion: {{ room.rating }}</p>
+
+            <a href="{% url 'room_comments' room.pk %}">Comentarios</a>
+
+            <a href="{% url 'room_evaluations' room.pk %}">Evaluaciones</a>
+
+
+
+        </div>
+    </div>
+</div>

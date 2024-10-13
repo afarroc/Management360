@@ -1,0 +1,13 @@
+<h1>Evaluaciones de la sala</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ evaluation_form.as_p }}
+    <button type="submit">Agregar evaluación</button>
+</form>
+
+<ul>
+    {% for evaluation in room.evaluations.all %}
+        <li>{{ evaluation.text }} ({{ evaluation.user.username }}) - Calificación: {{ evaluation.rating }}</li>
+    {% endfor %}
+</ul>
