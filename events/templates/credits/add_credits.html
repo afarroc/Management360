@@ -1,0 +1,11 @@
+<!-- templates/add_credits.html -->
+
+{% if error %}
+  <p>{{ error }}</p>
+{% endif %}
+<form method="post">
+  {% csrf_token %}
+  <label for="amount">Cantidad de créditos:</label>
+  <input type="text" id="amount" name="amount" required>
+  <button type="submit">Agregar Créditos</button>
+</form>

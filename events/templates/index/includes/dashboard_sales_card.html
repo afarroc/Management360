@@ -1,0 +1,147 @@
+<!-- dashboard_sales_card.html -->
+{% load custom_tags %}
+
+<!-- Events Card -->
+<div class="col-xxl-4 col-md-6">
+    <div class="card info-card sales-card">
+        <div class="filter">
+            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                <li class="dropdown-header text-start">
+                    <h6>Last</h6>
+                </li>
+                <li><a class="dropdown-item" href="{% url 'index' 6 %}">Week</a></li>
+                <li><a class="dropdown-item" href="{% url 'index' 30 %}">Month</a></li>
+                <li><a class="dropdown-item" href="{% days_transcurridos_del_mes as days %}{% url 'index' days %}">This Month ({{ days }} days ago)</a></li>
+                <li><a class="dropdown-item" href="{% url 'index' 365 %}">Year</a></li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">
+                <a class="dropdown-item" href="{% url 'event_panel' %}">Events
+                  <span> | {{ events.start_date|date:"d.m" }} - {{ events.end_date|date:"d.m" }}</span>
+                </a>
+            </h5>
+            <div class="d-flex align-items-center">
+                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                    <i class="bi bi-calendar-event"></i>
+                </div>
+                <div class="ps-3">
+                    <h6>{{ events.recent_count }}</h6>
+                    <span class="{% if events.increase > 0 %}text-success{% else %}text-danger{% endif %} small pt-1 fw-bold">
+                        {{ events.increase }}%
+                    </span>
+                    {% if events.increase > 0 %}
+                    <span class="text-success small pt-2 ps-1">
+                    <i class="bi bi-arrow-up-short"></i>
+                    </span>
+                    {% else %}
+                    <span class="text-danger small pt-2 ps-1">
+                    <i class="bi bi-arrow-down-short"></i>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="small text-muted pt-2">
+                <span class="text-primary">Total: {{ events.count }}</span> |
+                <span class="text-secondary">Previous: {{ events.previous_count }}</span>
+            </div>
+        </div>
+    </div>
+</div><!-- End Events Card -->
+
+<!-- Projects Card -->
+<div class="col-xxl-4 col-md-6">
+    <div class="card info-card sales-card">
+        <div class="filter">
+            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                <li class="dropdown-header text-start">
+                    <h6>Options</h6>
+                </li>
+                <li><a class="dropdown-item" href="{% url 'index' 1 %}">Today</a></li>
+                <li><a class="dropdown-item" href="{% days_transcurridos_del_mes as days %}{% url 'index' days %}">This Month</a></li>
+                <li><a class="dropdown-item" href="{% url 'index' 365 %}">This Year</a></li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">
+                <a class="dropdown-item" href="{% url 'project_panel' %}">Projects
+                  <span> | {{ projects.start_date|date:"d.m" }} - {{ projects.end_date|date:"d.m" }}</span>
+                </a>
+            </h5>
+            <div class="d-flex align-items-center">
+                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                    <i class="bi bi-calendar-range"></i>
+                </div>
+                <div class="ps-3">
+                    <h6>{{ projects.recent_count }}</h6>
+                    <span class="{% if projects.increase > 0 %}text-success{% else %}text-danger{% endif %} small pt-1 fw-bold">
+                        {{ projects.increase }}%
+                    </span>
+                    {% if projects.increase > 0 %}
+                    <span class="text-success small pt-2 ps-1">
+                    <i class="bi bi-arrow-up-short"></i>
+                    </span>
+                    {% else %}
+                    <span class="text-danger small pt-2 ps-1">
+                    <i class="bi bi-arrow-down-short"></i>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="small text-muted pt-2">
+                <span class="text-primary">Total: {{ projects.count }}</span> |
+                <span class="text-secondary">Previous: {{ projects.previous_count }}</span>
+            </div>
+        </div>
+    </div>
+</div><!-- End Projects Card -->
+
+<!-- Tasks Card -->
+<div class="col-xxl-4 col-md-6">
+    <div class="card info-card sales-card">
+        <div class="filter">
+            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                <li class="dropdown-header text-start">
+                    <h6>Filter</h6>
+                </li>
+                <li><a class="dropdown-item" href="{% url 'index' 1 %}">Today</a></li>
+                <li><a class="dropdown-item" href="{% days_transcurridos_del_mes as days %}{% url 'index' days %}">This Month</a></li>
+                <li><a class="dropdown-item" href="{% url 'index' 365 %}">This Year</a></li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">
+                <a class="dropdown-item" href="{% url 'task_panel' %}">Tasks
+                  <span> | {{ tasks.start_date|date:"d.m" }} - {{ tasks.end_date|date:"d.m" }}</span>
+                </a>
+            </h5>
+            <div class="d-flex align-items-center">
+                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                    <i class="bi bi-calendar"></i>
+                </div>
+                <div class="ps-3">
+                    <h6>{{ tasks.recent_count }}</h6>
+                    <span class="{% if tasks.increase > 0 %}text-success{% else %}text-danger{% endif %} small pt-1 fw-bold">
+                        {{ tasks.increase }}%
+                    </span>
+                    {% if tasks.increase > 0 %}
+                    <span class="text-success small pt-2 ps-1">
+                    <i class="bi bi-arrow-up-short"></i>
+                    </span>
+                    {% else %}
+                    <span class="text-danger small pt-2 ps-1">
+                    <i class="bi bi-arrow-down-short"></i>
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="small text-muted pt-2">
+                <span class="text-primary">Total: {{ tasks.count }}</span> |
+                <span class="text-secondary">Previous: {{ tasks.previous_count }}</span>
+            </div>
+        </div>
+    </div>
+</div><!-- End Tasks Card -->
