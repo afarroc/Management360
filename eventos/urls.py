@@ -8,6 +8,11 @@ urlpatterns = [
 
 
     path('', views.index, name="index"),
+    
+    # Sesión
+    path('accounts/signup/', views.signup, name='signup'),
+    path('accounts/login/', views.signin, name='signin'),
+    path('logout/', views.signout, name='logout'),
 
     path('memento/<str:frequency>/<str:birth_date>/<str:death_date>/', views.memento, name='memento'),
 
@@ -75,11 +80,6 @@ urlpatterns = [
 
     # Panel
     path('panel/', views.panel, name='panel'),
-
-    # Sesión
-    path('accounts/signup/', views.signup, name='signup'),
-    path('logout/', views.signout, name='logout'),
-    path('accounts/login/', views.signin, name='signin'),
 
     # Perfil
     path('profile/<int:user_id>', views.ViewProfileView.as_view(), name='profile'),

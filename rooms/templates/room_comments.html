@@ -1,0 +1,13 @@
+<h1>Comentarios de la sala</h1>
+
+<form method="post">
+    {% csrf_token %}
+    <textarea name="comment"></textarea>
+    <button type="submit">Agregar comentario</button>
+</form>
+
+<ul>
+    {% for comment in room.comments.all %}
+        <li>{{ comment.text }} ({{ comment.user.username }})</li>
+    {% endfor %}
+</ul>
