@@ -47,7 +47,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 INSTALLED_APPS = [
     
-    'eventos.apps.EventosConfig',  # <--- Agrega esto
+    'rest_framework',
+
+    'eventos.apps.EventosConfig',
 
     'daphne',
     'channels',
