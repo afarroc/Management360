@@ -24,18 +24,31 @@
         <!-- Left side columns -->
         <div class="col-lg-8">
             <div class="row">
+                
+                {% include 'index/includes/news.html' %}
+                {% include 'index/includes/top.html' %}
+
                 {% if user.username %}
                 <!-- cards includes if user loggeed in -->
 
                 {% include 'index/includes/revenue_card.html' %}
                 
-                {% include 'index/includes/dashboard_sales_card.html' %}
                 {% include 'tests/chart_time.html' %}
                 {% include 'tests/chart_report.html' %}
                 {% include 'tests/chart_bar.html' %}
                 {% include 'tests/chart_trend.html' %}
                 {% include 'tests/table.html' %}
-                <!-- end include cards user loggeed in  -->                
+                <!-- end include cards user loggeed in  -->     
+                {% else %}
+                {% include 'index/includes/dashboard_sales_card.html' %}
+
+
+                
+
+
+
+
+
                 {% endif %}
             </div>
         </div><!-- End Left side columns -->
@@ -45,8 +58,10 @@
 
             {% if user.name %}
 
-            {% include 'events/includes/event_recent_activity.html' %}
 
+            {% else %}
+
+            {% include 'events/includes/event_recent_activity.html' %}
 
             {% endif %}
 
