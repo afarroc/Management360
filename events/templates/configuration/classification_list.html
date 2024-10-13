@@ -1,0 +1,28 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">Lista de Clasificaciones</h1>
+    <div class="mt-3">
+        <a href="{% url 'create_classification' %}" class="btn btn-success">Crear nueva clasificación</a>
+    </div>
+    <p></p>
+    <div class="row justify-content-center">
+        {% for classification in classifications %}
+            <div class="col-md-4">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">[{{ classification.id }}] {{ classification.nombre }}</h5>
+                        <p class="card-text">{{ classification.descripcion }}</p>
+                        <a href="{% url 'edit_classification' classification.id %}" class="btn btn-primary">Editar</a>
+                        <a href="{% url 'delete_classification' classification.id %}" class="btn btn-danger">Eliminar</a>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <p>No hay clasificaciones disponibles.</p>
+        {% endfor %}
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,234 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .nav-link .close-tab {
+        font-size: 0.8em;
+        /* Haz el botón de cierre más pequeño */
+        color: red;
+        /* Cambia el color del botón de cierre a rojo */
+        margin-left: 10px;
+        /* Añade un margen a la izquierda del botón de cierre */
+    }
+
+    .close-tab {
+        display: none;
+        /* Oculta todos los botones de cierre */
+    }
+
+    .nav-link.active .close-tab {
+        display: inline;
+        /* Muestra el botón de cierre del tab activo */
+    }
+</style>
+<div class="pagetitle">
+    <h1>Gestion de eventos</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+            <li class="breadcrumb-item active">Management</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section dashboard">
+    <div class="row">
+        <!-- Left side columns -->
+        <div class="col-lg-12">
+            <div class="row">
+
+                <!-- Gestor card-->
+                <div class="col-xxl-4 col-md-6">
+                    <div class="card info-card sales-card">
+
+                        <div class="filter">
+                            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                                <li class="dropdown-header text-start">
+                                    <h6>Filter</h6>
+                                </li>
+
+                                <li><a class="dropdown-item" href="#">Today</a></li>
+                                <li><a class="dropdown-item" href="#">This Month</a></li>
+                                <li><a class="dropdown-item" href="#">This Year</a></li>
+                            </ul>
+                        </div>
+
+                        <div class="card-body">
+                            <h5 class="card-title">Gestión de eventos</h5>
+                            <form method="post" class="row g-3">
+                                {% csrf_token %}
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <textarea name="comentario" id="comentario" class="form-control"
+                                            style="height: 100px"></textarea>
+                                        <label for="comentario">Añade un comentario:</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating mb-3">
+                                        <select name="classification" id="classification" class="form-control">
+                                            {% for classification in classifications %}
+                                            <option value="{{ classification.id }}">{{ classification.nombre }}</option>
+                                            {% endfor %}
+                                        </select>
+                                        <label for="classification">Selecciona una Clasificación:</label>
+                                    </div>
+                                    <div class="col-md-12 text-center">
+                                        <button type="submit" class="btn btn-primary">Finalizar evento</button>
+                                    </div>
+                                </div>
+
+
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Panel pestañas -->
+                <div class="col-xxl-4 col-md-6">
+                    <div class="card info-card">
+                        <div class="row mt-4" style="overflow-y: auto;">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Eventos</h5>
+                                        <ul class="nav nav-tabs" id="eventTabList" role="tablist">
+                                            <!-- Las pestañas se añadirán aquí con jQuery -->
+                                        </ul>
+                                        <div class="tab-content pt-2" id="eventTabContent">
+                                            <!-- El contenido de las pestañas se añadirá aquí con jQuery -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Tabla de eventos -->
+                <div class="col-12">
+                    <div class="card recent-sales overflow-auto">
+
+                        <div class="filter">
+                            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                                <li class="dropdown-header text-start">
+                                    <h6>Filtro</h6>
+                                </li>
+
+                                <li><a class="dropdown-item" href="#">Hoy</a></li>
+                                <li><a class="dropdown-item" href="#">Este Mes</a></li>
+                                <li><a class="dropdown-item" href="#">Este Año</a></li>
+                            </ul>
+                        </div>
+
+                        <div class="card-body">
+                            <h5 class="card-title">Eventos <span>| Hoy</span></h5>
+
+                            <table class="table table-borderless datatable">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Pick</th>
+                                        <th scope="col">ID del Evento</th>
+                                        <th scope="col">Título del Evento</th>
+                                        <th scope="col">Detalle del Evento</th>
+
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for evento in eventos_asignados %}
+                                    <tr>
+                                        <td><input type="checkbox" name="evento" value="{{ evento.id }}"></td>
+                                        <td>{{ evento.id }}</td>
+                                        <td><a class="text-primary">{{ evento.title }}</a></td>
+                                        <td><a class="text-primary">{{ evento.description }}</a></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+
+                        </div>
+
+                    </div>
+                </div><!-- End Tabla de eventos -->
+
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.2.0/js/bootstrap.bundle.min.js"></script>
+    <!-- Asegúrate de que el plugin de pestañas de Bootstrap 5.2 está incluido -->
+    <script>
+        $(document).ready(function () {
+            $('input[name="evento"]').on('change', function () {
+                var id = $(this).val();
+                var title = $(this).closest('tr').find('a').text();
+                var description = $(this).closest('tr').find('.description').text(); // Asume que tienes una clase 'description' en tu fila que contiene la descripción del evento
+                var row = $(this).closest('tr');
+
+                // Si el evento está seleccionado
+                if ($(this).is(':checked')) {
+                    
+                    var tabListHtml = '<li class="nav-item" role="presentation"><button class="nav-link" id="event-tab' + id + '" data-bs-toggle="tab" data-bs-target="#event' + id + '" type="button" role="tab" aria-controls="event' + id + '" aria-selected="false">' + title + ' <span class="close-tab" style="cursor:pointer;">x</span></button></li>';
+
+                    var tabContentHtml = '<div class="tab-pane fade" id="event' + id + '" role="tabpanel" aria-labelledby="event-tab' + id + '">' + description + '</div>'; // Incluye la descripción del evento en la pestaña
+                    $('#eventTabList').append(tabListHtml);
+                    $('#eventTabContent').append(tabContentHtml);
+                    row.hide(); // Ocultar el registro de la tabla
+
+                    // Llamada AJAX para actualizar el registro en el servidor
+                    $.ajax({
+                        url: '{% url "update_event" %}', // Reemplaza esto con la ruta a tu servidor
+                        type: 'POST',
+                        data: { 'csrfmiddlewaretoken': '{{ csrf_token }}', 'evento': id, 'selected': true },
+                        success: function (response) {
+                            // Manejar la respuesta del servidor
+                        }
+                    });
+
+                    // Agregar la clase 'active' al tab seleccionado y quitarla de los demás
+                    $('.nav-link').removeClass('active');
+                    $('#event-tab' + id).addClass('active');
+                }
+
+                // Agregar un evento click al botón de cierre (x) de la pestaña
+                $('.close-tab').on('click', function () {
+                    var tabId = $(this).parent().attr('id').replace('event-tab', '');
+                    var nextTab = $(this).parent().parent().next().find('.nav-link');
+                    $('#event' + tabId).remove();
+                    $(this).parent().parent().remove();
+                    $('input[value="' + tabId + '"]').prop('checked', false);
+                    $('tr:contains("' + tabId + '")').show(); // Mostrar el registro en la tabla
+
+                    // Llamada AJAX para actualizar el registro en el servidor
+                    $.ajax({
+                        url: '{% url "update_event" %}', // Reemplaza esto con la ruta a tu servidor
+                        type: 'POST',
+                        data: { 'csrfmiddlewaretoken': '{{ csrf_token }}', 'evento': tabId, 'selected': false },
+                        success: function (response) {
+                            // Manejar la respuesta del servidor
+                        }
+                    });
+
+                    // Si hay una pestaña siguiente, hazla activa
+                    if (nextTab.length > 0) {
+                        var bootstrap_tab = new bootstrap.Tab(nextTab[0]);
+                        bootstrap_tab.show();
+                    } else {
+                        // Si no hay una pestaña siguiente, haz la última pestaña activa
+                        var lastTab = $('.nav-link').last();
+                        var bootstrap_last_tab = new bootstrap.Tab(lastTab[0]);
+                        bootstrap_last_tab.show();
+                    }
+                });
+            });
+        });
+    </script>
+
+
+</section>
+{% endblock %}
