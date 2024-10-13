@@ -6,9 +6,11 @@ from django.conf.urls.static import static
 
 urlpatterns = [
 
-    path('memento/<str:frequency>/<str:birth_date>/<str:death_date>/', views.memento, name='memento'),
-    
+
     path('', views.index, name="index"),
+
+    path('memento/<str:frequency>/<str:birth_date>/<str:death_date>/', views.memento, name='memento'),
+
     path('<int:days>/', views.index, name="index"),
     path('<int:days>/<int:days_ago>/', views.index, name="index"),
     path('about/', views.about, name="about"),

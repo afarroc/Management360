@@ -235,17 +235,26 @@ def calculate_percentage_increase(queryset, days):
         'previous_end_date': previous_end_date,
     }
 
+def index(request):
+    page_title = 'Index'
+    var=100
+    print(var)
+    return render(request, 'index/index.html', {
+        "page_title":page_title,
+        "data":var
+        })
 
-def index(request, days=7, days_ago=None):
-    page_title = 'Dashboard'
+
+def index_z(request, days=7, days_ago=None):
+    page_title = 'Index'
     event_statuses, project_statuses, task_statuses = statuses_get()
     
     if request.user.is_authenticated:
         user = get_object_or_404(User, pk=request.user.id)
     else:
         user = None
-        messages.success(request, "usuario invitado")
-        page_title = 'Dashboard - Invitado'
+        messages.success(request, "Guest user")
+        page_title = 'Index - Guest'
     
     today = timezone.now().date()
     
