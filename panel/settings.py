@@ -103,12 +103,10 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [("redis://:Peru+123@192.168.18.40:6379/0")],
         },
     },
 }
-
-
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
@@ -122,7 +120,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'projects',
         'USER': 'root',
-        'PASSWORD': 'Teraware+123',
+        'PASSWORD': 'Peru+123',
         'HOST': '127.0.0.1',
         'PORT': '3306',
         'OPTIONS': {
