@@ -1,0 +1,65 @@
+<!-- Top Selling -->
+<div class="col-12">
+    <div class="card top-selling overflow-auto">
+
+        <div class="filter">
+            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                <li class="dropdown-header text-start">
+                    <h6>Filter</h6>
+                </li>
+
+                <li><a class="dropdown-item" href="#">--</a></li>
+                <li><a class="dropdown-item" href="#">-</a></li>
+                <li><a class="dropdown-item" href="#">--</a></li>
+            </ul>
+        </div>
+
+        <div class="card-body pb-0">
+            <h5 class="card-title">Tasks <span>| Today</span></h5>
+
+            <table class="table table-borderless datatable">
+                <thead>
+                    <tr>
+                        <th scope="col">Title</th>
+                        <th scope="col">Project</th>
+                        <th scope="col">Event</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Ticket</th>
+
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task_data in tasks %}
+                    <tr>
+                        <td class="fw-bold"><a href="{% url 'task_panel' task_data.task.id %}">{{task_data.task.title}}</a></td>
+                        <td > 
+                            {% if task_data.task.project %}
+                            <a href="{% url 'project_panel' task_data.task.project.id %}">{{task_data.task.project.title}}
+                                <br><i class="bi bi-circle-fill" style="color: {{ task_data.task.project.project_status.color }};" > {{task_data.task.project.project_status}} </i>
+                            </a>
+                            {% else %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if task_data.task.event %}
+                            <a href="{% url 'event_panel' task_data.task.event.id %}">{{task_data.task.event.title}}
+                                <br><i class="bi bi-circle-fill" style="color: {{ task_data.task.event.event_status.color }};" > {{task_data.task.event.event_status}} </i>
+                            </a>
+                            {% else %}
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span style="background-color: {{ task_data.task.task_status.color }};" class="badge "> <a href="{% url 'task_activate' task_data.task.id %}"  class="text-primary">{{task_data.task.task_status.icon}} </a>{{task_data.task.task_status.status_name}}</span>
+                            </td>
+                            <td><a href="{% url 'task_activate' task_data.task.id %}"  class="text-primary">${{task_data.task.ticket_price}}</a></td>
+                        </tr>
+                    {% endfor%}
+
+                </tbody>
+            </table>
+
+        </div>
+
+    </div>
+</div><!-- End Top Selling -->
