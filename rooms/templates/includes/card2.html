@@ -1,0 +1,34 @@
+﻿<div class="card">
+    <div class="card-body">
+
+
+
+
+        <div>
+
+        <h5 class="card-title">{{ room.name }}</h5>
+        <img src="{{ room.image.url }}" alt="Imagen de la sala" width="50" height="50">
+        <h1>{{ room.title }}</h1>
+        <p>{{ room.description }}</p>
+        <p>Posición: ({{ room.x }}, {{ room.y }}, {{ room.z }})</p>
+        <p>Dimensión: ({{ room.longitud }}, {{ room.anchura }}, {{ room.altura }})</p>
+        <p>Rotación: ({{ room.pitch }}, {{ room.yaw }}, {{ room.roll }})</p>
+        <p>Tipo: {{ room.type }}</p>
+        <p>Camas: {{ room.beds }}</p>
+        <p>Baños: {{ room.bathrooms }}</p>
+        <p>Superficie: {{ room.surface }} m²</p>
+        <p>Precio: {{ room.price }}</p>
+        <p>Disponibilidad: {{ room.available|yesno:"Sí/No" }}</p>
+        {% if room.parent_room %}
+        <p>Habitación contenedora: {{ room.parent_room.title }}</p>
+        {% endif %}
+        <h2>Habitaciones dentro:</h2>
+        <ul>
+        {% for child_room in room.room_set.all %}
+            <li>{{ child_room.title }}</li>
+        {% endfor %}
+        </ul>
+
+        </div>
+    </div>
+</div>
