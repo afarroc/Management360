@@ -1,4 +1,4 @@
-{% load static %}
+295{% load static %}
 
 
 <header id="header" class="header fixed-top d-flex align-items-center">
@@ -292,9 +292,9 @@
                     </li>
 
                     <li>
-                        <a class="dropdown-item d-flex align-items-center" href="{% url 'logout' %}">
+                        <a class="dropdown-item d-flex align-items-center" href="{% url 'api-logout' %}">
                             <i class="bi bi-box-arrow-right"></i>
-                            <span>Sign Out</span>
+                            <span>Log Out</span>
                         </a>
                     </li>
 
@@ -302,16 +302,19 @@
             </li><!-- End Profile Nav -->
             {% else %}
             <li class="nav-item">
-                <a class="nav-link" href="{% url 'signup' %}">
+                <a class="nav-link" href="{% url 'api-signup' %}">
                     <i class="bi bi-card-list ps-3"></i>
                     <span>Register</span>
                 </a>
             </li>
             <li class="nav-item" style="margin-right: 20px;">
-                <a class="nav-link" href="{% url 'signin' %}">
+                <a class="nav-link" href="#" onclick="document.getElementById('login-form').submit()">
                     <i class="bi bi-box-arrow-in-right ps-3"></i>
-                    <span>Login</span>
+                    <span>Log In</span>
                 </a>
+                <form id="login-form" action="{% url 'api-login' %}" method="post" style="display:none;">
+                    {% csrf_token %}
+                </form>
             </li>
             {% endif %}
         </ul>

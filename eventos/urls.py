@@ -4,16 +4,18 @@ from .import views
 from django.conf import settings
 from django.conf.urls.static import static
 
+from django.contrib import admin
+from django.urls import path, include
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+
+from . import views
+
 urlpatterns = [
 
 
     path('', views.index, name="index"),
     
-    # Sesión
-    path('accounts/signup/', views.signup, name='signup'),
-    path('accounts/login/', views.signin, name='signin'),
-    path('logout/', views.signout, name='logout'),
-
+    
     path('memento/<str:frequency>/<str:birth_date>/<str:death_date>/', views.memento, name='memento'),
 
     path('<int:days>/', views.index, name="index"),
