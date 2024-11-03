@@ -4,12 +4,12 @@
 
 {{ error }}
 
-<form action="{% url 'signin' %}" method="POST">
+<form action="{% url 'login_view' %}" method="POST">
 
     {% csrf_token %}
     {{ form.as_p }}
     <button>
-        Signin
+        Log In
     </button>
 </form>
 

@@ -326,63 +326,6 @@ def blank(request):
     })
 
 
-# Sessions
-
-def signup(request):
-    if request.method=="GET":
-        return render(request, 'accounts/signup.html', {
-            'form':UserCreationForm
-        })       
-    else:
-        if request.POST['password1'] == request.POST['password2']:
-            try:
-                # register user
-                user = User.objects.create_user(username=request.POST['username'], password=request.POST['password1'])
-                user.save()
-                login(request, user)
-                return(redirect('index'))  # Modificado aquí
-            
-            except IntegrityError:
-                
-                return render(request, 'accounts/signup.html', {
-                    'form': UserCreationForm,
-                    "error": "User already exist"
-                })       
-        return render(request, 'accounts/signup.html', { 
-            'form': UserCreationForm,
-            "error": "Password do not match"
-        })    
-    
-def signout(request):
-    logout(request)
-    return(redirect('index'))
-
-def signin(request):
-    
-    try:    
-        if request.method == "GET":
-            return render(request,'accounts/signin.html',{
-                'form':AuthenticationForm,
-                })
-        else:
-            user = authenticate(
-                request, username=request.POST['username'], password=request.POST['password'])
-            if user is None:
-                print('user is none')
-                return render(request,'accounts/signin.html',{
-                    'form':AuthenticationForm,
-                    'error':'Username or password is incorrect'
-                })
-            else:
-                login(request, user)
-                request.session.setdefault('first_session', True)
-                return redirect('events')
-    except Exception as e:
-        # Manejo de errores
-        messages.error(request, f'Ha ocurrido un error: {e}')
-        return redirect('index')        
-
-
 # Proyects
     
 def projects(request, project_id=None):

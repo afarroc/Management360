@@ -1,20 +1,16 @@
-
 {% extends 'layouts/base.html' %}
-
-{% load static %}
-
 {% block content %}
-<h1>Sing Up</h1>
+<h1>Signin</h1>
 
-    {{ error }}
+{{ error }}
 
-    <form action="{% url 'signup' %}" method="POST">
-        {% csrf_token %}
-        {{form.as_p}}
-        
-        <button>
-            Sing Up
-        </button>
-    </form>
+<form action="{% url 'login_view' %}" method="POST">
+
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button>
+        Log In
+    </button>
+</form>
 
 {% endblock %}
