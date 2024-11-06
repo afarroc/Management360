@@ -44,9 +44,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 INSTALLED_APPS = [
     'rest_framework',
-    'eventos.apps.EventosConfig',
     'daphne',
     'channels',
+    'accounts',
+    'eventos.apps.EventosConfig',
     'chat',
     'tools',
     'rooms',
@@ -199,9 +200,5 @@ CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+LOGIN_REDIRECT_URL = '/accounts/dashboard/'
 
-
-
-LOGIN_REDIRECT_URL = "chat"
-
-LOGOUT_REDIRECT_URL = "login"
