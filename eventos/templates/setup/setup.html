@@ -1,0 +1,246 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load schedule_filters %}
+{% block content %}
+{% if messages %}
+{% include 'layouts/includes/alert.html' %}
+{% endif %}
+<div class="pagetitle">
+    <h1>{{page_title}}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item active">{{page_title}}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section dashboard">
+    <div class="row">
+        <!-- Card 1: Crear Superusuario -->
+        <div class="col-xxl-4 col-md-6">
+            <div class="card info-card revenue-card">
+                <div class="card-body">
+                    <h5 class="card-title">Crear Superusuario</h5>
+                    {% if '1' in completed_steps %}
+                    <div class="d-flex align-items-center">
+                        <div class="ps-3">
+                            <h6>Completado</h6>
+                        </div>
+                    </div>
+                    {% else %}
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <button type="submit" name="create_su" class="btn btn-primary">Crear Superusuario</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 2: Crear Perfil del Superusuario -->
+        <div class="col-xxl-4 col-md-6">
+            <div class="card info-card revenue-card">
+                <div class="card-body">
+                    <h5 class="card-title">Crear Perfil del Superusuario</h5>
+                    {% if '1' not in completed_steps %}
+                    <div class="d-flex align-items-center">
+                        <div class="ps-3">
+                            <h6>Pendiente</h6>
+                        </div>
+                    </div>
+                    {% elif '2' in completed_steps %}
+                    <div class="d-flex align-items-center">
+                        <div class="ps-3">
+                            <h6>Completado</h6>
+                        </div>
+                    </div>
+                    {% else %}
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div>
+                            <label for="bio">Biografía:</label>
+                            <textarea id="bio" name="bio" maxlength="500"></textarea>
+                        </div>
+                        <div>
+                            <label for="location">Ubicación:</label>
+                            <input type="text" id="location" name="location" maxlength="30">
+                        </div>
+                        <div>
+                            <label for="profile_picture">Foto de Perfil:</label>
+                            <input type="file" id="profile_picture" name="profile_picture">
+                        </div>
+                        <div>
+                            <label for="linkedin_url">LinkedIn:</label>
+                            <input type="url" id="linkedin_url" name="linkedin_url">
+                        </div>
+                        <div>
+                            <label for="github_url">GitHub:</label>
+                            <input type="url" id="github_url" name="github_url">
+                        </div>
+                        <div>
+                            <label for="twitter_url">Twitter:</label>
+                            <input type="url" id="twitter_url" name="twitter_url">
+                        </div>
+                        <div>
+                            <label for="facebook_url">Facebook:</label>
+                            <input type="url" id="facebook_url" name="facebook_url">
+                        </div>
+                        <div>
+                            <label for="instagram_url">Instagram:</label>
+                            <input type="url" id="instagram_url" name="instagram_url">
+                        </div>
+                        <div>
+                            <label for="company">Compañía:</label>
+                            <input type="text" id="company" name="company">
+                        </div>
+                        <div>
+                            <label for="job_title">Título del Trabajo:</label>
+                            <input type="text" id="job_title" name="job_title">
+                        </div>
+                        <div>
+                            <label for="country">País:</label>
+                            <input type="text" id="country" name="country">
+                        </div>
+                        <div>
+                            <label for="address">Dirección:</label>
+                            <input type="text" id="address" name="address">
+                        </div>
+                        <div>
+                            <label for="phone">Teléfono:</label>
+                            <input type="text" id="phone" name="phone">
+                        </div>
+                        <button type="submit" name="create_profile" class="btn btn-primary">Guardar Perfil</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 3: Crear Usuarios Aleatorios -->
+        <div class="col-xxl-4 col-md-6">
+            <div class="card info-card revenue-card">
+                <div class="card-body">
+                    <h5 class="card-title">Crear Usuarios Aleatorios</h5>
+                    {% if '2' not in completed_steps %}
+                    <div class="d-flex align-items-center">
+                        <div class="ps-3">
+                            <h6>Pendiente</h6>
+                        </div>
+                    </div>
+                    {% else %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <div>
+                            <label for="domain">Dominio:</label>
+                            <input type="text" id="domain" name="domain" required>
+                        </div>
+                        <div>
+                            <label for="num_users">Número de Usuarios:</label>
+                            <input type="number" id="num_users" name="num_users" min="1" max="100" required>
+                        </div>
+                        <div>
+                            <label for="group_id">Asignar al Grupo:</label>
+                            <select id="group_id" name="group_id" class="form-select">
+                                <option value="">Ninguno</option>
+                                {% for group in all_groups %}
+                                <option value="{{ group.id }}">{{ group.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="new_group_name">o Crear Nuevo Grupo:</label>
+                            <input type="text" id="new_group_name" name="new_group_name">
+                        </div>
+                        <button type="submit" name="create_random_users" class="btn btn-primary">Crear Usuarios</button>
+                    </form>
+
+                    {% if user_data %}
+                    <h6>Usuarios Generados</h6>
+                    <div class="user-data-container">
+                        {% for user in user_data %}
+                        <div class="user-data">
+                            <p>Username: {{ user.username }}</p>
+                            <p>Email: {{ user.email }}</p>
+                            <p>Password: <span id="password-{{ forloop.counter }}">{{ user.password }}</span></p>
+                            <button onclick="copyToClipboard('password-{{ forloop.counter }}')">Copiar</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Crear Grupos de Usuarios -->
+        <div class="col-xxl-4 col-md-6">
+            <div class="card info-card revenue-card">
+                <div class="card-body">
+                    <h5 class="card-title">Crear Grupos de Usuarios</h5>
+                    {% if '2' not in completed_steps %}
+                    <div class="d-flex align-items-center">
+                        <div class="ps-3">
+                            <h6>Pendiente</h6>
+                        </div>
+                    </div>
+                    {% else %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <div>
+                            <label for="group_name">Nombre del Grupo:</label>
+                            <input type="text" id="group_name" name="group_name" required>
+                        </div>
+                        <div>
+                            <label for="usernames">Usuarios:</label>
+                            <select id="usernames" name="usernames" class="form-select" multiple>
+                                {% for user in all_users %}
+                                <option value="{{ user.username }}">{{ user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" name="create_group" class="btn btn-primary">Crear Grupo</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 5: Crear Otro Superusuario -->
+        {% if request.user.is_authenticated and request.user.is_superuser %}
+        <div class="col-xxl-4 col-md-6">
+            <div class="card info-card revenue-card">
+                <div class="card-body">
+                    <h5 class="card-title">Crear Otro Superusuario</h5>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div>
+                            <label for="su_username">Username:</label>
+                            <input type="text" id="su_username" name="su_username" required>
+                        </div>
+                        <div>
+                            <label for="su_email">Email:</label>
+                            <input type="email" id="su_email" name="su_email" required>
+                        </div>
+                        <button type="submit" name="create_another_su" class="btn btn-primary">Crear Superusuario</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+
+<script>
+function copyToClipboard(elementId) {
+    var copyText = document.getElementById(elementId).textContent;
+    navigator.clipboard.writeText(copyText).then(function() {
+        alert('Contraseña copiada al portapapeles');
+    }, function(err) {
+        console.error('Error al copiar al portapapeles: ', err);
+    });
+}
+</script>
+
+{% endblock %}
