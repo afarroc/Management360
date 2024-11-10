@@ -123,9 +123,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'projects',
-        'USER': 'root',
-        'PASSWORD': 'Teraware+123',
-        'HOST': '127.0.0.1',
+        'USER': 'user',
+        'PASSWORD': 'Peru+123',
+        'HOST': '192.168.18.45',
         'PORT': '3306',
         'OPTIONS': {
             'charset': 'utf8mb4',
