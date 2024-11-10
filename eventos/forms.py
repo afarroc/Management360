@@ -72,14 +72,56 @@ class EventEditForm(forms.ModelForm):
         fields = ['title', 'description', 'event_status']
 
 from django import forms
+from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
+from django.core.files.images import get_image_dimensions
 from .models import Profile
 
 class ProfileForm(forms.ModelForm):
+    bio = forms.CharField(max_length=500)
+    location = forms.CharField(max_length=30)
+    linkedin_url = forms.URLField(required=False)
+    github_url = forms.URLField(required=False)
+    twitter_url = forms.URLField(required=False)
+    facebook_url = forms.URLField(required=False)
+    instagram_url = forms.URLField(required=False)
+    company = forms.CharField(max_length=100)
+    job_title = forms.CharField(max_length=100)
+    country = forms.CharField(max_length=50)
+    address = forms.CharField(max_length=200)
+    phone = forms.CharField(max_length=20)
+
     class Meta:
         model = Profile
-        fields = ['bio', 'company', 'job_title', 'country', 'address', 'phone', 'email', 'twitter_url', 'facebook_url', 'instagram_url', 'linkedin_url']
+        fields = ('bio', 'location', 'profile_picture', 'linkedin_url', 'github_url', 'twitter_url', 'facebook_url', 'instagram_url', 'company', 'job_title', 'country', 'address', 'phone')
 
+    def clean_phone(self):
+        phone = self.cleaned_data['phone']
+        if not phone.isdigit():
+            raise ValidationError('El teléfono debe contener solo números.')
+        return phone
 
+    def clean_profile_picture(self):
+        profile_picture = self.cleaned_data['profile_picture']
+        if profile_picture:
+            if profile_picture.size > 2 * 1024 * 1024:
+                raise ValidationError('El tamaño de la imagen no debe exceder los 2MB.')
+            width, height = get_image_dimensions(profile_picture)
+            if width > 1024 or height > 1024:
+                raise ValidationError('La imagen no debe exceder 1024x1024 píxeles.')
+        return profile_picture
+
+    def clean(self):
+        super().clean()
+        for field in ['linkedin_url', 'github_url', 'twitter_url', 'facebook_url', 'instagram_url']:
+            url = self.cleaned_data.get(field)
+            if url:
+                try:
+                    URLValidator()(url)
+                except ValidationError:
+                    self.add_error(field, 'URL inválida')
+
+                    
 class ExperienceForm(forms.ModelForm):
     class Meta:
         model = Experience

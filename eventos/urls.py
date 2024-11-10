@@ -14,7 +14,7 @@ urlpatterns = [
 
 
     path('', views.index, name="index"),
-    
+    path('setup/', views.setup, name='setup'),
     
     path('memento/<str:frequency>/<str:birth_date>/<str:death_date>/', views.memento, name='memento'),
 
