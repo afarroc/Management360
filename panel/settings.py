@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'daphne',
     'channels',
     'accounts',
-    'eventos.apps.EventosConfig',
+    'events.apps.EventsConfig',
     'chat',
     'tools',
     'rooms',
