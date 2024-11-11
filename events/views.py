@@ -2217,6 +2217,8 @@ from .utils import create_user_profile
 import random
 import string
 
+DOMAIN_BASE = 'localhost'
+
 def generate_random_password(length=12):
     chars = string.ascii_letters + string.digits + string.punctuation
     return ''.join(random.choices(chars, k=length))
@@ -2245,8 +2247,15 @@ def setup(request):
     if request.method == 'POST':
         if 'create_su' in request.POST:
             if not User.objects.filter(username='su').exists():
+
+                username = 'su'
+                first_name = 'Superusuario'
+                email = f'{username}@{DOMAIN_BASE}'
                 password = generate_random_password()
-                superuser = User.objects.create_superuser('su', 'su@example.com', password)
+                
+                password = generate_random_password()
+                superuser = User.objects.create_superuser(username, email, password, first_name=first_name)
+
                 superuser.save()
                 messages.success(request, f'Superusuario creado: su, contraseña: {password}')
                 user = authenticate(username='su', password=password)
@@ -2307,13 +2316,24 @@ def setup(request):
                 group = None
 
             for _ in range(num_users):
-                username = 'user_' + ''.join(random.choices(string.ascii_letters + string.digits, k=6))
+                username = generate_random_username()
+                first_name = generate_random_name('spanish', format='first_last').split()[0]
+                last_name = generate_random_name('spanish', format='first_last').split()[1]
                 email = f'{username}@{domain}'
                 password = generate_random_password()
 
                 if not User.objects.filter(username=username).exists():
                     user = User.objects.create_user(username, email, password)
-                    user_data.append({'username': username, 'email': email, 'password': password})
+                    user.first_name = first_name
+                    user.last_name = last_name
+                    user.save()
+                    user_data.append({
+                        'username': username,
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'email': email,
+                        'password': password,
+                    })
 
                     # Asignar el usuario al grupo si se seleccionó uno
                     if group:
@@ -2329,6 +2349,7 @@ def setup(request):
                 'all_groups': all_groups,
                 'all_users': all_users,
             })
+
 
         elif 'create_group' in request.POST:
             group_name = request.POST['group_name']

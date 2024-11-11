@@ -16,7 +16,21 @@ class TaskManager:
             ).distinct().order_by('-updated_at').select_related('task_status', 'project', 'event')
 
     def get_active_status(self):
-        return TaskStatus.objects.get(status_name='En Curso')
+        # Attempt to retrieve the 'in_progress' status
+        try:
+            return TaskStatus.objects.get(status_name='in_progress')
+        # Handle the exception when the status does not exist
+        except TaskStatus.DoesNotExist:
+            print("The 'in_progress' status does not exist in the database.")
+            return None
+        # Handle the exception when multiple 'in_progress' statuses are found
+        except TaskStatus.MultipleObjectsReturned:
+            print("Multiple 'in_progress' statuses found in the database.")
+            return None
+        # Catch any other unexpected exceptions
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return None
 
     def get_task_data(self, task_id):
         task = self.user_tasks.filter(id=task_id).first()
