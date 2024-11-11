@@ -2,7 +2,7 @@
 
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
-from eventos.models import CreditAccount
+from events.models import CreditAccount
 
 class Command(BaseCommand):
     help = 'Create credit accounts for existing users'

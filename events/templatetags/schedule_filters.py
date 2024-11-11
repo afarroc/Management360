@@ -1,4 +1,4 @@
-# d:\Users\Mia\Documents\pyvirtual\eventos\templatetags\schedule_filters.py
+# schedule_filters.py
 from django import template
 import re
 
