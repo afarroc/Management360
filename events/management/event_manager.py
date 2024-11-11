@@ -40,7 +40,21 @@ class EventManager:
         return tasks_by_event
 
     def get_active_status(self):
-        return Status.objects.get(status_name='En Curso')
+        # Attempt to retrieve the 'En Curso' status
+        try:
+            return Status.objects.get(status_name='in_progress')
+        # Handle the exception when the status does not exist
+        except Status.DoesNotExist:
+            print("The 'in_progress' status does not exist in the database.")
+            return None
+        # Handle the exception when multiple 'En Curso' statuses are found
+        except Status.MultipleObjectsReturned:
+            print("Multiple 'in_progress' statuses found in the database.")
+            return None
+        # Catch any other unexpected exceptions
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return None
 
     def get_event_data(self, event):
         projects = self.projects_by_event.get(event.id, [])

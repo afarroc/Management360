@@ -28,7 +28,22 @@ class ProjectManager:
         return tasks_by_project
 
     def get_active_status(self):
-        return ProjectStatus.objects.get(status_name='En Curso')
+        try:
+            return ProjectStatus.objects.get(status_name='in_progress')
+        except ProjectStatus.DoesNotExist:
+            # Manejar la excepción cuando no existe el estado 'in_progress'
+            print("El estado 'in_progress' no existe en la base de datos.")
+            # Puedes crear el estado si no existe
+            # ProjectStatus.objects.create(status_name='in_progress')
+            return None
+        except ProjectStatus.MultipleObjectsReturned:
+            # Manejar la excepción cuando hay múltiples estados 'in_progress'
+            print("Hay múltiples estados 'in_progress' en la base de datos.")
+            return None
+        except Exception as e:
+            # Manejar cualquier otra excepción
+            print(f"Ocurrió un error: {e}")
+            return None
 
     def get_project_data(self, project_id):
         project = self.user_projects.filter(id=project_id).first()
