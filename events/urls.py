@@ -9,12 +9,13 @@ from django.urls import path, include
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 from . import views
+from .setup_views import SetupView
 
 urlpatterns = [
 
 
     path('', views.index, name="index"),
-    path('setup/', views.setup, name='setup'),
+    path('setup/', SetupView.as_view(), name='setup'),
     
     path('memento/<str:frequency>/<str:birth_date>/<str:death_date>/', views.memento, name='memento'),
 
