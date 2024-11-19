@@ -31,35 +31,21 @@
         {% else %}
         {% endif %}
         <li class="nav-item">
-            <a class="nav-link collapsed" href="{% url 'about' %}">
+            <a class="nav-link collapsed" href="{% url 'faq' %}">
                 <i class="bi bi-question-circle"></i>
                 <span>F.A.Q</span>
             </a>
         </li><!-- End F.A.Q Page Nav -->
 
         <li class="nav-item">
-            <a class="nav-link collapsed" href="{% url 'about' %}">
+            <a class="nav-link collapsed" href="{% url 'contact' %}">
                 <i class="bi bi-envelope"></i>
                 <span>Contact</span>
             </a>
         </li><!-- End Contact Page Nav -->
-        {% include 'layouts/includes/account.html' %}
-        <!-- End Register Page Nav -->
 
+        {% include 'layouts/includes/account.html' %}<!-- End Register Page Nav -->
 
-        <li class="nav-item">
-            <a class="nav-link collapsed" href="{% url 'about' %}">
-                <i class="bi bi-dash-circle"></i>
-                <span>Error 404</span>
-            </a>
-        </li><!-- End Error 404 Page Nav -->
-
-        <li class="nav-item">
-            <a class="nav-link collapsed" href="{% url 'blank' %}">
-                <i class="bi bi-file-earmark"></i>
-                <span>Blank</span>
-            </a>
-        </li><!-- End Blank Page Nav -->
 
     </ul>
 
