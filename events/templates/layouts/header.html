@@ -297,7 +297,7 @@
                     </li>
 
                     <li>
-                        <a class="dropdown-item d-flex align-items-center" href="{% url 'api-logout' %}">
+                        <a class="dropdown-item d-flex align-items-center" href="{% url 'logout' %}">
                             <i class="bi bi-box-arrow-right"></i>
                             <span>Log Out</span>
                         </a>
@@ -307,19 +307,17 @@
             </li><!-- End Profile Nav -->
             {% else %}
             <li class="nav-item">
-                <a class="nav-link" href="{% url 'api-signup' %}">
+                <a class="nav-link" href="{% url 'register' %}">
                     <i class="bi bi-card-list ps-3"></i>
                     <span>Register</span>
                 </a>
             </li>
             <li class="nav-item" style="margin-right: 20px;">
-                <a class="nav-link" href="#" onclick="document.getElementById('login-form').submit()">
+                <a class="nav-link" href="{% url 'login' %}">
                     <i class="bi bi-box-arrow-in-right ps-3"></i>
                     <span>Log In</span>
                 </a>
-                <form id="login-form" action="{% url 'api-login' %}" method="post" style="display:none;">
-                    {% csrf_token %}
-                </form>
+
             </li>
             {% endif %}
         </ul>
