@@ -1,16 +1,23 @@
 <!-- session.html -->
 {% if user.is_authenticated %}
 <li class="nav-item">
-    <a class="nav-link collapsed" href="{% url 'api-logout' %}">
+    <a class="nav-link collapsed" href="{% url 'logout' %}">
         <i class="bi bi-box-arrow-in-left"></i>
         <span>Log Out</span>
     </a>
 </li>
 {% else %}
 <li class="nav-item">
-    <a class="nav-link collapsed" href="{% url 'api-login' %}">
+    <a class="nav-link collapsed" href="{% url 'login' %}">
         <i class="bi bi-box-arrow-in-right"></i>
         <span>Log In</span>
+    </a>
+</li>
+
+<li class="nav-item">
+    <a class="nav-link collapsed" href="{% url 'register' %}">
+        <i class="bi bi-box-arrow-in-right"></i>
+        <span>Register</span>
     </a>
 </li>
 {% endif %}

@@ -46,7 +46,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'daphne',
     'channels',
-    'accounts',
+    'accounts.apps.AccountsConfig',
     'events.apps.EventsConfig',
     'chat',
     'tools',
