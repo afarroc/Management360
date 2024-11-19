@@ -322,10 +322,22 @@ def about(request):
         'username':username
     })
 
+def faq(request):
+    page_title = "F.A.Q."
+    return render(request, "faq/faq.html",{
+        'page_title':page_title
+    })
+
+def contact(request):
+    page_title = "Contact"
+    return render(request, "contact/contact.html",{
+        'page_title':page_title
+    })
+
 def blank(request):
-        title="Blank Page"
+        page_title="Blank Page"
         return render(request, "layouts/blank.html",{
-            'title':title
+            'page_title':page_title
     })
 
 
