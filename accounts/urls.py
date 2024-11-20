@@ -1,10 +1,13 @@
 from django.urls import path
-from . import views
-from django.contrib.auth.views import LoginView,LogoutView
+from .views import home, register, login, token_send, success, verify, error_page
+
 urlpatterns = [
-    path('',views.indexView,name="account"),
-    path('dashboard/',views.dashboardView,name="account_dashboard"),
-    path('login/',views.login_view, name="login"),
-    path('register/',views.register_view, name="register"),
-    path('logout/',LogoutView.as_view(next_page='dashboard'),name="logout"),
+    path('', home, name='home'),
+    path('register/', register, name='register'),
+    path('login/', login, name='login'),
+    path('token/', token_send, name='token'),
+    path('success/', success, name ='success'),
+    path('verify/<auth_token>/', verify, name = "verify"),
+    path('error/', error_page, name = "error"),
+    path('logout/', home, name = "logout"),
 ]

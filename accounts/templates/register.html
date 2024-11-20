@@ -1,6 +1,5 @@
 {% extends 'layouts/base.html' %}
 {% block content %}
-
 <div class="row justify-content-center">
   <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center justify-content-center">
 
@@ -9,86 +8,56 @@
       <div class="card-body">
 
         <div class="pt-4 pb-2">
-          <h5 class="card-title text-center pb-0 fs-4">Create an Account</h5>
-          <p class="text-center small">Enter your personal details to create account</p>
+          <h5 class="card-title text-center pb-0 fs-4">Login to Your Account</h5>
+          <p class="text-center small">Enter your username &amp; password to login</p>
         </div>
+
+
+
+
+
 
         <form method="post">
           {% csrf_token %}
-
+      
           {% if messages %}
-          {% for message in messages %}
-          <div class="alert alert-{{ message.tags }}">
-            {{ message }}
-          </div>
-          {% endfor %}
+            {% for message in messages %}
+              <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+              </div>
+            {% endfor %}
           {% endif %}
-
-          <div class="col-12">
-            <label for="id_first_name" class="form-label">Your Name</label>
-            <input type="text" name="first_name" class="form-control" id="id_first_name"
-              value="{{ form.first_name.value|default:'' }}" required="">
-            <div class="invalid-feedback">Please, enter your name!</div>
+      
+          <div class="form-group">
+            <label for="username">Nombre de usuario</label>
+            <input type="text" name="username" class="form-control form-control-sm" id="username" required>
           </div>
-
-          <div class="col-12">
-            <label for="id_last_name" class="form-label">Last Name</label>
-            <input type="text" name="last_name" class="form-control" id="id_last_name"
-              value="{{ form.last_name.value|default:'' }}" required="">
-            <div class="invalid-feedback">Please enter your last name!</div>
+      
+          <div class="form-group">
+            <label for="email">Correo electrónico</label>
+            <input type="email" name="email" class="form-control form-control-sm" id="email" required>
           </div>
-
-          <div class="col-12">
-            <label for="id_email" class="form-label">Your Email</label>
-            <input type="email" name="email" class="form-control" id="id_email"
-              value="{{ form.email.value|default:'' }}" required="">
-            <div class="invalid-feedback">Please enter a valid Email address!</div>
+      
+          <div class="form-group">
+            <label for="password">Contraseña</label>
+            <input type="password" name="password" class="form-control form-control-sm" id="password" required>
           </div>
-
-          <div class="col-12">
-            <label for="id_username" class="form-label">Username</label>
-            <div class="input-group has-validation">
-              <span class="input-group-text" id="inputGroupPrepend">@</span>
-              <input type="text" name="username" class="form-control" id="id_username"
-                value="{{ form.username.value|default:'' }}" required="">
-              <div class="invalid-feedback">Please choose a username.</div>
-            </div>
+      
+          <div class="form-group">
+            <label for="password_confirmation">Confirmar contraseña</label>
+            <input type="password" name="password_confirmation" class="form-control form-control-sm" id="password_confirmation" required>
           </div>
-
-          <div class="col-12">
-            <label for="id_password1" class="form-label">Password</label>
-            <input type="password" name="password1" class="form-control" id="id_password1" required="">
-            <div class="invalid-feedback">Please enter your password!</div>
-          </div>
-
-          <div class="col-12">
-            <label for="id_password2" class="form-label">Repeat Password</label>
-            <input type="password" name="password2" class="form-control" id="id_password2" required="">
-            <div class="invalid-feedback">Repeat your password!</div>
-          </div>
-
-          <div class="col-12">
-            <div class="form-check">
-              <input class="form-check-input" name="terms" type="checkbox" value="" id="acceptTerms" required="">
-              <label class="form-check-label" for="acceptTerms">I agree and accept the <a href="#">terms and
-                  conditions</a></label>
-              <div class="invalid-feedback">You must agree before submitting.</div>
-            </div>
-          </div>
-
-          <div class="col-12">
-            <button class="btn btn-primary w-100" type="submit">Create Account</button>
-          </div>
-
-          <div class="col-12">
-            <p class="small mb-0">Already have an account? <a href="{% url 'login' %}">Log in</a></p>
-          </div>
+      
+          <button type="submit" class="btn btn-primary">Registrarse</button>
         </form>
+
 
       </div>
     </div>
-
   </div>
 </div>
+
+
+
 
 {% endblock %}
