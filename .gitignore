@@ -1,6 +1,9 @@
 # Ignora la base de datos SQLite
 db.sqlite3
 
+# Ignora secrets.py
+panel/secrets.py
+
 # Ignora el entorno virtual
 env/
 

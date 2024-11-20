@@ -12,38 +12,30 @@
           <p class="text-center small">Enter your username &amp; password to login</p>
         </div>
 
-        <form class="row g-3 needs-validation" novalidate="" method="post">
-          {% csrf_token %}
 
-          <div class="col-12">
-            <label for="id_email" class="form-label">Correo electrónico</label>
-            <div class="input-group has-validation">
-              <input type="input" name="email" class="form-control" id="id_email" required="">
-              <div class="invalid-feedback">Ingrese su correo electrónico.</div>
-            </div>
+
+
+
+
+        <form>
+
+          <div class="form-group">
+            <label for="exampleInputEmail1">Email address</label>
+            <input type="email" class="form-control form-control-sm" id="exampleInputEmail1"
+              aria-describedby="emailHelp">
           </div>
-
-          <div class="col-12">
-            <label for="id_password" class="form-label">Contraseña</label>
-            <input type="password" name="password" class="form-control" id="id_password" required="">
-            <div class="invalid-feedback">Ingrese su contraseña.</div>
+          <div class="form-group">
+            <label for="exampleInputPassword1">Password</label>
+            <a href="#" style="float:right;font-size:12px;">Forgot password?</a>
+            <input type="password" class="form-control form-control-sm" id="exampleInputPassword1">
           </div>
+          <button type="submit" class="btn btn-primary btn-block">Sign in</button>
 
-          <div class="col-12">
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="remember" value="true" id="rememberMe">
-              <label class="form-check-label" for="rememberMe">Recordarme</label>
-            </div>
-          </div>
-
-          <div class="col-12">
-            <button class="btn btn-primary w-100" type="submit">Iniciar sesión</button>
-          </div>
-
-          <div class="col-12">
-            <p class="small mb-0">¿No tienes cuenta? <a href="{% url 'register' %}">Crea una cuenta</a></p>
+          <div class="sign-up">
+            Don't have an account? <a href="#">Create One</a>
           </div>
         </form>
+
 
       </div>
     </div>
