@@ -1,13 +1,10 @@
 from django.urls import path
-from .views import home, register, login, token_send, success, verify, error_page
+from .views import signup_view, logout_view, login_view
 
 urlpatterns = [
-    path('', home, name='home'),
-    path('register/', register, name='register'),
-    path('login/', login, name='login'),
-    path('token/', token_send, name='token'),
-    path('success/', success, name ='success'),
-    path('verify/<auth_token>/', verify, name = "verify"),
-    path('error/', error_page, name = "error"),
-    path('logout/', home, name = "logout"),
+
+    path('signup/', signup_view, name='signup'),
+    path('login/', login_view, name='login'),
+    path('logout/', logout_view, name='logout'),
+
 ]
