@@ -1,0 +1,14 @@
+{% load widget_tweaks %}
+
+{% for field in form %}
+  <div class="form-group">
+    {{ field.label_tag }}
+    {{ field|add_class:"form-control" }}  <!-- Agrega la clase "form-control" a cada campo -->
+
+    {% if field.help_text %}
+      <small class="form-text text-muted">
+        {{ field.help_text|safe }}
+      </small>
+    {% endif %}
+  </div>
+{% endfor %}
