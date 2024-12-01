@@ -1,5 +1,4 @@
 # panel/settings.py
-
 """
 Django settings for panel project.
 
@@ -12,13 +11,16 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
+from .secrets import EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, DATABASE_HOST, HOST_PASSWORD, DATABASE_USER
 from pathlib import Path
+import os
+from django.db.utils import OperationalError
+from django.db import connections
+from dj_database_url import config as dj_config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-import os
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
@@ -36,9 +38,6 @@ if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 # Application definition
-
-
-# settings.py
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
@@ -58,9 +57,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'crispy_forms',
+    
+    'widget_tweaks',
 ]
-
-
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -73,8 +72,6 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     'panel.middleware.DatabaseSelectorMiddleware',
 ]
-
-
 
 ROOT_URLCONF = 'panel.urls'
 
@@ -94,8 +91,6 @@ TEMPLATES = [
     },
 ]
 
-from redis import ConnectionPool
-
 # WSGI_APPLICATION = 'panel.wsgi.application'
 # Daphne
 ASGI_APPLICATION = 'panel.asgi.application'
@@ -114,18 +109,13 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-import os
-from django.db.utils import OperationalError
-from django.db import connections
-from dj_database_url import config as dj_config
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'projects',
-        'USER': 'user',
-        'PASSWORD': 'Peru+123',
-        'HOST': '192.168.18.45',
+        'USER': DATABASE_USER,
+        'PASSWORD': HOST_PASSWORD,
+        'HOST': DATABASE_HOST,
         'PORT': '3306',
         'OPTIONS': {
             'charset': 'utf8mb4',
@@ -136,7 +126,6 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     },
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -156,7 +145,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
@@ -167,12 +155,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = False
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.0/howto/static-files/
-
-import os
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
@@ -202,12 +184,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 LOGIN_REDIRECT_URL = '/accounts/dashboard/'
 
-# settings.py
-from .secrets import EMAIL_HOST_USER, EMAIL_HOST_PASSWORD
-
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = EMAIL_HOST_USER
 EMAIL_HOST_PASSWORD = EMAIL_HOST_PASSWORD
+
+LOGIN_REDIRECT_URL = 'home'
