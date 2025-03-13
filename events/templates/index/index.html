@@ -61,15 +61,10 @@
         <!-- Right side columns -->
         <div class="col-lg-4">
 
-            {% if user.name %}
+        {% if user.name %}
+        {% else %}
 
-
-            {% else %}
-
-            {% include 'events/includes/event_recent_activity.html' %}
-
-            {% endif %}
-
+        {% endif %}
         </div><!-- End Right side columns -->
 
     </div>
