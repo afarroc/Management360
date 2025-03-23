@@ -1043,67 +1043,98 @@ def task_activate(request, task_id=None):
             messages.error(request, f'Ha ocurrido un error: {e}')
             return redirect('task_panel')
 
-# Events
+
+
+from django.utils import timezone
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.db.models import Q
+from django.core.exceptions import ObjectDoesNotExist
+from .models import Event, Status, EventState
+from django.contrib.auth.decorators import login_required
+
 @login_required
 def events(request):
+    print("Iniciando la función events...")
     today = timezone.now().date()
-    title="Events Origen"
-    
-    if request.session['first_session'] == True:
+    title = "Events Origen"
+    print(f"Fecha actual: {today}")
+    print(f"Título: {title}")
+
+    if request.session.get('first_session', True):
+        print("Primera sesión detectada.")
         try:
             status_en_curso = Status.objects.get(status_name='En curso').id
+            print(f"Status 'En curso' encontrado: {status_en_curso}")
         except ObjectDoesNotExist:
             status_en_curso = None
+            print("Status 'En curso' no encontrado.")
+        
         cerrado = request.session.setdefault('filtered_cerrado', True)
         status = request.session.setdefault('filtered_status', status_en_curso)
-        date = request.session.setdefault('filtered_date', timezone.now().date().isoformat())
-        request.session['first_session'] = False  
+        date = request.session.setdefault('filtered_date', today.isoformat())
+        request.session['first_session'] = False
+        print(f"Valores iniciales - cerrado: {cerrado}, status: {status}, date: {date}")
 
     try:
         if hasattr(request.user, 'profile'):
             if request.user.profile.role == 'SU':
                 events = Event.objects.all().order_by('-updated_at')
+                print("Usuario con perfil SU, obteniendo todos los eventos.")
             else:
-                events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')                
+                events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
+                print("Usuario sin perfil SU, filtrando eventos asignados o atendidos por el usuario.")
         else:
             events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-            
-        event_statuses = Status.objects.all().order_by('status_name')
+            print("Usuario sin perfil, filtrando eventos asignados o atendidos por el usuario.")
         
+        event_statuses = Status.objects.all().order_by('status_name')
+        print(f"Event statuses obtenidos: {event_statuses.count()}")
+
         if request.method == 'POST':
+            print("Método POST detectado.")
             cerrado = request.POST.get('cerrado', 'False').lower() == 'true'
             status = int(request.POST.get('status')) if request.POST.get('status') else None
             date = request.POST.get('date')
-                        
+            print(f"Valores POST - cerrado: {cerrado}, status: {status}, date: {date}")
+
             try:
                 if cerrado:
                     status_cerrado = Status.objects.get(status_name='Cerrado')
                     events = events.exclude(event_status_id=status_cerrado.id)
                     request.session['filtered_cerrado'] = True
+                    print("Eventos cerrados excluidos.")
                 else:
                     request.session['filtered_cerrado'] = False
+                    print("No se excluyen eventos cerrados.")
 
-            except Status.DoesNotExist:
+            except Status.DoesNotExist as e:
                 messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
+                print(f"Error al filtrar eventos: {e}")
                 
             if status:
                 events = events.filter(event_status_id=status)
                 request.session['filtered_status'] = status
+                print(f"Eventos filtrados por status: {status}")
             else:
                 request.session['filtered_status'] = status
-                
+                print("No se aplica filtro por status.")
+
             if date:
                 events = events.filter(updated_at__date=date)
                 request.session['filtered_date'] = date
+                print(f"Eventos filtrados por fecha: {date}")
             else:
                 request.session['filtered_date'] = date
+                print("No se aplica filtro por fecha.")
             
-            count_events = events.count()  # Aquí es donde obtienes el recuento de eventos
-            # Filtra los eventos que fueron actualizados hoy y cuenta el número de esos eventos
+            count_events = events.count()
             events_updated_today = events.filter(updated_at__date=today).count()
-            
             events_states = EventState.objects.all().order_by('-start_time')[:10]
 
+            print(f"Eventos actualizados hoy: {events_updated_today}")
+            print(f"Total de eventos filtrados: {count_events}")
+            print(events)
             return render(request, 'events/events.html', {
                 'title': title,
                 'events_updated_today': events_updated_today,
@@ -1114,30 +1145,43 @@ def events(request):
             })
             
         else:
-            status = request.session['filtered_status'] 
-            date = request.session['filtered_date']
-            cerrado = request.session['filtered_cerrado']
+            print("Método GET detectado.")
+            status = request.session.get('filtered_status')
+            date = request.session.get('filtered_date')
+            cerrado = request.session.get('filtered_cerrado')
+            print(f"Valores de sesión - cerrado: {cerrado}, status: {status}, date: {date}")
+
             try:
                 if cerrado:
                     status_cerrado = Status.objects.get(status_name='Cerrado')
-                    events = events.exclude(event_status_id=status_cerrado.id)                    
+                    events = events.exclude(event_status_id=status_cerrado.id)
+                    print("Eventos cerrados excluidos.")
                 if status:
                     events = events.filter(event_status_id=status)
+                    print(f"Eventos filtrados por status: {status}")
                 if date:
                     events = events.filter(updated_at__date=date)
+                    print(f"Eventos filtrados por fecha: {date}")
 
-                                  
-            except Status.DoesNotExist:
+            except Status.DoesNotExist as e:
                 messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
+                print(f"Error al filtrar eventos: {e}")
                 
             except Exception as e:
                 messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
+                print(f"Error inesperado al filtrar eventos: {e}")
                 return redirect('index')
             
-            count_events = events.count()  # Aquí es donde obtienes el recuento de eventos
+            count_events = events.count()
             events_updated_today = events.filter(updated_at__date=today).count()
             events_states = EventState.objects.all().order_by('-start_time')[:10]
 
+            print(f"Eventos actualizados hoy: {events_updated_today}")
+            print(f"Total de eventos filtrados: {count_events}")
+            for event_data in events:
+                print(event_data.id)
+                pass
+            
             return render(request, 'events/events.html', {
                 'events_updated_today': events_updated_today,
                 'count_events': count_events,
@@ -1145,12 +1189,14 @@ def events(request):
                 'event_statuses': event_statuses,
                 'title': title,
                 'events_states': events_states,
-                
             })
             
     except Exception as e:
-        messages.error(request, 'Ha ocurrido un error al obtener los eventosssss: {}'.format(e))
+        messages.error(request, 'Ha ocurrido un error al obtener los eventos: {}'.format(e))
+        print(f"Error inesperado en la función events: {e}")
         return redirect('index')
+
+
 
 @login_required
 def assign_attendee_to_event(request, event_id, user_id):
