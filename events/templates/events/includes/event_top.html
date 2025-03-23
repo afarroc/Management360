@@ -18,6 +18,7 @@
         <div class="card-body">
             <h5 class="card-title">Recent Sales <span>| Today</span></h5>
 
+
             <table class="table table-borderless datatable">
                 <thead>
                     <tr>
@@ -30,15 +31,33 @@
                 </thead>
                 <tbody>
                     {% if events %}
-                    {% for event_data in events %}
-                    <tr>
-                        <th scope="row"><a href="{% url 'event_panel'  %}">{{event_data.event.id}}</a></th>
-                        <td>{{event_data.event.title}}</td>
-                        <td><a href="#" class="text-primary">At praesentium minu</a></td>
-                        <td>${{event_data.event.ticket_price}}</td>
-                        <td><span class="badge bg-success">{{event_data.event.event_status}}</span></td>
-                    </tr>
-                    {% endfor %}
+                        {% for event_data in events %}
+                            <tr>
+                                <th scope="row">
+                                    {% if event_data.id %}
+                                        <a href="{% url 'event_panel' event_data.id %}">
+                                            {{ event_data.id }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </th>
+                                <td>{{ event_data.title|default:"Sin título" }}</td>
+                                <td>
+                                    <a href="#" class="text-primary">At praesentium minu</a>
+                                </td>
+                                <td>${{ event_data.ticket_price|default:"0.00" }}</td>
+                                <td>
+                                    <span class="badge bg-success">
+                                        {{ event_data.event_status|default:"Sin estado" }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center">No hay eventos disponibles.</td>
+                        </tr>
                     {% endif %}
                 </tbody>
             </table>
