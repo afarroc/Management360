@@ -42,7 +42,7 @@ class EventManager:
     def get_active_status(self):
         # Attempt to retrieve the 'En Curso' status
         try:
-            return Status.objects.get(status_name='in_progress')
+            return Status.objects.get(status_name='En Curso')
         # Handle the exception when the status does not exist
         except Status.DoesNotExist:
             print("The 'in_progress' status does not exist in the database.")
