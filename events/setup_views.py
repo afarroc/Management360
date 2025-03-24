@@ -12,6 +12,10 @@ from .initial_data import generate_random_name, generate_random_username
 import random
 import string
 
+ # setup_views.py (fragmento completo corregido)
+from .forms import ProfileForm  # Asegurar esta importación
+
+
 DOMAIN_BASE = 'localhost'
 
 def generate_random_password(length=12):
@@ -77,31 +81,31 @@ class SetupView(View):
             else:
                 messages.error(request, 'Credenciales incorrectas.')
 
+
         elif 'create_profile' in request.POST:
             try:
                 su = User.objects.get(username='su')
-                profile_picture = request.FILES.get('profile_picture')
-                create_user_profile(
-                    user=su,
-                    bio=request.POST['bio'],
-                    location=request.POST['location'],
-                    linkedin_url=request.POST['linkedin_url'],
-                    github_url=request.POST['github_url'],
-                    twitter_url=request.POST['twitter_url'],
-                    facebook_url=request.POST['facebook_url'],
-                    instagram_url=request.POST['instagram_url'],
-                    company=request.POST['company'],
-                    job_title=request.POST['job_title'],
-                    country=request.POST['country'],
-                    address=request.POST['address'],
-                    phone=request.POST['phone'],
-                    profile_picture=profile_picture
+                form = ProfileForm(
+                    data=request.POST,
+                    files=request.FILES,
+                    instance=su.profile if hasattr(su, 'profile') else None
                 )
-                messages.success(request, 'Perfil creado con éxito.')
-                return redirect(reverse('setup') + '?step=3')
-            except ValidationError as e:
-                messages.error(request, f'Error al crear el perfil: {e}')
-
+                if form.is_valid():
+                    profile = form.save(commit=False)
+                    profile.user = su  # Asignar usuario solo si es nuevo
+                    profile.save()
+                    messages.success(request, 'Perfil actualizado con éxito.')
+                    return redirect(reverse('setup') + '?step=3')
+                else:
+                    for field, errors in form.errors.items():
+                        for error in errors:
+                            messages.error(request, f"{field}: {error}")
+            except User.DoesNotExist:
+                messages.error(request, 'Superusuario no existe. Cree uno primero.')
+            except Exception as e:
+                messages.error(request, f'Error crítico: {str(e)}')
+            return redirect(reverse('setup') + '?step=2')
+        
         elif 'create_random_users' in request.POST:
             domain = request.POST['domain']
             num_users = int(request.POST['num_users'])

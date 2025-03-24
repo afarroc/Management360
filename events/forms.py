@@ -78,50 +78,116 @@ from django.core.files.images import get_image_dimensions
 from .models import Profile
 
 class ProfileForm(forms.ModelForm):
-    bio = forms.CharField(max_length=500)
-    location = forms.CharField(max_length=30)
-    linkedin_url = forms.URLField(required=False)
-    github_url = forms.URLField(required=False)
-    twitter_url = forms.URLField(required=False)
-    facebook_url = forms.URLField(required=False)
-    instagram_url = forms.URLField(required=False)
-    company = forms.CharField(max_length=100)
-    job_title = forms.CharField(max_length=100)
-    country = forms.CharField(max_length=50)
-    address = forms.CharField(max_length=200)
-    phone = forms.CharField(max_length=20)
+    # Información Básica (Campos clave con validaciones)
+    bio = forms.CharField(
+        max_length=500, 
+        required=False,  # Biografía opcional
+        widget=forms.Textarea(attrs={'rows': 4})
+    )
+    location = forms.CharField(
+        max_length=30, 
+        required=False  # Ubicación opcional
+    )
+    phone = forms.CharField(
+        max_length=20, 
+        required=False,  # Teléfono opcional pero con validación si se proporciona
+        help_text="Solo números."
+    )
+    
+    # Redes Sociales (Todos opcionales)
+    linkedin_url = forms.URLField(
+        required=False, 
+        label="LinkedIn"
+    )
+    github_url = forms.URLField(
+        required=False, 
+        label="GitHub"
+    )
+    twitter_url = forms.URLField(
+        required=False, 
+        label="Twitter (X)"
+    )
+    facebook_url = forms.URLField(
+        required=False, 
+        label="Facebook"
+    )
+    instagram_url = forms.URLField(
+        required=False, 
+        label="Instagram"
+    )
+    
+    # Información Laboral (Opcionales)
+    company = forms.CharField(
+        max_length=100, 
+        required=False
+    )
+    job_title = forms.CharField(
+        max_length=100, 
+        required=False, 
+        label="Cargo"
+    )
+    
+    # Detalles de Ubicación (Opcionales)
+    country = forms.CharField(
+        max_length=50, 
+        required=False, 
+        label="País"
+    )
+    address = forms.CharField(
+        max_length=200, 
+        required=False, 
+        label="Dirección"
+    )
+    
+    # Imagen de Perfil (Opcional con validaciones)
+    profile_picture = forms.ImageField(
+        required=False,
+        validators=[FileExtensionValidator(['jpg', 'jpeg', 'png'])],
+        help_text="Máx. 2MB y 1024x1024px."
+    )
 
     class Meta:
         model = Profile
-        fields = ('bio', 'location', 'profile_picture', 'linkedin_url', 'github_url', 'twitter_url', 'facebook_url', 'instagram_url', 'company', 'job_title', 'country', 'address', 'phone')
+        fields = [
+            'bio', 'location', 'profile_picture', 
+            'linkedin_url', 'github_url', 'twitter_url', 
+            'facebook_url', 'instagram_url', 'company', 
+            'job_title', 'country', 'address', 'phone'
+        ]
 
+    # Validaciones Específicas
     def clean_phone(self):
-        phone = self.cleaned_data['phone']
-        if not phone.isdigit():
+        phone = self.cleaned_data.get('phone')
+        if phone and not phone.isdigit():
             raise ValidationError('El teléfono debe contener solo números.')
         return phone
 
     def clean_profile_picture(self):
-        profile_picture = self.cleaned_data['profile_picture']
+        profile_picture = self.cleaned_data.get('profile_picture')
         if profile_picture:
+            # Validación de tamaño
             if profile_picture.size > 2 * 1024 * 1024:
-                raise ValidationError('El tamaño de la imagen no debe exceder los 2MB.')
+                raise ValidationError('El tamaño máximo permitido es 2MB.')
+            # Validación de dimensiones
             width, height = get_image_dimensions(profile_picture)
             if width > 1024 or height > 1024:
-                raise ValidationError('La imagen no debe exceder 1024x1024 píxeles.')
+                raise ValidationError('La imagen no debe superar 1024x1024 píxeles.')
         return profile_picture
 
     def clean(self):
-        super().clean()
-        for field in ['linkedin_url', 'github_url', 'twitter_url', 'facebook_url', 'instagram_url']:
-            url = self.cleaned_data.get(field)
+        cleaned_data = super().clean()
+        # Validación genérica de URLs
+        url_fields = [
+            'linkedin_url', 'github_url', 
+            'twitter_url', 'facebook_url', 'instagram_url'
+        ]
+        for field in url_fields:
+            url = cleaned_data.get(field)
             if url:
                 try:
                     URLValidator()(url)
                 except ValidationError:
-                    self.add_error(field, 'URL inválida')
-
-                    
+                    self.add_error(field, 'URL inválida.')     
 class ExperienceForm(forms.ModelForm):
     class Meta:
         model = Experience
