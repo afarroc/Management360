@@ -6,14 +6,14 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
 from django.core.exceptions import ValidationError
-from .models import Profile
+from cv.models import Curriculum as Profile
 from .utils import create_user_profile
 from .initial_data import generate_random_name, generate_random_username
 import random
 import string
 
  # setup_views.py (fragmento completo corregido)
-from .forms import ProfileForm  # Asegurar esta importación
+from cv.forms import CurriculumForm as ProfileForm  # Asegurar esta importación
 
 
 DOMAIN_BASE = 'localhost'

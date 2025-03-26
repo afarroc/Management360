@@ -86,12 +86,6 @@ urlpatterns = [
     # Panel
     path('panel/', views.panel, name='panel'),
 
-    # Perfil
-    path('profile/<int:user_id>', views.ViewProfileView.as_view(), name='profile'),
-    path('edit_profile/<int:user_id>', views.ProfileView.as_view(), name='edit_profile'),
-    path('create_profile/', views.ProfileView.as_view(), name='create_profile'),
-    path('create_profile/<int:user_id>', views.ProfileView.as_view(), name='create_profile'),
-    
     # Configuración
     path('configuration/status/', views.status, name='status'),
     path('configuration/status/delete/<int:model_id>/', views.status_delete, name='status_delete'),
