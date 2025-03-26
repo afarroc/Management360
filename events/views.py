@@ -42,23 +42,17 @@ from .management.event_manager import EventManager
 from .management.project_manager import ProjectManager
 from .management.task_manager import TaskManager
 from .models import (
-    Classification, Document, Image, Database, Event, EventAttendee, ProjectStatus,
-    TaskStatus, Profile, Project, Status, Task, EventState, ProjectState, TaskState,
+    Classification, Event, EventAttendee, ProjectStatus,
+    TaskStatus, Project, Status, Task, EventState, ProjectState, TaskState,
     TaskProgram, Room, Message
 )
 from .forms import (
     CreateNewEvent, CreateNewProject, CreateNewTask, EditClassificationForm,
-    EducationForm, ExperienceForm, ImageForm, DocumentForm, DatabaseForm, ProfileForm,
-    SkillForm, EventStatusForm, TaskStatusForm, ProjectStatusForm
+    EventStatusForm, TaskStatusForm, ProjectStatusForm
 )
 
 
 from .setup_views import SetupView
-
-# Formsets
-EducationFormSet = formset_factory(EducationForm, extra=1, can_delete=True)
-ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
-SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
 
 
 def memento(request, frequency, birth_date, death_date):
@@ -116,9 +110,6 @@ def memento(request, frequency, birth_date, death_date):
         return render(request, "memento/memento_mori.html",{
             'title': title,
         })
-
-
-
 
 def event_assign(request, event_id=None):
     """
@@ -247,7 +238,6 @@ def index(request):
         "data":var
         })
 
-
 def index_z(request, days=7, days_ago=None):
     page_title = 'Index'
     event_statuses, project_statuses, task_statuses = statuses_get()
@@ -312,7 +302,6 @@ def index_z(request, days=7, days_ago=None):
     
     return render(request, 'index/index.html', context)
 
-
 def home(request):
     return render(request, 'layouts/main.html')
 
@@ -339,7 +328,6 @@ def blank(request):
         return render(request, "layouts/blank.html",{
             'page_title':page_title
     })
-
 
 # Proyects
     
@@ -947,8 +935,6 @@ def change_task_status(request, task_id):
 
     return redirect('task_panel')
 
-# views.py
-
 def update_status(obj, field_name, new_status, editor):
     old_value = getattr(obj, field_name).status_name
     setattr(obj, field_name, new_status)
@@ -1042,8 +1028,6 @@ def task_activate(request, task_id=None):
         except Exception as e:
             messages.error(request, f'Ha ocurrido un error: {e}')
             return redirect('task_panel')
-
-
 
 from django.utils import timezone
 from django.shortcuts import render, redirect
@@ -1195,8 +1179,6 @@ def events(request):
         messages.error(request, 'Ha ocurrido un error al obtener los eventos: {}'.format(e))
         print(f"Error inesperado en la función events: {e}")
         return redirect('index')
-
-
 
 @login_required
 def assign_attendee_to_event(request, event_id, user_id):
@@ -1494,7 +1476,6 @@ def event_history(request, event_id=None):
             'events_history':events_history,
         })
 
-         
 # Otros
 
 def panel(request):
@@ -1505,128 +1486,7 @@ def panel(request):
 from django.core.exceptions import PermissionDenied
 from django import forms
 
-class ProfileView(View):
-    def get(self, request, user_id=None):
-        if user_id and request.user.id != user_id:
-            raise PermissionDenied("No tienes permiso para ver este perfil")
-        
-        try:
-            if user_id:
-                profile = Profile.objects.get(user_id=user_id)
-                profile_form = ProfileForm(instance=profile)
-                experience_formset = ExperienceFormSet(prefix='experiences', queryset=profile.experiences.all())
-                education_formset = EducationFormSet(prefix='education', queryset=profile.education.all())
-                skill_formset = SkillFormSet(prefix='skills', queryset=profile.skills.all())
-            else:
-                profile_form = ProfileForm()
-                experience_formset = ExperienceFormSet(prefix='experiences')
-                education_formset = EducationFormSet(prefix='education')
-                skill_formset = SkillFormSet(prefix='skills')
 
-            return render(request, 'profiles/profile_form.html', {
-                'profile_form': profile_form,
-                'experience_formset': experience_formset,
-                'education_formset': education_formset,
-                'skill_formset': skill_formset
-            })
-        except Profile.DoesNotExist:
-            return render(request, 'profiles/error.html', {'message': "Perfil no encontrado"})
-        except Exception as e:
-            return render(request, 'profiles/error.html', {'message': str(e)})
-
-    @transaction.atomic
-    def post(self, request, user_id=None):
-        if user_id and request.user.id != user_id:
-            raise PermissionDenied("No tienes permiso para editar este perfil")
-        
-        try:
-            profile = Profile.objects.get(user_id=user_id) if user_id else None
-            profile_form = ProfileForm(request.POST, instance=profile)
-            experience_formset = ExperienceFormSet(request.POST, prefix='experiences')
-            education_formset = EducationFormSet(request.POST, prefix='education')
-            skill_formset = SkillFormSet(request.POST, prefix='skills')
-
-            if not profile_form.is_valid() or not all(formset.is_valid() for formset in [experience_formset, education_formset, skill_formset]):
-                return render(request, 'profiles/profile_form.html', {
-                    'profile_form': profile_form,
-                    'experience_formset': experience_formset,
-                    'education_formset': education_formset,
-                    'skill_formset': skill_formset
-                })
-
-            profile = profile_form.save(commit=False)
-            profile.user = request.user
-            profile.save()
-
-            for form in experience_formset:
-                if form.cleaned_data.get('DELETE'):
-                    if form.instance.pk:
-                        form.instance.delete()
-                else:
-                    experience = form.save(commit=False)
-                    experience.profile = profile
-                    experience.save()
-
-            for form in education_formset:
-                if form.cleaned_data.get('DELETE'):
-                    if form.instance.pk:
-                        form.instance.delete()
-                else:
-                    education = form.save(commit=False)
-                    education.profile = profile
-                    education.save()
-
-            for form in skill_formset:
-                if form.cleaned_data.get('DELETE'):
-                    if form.instance.pk:
-                        form.instance.delete()
-                else:
-                    skill = form.save(commit=False)
-                    skill.profile = profile
-                    skill.save()
-
-            return redirect('view_profile')
-        except forms.ValidationError as e:
-            return render(request, 'profiles/error.html', {'message': str(e)})
-        except IntegrityError as e:
-            return render(request, 'profiles/error.html', {'message': f"An error occurred. Please make sure all fields are filled out correctly. Error: {e}"})
-        except Exception as e:
-            return render(request, 'profiles/error.html', {'message': str(e)})
-
-class ViewProfileView(View):
-    def get(self, request, user_id):
-        try:
-            profile = Profile.objects.get(user_id=user_id)
-            experiences = profile.experiences.all()
-            education = profile.education.all()
-            skills = profile.skills.all()
-
-            return render(request, 'profiles/view_profile.html', {
-                'profile': profile,
-                'experiences': experiences,
-                'education': education,
-                'skills': skills
-            })
-        except Profile.DoesNotExist:
-            return render(request, 'profiles/error.html', {'message': "Perfil no encontrado"})
-        except Exception as e:
-            return render(request, 'profiles/error.html', {'message': str(e)})
-
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from .models import Profile
-from .forms import ProfileForm
-
-@login_required
-def profile_edit(request):
-    if request.method == 'POST':
-        form = ProfileForm(request.POST, instance=request.user.profile)
-        if form.is_valid():
-            form.save()
-            return redirect('profile')
-    else:
-        form = ProfileForm(instance=request.user.profile)
-    return render(request, 'profile_edit.html', {'form': form})
 # Estatuses
 
 def status(request):
@@ -1879,6 +1739,9 @@ def Classification_list(request):
     return render(request, 'configuration/classification_list.html', {'classifications': classifications})
 
 # Document viewer
+
+
+from .forms import ImageForm, DocumentForm, DatabaseForm
 
 def document_view(request):
     documents = Document.objects.all()  # Obtiene todos los documentos

@@ -1,5 +1,5 @@
-from .forms import ProfileForm
-from .models import Profile
+from cv.forms import CurriculumForm as ProfileForm
+from cv.models import Curriculum as Profile
 from django.core.exceptions import ValidationError
 
 def create_user_profile(user, bio, location, linkedin_url, github_url, twitter_url, facebook_url, instagram_url, company, job_title, country, address, phone, profile_picture):

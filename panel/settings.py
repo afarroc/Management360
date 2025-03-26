@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'chat',
     'tools',
     'rooms',
+    'cv.apps.CvConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
