@@ -1,0 +1,20 @@
+<li class="nav-item">
+    <a class="nav-link collapsed" data-bs-target="#cv-nav" data-bs-toggle="collapse" href="{% url 'cv_detail' %}">
+        <i class="bi bi-calendar"></i><span>Curriculum</span><i class="bi bi-chevron-down ms-auto"></i>
+    </a>
+    <ul id="cv-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+
+        <li>
+            <a href="{% url 'cv_detail' %}">
+                <i class="bi bi-circle"></i><span>My CV</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'cv_edit' %}">
+                <i class="bi bi-circle"></i><span>CV Edit</span>
+            </a>
+        </li> 
+
+  
+    </ul>
+</li><!-- End cv Nav -->

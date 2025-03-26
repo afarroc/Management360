@@ -17,13 +17,14 @@
         {% include 'layouts/includes/management.html' %}
         {% include 'layouts/includes/rooms.html' %}
         {% include 'layouts/includes/configuration.html' %}
+        {% include 'layouts/includes/curriculum.html' %}
 
         {% endif %}
 
         <li class="nav-heading">Pages</li>
         {% if user.is_authenticated %}
         <li class="nav-item">
-            <a class="nav-link collapsed" href="{% url 'profile' user.id %}">
+            <a class="nav-link collapsed" href="{% url 'cv_detail'  %}">
                 <i class="bi bi-person"></i>
                 <span>Profile</span>
             </a>
