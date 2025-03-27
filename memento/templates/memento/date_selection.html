@@ -1,0 +1,97 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Configuración de Memento Mori{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card memento-card">
+        <div class="card-body p-5">
+            <div class="form-icon">
+                ⏳
+            </div>
+            <h2 class="form-title">
+                {% if form.instance.pk %}Editar{% else %}Crear{% endif %} Configuración Memento Mori
+            </h2>
+
+            {% if messages %}
+            <div class="mb-4">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+
+
+            <form method="POST" action="{% if form.instance.pk %}{% url 'memento_update' form.instance.pk %}{% else %}{% url 'memento_create' %}{% endif %}">
+                {% csrf_token %}
+                {{ form.non_field_errors }}
+                
+                <div class="mb-4">
+                    {{ form.preferred_frequency.label_tag }}
+                    {{ form.preferred_frequency }}
+                    {{ form.preferred_frequency.errors }}
+                </div>
+                
+                <div class="mb-4">
+                    {{ form.birth_date.label_tag }}
+                    {{ form.birth_date }}
+                    <div class="form-text">{{ form.birth_date.help_text }}</div>
+                    {{ form.birth_date.errors }}
+                </div>
+                
+                <div class="mb-4">
+                    {{ form.death_date.label_tag }}
+                    {{ form.death_date }}
+                    <div class="form-text">{{ form.death_date.help_text }}</div>
+                    {{ form.death_date.errors }}
+                </div>
+                
+                {% if user.is_authenticated and not form.instance.pk %}
+                <div class="form-check mb-4">
+                    <input type="hidden" name="save_config" value="true">
+                </div>
+                {% endif %}
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-between mt-4">
+                    <button type="submit" class="btn btn-memento btn-lg">
+                        {% if form.instance.pk %}Actualizar{% else %}Guardar{% endif %} Configuración
+                    </button>
+                    
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'memento_default' %}" class="btn btn-outline-secondary btn-lg">
+                        Cancelar
+                    </a>
+                    {% endif %}
+                </div> 
+            </form>
+            
+            <p class="info-text mt-4">
+                Memento Mori es una herramienta para visualizar el tiempo de vida.<br>
+                "Recuerda que morirás" - Una práctica estoica para vivir con propósito.
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Establecer fechas por defecto razonables
+    const today = new Date();
+    const birthDate = new Date();
+    birthDate.setFullYear(today.getFullYear() - 25);
+    
+    // Solo establecer valores por defecto si los campos están vacíos
+    if (!document.getElementById('id_birth_date').value) {
+        document.getElementById('id_birth_date').valueAsDate = birthDate;
+    }
+    if (!document.getElementById('id_death_date').value) {
+        document.getElementById('id_death_date').valueAsDate = new Date(today.getFullYear() + 50, today.getMonth(), today.getDate());
+    }
+});
+</script>
+{% endblock %}

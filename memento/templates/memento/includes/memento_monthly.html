@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static custom_filters %}
+
+{% block extra_css %}
+<style>
+.calendar-grid {
+    display: grid;
+    gap: 5px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+.year-block {
+    display: grid;
+    grid-template-columns: 60px repeat(12, 1fr);
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.month-cell {
+    width: 100%;
+    height: 30px;
+    border-radius: 3px;
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.month-cell:hover {
+    transform: scale(1.1);
+    z-index: 10;
+}
+
+.year-number {
+    font-weight: bold;
+    text-align: center;
+    background: #e9ecef;
+    padding: 5px;
+    border-radius: 3px;
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="monthly-view">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Calendario Vital</h5>
+                    <div class="d-flex justify-content-between mb-3">
+                        <div>
+                            <span class="badge bg-success fs-6">Meses vividos: {{ passed_months|floatformat:"0" }}</span>
+                            <span class="badge bg-danger fs-6 ms-2">Meses restantes: {{ left_months|floatformat:"0" }}</span>
+                        </div>
+                        <div class="progress" style="width: 300px; height: 25px;">
+                            <div class="progress-bar bg-warning progress-bar-striped" 
+                                 style="width: {{ passed_months|percentage:total_months }}%"
+                                 role="progressbar"
+                                 aria-valuenow="{{ passed_months|percentage:total_months }}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                                <span class="fs-6">{{ passed_months|percentage:total_months|floatformat:"0" }}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="calendar-grid">
+                        {% for year in total_years|range %}
+                            <div class="year-block">
+                                <div class="year-number">{{ forloop.counter }}</div>
+                                {% for month in 12|range %}
+                                    {% with current_year=forloop.parentloop.counter current_month=forloop.counter %}
+                                    <div class="month-cell 
+                                        {% if year < now.year or year == now.year and month < now.month %} 
+                                            bg-warning
+                                        {% else %} 
+                                            bg-light border 
+                                        {% endif %}"
+                                        data-bs-toggle="tooltip"
+                                        title="Año {{ current_year }}, Mes {{ current_month }} - {% if year < now.year or year == now.year and month < now.month %}Vivido{% else %}Por vivir{% endif %}">
+                                    </div>
+                                    {% endwith %}
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <small class="text-muted">Cada cuadro representa un mes de tu vida (Total: {{ total_months|floatformat:"0" }} meses)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}

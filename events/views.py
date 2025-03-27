@@ -54,63 +54,6 @@ from .forms import (
 
 from .setup_views import SetupView
 
-
-def memento(request, frequency, birth_date, death_date):
-    # Convertir las cadenas de fecha a objetos datetime
-    birth_date = datetime.strptime(birth_date, '%Y-%m-%d')
-    death_date = datetime.strptime(death_date, '%Y-%m-%d')
-    title  = "Death Calendar"
-        # Generar el contexto utilizando las fechas
-    data = memento_mori(birth_date, death_date)
-    print(data)
-    context = {
-        'title': title,
-        'birth_date':birth_date.strftime("%B %d, %Y"),
-        'death_date':death_date.strftime("%B %d, %Y"),
-        'total_years' : data['total_years'],
-        'now' : data['now'],
-        'total_days' : data['total_days'],
-        'passed_days' : data['passed_days'],
-        'left_days' : data['left_days'],
-        'total_weeks' : data['total_weeks'],
-        'passed_weeks' : data['passed_weeks'],
-        'left_weeks' : data['left_weeks'],
-        }   
-    
-    if frequency is not None:
-        if frequency == 'daily':
-            context = {
-                'title': f'Dayly-based {title}' ,
-                'birth_date':birth_date.strftime("%B %d, %Y"),
-                'death_date':death_date.strftime("%B %d, %Y"),
-                'total_years' : data['total_years'],
-                'total_days' : data['total_days'],
-                'passed_days' : data['passed_days'],
-                'left_days' : data['left_days'],
-                }   
-            return render(request, "memento/memento_mori.html", context)
-
-        elif frequency == 'weekly':
-            context = {
-                'title': f'Weekly-based {title}' ,
-                'birth_date':birth_date.strftime("%B %d, %Y"),
-                'death_date':death_date.strftime("%B %d, %Y"),
-                'total_years' : data['total_years'],
-                'total_weeks' : data['total_weeks'],
-                'passed_weeks' : data['passed_weeks'],
-                'left_weeks' : data['left_weeks'],
-                } 
-            return render(request, "memento/memento_mori.html", context)
-            
-        elif frequency == 'monthly':
-            # Lógica para mostrar la información mensualmente
-            pass
-    else:
-
-        return render(request, "memento/memento_mori.html",{
-            'title': title,
-        })
-
 def event_assign(request, event_id=None):
     """
     Vista para asignar proyectos y tareas a un evento específico.

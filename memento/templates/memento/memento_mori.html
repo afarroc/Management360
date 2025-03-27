@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load static custom_filters %}
+
+{% block content %}
+<div class="container">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light rounded mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">{{ title }}</a>
+            <div class="navbar-nav ms-auto">
+                {% if user.is_authenticated %}
+                <a href="{% url 'memento_create' %}" class="btn btn-sm btn-outline-primary me-2">
+                    Nueva Configuración
+                </a>
+                <a href="{% url 'logout' %}" class="btn btn-sm btn-outline-danger">Cerrar sesión</a>
+                {% else %}
+                <a href="{% url 'memento_default' %}" class="btn btn-sm btn-outline-primary">
+                    Probar con otras fechas
+                </a>
+                {% endif %}
+            </div>
+            <div class="navbar-nav">
+                <span class="nav-item info-badge bg-primary text-white rounded-pill">
+                    Hoy: {{ current_date }}
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    {% if is_temporary and user.is_authenticated %}
+    <div class="alert alert-info d-flex align-items-center">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        <div>
+            <h5 class="alert-heading mb-1">Visualización Temporal</h5>
+            <p class="mb-0">Estás viendo una simulación con fechas diferentes a tu configuración guardada.</p>
+        </div>
+        <a href="{% url 'memento_default' %}" class="btn btn-sm btn-outline-primary ms-auto">
+            Volver a mi configuración
+        </a>
+    </div>
+    {% endif %}
+
+    <div class="frequency-selector btn-group mb-4" role="group">
+        <a href="{% url 'memento' frequency='daily' birth_date=birth_date|date:'Y-m-d' death_date=death_date|date:'Y-m-d' %}" 
+           class="btn {% if frequency == 'daily' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            Diario ({{ left_days }} días)
+        </a>
+        <a href="{% url 'memento' frequency='weekly' birth_date=birth_date|date:'Y-m-d' death_date=death_date|date:'Y-m-d' %}" 
+           class="btn {% if frequency == 'weekly' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            Semanal ({{ left_weeks }} semanas)
+        </a>
+        <a href="{% url 'memento' frequency='monthly' birth_date=birth_date|date:'Y-m-d' death_date=death_date|date:'Y-m-d' %}" 
+           class="btn {% if frequency == 'monthly' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+            Mensual ({{ left_months }} meses)
+        </a>
+    </div>
+
+    {% if frequency == 'daily' %}
+        {% include "memento/includes/memento_daily.html" %}
+    {% elif frequency == 'weekly' %}
+        {% include "memento/includes/memento_weekly.html" %}
+    {% elif frequency == 'monthly' %}
+        {% include "memento/includes/memento_monthly.html" %}
+    {% endif %}
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Resumen de Vida</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><strong>Fecha de Nacimiento:</strong> {{ birth_date }}</span>
+                            <span class="badge bg-primary rounded-pill">{{ birth_date|timesince }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><strong>Fecha Estimada de Fallecimiento:</strong> {{ death_date }}</span>
+                            <span class="badge bg-primary rounded-pill">{{ death_date|timeuntil }}</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-group">
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><strong>Vida Total:</strong></span>
+                            <span class="badge bg-success rounded-pill">{{ total_years }} años</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span><strong>Tiempo Restante:</strong></span>
+                            <span class="badge bg-{% if left_days < 3650 %}warning{% else %}success{% endif %} rounded-pill">
+                                {{ left_days }} días ({{ left_years }} años)
+                            </span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
