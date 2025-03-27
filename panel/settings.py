@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'chat',
     'tools',
     'rooms',
+    'memento.apps.MementoConfig',
     'cv.apps.CvConfig',
     'django.contrib.admin',
     'django.contrib.auth',
