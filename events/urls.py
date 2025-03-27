@@ -17,8 +17,7 @@ urlpatterns = [
     path('', views.index, name="index"),
     path('setup/', SetupView.as_view(), name='setup'),
     
-    path('memento/<str:frequency>/<str:birth_date>/<str:death_date>/', views.memento, name='memento'),
-
+    
     path('<int:days>/', views.index, name="index"),
     path('<int:days>/<int:days_ago>/', views.index, name="index"),
     path('about/', views.about, name="about"),

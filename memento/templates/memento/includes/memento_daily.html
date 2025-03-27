@@ -1,0 +1,56 @@
+<div class="daily-view">
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Resumen Diario</h5>
+                    <div class="display-4">{{ passed_days|floatformat:"0" }}</div>
+                    <p class="text-muted">Días vividos</p>
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar bg-primary progress-bar-striped" 
+                             style="width: {{ passed_days|percentage:total_days }}%"
+                             role="progressbar"
+                             aria-valuenow="{{ passed_days|percentage:total_days }}"
+                             aria-valuemin="0"
+                             aria-valuemax="100">
+                            <span class="fs-5">{{ passed_days|percentage:total_days|floatformat:"0" }}%</span>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <span class="badge bg-danger fs-6">Días restantes: {{ left_days|floatformat:"0" }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Visualización de Días</h5>
+                    <div class="days-grid">
+                        {% for day in total_days|range %}
+                            <div class="day-box {% if day < passed_days %}bg-primary{% else %}bg-light border{% endif %}"
+                                 data-bs-toggle="tooltip" 
+                                 title="Día {{ forloop.counter }} - {% if day < passed_days %}Vivido{% else %}Por vivir{% endif %}">
+                            </div>
+                            {% if forloop.counter|divisibleby:100 %}<br>{% endif %}
+                        {% endfor %}
+                    </div>
+                    <small class="text-muted">Cada cuadro representa un día de tu vida (Total: {{ total_days|floatformat:"0" }} días)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Activar tooltips de Bootstrap
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}
