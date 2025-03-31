@@ -1,0 +1,100 @@
+{% extends 'layouts\base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2><i class="fas fa-database"></i> Generador de Datos Ficticios</h2>
+        </div>
+        <div class="card-body">
+            <form method="POST" id="dataGenForm">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4 class="mb-3">Configuración Básica</h4>
+                        {% include 'includes/form_field.html' with field=form.weeks %}
+                        {% include 'includes/form_field.html' with field=form.records_per_week %}
+                        {% include 'includes/form_field.html' with field=form.clear_existing %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h4 class="mb-3">Configuración Avanzada</h4>
+                        {% include 'includes/form_field.html' with field=form.batch_size %}
+                        {% include 'includes/form_field.html' with field=form.random_seed %}
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4 class="mb-3">Servicios</h4>
+                        {{ form.services }}
+                        {% include 'includes/form_field.html' with field=form.service_weights %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h4 class="mb-3">Canales</h4>
+                        {{ form.channels }}
+                        {% include 'includes/form_field.html' with field=form.channel_weights %}
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4 class="mb-3">Personal</h4>
+                        {% include 'includes/form_field.html' with field=form.num_agents %}
+                        {% include 'includes/form_field.html' with field=form.num_supervisors %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h4 class="mb-3">Métricas</h4>
+                        {% include 'includes/form_field.html' with field=form.min_evaluations %}
+                        {% include 'includes/form_field.html' with field=form.max_evaluations %}
+                    </div>
+                </div>
+                
+                <div class="mt-4 text-center">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-cogs"></i> Generar Datos
+                    </button>
+                    <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-lg ml-3">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Actualizar dinámicamente los placeholders de pesos
+    const servicesSelect = document.querySelectorAll('input[name="services"]');
+    const serviceWeights = document.getElementById('id_service_weights');
+    
+    const channelsSelect = document.querySelectorAll('input[name="channels"]');
+    const channelWeights = document.getElementById('id_channel_weights');
+    
+    function updateWeightsPlaceholder(inputs, weightField) {
+        const selected = Array.from(inputs).filter(i => i.checked).length;
+        weightField.placeholder = `Ingrese ${selected} pesos separados por comas`;
+    }
+    
+    servicesSelect.forEach(input => {
+        input.addEventListener('change', () => updateWeightsPlaceholder(servicesSelect, serviceWeights));
+    });
+    
+    channelsSelect.forEach(input => {
+        input.addEventListener('change', () => updateWeightsPlaceholder(channelsSelect, channelWeights));
+    });
+    
+    // Inicializar placeholders
+    updateWeightsPlaceholder(servicesSelect, serviceWeights);
+    updateWeightsPlaceholder(channelsSelect, channelWeights);
+});
+</script>
+{% endblock %}
