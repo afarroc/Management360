@@ -1,29 +1,64 @@
 {% extends 'layouts/base.html' %}
-{% load custom_filters %}  <!-- Añade esto al inicio -->
+{% load static %}
+{% load crispy_forms_tags %}  <!-- ¡Esta línea es crucial! -->
 
 {% block content %}
-<div class="container mt-4">
-    <h1>{{ cv.full_name }}</h1>
-    <h3 class="text-muted">{{ cv.profession }}</h3>
-    <div class="mt-4">
-        <h4>About Me</h4>
-        <p>{{ cv.bio }}</p>
+
+<div class="pagetitle">
+    <h1>Profile</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item">Users</li>
+            <li class="breadcrumb-item active">Profile</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section profile">
+    <div class="row">
         
-        <h4>Skills</h4>
-        <ul>
-            <!-- Corregir la línea usando el filtro 'split' con sintaxis correcta -->
-            {% for skill in cv.skills|split:"," %}
-            <li>{{ skill.strip }}</li>
-            {% endfor %}
-        </ul>
-        
-        <h4>Experience</h4>
-        <pre>{{ cv.experience }}</pre>
-        
-        <h4>Education</h4>
-        <pre>{{ cv.education }}</pre>
-        
-        <a href="{% url 'cv_edit' %}" class="btn btn-primary">Edit CV</a>
+        {% include 'cv/includes/profile.html' %}
+
+        <div class="col-xl-8">
+
+            <div class="card">
+                <div class="card-body pt-3">
+                    <!-- Bordered Tabs -->
+                    <ul class="nav nav-tabs nav-tabs-bordered">
+
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile-overview">Overview</button>
+                        </li>
+
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-edit">Edit Profile</button>
+                        </li>
+
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-settings">Settings</button>
+                        </li>
+
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-change-password">Change Password</button>
+                        </li>
+
+                    </ul>
+                    <div class="tab-content pt-2">
+
+                        {% include 'cv/includes/profile_overview.html' %}
+                        {% include 'cv/includes/profile_edit.html' %}
+                        {% include 'cv/includes/profile_settings.html' %}
+                        {% include 'cv/includes/profile_change_password.html' %}
+
+                    </div><!-- End Bordered Tabs -->
+
+                </div>
+            </div>
+
+        </div>
+
     </div>
-</div>
+</section>
+
 {% endblock %}

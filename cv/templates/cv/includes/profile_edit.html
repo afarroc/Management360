@@ -1,0 +1,171 @@
+<!-- profile_edit.html -->
+{% load static %}
+{% load crispy_forms_tags %}  <!-- Esta línea debe ir al principio -->
+{% load i18n %}
+{% load widget_tweaks %}
+
+
+<div class="tab-pane fade show active" id="profile-edit">
+    <form method="post" enctype="multipart/form-data" id="editForm">
+        {% csrf_token %}
+        
+        <!-- Sección de datos principales -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                {{ form.full_name }}
+                {{ form.profession }}
+                {{ form.bio }}
+            </div>
+            <div class="col-md-6">
+                {{ form.profile_picture }}
+                {% if cv.profile_picture %}
+                <div class="mt-2">
+                    <img src="{{ cv.profile_picture.url }}" class="img-thumbnail" width="120">
+                    <button type="button" class="btn btn-danger btn-sm ms-2" data-bs-toggle="modal" 
+                            data-bs-target="#deleteImageModal">
+                        Eliminar
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sección de Experiencia -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Experiencia Laboral</h4>
+            </div>
+            <div class="card-body">
+                <div id="experience-formset">
+                    {{ experience_formset.management_form }}
+                    {% for form in experience_formset %}
+                    <div class="formset-row mb-3 border p-2">
+                        {{ form.id }}
+                        <div class="row">
+                            <div class="col-md-6">{{ form.job_title }}</div>
+                            <div class="col-md-6">{{ form.company_name }}</div>
+                            <div class="col-md-3">{{ form.start_date }}</div>
+                            <div class="col-md-3">{{ form.end_date }}</div>
+                            <div class="col-md-12">{{ form.description }}</div>
+                            {% if form.DELETE %}
+                            <div class="col-md-12">{{ form.DELETE }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm add-experience">
+                    <i class="bi bi-plus-circle"></i> Añadir Experiencia
+                </button>
+            </div>
+        </div>
+
+        <!-- Sección de Educación -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">Formación Académica</h4>
+            </div>
+            <div class="card-body">
+                <div id="education-formset">
+                    {{ education_formset.management_form }}
+                    {% for form in education_formset %}
+                    <div class="formset-row mb-3 border p-2">
+                        {{ form.id }}
+                        <div class="row">
+                            <div class="col-md-6">{{ form.institution_name }}</div>
+                            <div class="col-md-6">{{ form.degree }}</div>
+                            <div class="col-md-4">{{ form.field_of_study }}</div>
+                            <div class="col-md-4">{{ form.start_date }}</div>
+                            <div class="col-md-4">{{ form.end_date }}</div>
+                            <div class="col-md-12">{{ form.description }}</div>
+                            {% if form.DELETE %}
+                            <div class="col-md-12">{{ form.DELETE }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="button" class="btn btn-outline-success btn-sm add-education">
+                    <i class="bi bi-plus-circle"></i> Añadir Educación
+                </button>
+            </div>
+        </div>
+
+        <!-- Sección de Habilidades -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">Habilidades Técnicas</h4>
+            </div>
+            <div class="card-body">
+                <div id="skill-formset">
+                    {{ skill_formset.management_form }}
+                    {% for form in skill_formset %}
+                    <div class="formset-row mb-3 border p-2">
+                        {{ form.id }}
+                        <div class="row">
+                            <div class="col-md-8">{{ form.skill_name }}</div>
+                            <div class="col-md-4">{{ form.proficiency_level }}</div>
+                            {% if form.DELETE %}
+                            <div class="col-md-12">{{ form.DELETE }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="button" class="btn btn-outline-warning btn-sm add-skill">
+                    <i class="bi bi-plus-circle"></i> Añadir Habilidad
+                </button>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save me-2"></i>Guardar Cambios
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Script para manejo dinámico de formsets -->
+<script>
+$(document).ready(function() {
+    // Experiencia
+    $('.add-experience').click(function() {
+        const formIdx = $('#id_experiences-TOTAL_FORMS').val();
+        const newForm = $('#experience-formset .formset-row:first').clone(true);
+        
+        newForm.html(newForm.html().replace(/__prefix__/g, formIdx));
+        newForm.find('input, select, textarea').val('').prop('checked', false);
+        newForm.find('[id$=DELETE]').prop('checked', false);
+        
+        $('#experience-formset').append(newForm);
+        $('#id_experiences-TOTAL_FORMS').val(parseInt(formIdx) + 1);
+    });
+
+    // Educación
+    $('.add-education').click(function() {
+        const formIdx = $('#id_education-TOTAL_FORMS').val();
+        const newForm = $('#education-formset .formset-row:first').clone(true);
+        
+        newForm.html(newForm.html().replace(/__prefix__/g, formIdx));
+        newForm.find('input, select, textarea').val('').prop('checked', false);
+        newForm.find('[id$=DELETE]').prop('checked', false);
+        
+        $('#education-formset').append(newForm);
+        $('#id_education-TOTAL_FORMS').val(parseInt(formIdx) + 1);
+    });
+
+    // Habilidades
+    $('.add-skill').click(function() {
+        const formIdx = $('#id_skills-TOTAL_FORMS').val();
+        const newForm = $('#skill-formset .formset-row:first').clone(true);
+        
+        newForm.html(newForm.html().replace(/__prefix__/g, formIdx));
+        newForm.find('input, select, textarea').val('').prop('checked', false);
+        newForm.find('[id$=DELETE]').prop('checked', false);
+        
+        $('#skill-formset').append(newForm);
+        $('#id_skills-TOTAL_FORMS').val(parseInt(formIdx) + 1);
+    });
+});
+</script>
