@@ -52,6 +52,8 @@ INSTALLED_APPS = [
     'rooms',
     'memento.apps.MementoConfig',
     'cv.apps.CvConfig',
+    'kpis.apps.KpisConfig',
+    
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -59,6 +61,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'crispy_forms',
+    'crispy_bootstrap5',
     
     'widget_tweaks',
 ]

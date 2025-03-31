@@ -14,6 +14,9 @@ urlpatterns = [
     path('rooms/', include('rooms.urls')),
     path('cv/', include('cv.urls')),
     path('memento/', include('memento.urls')),
+    path('kpis/', include('kpis.urls')),  # Incluye las URLs de la app  
+
+    
     path('api/csrf/', views.get_csrf, name='api-csrf'),
     path('api/token/connection/', views.get_connection_token, name='api-connection-token'),
     path('api/token/subscription/', views.get_subscription_token, name='api-subscription-token'),

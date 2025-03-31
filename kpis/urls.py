@@ -1,0 +1,12 @@
+# app/urls.py  
+from django.urls import path  
+from . import views  
+
+urlpatterns = [  
+    # Carga de CSV  
+    path('upload-csv/', views.upload_csv, name='upload_csv'),  
+    # Dashboard de AHT  
+    path('dashboard/', views.aht_dashboard, name='dashboard'),  
+    # Exportar datos para Power BI/Tableau  
+    path('export-data/', views.export_data, name='export_data'),  
+]  
