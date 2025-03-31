@@ -1,19 +1,40 @@
-# cv/views.py
+# cv/views.py (Versión corregida)
 from django.views import View
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
-from django import forms
 from django.db import transaction
 from django.core.exceptions import PermissionDenied
+from django.contrib import messages
+from django.views.decorators.http import require_POST
 from .models import Curriculum, Experience, Education, Skill
 from .forms import CurriculumForm, ExperienceForm, EducationForm, SkillForm
 from django.forms import formset_factory
+from django.forms import modelformset_factory
 
-# Formsets
-ExperienceFormSet = formset_factory(ExperienceForm, extra=1, can_delete=True)
-EducationFormSet = formset_factory(EducationForm, extra=1, can_delete=True)
-SkillFormSet = formset_factory(SkillForm, extra=1, can_delete=True)
+
+# Configuración mejorada de formsets
+# Modificar los formsets para usar modelformset_factory
+ExperienceFormSet = modelformset_factory(
+    Experience, 
+    form=ExperienceForm, 
+    extra=1, 
+    can_delete=True
+)
+
+EducationFormSet = modelformset_factory(
+    Education,
+    form=EducationForm,
+    extra=1,
+    can_delete=True
+)
+
+SkillFormSet = modelformset_factory(
+    Skill,
+    form=SkillForm,
+    extra=1,
+    can_delete=True
+)
 
 @method_decorator(login_required, name='dispatch')
 class CurriculumView(View):
@@ -22,153 +43,160 @@ class CurriculumView(View):
 
     def get(self, request, user_id=None):
         if user_id and request.user.id != user_id:
-            raise PermissionDenied("No tienes permiso para ver este perfil")
+            raise PermissionDenied("Acceso no autorizado")
         
-        try:
-            cv = Curriculum.objects.get(user_id=user_id) if user_id else None
-            
-            if cv:
-                form = CurriculumForm(instance=cv)
-                experience_formset = ExperienceFormSet(
-                    prefix='experiences',
-                    initial=[{'cv': cv.id}],
-                    queryset=cv.experiences.all()
-                )
-                education_formset = EducationFormSet(
-                    prefix='education',
-                    initial=[{'cv': cv.id}],
-                    queryset=cv.educations.all()
-                )
-                skill_formset = SkillFormSet(
-                    prefix='skills',
-                    initial=[{'cv': cv.id}],
-                    queryset=cv.skills_list.all()
-                )
-            else:
-                form = CurriculumForm()
-                experience_formset = ExperienceFormSet(prefix='experiences')
-                education_formset = EducationFormSet(prefix='education')
-                skill_formset = SkillFormSet(prefix='skills')
+        # Crear o obtener el Curriculum
+        cv, created = Curriculum.objects.get_or_create(user=request.user)
+        
+        # Configurar formsets con datos iniciales
+        experience_formset = ExperienceFormSet(
+            prefix='experiences',
+            instance=cv,
+            queryset=cv.experiences.all()
+        )
+        
+        education_formset = EducationFormSet(
+            prefix='education',
+            instance=cv,
+            queryset=cv.educations.all()
+        )
+        
+        skill_formset = SkillFormSet(
+            prefix='skills',
+            instance=cv,
+            queryset=cv.skills_list.all()
+        )
 
-            return render(request, self.template_name, {
-                'form': form,
-                'experience_formset': experience_formset,
-                'education_formset': education_formset,
-                'skill_formset': skill_formset
-            })
-            
-        except Curriculum.DoesNotExist:
-            return render(request, 'cv/error.html', {'message': "Perfil no encontrado"})
-        except Exception as e:
-            return render(request, 'cv/error.html', {'message': str(e)})
+        return render(request, self.template_name, {
+            'form': CurriculumForm(instance=cv),
+            'experience_formset': experience_formset,
+            'education_formset': education_formset,
+            'skill_formset': skill_formset,
+            'cv': cv
+        })
 
+    # Actualizar el método post
     @transaction.atomic
     def post(self, request, user_id=None):
-        if user_id and request.user.id != user_id:
-            raise PermissionDenied("No tienes permiso para editar este perfil")
+        cv = get_object_or_404(Curriculum, user=request.user)
+        form = CurriculumForm(request.POST, request.FILES, instance=cv)
         
-        try:
-            cv = Curriculum.objects.get(user_id=user_id) if user_id else None
-            form = CurriculumForm(request.POST, request.FILES, instance=cv)
-            experience_formset = ExperienceFormSet(request.POST, prefix='experiences')
-            education_formset = EducationFormSet(request.POST, prefix='education')
-            skill_formset = SkillFormSet(request.POST, prefix='skills')
-
-            if not all([
-                form.is_valid(),
-                experience_formset.is_valid(),
-                education_formset.is_valid(),
-                skill_formset.is_valid()
-            ]):
-                return render(request, self.template_name, {
-                    'form': form,
-                    'experience_formset': experience_formset,
-                    'education_formset': education_formset,
-                    'skill_formset': skill_formset
-                })
-
-            cv = form.save(commit=False)
-            cv.user = request.user
-            cv.save()
-
-            # Procesar experiences
-            for exp_form in experience_formset:
-                if exp_form.cleaned_data.get('DELETE'):
-                    if exp_form.instance.pk:
-                        exp_form.instance.delete()
-                elif exp_form.has_changed():
-                    exp = exp_form.save(commit=False)
-                    exp.cv = cv
-                    exp.save()
-
-            # Procesar education
-            for edu_form in education_formset:
-                if edu_form.cleaned_data.get('DELETE'):
-                    if edu_form.instance.pk:
-                        edu_form.instance.delete()
-                elif edu_form.has_changed():
-                    edu = edu_form.save(commit=False)
-                    edu.cv = cv
-                    edu.save()
-
-            # Procesar skills
-            for skill_form in skill_formset:
-                if skill_form.cleaned_data.get('DELETE'):
-                    if skill_form.instance.pk:
-                        skill_form.instance.delete()
-                elif skill_form.has_changed():
-                    skill = skill_form.save(commit=False)
-                    skill.cv = cv
-                    skill.save()
-
-            return redirect(self.success_url)
+        experience_formset = ExperienceFormSet(
+            request.POST,
+            prefix='experiences',
+            queryset=cv.experiences.all()
+        )
         
-        except forms.ValidationError as e:
-            return render(request, 'cv/error.html', {'message': str(e)})
-        except Exception as e:
-            return render(request, 'cv/error.html', {'message': str(e)})
+        education_formset = EducationFormSet(
+            request.POST,
+            prefix='education',
+            queryset=cv.educations.all()
+        )
+        
+        skill_formset = SkillFormSet(
+            request.POST,
+            prefix='skills',
+            queryset=cv.skills_list.all()
+        )
+
+        if all([
+            form.is_valid(),
+            experience_formset.is_valid(),
+            education_formset.is_valid(),
+            skill_formset.is_valid()
+        ]):
+            try:
+                form.save()
+                # Guardar formsets
+                instances = experience_formset.save(commit=False)
+                for obj in instances:
+                    obj.cv = cv
+                    obj.save()
+                
+                instances = education_formset.save(commit=False)
+                for obj in instances:
+                    obj.cv = cv
+                    obj.save()
+                
+                instances = skill_formset.save(commit=False)
+                for obj in instances:
+                    obj.cv = cv
+                    obj.save()
+                
+                # Eliminar marcados para borrar
+                for obj in experience_formset.deleted_objects:
+                    obj.delete()
+                
+                for obj in education_formset.deleted_objects:
+                    obj.delete()
+                
+                for obj in skill_formset.deleted_objects:
+                    obj.delete()
+                
+                messages.success(request, 'Perfil actualizado correctamente')
+                return redirect('cv_detail')
+                
+            except Exception as e:
+                messages.error(request, f'Error al guardar: {str(e)}')
+        
+        return render(request, self.template_name, {
+            'form': form,
+            'experience_formset': experience_formset,
+            'education_formset': education_formset,
+            'skill_formset': skill_formset,
+            'cv': cv
+        })
+    # Resto de las vistas permanecen igual...
 
 @method_decorator(login_required, name='dispatch')
 class ViewCurriculumView(View):
     def get(self, request, user_id):
-        try:
-            cv = get_object_or_404(Curriculum, user_id=user_id)
-            experiences = cv.experiences.all()
-            education = cv.educations.all()
-            skills = cv.skills_list.all()
-
-            return render(request, 'cv/view_curriculum.html', {
-                'cv': cv,
-                'experiences': experiences,
-                'education': education,
-                'skills': skills
-            })
-        except Curriculum.DoesNotExist:
-            return render(request, 'cv/error.html', {'message': "Perfil no encontrado"})
-        except Exception as e:
-            return render(request, 'cv/error.html', {'message': str(e)})
+        cv = get_object_or_404(Curriculum, user_id=user_id)
+        return render(request, 'cv/view_curriculum.html', {
+            'cv': cv,
+            'experiences': cv.experiences.all(),
+            'education': cv.educations.all(),
+            'skills': cv.skills_list.all()
+        })
 
 @login_required
 def cv_edit(request):
-    cv = Curriculum.objects.filter(user=request.user).first()
+    cv = get_object_or_404(Curriculum, user=request.user)
     
     if request.method == 'POST':
         form = CurriculumForm(request.POST, request.FILES, instance=cv)
         if form.is_valid():
             form.save()
+            messages.success(request, 'Cambios guardados exitosamente')
             return redirect('cv_detail')
-    else:
-        form = CurriculumForm(instance=cv)
+        messages.error(request, 'Error en el formulario')
     
+    form = CurriculumForm(instance=cv)
     return render(request, 'cv/edit.html', {'form': form})
-    
-    # cv/views.py
+
 @login_required
 def cv_detail(request):
-    cv = Curriculum.objects.filter(user=request.user).first()
+    cv = get_object_or_404(Curriculum, user=request.user)
     return render(request, 'cv/detail.html', {
         'cv': cv,
-        'experiences': cv.experiences.all() if cv else [],
-        'educations': cv.educations.all() if cv else [],
-        'skills_list': cv.skills_list.all() if cv else [],
+        'experiences': cv.experiences.all(),
+        'educations': cv.educations.all(),
+        'skills_list': cv.skills_list.all()
     })
+
+@require_POST
+@login_required
+def delete_profile_picture(request):
+    cv = get_object_or_404(Curriculum, user=request.user)
+    try:
+        if cv.profile_picture:
+            cv.profile_picture.delete(save=False)
+            cv.profile_picture = None
+            cv.save(update_fields=['profile_picture'])
+            messages.success(request, 'Imagen eliminada correctamente')
+        else:
+            messages.warning(request, 'No hay imagen para eliminar')
+    except Exception as e:
+        messages.error(request, f'Error al eliminar imagen: {str(e)}')
+    
+    return redirect('cv_detail')

@@ -1,0 +1,29 @@
+{% extends 'layouts/base.html' %}
+{% load custom_filters %}  <!-- Añade esto al inicio -->
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{{ cv.full_name }}</h1>
+    <h3 class="text-muted">{{ cv.profession }}</h3>
+    <div class="mt-4">
+        <h4>About Me</h4>
+        <p>{{ cv.bio }}</p>
+        
+        <h4>Skills</h4>
+        <ul>
+            <!-- Corregir la línea usando el filtro 'split' con sintaxis correcta -->
+            {% for skill in cv.skills|split:"," %}
+            <li>{{ skill.strip }}</li>
+            {% endfor %}
+        </ul>
+        
+        <h4>Experience</h4>
+        <pre>{{ cv.experience }}</pre>
+        
+        <h4>Education</h4>
+        <pre>{{ cv.education }}</pre>
+        
+        <a href="{% url 'cv_edit' %}" class="btn btn-primary">Edit CV</a>
+    </div>
+</div>
+{% endblock %}

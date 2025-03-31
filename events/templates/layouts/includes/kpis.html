@@ -1,0 +1,24 @@
+<li class="nav-item">
+    <a class="nav-link collapsed" data-bs-target="#csv-reports-nav" data-bs-toggle="collapse" href="#">
+        <i class="bi bi-file-earmark-spreadsheet"></i><span>CSV & Reports</span><i class="bi bi-chevron-down ms-auto"></i>
+    </a>
+    <ul id="csv-reports-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
+        <li>
+            <a href="{% url 'upload_csv' %}">
+                <i class="bi bi-upload"></i><span>Upload CSV</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'dashboard' %}">
+                <i class="bi bi-bar-chart-line"></i><span>AHT Dashboard</span>
+            </a>
+        </li>
+        {% if user.is_authenticated %}
+        <li>
+            <a href="{% url 'dashboard' %}">
+                <i class="bi bi-file-pdf"></i><span>Generate Report</span>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</li><!-- End CSV Nav -->
