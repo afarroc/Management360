@@ -2,8 +2,8 @@ import asyncio, aiohttp, json, sys
 
 async def enviar_solicitud(pregunta):
     async with aiohttp.ClientSession() as session:
-        async with session.post('http://localhost:11434/api/generate', json={
-            "model": "gemma2:2b",
+        async with session.post('http://192.168.18.49:11434/api/generate', json={
+            "model": "deepseek-r1:1.5b",
             "format": "json",
             "stream": "false",
 
