@@ -6,9 +6,7 @@
 
 <!-- Confirmation and success messages -->
 {% if messages %}
-
 {% include 'layouts/includes/alert.html' %}
-
 {% endif %}
 
 <div class="pagetitle">
@@ -20,123 +18,434 @@
         </ol>
     </nav>
 </div><!-- End Page Title -->
+
 <style>
-    #chat-history {
-        padding: 20px;
-        overflow-y: auto;
-        height: 400px;
-    }
-
-    .chat-bubble {
-        margin-bottom: 20px;
-        padding: 10px;
+    /* Estilos mejorados para el chat */
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 250px);
+        max-height: 600px;
         border-radius: 10px;
-        width: fit-content;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
     }
-
+    
+    #chat-history {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        background-color: #f8f9fa;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .chat-bubble {
+        max-width: 80%;
+        padding: 10px 15px;
+        border-radius: 18px;
+        line-height: 1.4;
+        position: relative;
+        word-wrap: break-word;
+        animation: fadeIn 0.3s ease;
+    }
+    
     .user-bubble {
-        background-color: #007bff;
-        color: #fff;
+        background-color: #4361ee;
+        color: white;
         align-self: flex-end;
+        border-bottom-right-radius: 4px;
     }
-
+    
     .ai-bubble {
-        background-color: #28a745;
-        color: #fff;
+        background-color: white;
+        color: #343a40;
         align-self: flex-start;
+        border-bottom-left-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
-
+    
     .chat-message {
         display: flex;
         flex-direction: column;
     }
-
-        .chat-message p:first-child {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-    #chat-history {
+    
+    .chat-message .sender {
+        font-size: 0.8rem;
+        font-weight: bold;
+        margin-bottom: 4px;
+        color: #6c757d;
+    }
+    
+    .ai-bubble .sender {
+        color: #4361ee;
+    }
+    
+    .user-bubble .sender {
+        color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .chat-input-area {
+        background-color: white;
+        padding: 15px;
+        border-top: 1px solid #e9ecef;
         display: flex;
-        flex-direction: column;
-        align-items: flex-end;
+        gap: 10px;
+    }
+    
+    #user-input {
+        flex: 1;
+        border-radius: 20px;
+        padding: 10px 15px;
+        border: 1px solid #ced4da;
+        resize: none;
+        transition: border 0.2s;
+    }
+    
+    #user-input:focus {
+        outline: none;
+        border-color: #4361ee;
+        box-shadow: 0 0 0 0.2rem rgba(67, 97, 238, 0.25);
+    }
+    
+    .send-btn {
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #4361ee;
+        color: white;
+        border: none;
+        transition: all 0.2s;
+    }
+    
+    .send-btn:hover {
+        background-color: #3a56d4;
+        transform: scale(1.05);
+    }
+    
+    .send-btn:active {
+        transform: scale(0.95);
+    }
+    
+    .chat-header {
+        background-color: #4361ee;
+        color: white;
+        padding: 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .chat-title {
+        margin: 0;
+        font-size: 1.2rem;
+    }
+    
+    .clear-btn {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .clear-btn:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+    
+    .typing-indicator {
+        display: inline-flex;
+        padding: 8px 12px;
+        background: #f1f1f1;
+        border-radius: 18px;
+        align-items: center;
+    }
+    
+    .typing-dot {
+        width: 6px;
+        height: 6px;
+        background-color: #6c757d;
+        border-radius: 50%;
+        margin: 0 2px;
+        animation: typingAnimation 1.4s infinite ease-in-out;
+    }
+    
+    .typing-dot:nth-child(1) {
+        animation-delay: 0s;
+    }
+    
+    .typing-dot:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    
+    .typing-dot:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    
+    @keyframes typingAnimation {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-4px); }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Scrollbar personalizada */
+    #chat-history::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    #chat-history::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    
+    #chat-history::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+    }
+    
+    #chat-history::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .chat-container {
+            height: calc(100vh - 200px);
+        }
+        
+        .chat-bubble {
+            max-width: 90%;
+        }
     }
 </style>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    $(document).ready(function() {
-        $("#chat-form").submit(function(event) {
-            event.preventDefault();
-            var userInput = $("#user-input").val();
-            $("#user-input").val("");
-            $("#chat-history").append("<div class='chat-bubble user-bubble'><div class='chat-message'><p><strong>User:</strong></p><p>" + userInput + "</p></div></div>");
-            var chatHistory = document.getElementById('chat-history');
-            chatHistory.scrollTop = chatHistory.scrollHeight; // Actualiza el scroll despues de agregar el mensaje del usuario
-
-            var aiResponseElement = $("<div class='chat-bubble ai-bubble'><div class='chat-message'><p><strong>AI:</strong></p><p></p></div></div>");
-            $("#chat-history").append(aiResponseElement);
-
-            // Agrega el spinner solo mientras se espera la respuesta
-            aiResponseElement.find(".chat-message p:last-child").html("<div class='spinner-border' role='status'><span class='visually-hidden'>Loading...</span></div>");
-            chatHistory.scrollTop = chatHistory.scrollHeight; // Actualiza el scroll despues de agregar el spinner
-
-            $.ajax({
-                type: "POST",
-                url: "/chat/assistant/",
-                data: { user_input: userInput },
-                xhrFields: {
-                    onprogress: function(xhr) {
-                        var response = xhr.target.responseText;
-                        aiResponseElement.find(".chat-message p:last-child").html(response);
-                        chatHistory.scrollTop = chatHistory.scrollHeight; // Actualiza el scroll mientras se recibe la respuesta
-                    }
-                },
-                success: function(data) {
-                    aiResponseElement.find(".chat-message p:last-child").empty(); // Elimina el spinner y cualquier contenido previo
-                    aiResponseElement.find(".chat-message p:last-child").html(data);
-                    chatHistory.scrollTop = chatHistory.scrollHeight; // Actualiza el scroll despues de recibir la respuesta
-                }
-            });
-        });
-    });
-</script>
-
-
 
 <section class="section dashboard">
     <div class="row">
-
-
-
-        <!-- Left side columns -->
         <div class="col-lg-12">
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Ask Ollama {{some}}</h5>
-                            <div id="chat-history" class="overflow-auto" style="max-height: 230px; padding-bottom: 0px;"></div>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <form id="chat-form">
-                            <div class="input-group" >
-                                <textarea dir="ltr" autocomplete="off" maxlength="15000" aria-invalid="false" id="user-input" class="form-control" placeholder="Pregunta lo que quieras a gemma2:2b AI..."></textarea>
-                                <button class="btn btn-primary" type="submit">Enviar</button>
-                            </div>
-                        </form>
-                    </div>
+            <div class="chat-container">
+                <div class="chat-header">
+                    <h5 class="chat-title">Chat con Ollama</h5>
+                    <button id="clear-chat" class="clear-btn">
+                        <i class="bi bi-trash"></i> Limpiar
+                    </button>
+                </div>
+                
+                <div id="chat-history" class="overflow-auto"></div>
+                
+                <div class="chat-input-area">
+                    <textarea dir="ltr" autocomplete="off" maxlength="15000" 
+                              id="user-input" class="form-control" 
+                              placeholder="Escribe tu mensaje..." rows="1"></textarea>
+                    <button id="send-btn" class="send-btn" type="button">
+                        <i class="bi bi-send-fill"></i>
+                    </button>
                 </div>
             </div>
         </div>
-
-        <!-- End Left side columns -->
-
     </div>
 </section>
 
+<script>
+    $(document).ready(function() {
+        // Cargar historial inicial
+        var chatHistory = JSON.parse('{{ initial_history|escapejs }}' || '[]');
+        
+        function renderMessage(msg) {
+            const bubbleClass = msg.sender === 'user' ? 'user-bubble' : 'ai-bubble';
+            const senderName = msg.sender === 'user' ? 'Tú' : 'Asistente';
+            return `<div class="chat-bubble ${bubbleClass}">
+                      <div class="chat-message">
+                        <span class="sender">${senderName}</span>
+                        <div>${msg.content.replace(/\n/g, '<br>')}</div>
+                      </div>
+                    </div>`;
+        }
+
+        // Renderizar historial existente
+        chatHistory.forEach(msg => {
+            $('#chat-history').append(renderMessage(msg));
+        });
+        scrollToBottom();
+
+        // Función para mostrar indicador de que la IA está escribiendo
+        function showTypingIndicator() {
+            return $(`<div class="chat-bubble ai-bubble typing-indicator-bubble">
+                        <div class="chat-message">
+                          <span class="sender">Asistente</span>
+                          <div class="typing-indicator">
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                            <span class="typing-dot"></span>
+                          </div>
+                        </div>
+                      </div>`).appendTo('#chat-history');
+        }
+
+        // Función para enviar mensaje
+        async function sendMessage() {
+            const userInput = $("#user-input").val().trim();
+            if (!userInput) return;
+            
+            $("#user-input").val("");
+            const userMsg = {sender: 'user', content: userInput, timestamp: new Date().toISOString()};
+            chatHistory.push(userMsg);
+            $('#chat-history').append(renderMessage(userMsg));
+            scrollToBottom();
+            
+            // Mostrar indicador de que la IA está escribiendo
+            const typingIndicator = showTypingIndicator();
+            scrollToBottom();
+            
+            try {
+                const response = await fetch('/chat/assistant/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: new URLSearchParams({
+                        'user_input': userInput,
+                        'chat_history': JSON.stringify(chatHistory.filter(m => !m.id))
+                    })
+                });
+                
+                if (!response.ok) throw new Error('Error en la respuesta del servidor');
+                
+                // Eliminar el indicador de escritura
+                typingIndicator.remove();
+                
+                // Crear elemento para respuesta de IA
+                const aiMsgId = 'ai-msg-' + Date.now();
+                const aiMsg = {sender: 'ai', content: '', id: aiMsgId, timestamp: new Date().toISOString()};
+                chatHistory.push(aiMsg);
+                
+                const aiBubble = $(`<div id="${aiMsgId}" class="chat-bubble ai-bubble">
+                    <div class="chat-message">
+                        <span class="sender">Asistente</span>
+                        <div class="ai-response-content"></div>
+                    </div>
+                </div>`).appendTo('#chat-history');
+                
+                scrollToBottom();
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let aiResponse = '';
+                
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) break;
+                    
+                    aiResponse += decoder.decode(value, {stream: true});
+                    aiBubble.find('.ai-response-content').html(aiResponse.replace(/\n/g, '<br>'));
+                    scrollToBottom();
+                }
+                
+                // Actualizar el mensaje en el historial
+                const msgIndex = chatHistory.findIndex(m => m.id === aiMsgId);
+                if (msgIndex !== -1) {
+                    chatHistory[msgIndex].content = aiResponse;
+                }
+                
+                // Guardar historial en localStorage
+                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+            } catch (error) {
+                console.error('Error:', error);
+                typingIndicator.remove();
+                $('#chat-history').append(`
+                    <div class="chat-bubble ai-bubble">
+                        <div class="chat-message">
+                            <span class="sender">Asistente</span>
+                            <div>❌ Error al obtener respuesta. Intenta nuevamente.</div>
+                        </div>
+                    </div>
+                `);
+                scrollToBottom();
+            }
+        }
+
+        // Manejar envío de formulario
+        $("#send-btn").click(sendMessage);
+        $("#chat-form").submit(function(e) {
+            e.preventDefault();
+            sendMessage();
+        });
+        
+        // Botón para limpiar el chat
+        $("#clear-chat").click(async function() {
+            if (confirm('¿Estás seguro de que quieres limpiar el historial del chat?')) {
+                try {
+                    const response = await fetch('/chat/clear/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        chatHistory = [];
+                        $("#chat-history").empty();
+                        localStorage.removeItem('chatHistory');
+                    }
+                } catch (error) {
+                    console.error('Error al limpiar el chat:', error);
+                }
+            }
+        });
+        
+        function scrollToBottom() {
+            const chatHistoryEl = document.getElementById('chat-history');
+            chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+        }
+        
+        // Autoajustar altura del textarea
+        function adjustTextareaHeight() {
+            const textarea = document.getElementById('user-input');
+            textarea.style.height = 'auto';
+            textarea.style.height = (textarea.scrollHeight) + 'px';
+        }
+        
+        $("#user-input").on('input', adjustTextareaHeight);
+        
+        // Permitir enviar con Enter (sin Shift)
+        $("#user-input").keypress(function(e) {
+            if (e.which === 13 && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+                adjustTextareaHeight();
+            }
+        });
+        
+        // Cargar historial desde localStorage si existe
+        const savedHistory = localStorage.getItem('chatHistory');
+        if (savedHistory) {
+            try {
+                const parsedHistory = JSON.parse(savedHistory);
+                if (Array.isArray(parsedHistory)) {
+                    chatHistory = parsedHistory;
+                    $("#chat-history").empty();
+                    chatHistory.forEach(msg => {
+                        $('#chat-history').append(renderMessage(msg));
+                    });
+                    scrollToBottom();
+                }
+            } catch (e) {
+                console.error('Error al cargar historial desde localStorage:', e);
+            }
+        }
+    });
+</script>
 
 {% endblock %}
-
-
-
