@@ -1,30 +1,35 @@
 import json
 import jwt
 import time
-
 from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.views.decorators.http import require_POST
 from django.conf import settings
+from django.shortcuts import render, redirect
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+from django.db import IntegrityError
+from datetime import datetime, timedelta
 
-
+# API Views
 def get_csrf(request):
     return JsonResponse({}, headers={'X-CSRFToken': get_token(request)})
 
-
 def get_connection_token(request):
     if not request.user.is_authenticated:
-        return JsonResponse({'detail': 'unauthorized'}, status=401)
+        return JsonResponse(
+            {'error': 'Authentication required'}, 
+            status=401,
+            headers={'WWW-Authenticate': 'Bearer'}
+        )
 
+    expiry = datetime.utcnow() + timedelta(seconds=120)
     token_claims = {
         'sub': str(request.user.pk),
-        'exp': int(time.time()) + 120
+        'exp': expiry.timestamp(),
+        'iat': datetime.utcnow().timestamp()
     }
-    token = jwt.encode(token_claims, settings.CENTRIFUGO_TOKEN_SECRET)
-
-    return JsonResponse({'token': token})
-
 
 def get_subscription_token(request):
     if not request.user.is_authenticated:
@@ -40,26 +45,31 @@ def get_subscription_token(request):
         'channel': channel
     }
     token = jwt.encode(token_claims, settings.CENTRIFUGO_TOKEN_SECRET)
-
     return JsonResponse({'token': token})
-
 
 @require_POST
 def login_view(request):
-    credentials = json.loads(request.body)
-    username = credentials.get('username')
-    password = credentials.get('password')
+    try:
+        credentials = json.loads(request.body)
+        username = credentials.get('username')
+        password = credentials.get('password')
 
-    if not username or not password:
-        return JsonResponse({'detail': 'provide username and password'}, status=400)
+        if not username or not password:
+            return JsonResponse({'detail': 'provide username and password'}, status=400)
 
-    user = authenticate(username=username, password=password)
-    if not user:
-        return JsonResponse({'detail': 'invalid credentials'}, status=400)
+        user = authenticate(username=username, password=password)
+        if not user:
+            return JsonResponse({'detail': 'invalid credentials'}, status=400)
 
-    login(request, user)
-    return JsonResponse({'user': {'id': user.pk, 'username': user.username}})
-
+        login(request, user)
+        return JsonResponse({
+            'user': {
+                'id': user.pk,
+                'username': user.username
+            }
+        })
+    except json.JSONDecodeError:
+        return JsonResponse({'detail': 'invalid JSON'}, status=400)
 
 @require_POST
 def logout_view(request):
@@ -69,29 +79,25 @@ def logout_view(request):
     logout(request)
     return JsonResponse({})
 
-from django.shortcuts import get_object_or_404, redirect, render
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.contrib.auth.models import User
-from django.db import IntegrityError, transaction
-
+# Web Views
 def signup_view(request):
-    if request.method == "GET":
-        return render(request, 'accounts/signup.html', {
-            'form': UserCreationForm
-        })       
-    else:
-        if request.POST['password1'] == request.POST['password2']:
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
             try:
-                user = User.objects.create_user(username=request.POST['username'], password=request.POST['password1'])
-                user.save()
+                user = form.save()
                 login(request, user)
-                return redirect('index')  
+                return redirect('index')
             except IntegrityError:
-                return render(request, 'accounts/signup.html', {
-                    'form': UserCreationForm,
-                    "error": "User already exist"
-                })       
-        return render(request, 'accounts/signup.html', { 
-            'form': UserCreationForm,
-            "error": "Password do not match"
-        })    
+                error = "User already exists"
+        else:
+            error = "Passwords don't match" if 'password1' in form.errors else "Invalid form"
+        
+        return render(request, 'accounts/signup.html', {
+            'form': form,
+            'error': error
+        })
+    
+    return render(request, 'accounts/signup.html', {
+        'form': UserCreationForm()
+    })

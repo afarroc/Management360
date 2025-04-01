@@ -1,25 +1,23 @@
-# En tu archivo middleware.py
+import logging
 from django.db import connections
 from django.db.utils import OperationalError
-import logging
 
 logger = logging.getLogger(__name__)
 
 class DatabaseSelectorMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
+        self.db_order = ['default', 'postgres_online', 'sqlite']  # Configurable priority
 
     def __call__(self, request):
-        for db in ['default',  'postgres_online', 'sqlite']:
+        for db in self.db_order:
             try:
-                logger.info(f"Intentando conectar a la base de datos '{db}'")
                 connections[db].ensure_connection()
                 request.database_to_use = db
+                logger.info(f"Connected to database: {db}")
                 break
-            except OperationalError:
-                logger.warning(f"No se pudo conectar a la base de datos '{db}', intentando la siguiente")
+            except OperationalError as e:
+                logger.warning(f"Database connection failed ({db}): {str(e)}")
                 continue
 
-        response = self.get_response(request)
-
-        return response
+        return self.get_response(request)
