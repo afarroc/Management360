@@ -1,33 +1,30 @@
 # chat/views.py
 from django.shortcuts import render
-
-
-def index(request):
-    return render(request, "chat/index.html", {
-        'pagetitle':'Chat Page',
-        })
-
-
-def room(request, room_name):
-    return render(request, "chat/room.html", {
-        "room_name": room_name,
-        })
-
-from django.shortcuts import render
 from django.http import StreamingHttpResponse
 from django.views.decorators.csrf import csrf_exempt
 import asyncio
-
+import json
 from .ollama_api import generate_response
 
 @csrf_exempt
 def chat_view(request):
     if request.method == "POST":
         user_input = request.POST["user_input"]
-        prompt = f"User: {user_input}\nAI:"
+        chat_history = json.loads(request.POST.get("chat_history", "[]"))
+        
+        # Construir el historial de mensajes para Ollama
+        messages = []
+        for msg in chat_history:
+            if msg['sender'] == 'user':
+                messages.append({"role": "user", "content": msg['content']})
+            else:
+                messages.append({"role": "assistant", "content": msg['content']})
+        
+        # Agregar el nuevo mensaje del usuario
+        messages.append({"role": "user", "content": user_input})
 
         async def async_chat_view():
-            async for chunk in generate_response(prompt):
+            async for chunk in generate_response(messages):
                 yield chunk['message']['content'].replace('\n', '   ')
 
         async def stream():
@@ -43,5 +40,17 @@ def chat_view(request):
 
         return StreamingHttpResponse(stream(), content_type='text/event-stream charset=utf-8')
 
-    return render(request, "chat/assistant.html" ,{
-        "pagetitle":"Chat IA"})
+    return render(request, "chat/assistant.html", {
+        "pagetitle": "Chat IA"
+    })
+    
+def index(request):
+    return render(request, "chat/index.html", {
+        'pagetitle':'Chat Page',
+        })
+
+def room(request, room_name):
+    return render(request, "chat/room.html", {
+        "room_name": room_name,
+        })
+
