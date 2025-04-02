@@ -20,7 +20,7 @@
 </div><!-- End Page Title -->
 
 <style>
-    /* Estilos mejorados para el chat */
+    /* Estilos mejorados para el chat (mantenidos exactamente igual) */
     .chat-container {
         display: flex;
         flex-direction: column;
@@ -237,18 +237,30 @@
             <div class="chat-container">
                 <div class="chat-header">
                     <h5 class="chat-title">Chat con Ollama</h5>
-                    <button id="clear-chat" class="clear-btn">
+                    <button id="clear-chat" class="clear-btn" type="button" title="Limpiar chat">
                         <i class="bi bi-trash"></i> Limpiar
                     </button>
+                    
                 </div>
                 
-                <div id="chat-history" class="overflow-auto"></div>
+                <div id="chat-history" class="overflow-auto">
+                    {% if not initial_history %}
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
+                        <i class="bi bi-chat-square-text" style="font-size: 3rem; margin-bottom: 1rem; color: #dee2e6;"></i>
+                        <h5>No hay mensajes aún</h5>
+                        <p>Comienza una conversación escribiendo un mensaje</p>
+                    </div>
+                    {% endif %}
+                </div>
                 
                 <div class="chat-input-area">
-                    <textarea dir="ltr" autocomplete="off" maxlength="15000" 
-                              id="user-input" class="form-control" 
-                              placeholder="Escribe tu mensaje..." rows="1"></textarea>
-                    <button id="send-btn" class="send-btn" type="button">
+                    <div style="flex: 1; position: relative;">
+                        <textarea dir="ltr" autocomplete="off" maxlength="15000" 
+                                id="user-input" class="form-control" 
+                                placeholder="Escribe tu mensaje..." rows="1"></textarea>
+                        <div id="char-counter" style="font-size: 0.75rem; color: #6c757d; text-align: right; margin-top: 4px; position: absolute; right: 10px; bottom: 5px;">0/15000</div>
+                    </div>
+                    <button id="send-btn" class="send-btn" type="button" title="Enviar mensaje">
                         <i class="bi bi-send-fill"></i>
                     </button>
                 </div>
@@ -257,54 +269,192 @@
     </div>
 </section>
 
+<div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 1100;"></div>
+
 <script>
     $(document).ready(function() {
-        // Cargar historial inicial
-        var chatHistory = JSON.parse('{{ initial_history|escapejs }}' || '[]');
+        // Constants
+        const MAX_INPUT_LENGTH = 15000;
+        let chatHistory = JSON.parse('{{ initial_history|escapejs }}' || '[]');
+        let isProcessing = false;
         
+        // Initialize chat
+        function initializeChat() {
+            try {
+                // Check if we have initial history from template
+                if (chatHistory.length > 0) {
+                    renderChatHistory();
+                    return;
+                }
+                
+                // Fallback to localStorage
+                const savedHistory = localStorage.getItem('chatHistory');
+                if (savedHistory) {
+                    const parsedHistory = JSON.parse(savedHistory);
+                    if (Array.isArray(parsedHistory)) {
+                        chatHistory = parsedHistory;
+                        renderChatHistory();
+                    }
+                }
+            } catch (e) {
+                console.error('Error initializing chat:', e);
+            }
+        }
+        
+        // Toast notification system (inline styles)
+        function showToast(message, type = 'info') {
+            const iconMap = {
+                'info': 'bi-info-circle',
+                'success': 'bi-check-circle',
+                'error': 'bi-exclamation-circle'
+            };
+            
+            const toast = $(`
+                <div style="background-color: #4361ee; color: white; padding: 12px 16px; border-radius: 6px; margin-bottom: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; animation: fadeInUp 0.3s, fadeOut 0.5s 2.5s forwards;">
+                    <i class="bi ${iconMap[type]}" style="margin-right: 8px;"></i>
+                    <span>${message}</span>
+                </div>
+            `);
+            
+            $('#toast-container').append(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Format timestamp
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        // Render a single message
         function renderMessage(msg) {
             const bubbleClass = msg.sender === 'user' ? 'user-bubble' : 'ai-bubble';
             const senderName = msg.sender === 'user' ? 'Tú' : 'Asistente';
-            return `<div class="chat-bubble ${bubbleClass}">
-                      <div class="chat-message">
+            const timestamp = formatTimestamp(msg.timestamp);
+            
+            return `
+                <div class="chat-bubble ${bubbleClass}">
+                    <div class="chat-message">
                         <span class="sender">${senderName}</span>
                         <div>${msg.content.replace(/\n/g, '<br>')}</div>
-                      </div>
-                    </div>`;
+                        ${timestamp ? `<div style="font-size: 0.7rem; opacity: 0.7; margin-top: 4px; text-align: right; ${msg.sender === 'user' ? 'color: rgba(255, 255, 255, 0.7);' : ''}">${timestamp}</div>` : ''}
+                        <button class="copy-btn" title="Copiar mensaje" style="position: absolute; right: 10px; top: 10px; background: rgba(0,0,0,0.1); border: none; border-radius: 4px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; cursor: pointer;">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
         }
-
-        // Renderizar historial existente
-        chatHistory.forEach(msg => {
-            $('#chat-history').append(renderMessage(msg));
-        });
-        scrollToBottom();
-
-        // Función para mostrar indicador de que la IA está escribiendo
+        
+        // Render entire chat history
+        function renderChatHistory() {
+            const chatHistoryEl = $('#chat-history');
+            
+            if (chatHistory.length === 0) {
+                chatHistoryEl.html(`
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #6c757d;">
+                        <i class="bi bi-chat-square-text" style="font-size: 3rem; margin-bottom: 1rem; color: #dee2e6;"></i>
+                        <h5>No hay mensajes aún</h5>
+                        <p>Comienza una conversación escribiendo un mensaje</p>
+                    </div>
+                `);
+                return;
+            }
+            
+            chatHistoryEl.empty();
+            chatHistory.forEach(msg => {
+                chatHistoryEl.append(renderMessage(msg));
+            });
+            
+            // Initialize copy buttons
+            $('.copy-btn').click(function() {
+                const messageText = $(this).siblings('div').first().text();
+                navigator.clipboard.writeText(messageText).then(() => {
+                    showToast('Mensaje copiado', 'success');
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                    showToast('Error al copiar', 'error');
+                });
+            });
+            
+            scrollToBottom();
+        }
+        
+        // Show typing indicator
         function showTypingIndicator() {
-            return $(`<div class="chat-bubble ai-bubble typing-indicator-bubble">
-                        <div class="chat-message">
-                          <span class="sender">Asistente</span>
-                          <div class="typing-indicator">
+            return $(`
+                <div class="chat-bubble ai-bubble typing-indicator-bubble">
+                    <div class="chat-message">
+                        <span class="sender">Asistente</span>
+                        <div class="typing-indicator">
                             <span class="typing-dot"></span>
                             <span class="typing-dot"></span>
                             <span class="typing-dot"></span>
-                          </div>
                         </div>
-                      </div>`).appendTo('#chat-history');
+                    </div>
+                </div>
+            `).appendTo('#chat-history');
         }
-
-        // Función para enviar mensaje
+        
+        // Update character counter
+        function updateCharCounter() {
+            const length = $("#user-input").val().length;
+            const remaining = MAX_INPUT_LENGTH - length;
+            const counter = $("#char-counter");
+            
+            counter.text(`${length}/${MAX_INPUT_LENGTH}`);
+            counter.removeClass("warning danger");
+            
+            if (remaining < MAX_INPUT_LENGTH * 0.2) {
+                counter.addClass("warning");
+            }
+            if (remaining < MAX_INPUT_LENGTH * 0.05) {
+                counter.addClass("danger");
+            }
+        }
+        
+        // Scroll to bottom of chat
+        function scrollToBottom() {
+            const chatHistoryEl = document.getElementById('chat-history');
+            chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
+        }
+        
+        // Adjust textarea height dynamically
+        function adjustTextareaHeight() {
+            const textarea = document.getElementById('user-input');
+            textarea.style.height = 'auto';
+            textarea.style.height = (textarea.scrollHeight) + 'px';
+            updateCharCounter();
+        }
+        
+        // Send message to server
         async function sendMessage() {
             const userInput = $("#user-input").val().trim();
-            if (!userInput) return;
+            if (!userInput || isProcessing) return;
             
+            isProcessing = true;
+            $("#user-input").prop('disabled', true);
+            $("#send-btn").prop('disabled', true);
+            
+            // Clear input and save user message
             $("#user-input").val("");
-            const userMsg = {sender: 'user', content: userInput, timestamp: new Date().toISOString()};
+            const userMsg = {
+                sender: 'user', 
+                content: userInput, 
+                timestamp: new Date().toISOString()
+            };
             chatHistory.push(userMsg);
+            
+            // Remove empty state if present
+            if ($('#chat-history').children().length === 1 && $('#chat-history').children().has('i').length) {
+                $('#chat-history').empty();
+            }
+            
             $('#chat-history').append(renderMessage(userMsg));
             scrollToBottom();
             
-            // Mostrar indicador de que la IA está escribiendo
+            // Show typing indicator
             const typingIndicator = showTypingIndicator();
             scrollToBottom();
             
@@ -321,25 +471,36 @@
                     })
                 });
                 
-                if (!response.ok) throw new Error('Error en la respuesta del servidor');
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
-                // Eliminar el indicador de escritura
+                // Remove typing indicator
                 typingIndicator.remove();
                 
-                // Crear elemento para respuesta de IA
+                // Create AI message container
                 const aiMsgId = 'ai-msg-' + Date.now();
-                const aiMsg = {sender: 'ai', content: '', id: aiMsgId, timestamp: new Date().toISOString()};
+                const aiMsg = {
+                    sender: 'ai', 
+                    content: '', 
+                    id: aiMsgId, 
+                    timestamp: new Date().toISOString()
+                };
                 chatHistory.push(aiMsg);
                 
-                const aiBubble = $(`<div id="${aiMsgId}" class="chat-bubble ai-bubble">
-                    <div class="chat-message">
-                        <span class="sender">Asistente</span>
-                        <div class="ai-response-content"></div>
+                const aiBubble = $(`
+                    <div id="${aiMsgId}" class="chat-bubble ai-bubble">
+                        <div class="chat-message">
+                            <span class="sender">Asistente</span>
+                            <div class="ai-response-content"></div>
+                            <button class="copy-btn" title="Copiar mensaje" style="position: absolute; right: 10px; top: 10px; background: rgba(0,0,0,0.1); border: none; border-radius: 4px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; cursor: pointer;">
+                                <i class="bi bi-clipboard"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>`).appendTo('#chat-history');
+                `).appendTo('#chat-history');
                 
                 scrollToBottom();
                 
+                // Stream response
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let aiResponse = '';
@@ -353,17 +514,27 @@
                     scrollToBottom();
                 }
                 
-                // Actualizar el mensaje en el historial
+                // Update message in history
                 const msgIndex = chatHistory.findIndex(m => m.id === aiMsgId);
                 if (msgIndex !== -1) {
                     chatHistory[msgIndex].content = aiResponse;
                 }
                 
-                // Guardar historial en localStorage
+                // Initialize copy button for AI response
+                aiBubble.find('.copy-btn').click(function() {
+                    const messageText = $(this).siblings('.ai-response-content').text();
+                    navigator.clipboard.writeText(messageText).then(() => {
+                        showToast('Mensaje copiado', 'success');
+                    });
+                });
+                
+                // Save history to localStorage
                 localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                
             } catch (error) {
                 console.error('Error:', error);
                 typingIndicator.remove();
+                
                 $('#chat-history').append(`
                     <div class="chat-bubble ai-bubble">
                         <div class="chat-message">
@@ -372,79 +543,63 @@
                         </div>
                     </div>
                 `);
-                scrollToBottom();
-            }
-        }
-
-        // Manejar envío de formulario
-        $("#send-btn").click(sendMessage);
-        $("#chat-form").submit(function(e) {
-            e.preventDefault();
-            sendMessage();
-        });
-        
-        // Botón para limpiar el chat
-        $("#clear-chat").click(async function() {
-            if (confirm('¿Estás seguro de que quieres limpiar el historial del chat?')) {
-                try {
-                    const response = await fetch('/chat/clear/', {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': '{{ csrf_token }}'
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        chatHistory = [];
-                        $("#chat-history").empty();
-                        localStorage.removeItem('chatHistory');
-                    }
-                } catch (error) {
-                    console.error('Error al limpiar el chat:', error);
-                }
-            }
-        });
-        
-        function scrollToBottom() {
-            const chatHistoryEl = document.getElementById('chat-history');
-            chatHistoryEl.scrollTop = chatHistoryEl.scrollHeight;
-        }
-        
-        // Autoajustar altura del textarea
-        function adjustTextareaHeight() {
-            const textarea = document.getElementById('user-input');
-            textarea.style.height = 'auto';
-            textarea.style.height = (textarea.scrollHeight) + 'px';
-        }
-        
-        $("#user-input").on('input', adjustTextareaHeight);
-        
-        // Permitir enviar con Enter (sin Shift)
-        $("#user-input").keypress(function(e) {
-            if (e.which === 13 && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
+                
+                showToast('Error al enviar el mensaje', 'error');
+            } finally {
+                isProcessing = false;
+                $("#user-input").prop('disabled', false);
+                $("#send-btn").prop('disabled', false);
+                $("#user-input").focus();
                 adjustTextareaHeight();
             }
-        });
+        }
         
-        // Cargar historial desde localStorage si existe
-        const savedHistory = localStorage.getItem('chatHistory');
-        if (savedHistory) {
+        // Clear chat history
+        async function clearChat() {
+            if (isProcessing) return;
+            
+            if (!confirm('¿Estás seguro de que quieres limpiar el historial del chat? Esto no se puede deshacer.')) {
+                return;
+            }
+            
             try {
-                const parsedHistory = JSON.parse(savedHistory);
-                if (Array.isArray(parsedHistory)) {
-                    chatHistory = parsedHistory;
-                    $("#chat-history").empty();
-                    chatHistory.forEach(msg => {
-                        $('#chat-history').append(renderMessage(msg));
-                    });
-                    scrollToBottom();
+                const response = await fetch('/chat/clear/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+                
+                if (response.ok) {
+                    chatHistory = [];
+                    renderChatHistory();
+                    localStorage.removeItem('chatHistory');
+                    showToast('Chat limpiado correctamente', 'success');
+                } else {
+                    throw new Error('Failed to clear chat');
                 }
-            } catch (e) {
-                console.error('Error al cargar historial desde localStorage:', e);
+            } catch (error) {
+                console.error('Error al limpiar el chat:', error);
+                showToast('Error al limpiar el chat', 'error');
             }
         }
+        
+        // Initialize chat
+        initializeChat();
+        
+        // Event listeners
+        $("#send-btn").click(sendMessage);
+        $("#clear-chat").click(clearChat);
+        
+        $("#user-input")
+            .on('input', adjustTextareaHeight)
+            .keypress(function(e) {
+                if (e.which === 13 && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            })
+            .focus();
     });
 </script>
 

@@ -1,10 +1,11 @@
 # chat/views.py
 from django.shortcuts import render
-from django.http import StreamingHttpResponse
+from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import asyncio
 import json
 from .ollama_api import generate_response
+ 
 
 @csrf_exempt
 def chat_view(request):
@@ -41,16 +42,36 @@ def chat_view(request):
         return StreamingHttpResponse(stream(), content_type='text/event-stream charset=utf-8')
 
     return render(request, "chat/assistant.html", {
-        "pagetitle": "Chat IA"
+        "pagetitle": "Chat IA",
+        "initial_history": json.dumps([])
     })
+
+@csrf_exempt
+def clear_chat(request):
+    if request.method == "POST":
+        try:
+            # Limpiar el historial en el servidor (si es necesario)
+            return JsonResponse({
+                "status": "success",
+                "message": "Chat limpiado correctamente"
+            })
+        except Exception as e:
+            return JsonResponse({
+                "status": "error",
+                "message": str(e)
+            }, status=500)
     
+    return JsonResponse({
+        "status": "error",
+        "message": "Método no permitido"
+    }, status=405)
+
 def index(request):
     return render(request, "chat/index.html", {
         'pagetitle':'Chat Page',
-        })
+    })
 
 def room(request, room_name):
     return render(request, "chat/room.html", {
         "room_name": room_name,
-        })
-
+    })
