@@ -4,6 +4,9 @@ from django.contrib.auth.views import LoginView
 from django.shortcuts import render, redirect
 from .forms import SignUpForm
 
+def accounts_view(request):
+    return render(request, 'home.html')
+
 def signup_view(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
