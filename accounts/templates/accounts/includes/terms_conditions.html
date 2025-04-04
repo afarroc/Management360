@@ -1,0 +1,55 @@
+<div class="terms-content">
+    <h5>1. Acceptance of Terms</h5>
+    <p>By creating an account with {{ site_name }}, you agree to be bound by these Terms and Conditions. If you do not agree to all the terms, please do not use our service.</p>
+
+    <h5 class="mt-4">2. Account Responsibilities</h5>
+    <ul>
+        <li>You must provide accurate and complete information when registering</li>
+        <li>You are responsible for maintaining the confidentiality of your account credentials</li>
+        <li>You are responsible for all activities that occur under your account</li>
+    </ul>
+
+    <h5 class="mt-4">3. Privacy Policy</h5>
+    <p>Your personal information will be handled in accordance with our <a href="#" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a>.</p>
+
+    <h5 class="mt-4">4. User Conduct</h5>
+    <p>You agree not to:</p>
+    <ul>
+        <li>Use the service for any illegal purpose</li>
+        <li>Attempt to gain unauthorized access to other accounts</li>
+        <li>Upload or distribute harmful content</li>
+        <li>Violate any applicable laws or regulations</li>
+    </ul>
+
+    <h5 class="mt-4">5. Service Modifications</h5>
+    <p>{{ site_name }} reserves the right to modify or discontinue the service at any time without notice.</p>
+
+    <h5 class="mt-4">6. Limitation of Liability</h5>
+    <p>{{ site_name }} shall not be liable for any indirect, incidental, special or consequential damages resulting from the use or inability to use the service.</p>
+
+    <h5 class="mt-4">7. Changes to Terms</h5>
+    <p>We may modify these terms at any time. Continued use of the service constitutes acceptance of the modified terms.</p>
+
+    <div class="alert alert-info mt-4">
+        <i class="bi bi-info-circle me-2"></i>
+        These terms were last updated on {% now "F j, Y" %}.
+    </div>
+</div>
+
+<style>
+    .terms-content {
+        max-height: 60vh;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+    .terms-content h5 {
+        color: #0d6efd;
+        font-weight: 600;
+    }
+    .terms-content ul {
+        padding-left: 20px;
+    }
+    .terms-content li {
+        margin-bottom: 5px;
+    }
+</style>

@@ -1,0 +1,10 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<h1>Tu Contraseña Generada</h1>
+<div class="alert alert-success">
+    <h2>{{ password }}</h2>
+    <small>Patrón usado: {{ pattern }}</small>
+</div>
+<a href="{% url 'generate_password' %}" class="btn btn-secondary">Generar otra</a>
+{% endblock %}

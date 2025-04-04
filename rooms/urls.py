@@ -25,11 +25,11 @@ urlpatterns = [
     path('', views.lobby, name='lobby'),
 
     # Salas
-    path('rooms/', views.room_list, name='room_list'),
-    path('rooms/create/', views.create_room, name='room_create'),
-    path('rooms/<int:pk>/', views.room_detail, name='room_detail'),
-    path('rooms/<int:pk>/comments/', views.room_comments, name='room_comments'),
-    path('rooms/<int:pk>/evaluations/', views.room_evaluations, name='room_evaluations'),
+    path('', views.room_list, name='room_list'),
+    path('create/', views.create_room, name='room_create'),
+    path('<int:pk>/comments/', views.room_comments, name='room_comments'),
+    path('<int:pk>/evaluations/', views.room_evaluations, name='room_evaluations'),
+    path('<int:pk>/', views.room_detail, name='room_detail'),
 
     # Entradas/Salidas
     path('entrance-exits/', views.entrance_exit_list, name='entrance_exit_list'),
@@ -40,4 +40,10 @@ urlpatterns = [
     path('portals/', views.portal_list, name='portal_list'),
     path('portals/create/', views.create_portal, name='portal_create'),
     path('portals/<int:pk>/', views.portal_detail, name='portal_detail'),
+
+    # Search
+    path('search/', views.room_search, name='room_search'),
+
+    # API Room Detail
+    path('rooms/api/<int:pk>/', views.room_detail_view, name='room_detail_api'),
 ]
