@@ -1,0 +1,86 @@
+﻿{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+{% if messages %}
+    {% include 'layouts/includes/alert.html' %}
+{% endif %}
+
+<div class="pagetitle">
+    <h1>{{ page_title }}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'lobby' %}">Home</a></li>
+            <li class="breadcrumb-item active">Lobby</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section dashboard">
+    <div class="row">
+        <!-- Left side columns -->
+        <div class="col-lg-8">
+            <div class="row">
+                <!-- Tarjeta de bienvenida -->
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h2 class="card-title">Bienvenido, {{ user.username }}</h2>
+                            <p class="card-text">Esta es tu página de lobby.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Listas dinámicas -->
+                {% for section in sections %}
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">{{ section.title }}</div>
+                        <div class="card-body">
+                            <ul class="list-group">
+                                {% for item in section.items|slice:":10" %}  <!-- Limita a 10 items -->
+                                <li class="list-group-item">
+                                    <a href="{% url section.url_name item.pk %}">
+                                        {{ item.name|truncatechars:30 }}  <!-- Limita longitud del texto -->
+                                    </a>
+                                </li>
+                                {% empty %}
+                                <li class="list-group-item text-muted">No hay elementos disponibles</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Right side columns -->
+        <div class="col-lg-4">
+            <!-- Buscar sala -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="get" action="{% url 'room_search' %}">
+                        <div class="input-group">
+                            <input type="search" name="q" class="form-control" placeholder="Buscar sala..." required>
+                            <button class="btn btn-outline-primary" type="submit">Buscar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Acciones rápidas -->
+            <div class="card">
+                <div class="card-body d-grid gap-2">
+                    <a href="{% url 'room_create' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Crear sala
+                    </a>
+                    <a href="{% url 'portal_create' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-door-open"></i> Crear portal
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

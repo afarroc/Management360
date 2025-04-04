@@ -15,5 +15,5 @@ urlpatterns = [
     path('view/<str:frequency>/<str:birth_date>/<str:death_date>/', memento, name='memento'),
     
     # Authentication
-    path('logout/', LogoutView.as_view(), name='logout'),
+    path('logout/', LogoutView.as_view(), name='memento_logout'),
 ]

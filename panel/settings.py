@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'memento.apps.MementoConfig',
     'cv.apps.CvConfig',
     'kpis.apps.KpisConfig',
+    'passgen',
 ]
 
 MIDDLEWARE = [

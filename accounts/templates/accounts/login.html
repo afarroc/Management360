@@ -1,22 +1,117 @@
 {% extends 'layouts/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Log In{% endblock %}
+
+{% block styles %}
+  <link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock %}
 
 {% block content %}
-  <h2>Log In</h2>
-  {% if error %}
-    <p class="text-danger">{{ error }}</p>
-  {% endif %}
-  <form method="post">
-    {% csrf_token %}
-    <div class="form-group">
-      <label for="username">Username</label>
-      <input type="text" name="username" class="form-control" required>
+<div class="pagetitle">
+    <h1>Log In</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item active">Log In</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<!-- Messages -->
+{% if messages %}
+<div class="container mt-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
-    <div class="form-group">
-      <label for="password">Password</label>
-      <input type="password" name="password" class="form-control" required>
+    {% endfor %}
+</div>
+{% endif %}
+
+<section class="section">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">Welcome Back!</h2>
+                    
+                    {% if error %}
+                    <div class="alert alert-danger">{{ error }}</div>
+                    {% endif %}
+                    
+                    <form method="post" class="row g-3">
+                        {% csrf_token %}
+                        
+                        <div class="col-12">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" 
+                                   name="username" 
+                                   class="form-control" 
+                                   required
+                                   autofocus>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <input type="password" 
+                                       name="password" 
+                                       class="form-control" 
+                                       required
+                                       id="password-field">
+                                <button class="btn btn-outline-secondary toggle-password" type="button">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>Log In
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 text-center mt-3">
+                            <p class="mb-2">
+                                Don't have an account? 
+                                <a href="{% url 'signup' %}" class="text-decoration-none">Sign Up</a>
+                            </p>
+                            <p>
+                                <a href="{% url 'password_reset' %}" class="text-decoration-none">
+                                    Forgot Password?
+                                </a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary">Log In</button>
-  </form>
-  <p>Don't have an account? <a href="{% url 'signup' %}">Sign Up</a></p>
-  <p><a href="{% url 'password_reset' %}">Forgot Password?</a></p>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle password visibility
+    document.querySelectorAll('.toggle-password').forEach(function(button) {
+        button.addEventListener('click', function() {
+            const input = this.previousElementSibling;
+            const icon = this.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bi-eye');
+                icon.classList.add('bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bi-eye-slash');
+                icon.classList.add('bi-eye');
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
