@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }}</title>
+</head>
+<body>
+    <h1>{{ page_title }}</h1>
+    
+    {% if rooms %}
+        <ul>
+            {% for room in rooms %}
+                <li>
+                    <h2><a href="{% url 'room_detail' room.pk %}">{{ room.name }}</a></h2>
+                    <p><strong>Descripción:</strong> {{ room.description|default:"Sin descripción" }}</p>
+                    <p><strong>Capacidad:</strong> {{ room.capacity }}</p>
+                    <p><strong>Dirección:</strong> {{ room.address|default:"No especificada" }}</p>
+                    <p><strong>Calificación:</strong> {{ room.rating }}</p>
+                    <p><strong>Fecha de creación:</strong> {{ room.created_at }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No hay salas disponibles.</p>
+    {% endif %}
+</body>
+</html>

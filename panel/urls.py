@@ -16,6 +16,8 @@ urlpatterns = [
     path('cv/', include('cv.urls')),
     path('memento/', include('memento.urls')),
     path('kpis/', include('kpis.urls')),
+    path('passgen/', include('passgen.urls')),
+
     
     # API Endpoints
     path('api/csrf/', views.get_csrf, name='api-csrf'),

@@ -1,0 +1,94 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<div class="pagetitle">
+    <h1>Generador de Contraseñas - Ayuda</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'generate_password' %}">Generador</a></li>
+            <li class="breadcrumb-item active">Ayuda</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <!-- Patrones predefinidos -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Patrones Predefinidos</h5>
+                    <div class="list-group">
+                        {% for pattern in predefined_patterns %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ pattern.name|title }}</h6>
+                                <small class="text-muted">{{ pattern.pattern }}</small>
+                            </div>
+                            <p class="mb-1">Ejemplo: <code>{{ pattern.example }}</code></p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Componentes disponibles -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Componentes Disponibles</h5>
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for component in all_components %}
+                            <tr>
+                                <td><code>{{ component.code }}</code></td>
+                                <td>{{ component.description }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ejemplos de uso -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Ejemplos de Uso</h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Patrón</th>
+                                    <th>Ejemplo Resultado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for example in usage_examples %}
+                                <tr>
+                                    <td>{{ example.0 }}</td>
+                                    <td><code>{{ example.1 }}</code></td>
+                                    <td><strong>{{ example.2 }}</strong></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

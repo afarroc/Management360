@@ -1,29 +1,59 @@
 ﻿# views.py
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.urls import reverse_lazy
-from .models import Room, Comment, Evaluation, EntranceExit, Portal
+from .models import Room, Comment, Evaluation, EntranceExit, Portal, RoomObject
 from .forms import RoomForm, EvaluationForm, EntranceExitForm, PortalForm
 from django.contrib import messages
 from django.core.cache import cache
 from django.core.mail import send_mail
+from rest_framework.decorators import api_view
+from .exceptions import RoomManagerError
+from django.http import Http404
+from django.db.models import Q  # Import for search functionality
 
-# Vista para la página de lobby
+# Ensure Room refers to the model, not overridden
+from .models import Room  # Ensure this import is not shadowed
+
 @login_required
 def lobby(request):
     page_title = 'Lobby'
-    rooms = Room.objects.all()
-    portals = Portal.objects.all()
+    try:
+        logger.debug("Fetching all rooms and portals from the database.")
+        rooms = Room.objects.all()
+        portals = Portal.objects.all()
 
-    context = {
-        'page_title': page_title,
-        'rooms': rooms,
-        'portals': portals,
-    }
+        if not rooms.exists():
+            logger.warning("No rooms found in the database.")
+        if not portals.exists():
+            logger.warning("No portals found in the database.")
+        
+        logger.debug(f"Rooms count: {rooms.count()}, Portals count: {portals.count()}")
+        logger.debug("Preparing sections for the lobby view.")
+        
+        
+        # Estructura de datos para las secciones dinámicas
+        sections = [
+            {'title': 'Salas disponibles', 'items': rooms, 'url_name': 'room_detail'},
+            {'title': 'Portales disponibles', 'items': portals, 'url_name': 'portal_detail'}
+        ]
 
-    return render(request, 'lobby.html', context)
+        logger.debug("Preparing context for the lobby view.")
+        context = {
+            'page_title': page_title,
+            'sections': sections,  # Para el nuevo formato del template
+            'rooms': rooms,         # Mantenido por compatibilidad
+            'portals': portals     # Mantenido por compatibilidad
+        }
 
+        logger.debug("Rendering the lobby view with the prepared context.")
+        return render(request, 'rooms/lobby.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error in lobby view: {str(e)}", exc_info=True)
+        raise Http404("Error loading the lobby. Please try again later.")
+    
 # Vista para crear una nueva sala
 @login_required
 def create_room(request):
@@ -36,51 +66,67 @@ def create_room(request):
             room.save()
             messages.success(request, 'Sala creada con éxito')
             cache.set('room_{}'.format(room.pk), room)
-            return HttpResponseRedirect(reverse_lazy('room_detail', kwargs={'pk': room.pk}))
+            return HttpResponseRedirect(reverse_lazy('lobby'))  # Redirect to the lobby
     else:
         form = RoomForm()
-    return render(request, 'create_room.html', {'form': form})
+    # Asegurarse de que la plantilla 'rooms/create_room.html' exista
+    return render(request, 'rooms/create_room.html', {'form': form})
 
 # Vista para mostrar los detalles de una sala
-
 def room_detail(request, pk):
-    room = get_object_or_404(Room, pk=pk)
-    entrance_exits = room.entranceexit_set.all()
-    portals = room.portal_set.all()
+    try:
+        logger.debug(f"Fetching details for room with ID {pk}.")
+        room = get_object_or_404(Room, pk=pk)
+        logger.debug(f"Room with ID {pk} found: {room.name}.")
 
-    if request.method == 'POST':
-        if 'create_entrance_exit' in request.POST:
-            form = EntranceExitForm(request.POST)
-            if form.is_valid():
-                entrance_exit = form.save(commit=False)
-                entrance_exit.room = room
-                entrance_exit.save()
-                messages.success(request, 'Entrada/Salida creada con éxito')
-                return HttpResponseRedirect(reverse_lazy('room_detail', kwargs={'pk': pk}))
-        elif 'create_portal' in request.POST:
-            form = PortalForm(request.POST)
-            if form.is_valid():
-                portal = form.save(commit=False)
-                portal.room = room
-                portal.save()
-                messages.success(request, 'Portal creado con éxito')
-                return HttpResponseRedirect(reverse_lazy('room_detail', kwargs={'pk': pk}))
-        elif 'enter_room' in request.POST:
-            room_id = request.POST['room_id']
-            return HttpResponseRedirect(reverse_lazy('room_detail', kwargs={'pk': room_id}))
+        # Debugging URL generation
+        detail_url = reverse_lazy('room_detail', kwargs={'pk': pk})
+        logger.debug(f"Generated URL for room_detail: {detail_url}")
 
-    entrance_exit_form = EntranceExitForm()
-    portal_form = PortalForm()
+        # Verificar si la sala tiene entradas/salidas y portales asociados
+        entrance_exits = room.entranceexit_set.all()  # Asegurarse de que el modelo esté relacionado correctamente
+        portals = room.portal_set.all()  # Asegurarse de que el modelo esté relacionado correctamente
 
-    return render(request, 'room_detail.html', {
-        'page_title': 'Room Details',
-        'room': room,
-        'entrance_exits': entrance_exits,
-        'portals': portals,
-        'entrance_exit_form': entrance_exit_form,
-        'portal_form': portal_form
+        if request.method == 'POST':
+            if 'create_entrance_exit' in request.POST:
+                form = EntranceExitForm(request.POST)
+                if form.is_valid():
+                    entrance_exit = form.save(commit=False)
+                    entrance_exit.room = room
+                    entrance_exit.save()
+                    messages.success(request, 'Entrada/Salida creada con éxito')
+                    return HttpResponseRedirect(reverse_lazy('room_detail', kwargs={'pk': pk}))
+            elif 'create_portal' in request.POST:
+                form = PortalForm(request.POST)
+                if form.is_valid():
+                    portal = form.save(commit=False)
+                    portal.room = room
+                    portal.save()
+                    messages.success(request, 'Portal creado con éxito')
+                    return HttpResponseRedirect(reverse_lazy('room_detail', kwargs={'pk': pk}))
+            elif 'enter_room' in request.POST:
+                room_id = request.POST['room_id']
+                return HttpResponseRedirect(reverse_lazy('room_detail', kwargs={'pk': room_id}))
 
-    })
+        entrance_exit_form = EntranceExitForm()
+        portal_form = PortalForm()
+
+        logger.debug("Rendering the room_detail view with the prepared context.")
+        # Asegurarse de que los datos se pasen correctamente al contexto
+        return render(request, 'rooms/room_detail.html', {
+            'page_title': 'Room Details',
+            'room': room,
+            'entrance_exits': entrance_exits,  # Confirmar que contiene datos
+            'portals': portals,  # Confirmar que contiene datos
+            'entrance_exit_form': entrance_exit_form,
+            'portal_form': portal_form
+        })
+    except Http404:
+        logger.warning(f"Room with ID {pk} not found in the database.")
+        return JsonResponse({'detail': 'No Room matches the given query.'}, status=404)
+    except Exception as e:
+        logger.error(f"Unexpected error in room_detail: {str(e)}", exc_info=True)
+        return JsonResponse({'detail': 'An unexpected error occurred.'}, status=500)
 
 # Vista para agregar comentarios a una sala
 def room_comments(request, pk):
@@ -90,7 +136,8 @@ def room_comments(request, pk):
         room.comments.create(text=comment, user=request.user)
         messages.success(request, 'Comentario agregado con éxito')
         return HttpResponseRedirect(reverse_lazy('room_detail', kwargs={'pk': pk}))
-    return render(request, 'room_comments.html', {'room': room})
+    # Asegurarse de que la plantilla 'rooms/room_comments.html' exista
+    return render(request, 'rooms/room_comments.html', {'room': room})
 
 # Vista para agregar evaluaciones a una sala
 def room_evaluations(request, pk):
@@ -105,7 +152,8 @@ def room_evaluations(request, pk):
             evaluation.save()
             messages.success(request, 'Evaluación agregada con éxito')
             return HttpResponseRedirect(reverse_lazy('room_detail', kwargs={'pk': pk}))
-    return render(request, 'room_evaluations.html', {'room': room, 'evaluation_form': evaluation_form})
+    # Asegurarse de que la plantilla 'rooms/room_evaluations.html' exista
+    return render(request, 'rooms/room_evaluations.html', {'room': room, 'evaluation_form': evaluation_form})
 
 # Vista para crear una nueva entrada/salida
 @login_required
@@ -124,7 +172,7 @@ def create_entrance_exit(request):
 # Vista para mostrar la lista de entradas/salidas
 def entrance_exit_list(request):
     entrance_exits = EntranceExit.objects.all()
-    return render(request, 'entrance_exit_list.html', {'entrance_exits': entrance_exits})
+    return render(request, 'rooms/entrance_exit_list.html', {'entrance_exits': entrance_exits})  # Updated path
 
 # Vista para mostrar los detalles de una entrada/salida
 def entrance_exit_detail(request, pk):
@@ -155,23 +203,33 @@ def portal_detail(request, pk):
     portal = get_object_or_404(Portal, pk=pk)
     return render(request, 'portal_detail.html', {'portal': portal})
 
-
+# Vista para mostrar la lista de salas
 def room_list(request):
-    page_title = 'Room List'
-    rooms = Room.objects.all()
-    return render(request, 'room_list.html', {
-        'page_title': page_title,
-        'rooms': rooms,
+    logger.debug("Fetching all rooms from the database.")
+    # Verificar si la sesión está activa
+    if not request.user.is_authenticated:
+        logger.warning("User not authenticated. Redirecting to login.")
+        return redirect('login')    
+    
+    page_title = 'Lista de Salas'
+    rooms = Room.objects.all()  # Obtener todas las salas desde la base de datos
+    # Verificar si hay salas disponibles
+    if not rooms.exists():
+        logger.warning("No rooms found in the database.")
+        messages.info(request, 'No hay salas disponibles en este momento.')
+    else:
+        logger.debug(f"Rooms count: {rooms.count()}")
         
-        })
+    return render(request, 'rooms/room_list.html', {
+        'page_title': page_title,
+        'rooms': rooms,  # Pasar las salas al contexto
+    })
 
-
-
-
-
-
-
-
+@api_view(['GET'])
+def room_search(request):
+    query = request.GET.get('q', '')
+    rooms = Room.objects.filter(Q(name__icontains=query) | Q(description__icontains=query))
+    return render(request, 'rooms/room_search.html', {'rooms': rooms, 'query': query})
 
 import json
 import logging
@@ -193,17 +251,22 @@ from rest_framework.viewsets import GenericViewSet
 from .models import Message, Room, RoomMember, Outbox, CDC
 from .serializers import MessageSerializer, RoomSearchSerializer, RoomSerializer, RoomMemberSerializer
 
+logger = logging.getLogger(__name__)
 
 class RoomListViewSet(ListModelMixin, GenericViewSet):
     serializer_class = RoomSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Room.objects.annotate(
-            member_count=Count('memberships__id')
+        user_id = self.request.user.pk
+        logger.debug(f"Fetching rooms for user_id: {user_id}")
+        queryset = Room.objects.annotate(
+            member_count=Count('members__id')  # Changed from 'memberships__id' to 'members__id'
         ).filter(
-            memberships__user_id=self.request.user.pk
+            members__id=user_id  # Changed from 'memberships__user_id' to 'members__id'
         ).select_related('last_message', 'last_message__user').order_by('-bumped_at')
+        logger.debug(f"Queryset: {queryset.query}")
+        return queryset
 
 
 class RoomDetailViewSet(RetrieveModelMixin, GenericViewSet):
@@ -212,8 +275,8 @@ class RoomDetailViewSet(RetrieveModelMixin, GenericViewSet):
 
     def get_queryset(self):
         return Room.objects.annotate(
-            member_count=Count('memberships')
-        ).filter(memberships__user_id=self.request.user.pk)
+            member_count=Count('members')  # Changed from 'memberships' to 'members'
+        ).filter(members__id=self.request.user.pk)  # Changed from 'memberships__user_id' to 'members__id'
 
 
 class RoomSearchViewSet(viewsets.ModelViewSet):
@@ -269,7 +332,7 @@ class CentrifugoMixin:
             # In outbox case we can set partition for parallel processing, but
             # it must be in predefined range and match Centrifugo PostgreSQL
             # consumer configuration.
-            partition = hash(room_id)%settings.CENTRIFUGO_OUTBOX_PARTITIONS
+            partition = hash(room_id)%settings.CENTRIFUGU_OUTBOX_PARTITIONS
             # Creating outbox object inside transaction will guarantee that Centrifugo will
             # process the command at some point. In normal conditions – almost instantly.
             Outbox.objects.create(method='broadcast', payload=broadcast_payload, partition=partition)
@@ -386,3 +449,34 @@ class LeaveRoomView(APIView, CentrifugoMixin):
         }
         self.broadcast_room(room_id, broadcast_payload)
         return Response(body, status=status.HTTP_200_OK)
+    
+@api_view(['POST'])
+def player_move(request, direction):
+    player = request.user.player_profile
+    success = player.move_to_room(direction)
+    return Response({"success": success, "current_room": player.current_room.name})
+
+@api_view(['POST'])
+def interact_with_object(request, object_id):
+    obj = get_object_or_404(RoomObject, pk=object_id)
+    result = obj.interact(request.user.player_profile)
+    return Response(result)
+
+@api_view(['GET'])
+def room_detail_view(request, pk):
+    """
+    API view to retrieve details of a specific room.
+    """
+    try:
+        room = get_object_or_404(Room, pk=pk)
+        data = {
+            'id': room.id,
+            'name': room.name,
+            'description': room.description,
+            'created_at': room.created_at,
+            'updated_at': room.updated_at,
+        }
+        return JsonResponse(data, status=200)
+    except Http404:
+        logger.warning(f"Room with ID {pk} not found.")
+        return JsonResponse({'detail': 'No Room matches the given query.'}, status=404)

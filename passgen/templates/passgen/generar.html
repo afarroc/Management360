@@ -1,0 +1,206 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="pagetitle">
+    <h1>Generador de Contraseñas Seguras</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item active">Generador</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<!-- Messages -->
+{% if messages %}
+<div class="container mt-3">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<section class="section">
+    <div class="row">
+        <!-- Configuración -->
+        <div class="col-xxl-6 col-md-6">
+            <div class="card info-card settings-card">
+                <div class="card-body">
+                    <h5 class="card-title">Configuración del Generador</h5>
+                    
+                    <form method="post" class="row g-3">
+                        {% csrf_token %}
+                        
+                        <div class="col-12">
+                            <label class="form-label">Tipo de patrón:</label>
+                            <div class="btn-group-vertical w-100" role="group" aria-label="Pattern type">
+                                {% for choice in form.pattern_type %}
+                                <div class="form-check">
+                                    <input class="form-check-input pattern-radio" type="radio" name="pattern_type" 
+                                           id="{{ choice.id_for_label }}" value="{{ choice.data.value }}"
+                                           {% if choice.data.selected %}checked{% endif %}>
+                                    <label class="form-check-label w-100" for="{{ choice.id_for_label }}">
+                                        {{ choice.choice_label }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-12 mt-3">
+                            <label for="{{ form.custom_pattern.id_for_label }}" class="form-label">
+                                {{ form.custom_pattern.label }}
+                            </label>
+                            <input type="text" class="form-control" id="{{ form.custom_pattern.id_for_label }}" 
+                                   name="{{ form.custom_pattern.name }}" value="{{ form.custom_pattern.value|default:'' }}"
+                                   placeholder="Ej: a:3|!:1|x:2" onfocus="selectCustomPattern()">
+                            <small class="text-muted">Ejemplos: a:4 (4 minúsculas), A:3 (3 mayúsculas), !:2 (2 símbolos), x:3 (3 números)</small>
+                            {% if form.custom_pattern.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.custom_pattern.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="{{ form.include_accents.id_for_label }}" 
+                                       name="{{ form.include_accents.name }}" {% if form.include_accents.value %}checked{% endif %}>
+                                <label class="form-check-label" for="{{ form.include_accents.id_for_label }}">
+                                    {{ form.include_accents.label }}
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-key-fill"></i> Generar Contraseña
+                            </button>
+                            <a href="{% url 'password_help' %}" class="btn btn-outline-secondary ms-2">
+                                <i class="bi bi-question-circle"></i> Ayuda
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div><!-- End Configuración -->
+        
+        <!-- Resultado -->
+        {% if generated_password %}
+        <div class="col-xxl-6 col-md-6">
+            <div class="card info-card result-card">
+                <div class="card-body">
+                    <h5 class="card-title">Contraseña Generada</h5>
+                    
+                    <div class="alert alert-success mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="alert-heading mb-1">Tu nueva contraseña:</h6>
+                                <span id="passwordResult" class="fw-bold fs-4">{{ generated_password.password }}</span>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="copyToClipboard()">
+                                <i class="bi bi-clipboard"></i> Copiar
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Patrón utilizado:</label>
+                        <input type="text" class="form-control" value="{{ pattern_used }}" readonly>
+                        <small class="text-muted">{{ pattern_name }}</small>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body p-3">
+                                    <h6 class="card-title mb-1">Seguridad:</h6>
+                                    <p class="mb-0">
+                                        <span class="badge bg-{% if generated_password.strength == 'Muy Alta' %}success{% elif generated_password.strength == 'Alta' %}info{% elif generated_password.strength == 'Media' %}warning{% else %}danger{% endif %}">
+                                            {{ generated_password.strength }}
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body p-3">
+                                    <h6 class="card-title mb-1">Entropía:</h6>
+                                    <p class="mb-0">{{ generated_password.entropy|floatformat:1 }} bits</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading mb-2"><i class="bi bi-info-circle"></i> Recomendaciones de Seguridad</h6>
+                        <ul class="mb-0 ps-3">
+                            <li class="small">Guarda esta contraseña en un gestor seguro</li>
+                            <li class="small">No la compartas por canales no cifrados</li>
+                            <li class="small">Cambia tus contraseñas periódicamente</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-3">
+                        <button class="btn btn-outline-primary" onclick="window.location.reload()">
+                            <i class="bi bi-arrow-repeat"></i> Generar Otra
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div><!-- End Resultado -->
+        {% endif %}
+    </div>
+</section>
+
+<script>
+function copyToClipboard() {
+    const password = document.getElementById('passwordResult').textContent;
+    navigator.clipboard.writeText(password).then(() => {
+        const btn = event.target;
+        btn.innerHTML = '<i class="bi bi-check"></i> Copiado!';
+        btn.classList.add('btn-success');
+        setTimeout(() => {
+            btn.innerHTML = '<i class="bi bi-clipboard"></i> Copiar';
+            btn.classList.remove('btn-success');
+        }, 2000);
+    });
+}
+
+function selectCustomPattern() {
+    document.querySelector('input[value="custom"]').checked = true;
+}
+
+// Auto-select custom pattern when typing in the field
+document.getElementById('{{ form.custom_pattern.id_for_label }}').addEventListener('input', function() {
+    if(this.value.trim() !== '') {
+        document.querySelector('input[value="custom"]').checked = true;
+    }
+});
+</script>
+
+<style>
+.settings-card .card-body, .result-card .card-body {
+    padding: 1.5rem;
+}
+
+.form-check-input.pattern-radio {
+    margin-top: 0.3rem;
+}
+
+.alert .btn-outline-secondary {
+    border-color: #198754;
+    color: #198754;
+}
+
+.alert .btn-outline-secondary:hover {
+    background-color: #198754;
+    color: white;
+}
+</style>
+{% endblock %}

@@ -1,131 +1,169 @@
 ﻿from django import forms
-from .models import Room, Evaluation, EntranceExit, Portal
-
-# forms.py
-from django import forms
-from .models import Room
+from .models import Room, Evaluation, EntranceExit, Portal, RoomObject
+import json
+from django.db.models import Q
+from django.utils.translation import gettext as _
 
 class RoomForm(forms.ModelForm):
     class Meta:
         model = Room
-        fields = ( 'name',
-            'description',
-            'owner',
-            'creator',
-            'administrators',
-            'capacity',
-            'address',
-            'image',
-            'permissions',
-            'x',
-            'y',
-            'z',
-            'longitud',
-            'anchura',
-            'altura',
-            'pitch',
-            'yaw',
-            'roll',
-            'type',
-            'beds',
-            'bathrooms',
-            'surface',
-            'price',
-            'available',
-            'parent_room'
-        )
+        fields = [
+            'name', 'description', 'room_type', 'capacity',
+            'permissions', 'image', 'parent_room',
+            'x', 'y', 'z', 'length', 'width', 'height',
+            'pitch', 'yaw', 'roll'
+        ]
         widgets = {
-            'name': forms.TextInput(attrs={'placeholder': 'Nombre de la habitación'}),
-            'description': forms.Textarea(attrs={'placeholder': 'Descripción de la habitación'}),
-            'owner': forms.Select(attrs={'placeholder': 'Propietario'}),
-            'creator': forms.Select(attrs={'placeholder': 'Creador'}),
-            'administrators': forms.SelectMultiple(attrs={'placeholder': 'Administradores'}),
-            'capacity': forms.NumberInput(attrs={'placeholder': 'Capacidad'}),
-            'address': forms.TextInput(attrs={'placeholder': 'Dirección'}),
-            'image': forms.FileInput(attrs={'placeholder': 'Imagen'}),
-            'permissions': forms.Select(attrs={'placeholder': 'Permisos'}),
-            'x': forms.NumberInput(attrs={'placeholder': 'Posición x'}),
-            'y': forms.NumberInput(attrs={'placeholder': 'Posición y'}),
-            'z': forms.NumberInput(attrs={'placeholder': 'Posición z'}),
-            'longitud': forms.NumberInput(attrs={'placeholder': 'Longitud'}),
-            'anchura': forms.NumberInput(attrs={'placeholder': 'Anchura'}),
-            'altura': forms.NumberInput(attrs={'placeholder': 'Altura'}),
-            'pitch': forms.NumberInput(attrs={'placeholder': 'Rotación x'}),
-            'yaw': forms.NumberInput(attrs={'placeholder': 'Rotación y'}),
-            'roll': forms.NumberInput(attrs={'placeholder': 'Rotación z'}),
-            'type': forms.Select(attrs={'placeholder': 'Tipo de habitación'}),
-            'beds': forms.NumberInput(attrs={'placeholder': 'Número de camas'}),
-            'bathrooms': forms.NumberInput(attrs={'placeholder': 'Número de baños'}),
-            'surface': forms.NumberInput(attrs={'placeholder': 'Superficie en metros cuadrados'}),
-            'price': forms.NumberInput(attrs={'placeholder': 'Precio por noche'}),
-            'available': forms.CheckboxInput(attrs={'placeholder': 'Disponibilidad'}),
-            'parent_room': forms.Select(attrs={'placeholder': 'Habitación contenedora'})
+            'name': forms.TextInput(attrs={
+                'placeholder': 'Nombre de la habitación',
+                'class': 'form-control'
+            }),
+            'description': forms.Textarea(attrs={
+                'placeholder': 'Descripción detallada',
+                'class': 'form-control',
+                'rows': 3
+            }),
+            'room_type': forms.Select(attrs={
+                'class': 'form-select',
+                'placeholder': 'Tipo de habitación'
+            }),
+            'capacity': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Capacidad máxima'
+            }),
+            'length': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Longitud (unidades)'
+            }),
+            'width': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Anchura (unidades)'
+            }),
+            'height': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Altura (unidades)'
+            }),
         }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if user:
+            self.fields['parent_room'].queryset = Room.objects.filter(
+                Q(owner=user) | Q(administrators=user)
+            ).distinct()
+
+class RoomObjectForm(forms.ModelForm):
+    class Meta:
+        model = RoomObject
+        fields = ['name', 'object_type', 'position_x', 'position_y', 'effect']
+        widgets = {
+            'position_x': forms.NumberInput(attrs={
+                'min': 0,
+                'max': 30,
+                'class': 'form-control'
+            }),
+            'position_y': forms.NumberInput(attrs={
+                'min': 0,
+                'max': 30,
+                'class': 'form-control'
+            }),
+            'effect': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'JSON: {"energy": 5, "productivity": 10}'
+            })
+        }
+        
+        def clean(self):
+            cleaned_data = super().clean()
+            if self.instance.room:
+                if cleaned_data.get('position_x') > self.instance.room.length:
+                    raise forms.ValidationError("La posición X excede el largo de la habitación.")
+                if cleaned_data.get('position_y') > self.instance.room.width:
+                    raise forms.ValidationError("La posición Y excede el ancho de la habitación.")
+
+        def clean_effect(self):
+            effect = self.cleaned_data.get('effect')
+            try:
+                json.loads(effect)
+            except json.JSONDecodeError:
+                raise forms.ValidationError("Formato JSON inválido.")
+            return effect
 
 class EvaluationForm(forms.ModelForm):
     class Meta:
+        
         model = Evaluation
-        fields = ('comment', 'rating')
+        fields = ['rating', 'comment']
         widgets = {
-            'comment': forms.Textarea(attrs={'placeholder': 'Evaluación'}),
-            'rating': forms.NumberInput(attrs={'placeholder': 'Calificación (1-5)'})
+            'comment': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Tu evaluación...'
+            }),
+            'rating': forms.NumberInput(attrs={
+                'min': 1,
+                'max': 5,
+                'class': 'form-control'
+            })
+        }
+        labels = {
+            'comment': _('Comentario'),
+            'rating': _('Puntuación'),
         }
 
 class EntranceExitForm(forms.ModelForm):
-  class Meta:
-    model = EntranceExit
-    fields = ('name', 'description', 'face', 'type')
-    widgets = {
-      'name': forms.TextInput(attrs={
-        'placeholder': 'Nombre',
-        'class': "form-control",
-        'id':"floatingName"
-      }),
-      'description': forms.Textarea(attrs={
-        'placeholder': 'Descripción',
-        'class': "form-control",
-        'id':"floatingTextarea",
-        'style':"height: 100px",
-      }),
-      'face': forms.Select(attrs={
-        'placeholder': 'Cara',
-        'class': "form-select",
-        'id':"floatingFace",
-        'aria-label':"Cara",
-      }),
-      'type': forms.Select(attrs={
-        'placeholder': 'Tipo',
-        'class': "form-select",
-        'id':"floatingType",
-        'aria-label':"Tipo",
-      })
-    }
+    class Meta:
+        model = EntranceExit
+        fields = ['name', 'description', 'face', 'position_x', 'position_y']
+        widgets = {
+            'face': forms.Select(attrs={
+                'class': 'form-select',
+                'id': 'faceSelect'
+            }),
+            'position_x': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Auto-posicionar si vacío'
+            }),
+            'position_y': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Auto-posicionar si vacío'
+            })
+        }
+
 class PortalForm(forms.ModelForm):
-  class Meta:
-    model = Portal
-    fields = ('name', 'description', 'entrance', 'exit')
-    widgets = {
-      'name': forms.TextInput(attrs={
-        'placeholder': 'Nombre del portal',
-        'class': "form-control",
-        'id':"floatingPortalName"
-      }),
-      'description': forms.Textarea(attrs={
-        'placeholder': 'Descripción del portal',
-        'class': "form-control",
-        'id':"floatingPortalDescription",
-        'style':"height: 100px",
-      }),
-      'entrance': forms.Select(attrs={
-        'placeholder': 'Entrada',
-        'class': "form-select",
-        'id':"floatingEntrance",
-        'aria-label':"Entrada",
-      }),
-      'exit': forms.Select(attrs={
-        'placeholder': 'Salida',
-        'class': "form-select",
-        'id':"floatingExit",
-        'aria-label':"Salida",
-      })
-    }
+    class Meta:
+        model = Portal
+        fields = ['name', 'entrance', 'exit', 'energy_cost']  # Ensure only valid fields from the Portal model are listed here
+        widgets = {
+            'entrance': forms.Select(attrs={
+                'class': 'form-select entrance-select'
+            }),
+            'exit': forms.Select(attrs={
+                'class': 'form-select exit-select'
+            }),
+            'energy_cost': forms.NumberInput(attrs={
+                'min': 0,
+                'class': 'form-control'
+            })
+        }
+
+    def clean(self):
+        if self.cleaned_data.get('entrance') and self.cleaned_data.get('exit'):
+            if self.cleaned_data['entrance'].room == self.cleaned_data['exit'].room:
+                raise forms.ValidationError("La entrada y salida deben estar en habitaciones distintas.")
+            
+    def clean(self):
+        if not self.cleaned_data.get('position_x') or not self.cleaned_data.get('position_y'):
+            self.cleaned_data = self.instance.assign_default_position()        
+
+    def __init__(self, *args, **kwargs):
+        room_id = kwargs.pop('room_id', None)
+        super().__init__(*args, **kwargs)
+        
+        if room_id:
+            self.fields['entrance'].queryset = EntranceExit.objects.filter(room_id=room_id)
+            self.fields['exit'].queryset = EntranceExit.objects.filter(
+                room__connections__from_room_id=room_id
+            ).distinct()

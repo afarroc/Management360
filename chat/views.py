@@ -71,7 +71,7 @@ def index(request):
         'pagetitle':'Chat Page',
     })
 
-def room(request, room_name):
+def chatroom(request, room_name):
     return render(request, "chat/room.html", {
         "room_name": room_name,
     })
