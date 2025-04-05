@@ -4,6 +4,9 @@ db.sqlite3
 # Ignora secrets.py
 panel/secrets.py
 
+# Ignora el archivo de variables de entorno
+.env
+
 # Ignora el entorno virtual
 env/
 
