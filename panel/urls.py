@@ -8,6 +8,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # App Includes (alphabetical order)
+    path('', include('events.urls')),
     path('accounts/', include('accounts.urls')),
     path('chat/', include('chat.urls')),
     path('cv/', include('cv.urls')),
