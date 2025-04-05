@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, re_path
 from django.contrib.auth import views as auth_views
 from .views import (
     accounts_view,
@@ -53,4 +53,9 @@ urlpatterns = [
              template_name='accounts/password_reset_complete.html'
          ), 
          name='password_reset_complete'),
+
+    # Password reset for admin users
+    re_path(r'^password-reset/admin/(?P<username>[\w.@+-]+)/$', 
+            CustomPasswordResetView.as_view(), 
+            name='admin_password_reset'),
 ]
