@@ -1,13 +1,15 @@
 # panel/settings.py
 import os
 from pathlib import Path
-from .secrets import EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, DATABASE_HOST, HOST_PASSWORD, DATABASE_USER
+from decouple import config  # Importa config desde python-decouple
 
 # Base Configuration
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = os.environ.get('SECRET_KEY', default='your-secret-key-here')
-DEBUG = 'RENDER' not in os.environ
-ALLOWED_HOSTS = ['*']
+SECRET_KEY = config('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY no está definido en las variables de entorno.")
+DEBUG = config('DEBUG', default=False, cast=bool)
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='example.com,www.example.com').split(',')
 
 if RENDER_EXTERNAL_HOSTNAME := os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
@@ -72,11 +74,18 @@ TEMPLATES = [{
 
 # ASGI/Channels Configuration
 ASGI_APPLICATION = 'panel.asgi.application'
+
+REDIS_HOST = config('REDIS_HOST', default='192.168.18.49')
+REDIS_PORT = config('REDIS_PORT', default='6379')
+REDIS_DB = config('REDIS_DB', default='1')
+REDIS_PASSWORD = config('REDIS_PASSWORD', default='123456')
+
+REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("redis://:123456@192.168.18.49:6379/1")],
+            "hosts": [REDIS_URL],
             "symmetric_encryption_keys": [SECRET_KEY],
         },
     }
@@ -86,11 +95,11 @@ CHANNEL_LAYERS = {
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'projects',
-        'USER': DATABASE_USER,
-        'PASSWORD': HOST_PASSWORD,
-        'HOST': DATABASE_HOST,
-        'PORT': '3306',
+        'NAME': config('DATABASE_NAME', default='projects'),
+        'USER': config('DATABASE_USER'),
+        'PASSWORD': config('DATABASE_PASSWORD'),
+        'HOST': config('DATABASE_HOST'),
+        'PORT': config('DATABASE_PORT', default='3306'),
         'OPTIONS': {'charset': 'utf8mb4'},
     },
     'sqlite': {
@@ -111,7 +120,7 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
-USE_TZ = False
+USE_TZ = True
 
 # Static Files
 STATIC_URL = '/static/'
@@ -126,11 +135,11 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = "smtp.gmail.com"
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = EMAIL_HOST_USER
-EMAIL_HOST_PASSWORD = EMAIL_HOST_PASSWORD
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 
 # Miscellaneous Settings
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
