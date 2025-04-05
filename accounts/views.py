@@ -1,3 +1,4 @@
+import logging
 from django.urls import reverse_lazy
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.contrib.auth.views import PasswordChangeView, PasswordResetView, PasswordResetConfirmView
@@ -8,6 +9,12 @@ from django.contrib.auth.forms import PasswordChangeForm, PasswordResetForm, Set
 from .forms import SignUpForm
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+from django.core.mail import send_mail as original_send_mail
+from django.conf import settings
+
+# Configuración del logger
+logger = logging.getLogger(__name__)
 
 def anonymous_required(function=None, redirect_url=None):
     """
@@ -28,10 +35,17 @@ def anonymous_required(function=None, redirect_url=None):
 
 @login_required
 def accounts_view(request):
-    context = {
-        'title': 'Accounts Dashboard',
-        'user': request.user,
-    }
+    if request.user.is_staff:
+        # Add admin-specific context or functionality here if needed
+        context = {
+            'title': 'Admin Dashboard',
+            'user': request.user,
+        }
+    else:
+        context = {
+            'title': 'User Dashboard',
+            'user': request.user,
+        }
     return render(request, 'accounts/accounts_dashboard.html', context)
 
 def signup_view(request):
@@ -56,14 +70,19 @@ def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
+        
+        logger.info(f'Attempting login for user: {username}')  # Log de intento de inicio de sesión
+        
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
             auth_login(request, user)
+            logger.info(f'Login successful for user: {username}')  # Log de éxito
             messages.success(request, f'Welcome back, {user.username}!')
             next_url = request.GET.get('next', 'index')
             return redirect(next_url)
         else:
+            logger.warning(f'Login failed for user: {username}')  # Log de fallo
             messages.error(request, 'Invalid username or password.')
     
     return render(request, 'accounts/login.html')
@@ -96,6 +115,39 @@ class CustomPasswordResetView(PasswordResetView):
             return self.form_invalid(form)
         messages.info(self.request, "We've emailed you instructions for setting your password.")
         return super().form_valid(form)
+
+    def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name=None):
+        """
+        Simulate sending an email by logging the email content in debug mode.
+        """
+        if settings.DEBUG:
+            # Log the email content instead of sending it
+            logger.info("Simulating email sending:")
+            logger.info(f"Subject: {subject_template_name}")
+            logger.info(f"To: {to_email}")
+            logger.info(f"Context: {context}")
+        else:
+            # Use the original send_mail method in production
+            super().send_mail(subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name)
+
+    def reset_to_default_password(self, request, username):
+        """
+        Allows an admin to reset a user's password to a generic default password.
+        """
+        if not request.user.is_staff:  # Ensure only admin users can access this method
+            messages.error(request, "You do not have permission to perform this action.")
+            return redirect('password_reset')
+
+        try:
+            user = User.objects.get(username=username)
+            default_password = "DefaultPassword123"  # Replace with your desired default password
+            user.set_password(default_password)
+            user.save()
+            messages.success(request, f"The password for {username} has been reset to the default password.")
+        except User.DoesNotExist:
+            messages.error(request, f"User with username {username} does not exist.")
+        
+        return redirect('password_reset')
 
 class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     template_name = 'accounts/password_reset_confirm.html'
