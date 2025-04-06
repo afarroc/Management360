@@ -1,8 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
 from .models import Task, Event, Status, ProjectStatus, TaskStatus, Classification, Project
-from django.core.validators import FileExtensionValidator
-
 
 class CreateNewEvent(forms.ModelForm):
 
@@ -71,10 +69,7 @@ class EventEditForm(forms.ModelForm):
         model = Event
         fields = ['title', 'description', 'event_status']
 
-from django import forms
-from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
-from django.core.files.images import get_image_dimensions
+
 
 
 class EventStatusForm(forms.ModelForm):
@@ -104,16 +99,7 @@ class ProjectStatusForm(forms.ModelForm):
         model = ProjectStatus
         fields = ['status_name', 'icon', 'active', 'color']
 
-# Formulario para subir documentos
-class DocumentForm(forms.Form):
-    file = forms.FileField(validators=[FileExtensionValidator(['pdf', 'docx', 'ppt'])])
 
-# Formulario para subir imágenes
-class ImageForm(forms.Form):
-    file = forms.FileField(validators=[FileExtensionValidator(['jpg', 'bmp', 'png'])])
-
-class DatabaseForm(forms.Form):
-    file = forms.FileField(validators=[FileExtensionValidator(['csv', 'txt', 'xlsx', 'xlsm'])])
 
 class EditClassificationForm(forms.ModelForm):
     class Meta:
