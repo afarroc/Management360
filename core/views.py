@@ -1,24 +1,22 @@
-from datetime import timedelta, timezone
-from pyexpat.errors import messages
-from django.shortcuts import get_object_or_404, render
-from events.views import statuses_get
+# -*- coding: utf-8 -*-
+from django.shortcuts import render
 
 def home_view(request):
     page_title = 'Home 2.0'
-    return render(request, 'core/home.html', {
+    return render(request, 'home/home.html', {
         "page_title":page_title,
         })
 
 def about_view(request):
-    return render(request, 'core/about.html')
-
-def contact_view(request):
-    return render(request, 'core/contact.html')
-
-def about(request):
-    username = "Nano"
+    page_title = 'About Us'
     return render(request, "about/about.html",{
-        'username':username
+        'page_title':page_title
+    })
+    
+def contact_view(request):
+    page_title = "Contact"
+    return render(request, "contact/contact.html",{
+        'page_title':page_title
     })
 
 def faq(request):
@@ -27,14 +25,11 @@ def faq(request):
         'page_title':page_title
     })
 
-def contact(request):
-    page_title = "Contact"
-    return render(request, "contact/contact.html",{
-        'page_title':page_title
-    })
-
 def blank(request):
         page_title="Blank Page"
-        return render(request, "layouts/blank.html",{
-            'page_title':page_title
+        message="This is a blank page. You can add your own content here."
+        
+        return render(request, "blank/blank.html",{
+            'page_title':page_title,
+            'message':message   
     })
