@@ -303,6 +303,7 @@ def upload_xlsx(request):
     return render(request, 'documents/upload_xlsx.html', {'form': form})
 
 # about upload
+from django.core.files.storage import FileSystemStorage
 
 def upload_image(request):
     if request.method == 'POST':
