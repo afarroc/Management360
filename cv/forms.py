@@ -1,6 +1,7 @@
 # cv/forms.py
 from django import forms
 from .models import Curriculum, Experience, Education, Skill
+    
 
 class CurriculumForm(forms.ModelForm):
     class Meta:
@@ -73,3 +74,20 @@ class SkillForm(forms.ModelForm):
             'skill_name': 'Habilidad técnica',
             'proficiency_level': 'Nivel de dominio'
         }
+
+
+
+from django import forms
+from django.core.validators import FileExtensionValidator
+
+        
+# Formulario para subir documentos
+class DocumentForm(forms.Form):
+    file = forms.FileField(validators=[FileExtensionValidator(['pdf', 'docx', 'ppt'])])
+
+# Formulario para subir imágenes
+class ImageForm(forms.Form):
+    file = forms.FileField(validators=[FileExtensionValidator(['jpg', 'bmp', 'png'])])
+
+class DatabaseForm(forms.Form):
+    file = forms.FileField(validators=[FileExtensionValidator(['csv', 'txt', 'xlsx', 'xlsm'])])

@@ -1,4 +1,5 @@
 # cv/views.py (Versión corregida)
+from io import BytesIO
 from django.views import View
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -7,9 +8,9 @@ from django.db import transaction
 from django.core.exceptions import PermissionDenied
 from django.contrib import messages
 from django.views.decorators.http import require_POST
+from openpyxl import load_workbook
 from .models import Curriculum, Experience, Education, Skill
 from .forms import CurriculumForm, ExperienceForm, EducationForm, SkillForm
-from django.forms import formset_factory
 from django.forms import modelformset_factory
 
 
@@ -200,3 +201,118 @@ def delete_profile_picture(request):
         messages.error(request, f'Error al eliminar imagen: {str(e)}')
     
     return redirect('cv_detail')
+
+from .models import Document, Image, Database
+from .forms import DocumentForm, ImageForm, DatabaseForm
+
+def document_view(request):
+    documents = Document.objects.all()  # Obtiene todos los documentos
+    images = Image.objects.all()        # Obtiene todas las imágenes
+    databases = Database.objects.all()        # Obtiene todas las imágenes
+    context = {
+        'documents': documents,
+        'images': images,
+        'databases': databases,
+    }
+    return render(request, 'documents/docsview.html', context)
+
+def delete_file(request, file_id, file_type):
+    if file_type == 'document':
+        file_model = Document
+    elif file_type == 'image':
+        file_model = Image
+    else:
+        messages.error(request, 'Tipo de archivo no válido.')
+        return redirect('docsview')
+
+    file_instance = get_object_or_404(file_model, id=file_id)
+    if request.method == 'POST':
+        file_instance.upload.delete()  # Esto elimina el archivo del sistema de archivos.
+        file_instance.delete()         # Esto elimina la instancia del modelo de la base de datos.
+        messages.success(request, f'El {file_type} ha sido eliminado exitosamente.')
+        return redirect('docsview')
+    else:
+        # Si no es una solicitud POST, muestra la página de confirmación.
+        return render(request, 'documents/confirmar_eliminacion.html', {'file': file_instance, 'type': file_type})
+
+from django.views.generic import FormView
+from django.urls import reverse, reverse_lazy
+
+
+# Vista para subir documentos
+class DocumentUploadView(FormView):
+    template_name = 'documents/upload.html' # El nombre del template que quieres usar
+    form_class = DocumentForm # El formulario que quieres usar
+    success_url = reverse_lazy('docsview')# La url a la que quieres redirigir después de subir el archivo
+    def form_valid(self, form):
+        # Este método se ejecuta si el formulario es válido
+        # Aquí puedes guardar el archivo en tu modelo
+        file = form.cleaned_data['file'] # Obtiene el archivo del formulario
+        document = Document(upload=file) # Crea una instancia de tu modelo con el archivo
+        document.save() # Guarda el archivo en la base de datos
+        return super().form_valid(form) # Retorna la vista de éxito
+
+# Vista para subir imágenes
+class ImageUploadView(FormView):
+    template_name = 'documents/upload.html' # El nombre del template que quieres usar
+    form_class = ImageForm # El formulario que quieres usar
+    success_url = reverse_lazy('docsview')# La url a la que quieres redirigir después de subir el archivo
+
+    def form_valid(self, form):
+        # Este método se ejecuta si el formulario es válido
+        # Aquí puedes guardar el archivo en tu modelo
+        file = form.cleaned_data['file'] # Obtiene el archivo del formulario
+        image = Image(upload=file) # Crea una instancia de tu modelo con el archivo
+        image.save() # Guarda el archivo en la base de datos
+        return super().form_valid(form) # Retorna la vista de éxito
+    
+    # Vista para subir db
+
+# Vista para subir bases de datos
+class UploadDatabase(FormView):
+    template_name = 'documents/upload.html' # El nombre del template que quieres usar
+    form_class = DatabaseForm # El formulario que quieres usar
+    success_url = reverse_lazy('docsview')# La url a la que quieres redirigir después de subir el archivo
+
+    def form_valid(self, form):
+        # Este método se ejecuta si el formulario es válido
+        # Aquí puedes guardar el archivo en tu modelo
+        file = form.cleaned_data['file'] # Obtiene el archivo del formulario
+        db = Database(upload=file) # Crea una instancia de tu modelo con el archivo
+        db.save() # Guarda el archivo en la base de datos
+        return super().form_valid(form) # Retorna la vista de éxito
+
+# Vista para subir bases de datos
+
+# views.py
+
+def upload_xlsx(request):
+    if request.method == 'POST':
+        form = DatabaseForm(request.POST, request.FILES)
+        if form.is_valid():
+            file_in_memory = request.FILES['file'].read()
+            wb = load_workbook(filename=BytesIO(file_in_memory))
+            print('Form is valid')
+            # Procesa el archivo y realiza las operaciones necesarias
+            # (filtrar columnas, cambiar títulos, etc.)
+            # Luego, crea un nuevo archivo o modelo con los datos finales.
+            # ...
+            # Devuelve una respuesta al usuario (descargar archivo o mostrar datos).
+    else:
+        form = DatabaseForm()
+    return render(request, 'documents/upload_xlsx.html', {'form': form})
+
+# about upload
+
+def upload_image(request):
+    if request.method == 'POST':
+        try:
+            image = request.FILES['image']
+            fs = FileSystemStorage()
+            filename = fs.save(image.name, image)
+            uploaded_file_url = fs.url(filename)
+            messages.success(request, 'Imagen subida con éxito.')
+            return redirect('about')
+        except KeyError:
+            messages.error(request, 'Por favor, selecciona una imagen para subir.')
+    return render(request, 'about/about.html')
