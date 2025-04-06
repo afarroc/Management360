@@ -2,28 +2,24 @@
 <!-- ======= Sidebar ======= -->
 <aside id="sidebar" class="sidebar">
     <ul class="sidebar-nav" id="sidebar-nav">
-        <li class="nav-item">
-            <a class="nav-link " href="{% url 'index' %}">
-                <i class="bi bi-grid"></i>
-                <span>Dashboard</span>
-            </a>
-        </li><!-- End Dashboard Nav -->
+        {% include 'layouts/includes/nav-content/dashboard.html' %}
+        
         {% if user.username %}
 
 
-        {% include 'layouts/includes/projects.html' %}
-        {% include 'layouts/includes/tasks.html' %}
-        {% include 'layouts/includes/events.html' %}
-        {% include 'layouts/includes/management.html' %}
-        {% include 'layouts/includes/rooms.html' %}
-        {% include 'layouts/includes/configuration.html' %}
-        {% include 'layouts/includes/curriculum.html' %}
-        {% include 'layouts/includes/kpis.html' %}
+        {% include 'layouts/includes/nav-content/projects.html' %}
+        {% include 'layouts/includes/nav-content/tasks.html' %}
+        {% include 'layouts/includes/nav-content/events.html' %}
+        {% include 'layouts/includes/nav-content/management.html' %}
+        {% include 'layouts/includes/nav-content/rooms.html' %}
+        {% include 'layouts/includes/nav-content/configuration.html' %}
+        {% include 'layouts/includes/nav-content/curriculum.html' %}
+        {% include 'layouts/includes/nav-content/kpis.html' %}
 
         {% endif %}
 
-        {% include 'layouts/includes/account.html' %}<!-- End Register Page Nav -->
-        {% include 'layouts/includes/pages.html' %}<!-- End Register Page Nav -->
+        {% include 'layouts/includes/nav-content/account.html' %}
+        {% include 'layouts/includes/nav-content/pages.html' %}
 
     </ul>
 
