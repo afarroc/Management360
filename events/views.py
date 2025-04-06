@@ -1,42 +1,25 @@
 # Standard Library Imports
 from datetime import timedelta
 from decimal import Decimal
-from io import BytesIO
 import datetime
 from collections import defaultdict
 
-# Third-Party Imports
-from openpyxl import load_workbook
-
 # Django Imports
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.storage import FileSystemStorage
 from django.db import IntegrityError, transaction
 from django.db.models import Q, Sum, Count, F, ExpressionWrapper, DurationField
 from django.db.models.functions import TruncDate
-from django.forms import formset_factory
 from django.http import Http404, HttpResponse, JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse, reverse_lazy
 from django.utils import timezone
-from django.views import View
-from django.views.generic import FormView
 
 # Local Imports
 from .management.utils import (
     add_credits_to_user,
-    get_task_states_with_duration,
-    get_bar_chart_data,
-    get_line_chart_data,
-    get_combined_chart_data,
-    get_duration_chart_data,
-    get_card_data,
-    memento_mori,
 )
 from .management.event_manager import EventManager
 from .management.project_manager import ProjectManager
@@ -44,15 +27,12 @@ from .management.task_manager import TaskManager
 from .models import (
     Classification, Event, EventAttendee, ProjectStatus,
     TaskStatus, Project, Status, Task, EventState, ProjectState, TaskState,
-    TaskProgram, Room, Message
+    TaskProgram
 )
 from .forms import (
     CreateNewEvent, CreateNewProject, CreateNewTask, EditClassificationForm,
     EventStatusForm, TaskStatusForm, ProjectStatusForm
 )
-
-
-from .setup_views import SetupView
 
 def event_assign(request, event_id=None):
     """
@@ -172,108 +152,7 @@ def calculate_percentage_increase(queryset, days):
         'previous_end_date': previous_end_date,
     }
 
-def index(request):
-    page_title = 'Index'
-    var=100
-    print(var)
-    return render(request, 'index/index.html', {
-        "page_title":page_title,
-        "data":var
-        })
-
-def index_z(request, days=7, days_ago=None):
-    page_title = 'Index'
-    event_statuses, project_statuses, task_statuses = statuses_get()
-    
-    if request.user.is_authenticated:
-        user = get_object_or_404(User, pk=request.user.id)
-    else:
-        user = None
-        messages.success(request, "Guest user")
-        page_title = 'Index - Guest'
-    
-    today = timezone.now().date()
-    
-    # Determinar la fecha final basada en days_ago o usar hoy como fecha final
-    if days_ago is not None:
-        try:
-            days_ago = int(days_ago)
-            end_date = today - timedelta(days=days_ago)
-        except ValueError:
-            end_date = today  # Fallback a today si days_ago no es válido
-    else:
-        end_date = today
-
-    # Calcular la fecha de inicio basada en el rango de días
-    start_date = end_date - timedelta(days=days)
-
-    # Obtener estados de tareas con duración filtrados por el rango de fechas
-    task_states = get_task_states_with_duration(start_date=start_date, end_date=end_date)
-    
-    # Filtrar task_states por el rango de fechas
-    task_states_last_month = [
-        task_state for task_state in task_states if start_date <= task_state['start_date'] <= end_date
-    ]
-    
-    # Obtener datos para gráficos
-    bar_chart_data = get_bar_chart_data(task_states)
-    line_chart_data = get_line_chart_data(task_states_last_month)
-    
-    # Obtener datos para las tarjetas
-    card_data = get_card_data(user, days, days_ago) if user else {'projects': [], 'tasks': [], 'events': []}
-    
-    # Obtener datos para gráficos combinados
-    combined_chart_data = get_combined_chart_data(user, start_date, end_date) if user else {}
-    
-    # Obtener datos para el gráfico de duración
-    duration_chart_data = get_duration_chart_data(task_states)
-
-    # Contexto para la plantilla
-    context = {
-        'page_title': page_title,
-        'event_statuses': event_statuses,
-        'task_statuses': task_statuses,
-        'task_states_with_duration': task_states,
-        'bar_chart_data': bar_chart_data,
-        'line_chart_data': line_chart_data,
-        'combined_chart_data': combined_chart_data,
-        'duration_chart_data': duration_chart_data,
-        'projects': card_data['projects'],
-        'tasks': card_data['tasks'],
-        'events': card_data['events'],
-    }
-    
-    return render(request, 'index/index.html', context)
-
-def home(request):
-    return render(request, 'layouts/main.html')
-
-def about(request):
-    username = "Nano"
-    return render(request, "about/about.html",{
-        'username':username
-    })
-
-def faq(request):
-    page_title = "F.A.Q."
-    return render(request, "faq/faq.html",{
-        'page_title':page_title
-    })
-
-def contact(request):
-    page_title = "Contact"
-    return render(request, "contact/contact.html",{
-        'page_title':page_title
-    })
-
-def blank(request):
-        page_title="Blank Page"
-        return render(request, "layouts/blank.html",{
-            'page_title':page_title
-    })
-
 # Proyects
-    
 def projects(request, project_id=None):
 
     # Obtén la cantidad de eventos, proyectos y tareas por día
@@ -1680,119 +1559,6 @@ def Classification_list(request):
     for classification in classifications:
         print(classification)
     return render(request, 'configuration/classification_list.html', {'classifications': classifications})
-
-# Document viewer
-
-
-from .forms import ImageForm, DocumentForm, DatabaseForm
-
-def document_view(request):
-    documents = Document.objects.all()  # Obtiene todos los documentos
-    images = Image.objects.all()        # Obtiene todas las imágenes
-    databases = Database.objects.all()        # Obtiene todas las imágenes
-    context = {
-        'documents': documents,
-        'images': images,
-        'databases': databases,
-    }
-    return render(request, 'documents/docsview.html', context)
-
-def delete_file(request, file_id, file_type):
-    if file_type == 'document':
-        file_model = Document
-    elif file_type == 'image':
-        file_model = Image
-    else:
-        messages.error(request, 'Tipo de archivo no válido.')
-        return redirect('docsview')
-
-    file_instance = get_object_or_404(file_model, id=file_id)
-    if request.method == 'POST':
-        file_instance.upload.delete()  # Esto elimina el archivo del sistema de archivos.
-        file_instance.delete()         # Esto elimina la instancia del modelo de la base de datos.
-        messages.success(request, f'El {file_type} ha sido eliminado exitosamente.')
-        return redirect('docsview')
-    else:
-        # Si no es una solicitud POST, muestra la página de confirmación.
-        return render(request, 'documents/confirmar_eliminacion.html', {'file': file_instance, 'type': file_type})
-
-# Vista para subir documentos
-class DocumentUploadView(FormView):
-    template_name = 'documents/upload.html' # El nombre del template que quieres usar
-    form_class = DocumentForm # El formulario que quieres usar
-    success_url = reverse_lazy('docsview')# La url a la que quieres redirigir después de subir el archivo
-    def form_valid(self, form):
-        # Este método se ejecuta si el formulario es válido
-        # Aquí puedes guardar el archivo en tu modelo
-        file = form.cleaned_data['file'] # Obtiene el archivo del formulario
-        document = Document(upload=file) # Crea una instancia de tu modelo con el archivo
-        document.save() # Guarda el archivo en la base de datos
-        return super().form_valid(form) # Retorna la vista de éxito
-
-# Vista para subir imágenes
-class ImageUploadView(FormView):
-    template_name = 'documents/upload.html' # El nombre del template que quieres usar
-    form_class = ImageForm # El formulario que quieres usar
-    success_url = reverse_lazy('docsview')# La url a la que quieres redirigir después de subir el archivo
-
-    def form_valid(self, form):
-        # Este método se ejecuta si el formulario es válido
-        # Aquí puedes guardar el archivo en tu modelo
-        file = form.cleaned_data['file'] # Obtiene el archivo del formulario
-        image = Image(upload=file) # Crea una instancia de tu modelo con el archivo
-        image.save() # Guarda el archivo en la base de datos
-        return super().form_valid(form) # Retorna la vista de éxito
-    
-    # Vista para subir db
-
-# Vista para subir bases de datos
-class UploadDatabase(FormView):
-    template_name = 'documents/upload.html' # El nombre del template que quieres usar
-    form_class = DatabaseForm # El formulario que quieres usar
-    success_url = reverse_lazy('docsview')# La url a la que quieres redirigir después de subir el archivo
-
-    def form_valid(self, form):
-        # Este método se ejecuta si el formulario es válido
-        # Aquí puedes guardar el archivo en tu modelo
-        file = form.cleaned_data['file'] # Obtiene el archivo del formulario
-        db = Database(upload=file) # Crea una instancia de tu modelo con el archivo
-        db.save() # Guarda el archivo en la base de datos
-        return super().form_valid(form) # Retorna la vista de éxito
-
-# Vista para subir bases de datos
-
-# views.py
-
-def upload_xlsx(request):
-    if request.method == 'POST':
-        form = DatabaseForm(request.POST, request.FILES)
-        if form.is_valid():
-            file_in_memory = request.FILES['file'].read()
-            wb = load_workbook(filename=BytesIO(file_in_memory))
-            print('Form is valid')
-            # Procesa el archivo y realiza las operaciones necesarias
-            # (filtrar columnas, cambiar títulos, etc.)
-            # Luego, crea un nuevo archivo o modelo con los datos finales.
-            # ...
-            # Devuelve una respuesta al usuario (descargar archivo o mostrar datos).
-    else:
-        form = DatabaseForm()
-    return render(request, 'documents/upload_xlsx.html', {'form': form})
-
-# about upload
-
-def upload_image(request):
-    if request.method == 'POST':
-        try:
-            image = request.FILES['image']
-            fs = FileSystemStorage()
-            filename = fs.save(image.name, image)
-            uploaded_file_url = fs.url(filename)
-            messages.success(request, 'Imagen subida con éxito.')
-            return redirect('about')
-        except KeyError:
-            messages.error(request, 'Por favor, selecciona una imagen para subir.')
-    return render(request, 'about/about.html')
 
 # GTR
 

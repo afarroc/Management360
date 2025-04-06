@@ -13,26 +13,12 @@ from .setup_views import SetupView
 
 urlpatterns = [
 
-
-    path('', views.index, name="index"),
     path('setup/', SetupView.as_view(), name='setup'),
-    
-    
-    path('<int:days>/', views.index, name="index"),
-    path('<int:days>/<int:days_ago>/', views.index, name="index"),
-    path('about/', views.about, name="about"),
-    path('faq/', views.faq, name="faq"),
-    path('contact/', views.contact, name="contact"),
-    path('blank/', views.blank, name="blank"),
     path('test/', views.test_board, name="test"),
     path('test/<int:event_id>/', views.test_board, name="test"),
-
     path('credits/', views.add_credits, name='add_credits'),
-    
     path('credits/add_credits/', views.add_credits, name='add_credits'),
-
     path('planning/task/', views.planning_task, name="planning_task"),
-      
     path('projects/check/<int:project_id>/', views.project_tasks_status_check, name="project_check"),
 
     # Eventos
@@ -94,17 +80,6 @@ urlpatterns = [
     path('configuration/status/edit/', views.status_edit, name='status_edit'),
     path('configuration/status/edit/<int:model_id>/', views.status_edit, name='status_edit'),
     path('configuration/status/edit/<int:model_id>/<int:status_id>', views.status_edit, name='status_edit'),
-
-    # Document viewer
-    path('documents/delete/<str:file_type>/<int:file_id>/', views.delete_file, name='delete_file'),
-    path('documents/docsview/', views.document_view, name='docsview'),
-    path('documents/doc_upload/', views.DocumentUploadView.as_view(), name='document_upload'),
-    path('documents/img_upload/', views.ImageUploadView.as_view(), name='image_upload'),
-    path('documents/upload/database/', views.UploadDatabase.as_view(), name='upload_db'),
-    path('documents/upload/xlsx/', views.upload_xlsx, name='upload_xlsx'),
-
-    # Url para subir pandas
-    path('about/upload/', views.upload_image, name='upload_image'),
     
     # management
     path('management/manager/', views.management, name='manager'),

@@ -1,14 +1,18 @@
+#panel.urls.py
+# Django Imports
+
 from django.contrib import admin
 from django.urls import path, include
 from . import views
-from accounts import views as accounts_views
 
 urlpatterns = [
     # Admin
     path('admin/', admin.site.urls),
 
-    # App Includes (alphabetical order)
-    path('', include('events.urls')),
+    # Core (Vistas principales)
+    path('', include('core.urls')),  # Home, About, Contact
+    
+    # Apps
     path('accounts/', include('accounts.urls')),
     path('chat/', include('chat.urls')),
     path('cv/', include('cv.urls')),
@@ -26,4 +30,7 @@ urlpatterns = [
     path('api/signup/', views.signup_view, name='api-signup'),
     path('api/token/connection/', views.get_connection_token, name='api-connection-token'),
     path('api/token/subscription/', views.get_subscription_token, name='api-subscription-token'),
+    
+    # API (Recomendado mover a una app dedicada)
+    path('api/', include('api.urls')),  # Crear app "api" para estos endpoints
 ]
