@@ -105,12 +105,18 @@ class Room(models.Model):
         blank=True,
         related_name='child_of_rooms',  # Ensure unique related_name
     )
+    portals = models.ManyToManyField('Portal', related_name='rooms', blank=True)  # Define the relationship
     objects = RoomManager()  # Define a custom manager to avoid conflicts
 
     def increment_version(self):
         self.version += 1
         self.save()
         return self.version
+
+    def get_image_url(self):
+        if self.image and hasattr(self.image, 'url'):
+            return self.image.url
+        return None  # Return None if no file is associated
 
     def __str__(self):
         return self.name
@@ -159,7 +165,7 @@ class RoomObject(models.Model):
 
 class EntranceExit(models.Model):
     name = models.CharField(max_length=255)
-    room = models.ForeignKey(Room, related_name='entrances', on_delete=models.CASCADE)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='entrance_exits')
     description = models.TextField(blank=True)
     face = models.CharField(max_length=10, choices=[
         ('NORTH', 'North'),
