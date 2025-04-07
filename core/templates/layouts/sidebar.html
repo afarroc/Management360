@@ -3,10 +3,7 @@
 <aside id="sidebar" class="sidebar">
     <ul class="sidebar-nav" id="sidebar-nav">
         {% include 'layouts/includes/nav-content/dashboard.html' %}
-        
         {% if user.username %}
-
-
         {% include 'layouts/includes/nav-content/projects.html' %}
         {% include 'layouts/includes/nav-content/tasks.html' %}
         {% include 'layouts/includes/nav-content/events.html' %}
@@ -15,12 +12,8 @@
         {% include 'layouts/includes/nav-content/configuration.html' %}
         {% include 'layouts/includes/nav-content/curriculum.html' %}
         {% include 'layouts/includes/nav-content/kpis.html' %}
-
         {% endif %}
-
         {% include 'layouts/includes/nav-content/account.html' %}
         {% include 'layouts/includes/nav-content/pages.html' %}
-
     </ul>
-
 </aside><!-- End Sidebar-->
