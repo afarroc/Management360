@@ -8,8 +8,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY no está definido en las variables de entorno.")
-DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='example.com,www.example.com').split(',')
+DEBUG = config('DEBUG', default=True, cast=bool)  # Mejor default=True para desarrollo
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
 
 if RENDER_EXTERNAL_HOSTNAME := os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
@@ -17,9 +17,9 @@ if RENDER_EXTERNAL_HOSTNAME := os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
 # Application Definition
 INSTALLED_APPS = [
     # Third-party Apps
-    'rest_framework',
     'daphne',
     'channels',
+    'rest_framework',    
     'crispy_forms',
     'crispy_bootstrap5',
     'widget_tweaks',
@@ -62,19 +62,23 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'panel.urls'
 
-TEMPLATES = [{
-    'BACKEND': 'django.template.backends.django.DjangoTemplates',
-    'DIRS': [],
-    'APP_DIRS': True,
-    'OPTIONS': {
-        'context_processors': [
-            'django.template.context_processors.debug',
-            'django.template.context_processors.request',
-            'django.contrib.auth.context_processors.auth',
-            'django.contrib.messages.context_processors.messages',
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            BASE_DIR / 'core/templates/layout', 
         ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
     },
-}]
+]
 
 # ASGI/Channels Configuration
 ASGI_APPLICATION = 'panel.asgi.application'
@@ -105,12 +109,8 @@ DATABASES = {
         'HOST': config('DATABASE_HOST'),
         'PORT': config('DATABASE_PORT', default='3306'),
         'OPTIONS': {'charset': 'utf8mb4'},
-    },
-    'sqlite': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    },
-}
+        }
+    }
 
 # Authentication
 AUTH_PASSWORD_VALIDATORS = [
@@ -153,3 +153,14 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 LOGIN_REDIRECT_URL = 'home'
+
+if not DEBUG:
+    # Configuraciones de seguridad
+    SECURE_HSTS_SECONDS = 31536000  # 1 año
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # Si usas proxy
+    SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
