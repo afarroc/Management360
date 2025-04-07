@@ -78,14 +78,23 @@ def room_detail(request, pk):
         logger.debug(f"Fetching details for room with ID {pk}.")
         room = get_object_or_404(Room, pk=pk)
         logger.debug(f"Room with ID {pk} found: {room.name}.")
+        try:
+            room_image_url = room.image.url if room.image and room.image.name else None
+        except ValueError as e:
+            logger.warning(f"Room with ID {pk} has no associated image: {str(e)}")
+            room_image_url = None  # Set to None if no image is associated
+
+        # Use a default image if no image is available
+        if not room_image_url:
+            room_image_url = '/static/images/default-room.jpg'  # Path to the default image
 
         # Debugging URL generation
         detail_url = reverse_lazy('room_detail', kwargs={'pk': pk})
         logger.debug(f"Generated URL for room_detail: {detail_url}")
 
         # Verificar si la sala tiene entradas/salidas y portales asociados
-        entrance_exits = room.entranceexit_set.all()  # Asegurarse de que el modelo esté relacionado correctamente
-        portals = room.portal_set.all()  # Asegurarse de que el modelo esté relacionado correctamente
+        entrance_exits = room.entrance_exits.all() if hasattr(room, 'entrance_exits') else []  # Manejar caso sin relación
+        portals = room.portals.all() if hasattr(room, 'portals') else []  # Updated to use 'portals' attribute
 
         if request.method == 'POST':
             if 'create_entrance_exit' in request.POST:
@@ -116,6 +125,7 @@ def room_detail(request, pk):
         return render(request, 'rooms/room_detail.html', {
             'page_title': 'Room Details',
             'room': room,
+            'room_image_url': room_image_url,  # Pass the image URL (default or actual)
             'entrance_exits': entrance_exits,  # Confirmar que contiene datos
             'portals': portals,  # Confirmar que contiene datos
             'entrance_exit_form': entrance_exit_form,
