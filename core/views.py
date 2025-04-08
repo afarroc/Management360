@@ -2,10 +2,12 @@
 from django.shortcuts import render
 
 def home_view(request):
-    page_title = 'Home 2.0'
+    
+    page_title = 'Home'    
     return render(request, 'home/home.html', {
         "page_title":page_title,
-        })
+        }
+                  )
 
 def about_view(request):
     page_title = 'About Us'
