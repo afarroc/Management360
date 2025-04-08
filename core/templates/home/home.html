@@ -1,11 +1,15 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
 {% load schedule_filters %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load widget_tweaks %}
+{% load custom_tags %}
 
 {% block content %}
 
 {% if messages %}
-{% include 'layouts/includes/alert.html' %}
+    {% include 'layouts/includes/alert.html' %}
 {% endif %}
 
 <div class="pagetitle">
@@ -25,46 +29,23 @@
         <div class="col-lg-8">
             <div class="row">
                 
-                {% include 'index/includes/news.html' %}
-                {% include 'index/includes/top.html' %}
-
-                {% include 'index/includes/slide.html' %}
-                {% include 'index/includes/card.html' %}
-                
-                {% include 'index/includes/news.html' %}
-                {% include 'index/includes/top.html' %}
                 {% if user.username %}
-                <!-- cards includes if user loggeed in -->
-
-                {% include 'index/includes/revenue_card.html' %}
-                
-                {% include 'tests/chart_time.html' %}
-                {% include 'tests/chart_report.html' %}
-                {% include 'tests/chart_bar.html' %}
-                {% include 'tests/chart_trend.html' %}
-                {% include 'tests/table.html' %}
-                <!-- end include cards user loggeed in  -->     
+ 
                 {% else %}
-                {% include 'index/includes/dashboard_sales_card.html' %}
-
-
-                
-
-
-
-
 
                 {% endif %}
+
             </div>
         </div><!-- End Left side columns -->
 
         <!-- Right side columns -->
         <div class="col-lg-4">
 
-        {% if user.name %}
-        {% else %}
+            {% if user.name %}
+            
+            {% else %}
 
-        {% endif %}
+            {% endif %}
         </div><!-- End Right side columns -->
 
     </div>
