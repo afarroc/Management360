@@ -177,29 +177,38 @@ def cv_edit(request):
 
 @login_required
 def cv_detail(request):
-    cv = get_object_or_404(Curriculum, user=request.user)
-    return render(request, 'cv/detail.html', {
-        'cv': cv,
-        'experiences': cv.experiences.all(),
-        'educations': cv.educations.all(),
-        'skills_list': cv.skills_list.all()
-    })
+    try:
+        cv = get_object_or_404(Curriculum, user=request.user)
+        return render(request, 'cv/detail.html', {
+            'cv': cv,
+            'experiences': cv.experiences.all(),
+            'educations': cv.educations.all(),
+            'skills_list': cv.skills_list.all()
+        })
+    except Exception as e:
+        # Manejo de errores genérico para capturar problemas inesperados
+        messages.error(request, f'Error al cargar el detalle del CV: {str(e)}')
+        return redirect('home')  # Redirigir a una página segura en caso de error
+
 
 @require_POST
 @login_required
 def delete_profile_picture(request):
-    cv = get_object_or_404(Curriculum, user=request.user)
     try:
+        cv = get_object_or_404(Curriculum, user=request.user)
         if cv.profile_picture:
-            cv.profile_picture.delete(save=False)
+            cv.profile_picture.delete(save=False)  # Eliminar archivo del sistema
             cv.profile_picture = None
             cv.save(update_fields=['profile_picture'])
             messages.success(request, 'Imagen eliminada correctamente')
         else:
             messages.warning(request, 'No hay imagen para eliminar')
+    except Curriculum.DoesNotExist:
+        # Manejo específico si no se encuentra el CV
+        messages.error(request, 'No se encontró el CV asociado al usuario')
     except Exception as e:
-        messages.error(request, f'Error al eliminar imagen: {str(e)}')
-    
+        # Manejo de errores genérico
+        messages.error(request, f'Error al eliminar la imagen: {str(e)}')
     return redirect('cv_detail')
 
 from .models import Document, Image, Database
