@@ -685,23 +685,16 @@ def task_panel(request, task_id=None):
     title = "Task Panel"
     statuses = statuses_get()
     tasks_states = TaskState.objects.all().order_by('-start_time')[:10]
-
     task_manager = TaskManager(request.user)
     project_manager = ProjectManager(request.user)
     event_manager = EventManager(request.user)
-    print(f"Contexto cargado: {request.user}")
     if task_id:
-
-        print(f"Task Id: {task_id}")
-        task_data = task_manager.get_task_data(task_id)
-
+        task_info = task_manager.get_task_info(task_id)
         try:
-            print(f"Trying: {type(task_data)}")
-            if not task_data:
+            if not task_info:
                 messages.error(request, 'La tarea no existe. Verifica el ID de la tarea.')
                 return redirect('task_panel')
-
-            task = task_data['task']
+            task = task_info['task']
             project_info = project_manager.get_project_data(task.project.id) if task.project else None
             event_info = event_manager.get_event_data(task.event) if task.event else None
             
@@ -710,7 +703,7 @@ def task_panel(request, task_id=None):
                 'project_statuses': statuses[1],
                 'task_statuses': statuses[2],
                 'title': title,
-                'task_data': task_data,
+                'task_info': task_info,
                 'project_info': project_info,
                 'event_info': event_info,
             })
@@ -1243,7 +1236,7 @@ def event_panel(request, event_id=None):
         if event_data:
 
             projects_info = [project_manager.get_project_data(project.id) for project in event_data['projects']]
-            tasks_info = [task_manager.get_task_data(task) for task in event_data['tasks']]
+            tasks_info = [task_manager.get_task_info(task) for task in event_data['tasks']]
             
             return render(request, "events/event_panel.html", {
                 'title': title,
