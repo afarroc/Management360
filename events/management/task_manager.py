@@ -1,5 +1,7 @@
 from django.db.models import Q
-from ..models import Task, TaskStatus, Project, Event
+from ..models import Task, TaskStatus
+import logging
+logger = logging.getLogger(__name__)
 
 class TaskManager:
     def __init__(self, user):
@@ -8,11 +10,19 @@ class TaskManager:
         self.active_status = self.get_active_status()
 
     def get_user_tasks(self):
-        if hasattr(self.user, 'profile') and hasattr(self.user.profile, 'role') and self.user.profile.role == 'SU':
+        if (
+            hasattr(self.user, 'cv') and 
+            hasattr(self.user.cv, 'role') and 
+            self.user.cv.role == 'SU'
+        ):
+            logger.info(f"User {self.user.username} has role 'SU'. Fetching all tasks.")
             return Task.objects.all().order_by('-updated_at').select_related('task_status', 'project', 'event')
         else:
+            logger.info(f"User {self.user.username} does not have role 'SU'. Fetching assigned tasks.")
             return Task.objects.filter(
-                Q(assigned_to=self.user) | Q(project__assigned_to=self.user) | Q(event__assigned_to=self.user)
+                Q(assigned_to=self.user) | 
+                Q(project__assigned_to=self.user) | 
+                Q(event__assigned_to=self.user)
             ).distinct().order_by('-updated_at').select_related('task_status', 'project', 'event')
 
     def get_active_status(self):
