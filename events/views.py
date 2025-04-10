@@ -688,41 +688,52 @@ def task_panel(request, task_id=None):
     task_manager = TaskManager(request.user)
     project_manager = ProjectManager(request.user)
     event_manager = EventManager(request.user)
+    
     if task_id:
-        task_info = task_manager.get_task_info(task_id)
+        task_data = task_manager.get_task_data(task_id)
         try:
-            if not task_info:
+            if not task_data:
                 messages.error(request, 'La tarea no existe. Verifica el ID de la tarea.')
                 return redirect('task_panel')
-            task = task_info['task']
-            project_info = project_manager.get_project_data(task.project.id) if task.project else None
-            event_info = event_manager.get_event_data(task.event) if task.event else None
-            
-            return render(request, "tasks/task_panel.html", {
+            task = task_data['task']
+            project_data = project_manager.get_project_data(task.project.id) if task.project else None
+            event_data = event_manager.get_event_data(task.event) if task.event else None
+
+            if not project_data:
+                messages.error(request, 'El proyecto no existe. Verifica el ID del proyecto.')
+                return redirect('project_panel')
+
+            if not event_data:
+                messages.error(request, 'El evento no existe. Verifica el ID del evento.')
+                return redirect('events')
+            context={
                 'event_statuses': statuses[0],
                 'project_statuses': statuses[1],
                 'task_statuses': statuses[2],
-                'title': title,
-                'task_info': task_info,
-                'project_info': project_info,
-                'event_info': event_info,
-            })
+                'title': title+' (ID)',
+                'task_data': task_data,
+                'project_data': project_data,
+                'event_data': event_data,
+            }
+            for key, value in task_data.items():
+                print(f"{key}: {value}")
+            return render(request, "tasks/task_panel.html", context)
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
             print(e)
             return redirect('task_panel')
     else:
-        tasks, active_tasks = task_manager.get_all_tasks()
-
-        return render(request, 'tasks/task_panel.html', {
-            'title': title,
+        tasks_data, active_tasks = task_manager.get_all_tasks()
+        context = {
+            'title': f' {title} (User taks)',
             'event_statuses': statuses[0],
             'task_statuses': statuses[2],
             'project_statuses': statuses[1],
-            'tasks': tasks,
+            'tasks_data': tasks_data,
             'active_tasks': active_tasks,
             'tasks_states': tasks_states,
-        })
+        }
+        return render(request, 'tasks/task_panel.html', context)
 
 def change_task_status(request, task_id):
     try:
