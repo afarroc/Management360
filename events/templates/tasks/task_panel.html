@@ -24,29 +24,33 @@
         <div class="col-lg-8">
             <div class="row">
             
-            {% if tasks %}
-
+            {% if tasks_data %}
             {% include 'tasks/control/control.html' %}
-
             {% include 'tasks/includes/task_top.html' %}
-
+                
+            {% elif task_data %}
+            {% include 'tasks/includes/task_card.html' %}
+            {% include 'projects/includes/project_card.html' %}
+            {% include 'events/includes/event_card.html' %}
+            
+            {% elif task %}
+            {% include 'tasks/includes/task_card.html' %}
+            {% include 'projects/includes/project_card.html' %}
+            {% include 'events/includes/event_card.html' %}
             {% else %}
-
-
+            
             {% endif %}
+
 
             {% if event %}
             {% include 'events/includes/event_card.html' %}
             {% endif %}
-            
+    
+
             {% if project_info %}
-
             {% include 'projects/includes/project_card.html' %}
-
             {% endif %}
             
-
-
 
             </div>
         </div><!-- End Left side columns -->
