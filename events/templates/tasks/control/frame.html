@@ -9,7 +9,7 @@
                 data-bs-toggle="tab" data-bs-target="#bordered-justified-{{task_data.task.id}}" type="button" role="tab"
                 aria-controls="{{task_data.task.id}}"
                 aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">{{task_data.task.title}}</button>
-            {% endfor %}
+        {% endfor %}
     </ul>
     <div class="tab-content pt-2" id="borderedTabJustifiedContent">
 
