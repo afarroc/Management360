@@ -1221,6 +1221,9 @@ def event_delete(request, event_id):
         messages.error(request, 'Método no permitido.')
     return redirect(reverse('event_panel'))
 
+import logging
+logger = logging.getLogger(__name__)
+
 def event_panel(request, event_id=None):
     title = "Event Panel"
     event_statuses, project_statuses, task_statuses = statuses_get()
@@ -1243,21 +1246,41 @@ def event_panel(request, event_id=None):
 
     if event_id:
         event_data = event_manager.get_event_by_id(event_id)
-        print(event_data)
+        logger.info(f"[event Panel] Event data: {event_data}")
         if event_data:
-
-            projects_info = [project_manager.get_project_data(project.id) for project in event_data['projects']]
-            tasks_info = [task_manager.get_task_info(task) for task in event_data['tasks']]
+            try:
+                if not event_data['projects']:
+                    messages.error(request, 'El evento no existe. Verifica el ID del evento.')
+                    projects_data= None
+                else :
+                    projects_data = [project_manager.get_project_data(project.id) for project in event_data['projects']]
+                    logger.info(f"Projects data: {projects_data}")
+                
+                if not event_data['tasks']:
+                    messages.error(request, 'El evento no tiene tareas asignadas.') 
+                    tasks_data = None
+                else:
+                    tasks_data = [task_manager.get_task_data(task) for task in event_data['tasks']]
             
-            return render(request, "events/event_panel.html", {
+            except Exception as e:
+                messages.error(request, f'Error al obtener información de proyectos o tareas: {e}')
+                return redirect('events')
+
+            context = {
+                'page': 'event_detail',
                 'title': title,
                 'event_data': event_data,
-                'projects_info': projects_info,
-                'tasks_info': tasks_info,
+                'projects_data': projects_data,
+                'tasks_data': tasks_data,
                 'event_statuses': event_statuses,
                 'project_statuses': project_statuses,
                 'task_statuses': task_statuses,
-            })
+            }
+            try:
+                return render(request, "events/event_panel.html", context)
+            except Exception as e:
+                messages.error(request, f'Ha ocurrido un error: {e}')
+                return redirect('events')
         else:
             return render(request, '404.html', status=404)
 
@@ -1272,6 +1295,7 @@ def event_panel(request, event_id=None):
             }
 
         return render(request, 'events/event_panel.html', {
+            'page': 'event_panel',
             'title': title,
             'events': events,
             'event_details': event_details,
