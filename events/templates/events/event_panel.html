@@ -26,18 +26,29 @@
         <div class="col-lg-8">
             <div class="row">
             
-            {% if events %}
-
+            {% if page == 'event_panel' %}
+            
             {% include 'events/control/control.html' %}
             {% include 'events/includes/event_top.html' %}
 
-            {% else %}
+            {% elif page == 'event_detail' %}
             
-            {% if event_data %}
+                
             {% include 'events/includes/event_card.html' %}
-            {% endif%}
-
+                {% if projects_data != None %}
+                {% for project_data in projects_data %}
+                {% include 'projects/includes/project_card.html' %}
+                {% endfor %}
+                {% endif %}
+                {% if tasks_data != None %}
+                
+                {% for task_data in tasks_data %}
+                {% include 'tasks/includes/task_card.html' %}
+                {% endfor %}
+                
+                {% endif %}
             {% endif %}
+
 
 
         </div>
