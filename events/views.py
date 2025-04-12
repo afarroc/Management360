@@ -9,7 +9,6 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.files.storage import FileSystemStorage
 from django.db import IntegrityError, transaction
 from django.db.models import Q, Sum, Count, F, ExpressionWrapper, DurationField
 from django.db.models.functions import TruncDate
@@ -27,7 +26,7 @@ from .management.project_manager import ProjectManager
 from .management.task_manager import TaskManager
 from .models import (
     Classification, Event, EventAttendee, ProjectStatus,
-    TaskStatus, Project, Status, Task, EventState, ProjectState, TaskState,
+    TaskStatus, Project, Status, Task, EventState, TaskState,
     TaskProgram
 )
 from .forms import (
@@ -856,14 +855,6 @@ def task_activate(request, task_id=None):
             messages.error(request, f'Ha ocurrido un error: {e}')
             return redirect('task_panel')
 
-from django.utils import timezone
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.db.models import Q
-from django.core.exceptions import ObjectDoesNotExist
-from .models import Event, Status, EventState
-from django.contrib.auth.decorators import login_required
-
 @login_required
 def events(request):
     print("Iniciando la función events...")
@@ -888,17 +879,9 @@ def events(request):
         print(f"Valores iniciales - cerrado: {cerrado}, status: {status}, date: {date}")
 
     try:
-        if hasattr(request.user, 'profile'):
-            if request.user.profile.role == 'SU':
-                events = Event.objects.all().order_by('-updated_at')
-                print("Usuario con perfil SU, obteniendo todos los eventos.")
-            else:
-                events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-                print("Usuario sin perfil SU, filtrando eventos asignados o atendidos por el usuario.")
-        else:
-            events = Event.objects.filter(Q(assigned_to=request.user) | Q(attendees=request.user)).distinct().order_by('-updated_at')
-            print("Usuario sin perfil, filtrando eventos asignados o atendidos por el usuario.")
-        
+        event_manager = EventManager(request.user)  # Usar EventManager
+        events, active_events = event_manager.get_all_events()  # Obtener eventos y eventos activos
+
         event_statuses = Status.objects.all().order_by('status_name')
         print(f"Event statuses obtenidos: {event_statuses.count()}")
 
@@ -912,7 +895,7 @@ def events(request):
             try:
                 if cerrado:
                     status_cerrado = Status.objects.get(status_name='Cerrado')
-                    events = events.exclude(event_status_id=status_cerrado.id)
+                    events = [event for event in events if event['event'].event_status_id != status_cerrado.id]
                     request.session['filtered_cerrado'] = True
                     print("Eventos cerrados excluidos.")
                 else:
@@ -924,7 +907,7 @@ def events(request):
                 print(f"Error al filtrar eventos: {e}")
                 
             if status:
-                events = events.filter(event_status_id=status)
+                events = [event for event in events if event['event'].event_status_id == status]
                 request.session['filtered_status'] = status
                 print(f"Eventos filtrados por status: {status}")
             else:
@@ -932,20 +915,19 @@ def events(request):
                 print("No se aplica filtro por status.")
 
             if date:
-                events = events.filter(updated_at__date=date)
+                events = [event for event in events if event['event'].updated_at.date() == datetime.date.fromisoformat(date)]
                 request.session['filtered_date'] = date
                 print(f"Eventos filtrados por fecha: {date}")
             else:
                 request.session['filtered_date'] = date
                 print("No se aplica filtro por fecha.")
             
-            count_events = events.count()
-            events_updated_today = events.filter(updated_at__date=today).count()
+            count_events = len(events)
+            events_updated_today = len([event for event in events if event['event'].updated_at.date() == today])
             events_states = EventState.objects.all().order_by('-start_time')[:10]
 
             print(f"Eventos actualizados hoy: {events_updated_today}")
             print(f"Total de eventos filtrados: {count_events}")
-            print(events)
             return render(request, 'events/events.html', {
                 'title': title,
                 'events_updated_today': events_updated_today,
@@ -965,13 +947,13 @@ def events(request):
             try:
                 if cerrado:
                     status_cerrado = Status.objects.get(status_name='Cerrado')
-                    events = events.exclude(event_status_id=status_cerrado.id)
+                    events = [event for event in events if event['event'].event_status_id != status_cerrado.id]
                     print("Eventos cerrados excluidos.")
                 if status:
-                    events = events.filter(event_status_id=status)
+                    events = [event for event in events if event['event'].event_status_id == status]
                     print(f"Eventos filtrados por status: {status}")
                 if date:
-                    events = events.filter(updated_at__date=date)
+                    events = [event for event in events if event['event'].updated_at.date() == datetime.date.fromisoformat(date)]
                     print(f"Eventos filtrados por fecha: {date}")
 
             except Status.DoesNotExist as e:
@@ -983,15 +965,12 @@ def events(request):
                 print(f"Error inesperado al filtrar eventos: {e}")
                 return redirect('index')
             
-            count_events = events.count()
-            events_updated_today = events.filter(updated_at__date=today).count()
+            count_events = len(events)
+            events_updated_today = len([event for event in events if event['event'].updated_at.date() == today])
             events_states = EventState.objects.all().order_by('-start_time')[:10]
 
             print(f"Eventos actualizados hoy: {events_updated_today}")
             print(f"Total de eventos filtrados: {count_events}")
-            for event_data in events:
-                print(event_data.id)
-                pass
             
             return render(request, 'events/events.html', {
                 'events_updated_today': events_updated_today,
