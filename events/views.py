@@ -1283,17 +1283,14 @@ def event_panel(request, event_id=None):
                 return redirect('events')
         else:
             return render(request, '404.html', status=404)
-
     else:
         events, active_events = event_manager.get_all_events()
-        logger.info(f"Retrieved events: {events}")
         event_details = {}
         for event_data in events:
             event_details[event_data['event'].id] = {
                 'projects': event_data['projects'],
                 'tasks': event_data['tasks']
             }
-
         return render(request, 'events/event_panel.html', {
             'page': 'event_panel',
             'title': title,
@@ -1306,9 +1303,7 @@ def event_panel(request, event_id=None):
 
 def event_history(request, event_id=None):
     title = 'Event History'
-
     if not event_id:
-
         if request.method == 'POST':
             pass
         else:
