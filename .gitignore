@@ -12,6 +12,7 @@ env/
 
 # Ignora todos los directorios __pycache__
 __pycache__/
+*.pyc  # Agregado para ignorar archivos .pyc
 
 # Ignora todos los vscode
 .vscode 
