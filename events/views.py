@@ -1286,7 +1286,7 @@ def event_panel(request, event_id=None):
 
     else:
         events, active_events = event_manager.get_all_events()
-        
+        logger.info(f"Retrieved events: {events}")
         event_details = {}
         for event_data in events:
             event_details[event_data['event'].id] = {
