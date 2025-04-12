@@ -27,6 +27,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 # Local imports
 from .forms import SignUpForm
+from tools.views import file_tree_view
 
 # Logger configuration
 logger = logging.getLogger(__name__)
@@ -202,23 +203,3 @@ class CustomPasswordResetConfirmView(PasswordResetConfirmView):
     def form_valid(self, form):
         messages.success(self.request, "Your password has been reset successfully!")
         return super().form_valid(form)
-
-
-def file_tree_view(request):
-    """
-    Generate a JSON response with the file tree structure of the 'accounts' app directory.
-    """
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-
-    def get_file_tree(directory):
-        tree = []
-        for entry in os.listdir(directory):
-            entry_path = os.path.join(directory, entry)
-            if os.path.isdir(entry_path):
-                tree.append({"name": entry, "type": "directory", "children": get_file_tree(entry_path)})
-            else:
-                tree.append({"name": entry, "type": "file"})
-        return tree
-
-    file_tree = get_file_tree(base_dir)
-    return JsonResponse(file_tree, safe=False)

@@ -11,7 +11,6 @@ from .views import (
     login_view,
     logout_view,
     signup_view,
-    file_tree_view,  # Import the new view
 )
 
 urlpatterns = [
@@ -78,7 +77,4 @@ urlpatterns = [
         CustomPasswordResetView.as_view(),
         name="admin_password_reset",
     ),
-
-    # File tree view
-    path("file-tree/", file_tree_view, name="file_tree"),  # Add new URL pattern
 ]
