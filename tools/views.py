@@ -179,7 +179,7 @@ def upload_data(request):
                         request, 
                         f"{len(records)} registros cargados en {model._meta.verbose_name}"
                     )
-                    return redirect('tools:upload_data')
+                    return redirect('upload_data')
                 else:
                     messages.info(request, "No se encontraron registros válidos para importar")
                 
