@@ -1,11 +1,13 @@
 {% extends 'layouts/base.html' %}
+{% load tools_filters %} 
 {% block title %}Carga de Datos - Tesseract{% endblock %}
 {% block content %}
+
 
 <div class="upload-container d-flex align-items-center">
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-lg-6 col-md-8">
+            <div class="col-lg-8 col-md-10">
                 <div class="upload-card card p-4">
                     <div class="card-body">
                         <h2 class="card-title mb-4 text-center text-primary">
@@ -13,7 +15,6 @@
                             Cargar Datos
                         </h2>
                         
-                        {# Mensajes de error mejorados #}
                         {% if form.errors %}
                         <div class="alert alert-danger" role="alert">
                             <h5 class="alert-heading">Errores en el formulario:</h5>
@@ -28,7 +29,6 @@
                         </div>
                         {% endif %}
 
-                        {# Mensajes de éxito/error #}
                         {% if messages %}
                         <div class="mb-4">
                             {% for message in messages %}
@@ -45,143 +45,193 @@
                             
                             <div class="mb-4">
                                 <label for="id_model" class="form-label fw-bold">Modelo destino:</label>
-                                <select class="form-select {% if form.model.errors %}is-invalid{% endif %}" 
-                                        id="id_model"
-                                        name="model"
-                                        required>
-                                    <option value="">Seleccione un modelo...</option>
-                                    {% for value, label in form.model.field.choices %}
-                                        <option value="{{ value }}" {% if form.model.value == value %}selected{% endif %}>{{ label }}</option>
-                                    {% endfor %}
-                                </select>
-                                {% if form.model.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.model.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
+                                {{ form.model }}
                                 <div class="form-text mt-2">
-                                    <small>
-                                        Seleccione el modelo donde se cargarán los datos
-                                    </small>
+                                    <small>Seleccione el modelo donde se cargarán los datos</small>
                                 </div>
                             </div>
                             
                             <div class="mb-4">
-                                <label class="form-label fw-bold">Seleccionar archivo CSV:</label>
+                                <label class="form-label fw-bold">Archivo (CSV o Excel):</label>
                                 <div class="input-group">
-                                    <input type="file" 
-                                           class="form-control custom-file-input {% if form.csv_file.errors %}is-invalid{% endif %}" 
-                                           id="csvFile"
-                                           name="csv_file"
-                                           accept=".csv"
-                                           required>
-                                    <label class="file-label btn btn-primary w-100" for="csvFile">
+                                    {{ form.file }}
+                                    <label class="file-label btn btn-primary w-100" for="id_file">
                                         <i class="bi bi-file-earmark-spreadsheet me-2"></i>
                                         Seleccionar archivo
                                     </label>
-                                    {% if form.csv_file.errors %}
-                                    <div class="invalid-feedback">
-                                        {% for error in form.csv_file.errors %}
-                                            {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
                                 </div>
                                 <div class="form-text mt-2">
                                     <small>
-                                        Requisitos del archivo:<br>
-                                        • Codificación: UTF-8 o Latin-1<br>
-                                        • Columnas deben coincidir con los campos del modelo seleccionado<br>
-                                        • Decimales con punto (ej: 1234.56)
+                                        Formatos soportados: CSV, Excel (.xls, .xlsx)<br>
+                                        Tamaño máximo: 10MB | Codificaciones: UTF-8, Latin-1
                                     </small>
+                                </div>
+                            </div>
+
+                            <div id="excel-options" class="mb-4" style="display:none;">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Hoja:</label>
+                                        {{ form.sheet_name }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Rango:</label>
+                                        {{ form.cell_range }}
+                                    </div>
                                 </div>
                             </div>
 
                             <div class="mb-4 form-check form-switch">
-                                <input class="form-check-input {% if form.clear_existing.errors %}is-invalid{% endif %}" 
-                                       type="checkbox" 
-                                       id="id_clear_existing"
-                                       name="clear_existing"
-                                       {% if form.clear_existing.value %}checked{% endif %}>
+                                {{ form.clear_existing }}
                                 <label class="form-check-label" for="id_clear_existing">
                                     Limpiar datos existentes antes de cargar
                                 </label>
-                                {% if form.clear_existing.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.clear_existing.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
-                                <div class="form-text">
-                                    <small>
-                                        Marque esta opción para eliminar todos los datos existentes en el modelo seleccionado antes de cargar los nuevos
-                                    </small>
-                                </div>
                             </div>
 
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-success btn-lg">
-                                    <i class="bi bi-upload me-2"></i>
-                                    Cargar Datos
+                                <button type="submit" name="preview" class="btn btn-info">
+                                    <i class="bi bi-eye me-2"></i> Vista Previa
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-upload me-2"></i> Cargar Datos
                                 </button>
                                 <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
-                                    <i class="bi bi-bar-chart-line me-2"></i>
-                                    Ver Dashboard
+                                    <i class="bi bi-bar-chart-line me-2"></i> Ver Dashboard
                                 </a>
                             </div>
                         </form>
                     </div>
                 </div>
-                
-                <div class="mt-4 text-center text-muted">
-                    <small class="text-dark">
-                        Formatos soportados: CSV (delimitado por comas)<br>
-                        Tamaño máximo: 10MB | Codificaciones: UTF-8, Windows-1252, ISO-8859-1
-                    </small>
-                </div>
             </div>
         </div>
     </div>
 </div>
+
+{% if show_preview %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <i class="bi bi-table me-2"></i> Vista Previa (Primeras 5 filas)
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            {% for col in columns %}
+                            <th>{{ col }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in preview_data %}
+                        <tr>
+                            {% for col in columns %}
+                            <td>{{ row|get_item:col }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" class="mt-4">
+                {% csrf_token %}
+                <input type="hidden" name="model" value="{{ form.model.value }}">
+                <input type="hidden" name="file" value="{{ form.file.value }}">
+                <input type="hidden" name="sheet_name" value="{{ form.sheet_name.value|default:'' }}">
+                <input type="hidden" name="cell_range" value="{{ form.cell_range.value|default:'' }}">
+                <input type="hidden" name="clear_existing" value="{{ form.clear_existing.value|default:'False' }}">
+                
+                <h5 class="mb-3"><i class="bi bi-arrow-left-right me-2"></i> Mapeo de Columnas</h5>
+                
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Asocie cada columna del archivo con el campo correspondiente en el modelo
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Columna en Archivo</th>
+                                <th>Campo en Modelo</th>
+                                <th>Ejemplo de Dato</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for col in columns %}
+                            <tr>
+                                <td>
+                                    <strong>{{ col }}</strong>
+                                </td>
+                                <td>
+                                    <select name="map_{{ col }}" class="form-select" required>
+                                        <option value="">-- Seleccione --</option>
+                                        {% for field in model_fields %}
+                                        <option value="{{ field }}" 
+                                        {% if field.lower == col.lower %}selected{% endif %}                                            {{ field }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td>{{ preview_data.0|get_item:col|truncatechars:30 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="d-grid gap-2 mt-3">
+                    <button type="submit" name="confirm_import" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i> Confirmar Importación
+                    </button>
+                    <a href="{% url 'upload_data' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-2"></i> Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Mejor manejo de la selección de archivo
-    const fileInput = document.getElementById('csvFile');
-    const fileLabel = document.querySelector('.file-label');
+    // Mostrar/ocultar opciones de Excel
+    const fileInput = document.getElementById('id_file');
+    const excelOptions = document.getElementById('excel-options');
     
-    fileInput.addEventListener('change', function(e) {
-        if(this.files.length > 0) {
-            const fileName = this.files[0].name;
-            fileLabel.innerHTML = `<i class="bi bi-file-earmark-spreadsheet me-2"></i>${fileName}`;
-            fileLabel.classList.remove('btn-primary');
-            fileLabel.classList.add('btn-success');
+    fileInput.addEventListener('change', function() {
+        if (this.files[0] && this.files[0].name.match(/\.xls[x]?$/i)) {
+            excelOptions.style.display = 'block';
+        } else {
+            excelOptions.style.display = 'none';
+        }
+    });
+
+    // Validación de rango de celdas
+    const cellRangeInput = document.getElementById('id_cell_range');
+    cellRangeInput.addEventListener('blur', function() {
+        if (this.value && !this.value.match(/^[A-Za-z]+\d+:[A-Za-z]+\d+$/)) {
+            alert('Formato de rango inválido. Use formato como "B2:G500"');
+            this.focus();
+        }
+    });
+
+    // Actualizar etiqueta del archivo
+    const fileLabel = document.querySelector('.file-label');
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            fileLabel.innerHTML = `<i class="bi bi-file-earmark-spreadsheet me-2"></i>${this.files[0].name}`;
+            fileLabel.classList.replace('btn-primary', 'btn-success');
         } else {
             fileLabel.innerHTML = `<i class="bi bi-file-earmark-spreadsheet me-2"></i>Seleccionar archivo`;
-            fileLabel.classList.remove('btn-success');
-            fileLabel.classList.add('btn-primary');
+            fileLabel.classList.replace('btn-success', 'btn-primary');
         }
-    });
-
-    // Validación en tiempo real del tamaño del archivo
-    document.querySelector('form').addEventListener('submit', function(e) {
-        const file = fileInput.files[0];
-        if(file && file.size > 10 * 1024 * 1024) { // 10MB
-            e.preventDefault();
-            alert('El archivo excede el tamaño máximo permitido de 10MB');
-        }
-    });
-
-    // Mostrar campos requeridos según modelo seleccionado
-    const modelSelect = document.getElementById('id_model');
-    modelSelect.addEventListener('change', function() {
-        // Aquí podrías añadir lógica para mostrar los campos requeridos del modelo seleccionado
-        // Por ejemplo, mediante AJAX para obtener los campos del modelo
     });
 });
 </script>
