@@ -7,48 +7,48 @@
 {% load custom_tags %}
 
 {% block content %}
-
-{% if messages %}
+  {# Message Notifications #}
+  {% if messages %}
     {% include 'layouts/includes/alert.html' %}
-{% endif %}
+  {% endif %}
 
-<div class="pagetitle">
-    <h1>{{page_title}}</h1>
+  {# Page Header #}
+  <div class="pagetitle">
+    <h1>{{ page_title }}</h1>
     <nav>
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
-            <li class="breadcrumb-item active">{{page_title}}</li>
-        </ol>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+        <li class="breadcrumb-item active">{{ page_title }}</li>
+      </ol>
     </nav>
-</div><!-- End Page Title -->
+  </div><!-- End Page Title -->
 
-<section class="section dashboard">
+  {# Main Content Section #}
+  <section class="section dashboard">
     <div class="row">
+      {# Left Side Content #}
+      <div class="col-lg-8">
+        <div class="row">
+          {% if user.is_authenticated %}
+            {# Authenticated User Content #}
+            <!-- Add authenticated user content here -->
+          {% else %}
+            {# Anonymous User Content #}
+            <!-- Add public/anonymous content here -->
+          {% endif %}
+        </div>
+      </div><!-- End Left side columns -->
 
-        <!-- Left side columns -->
-        <div class="col-lg-8">
-            <div class="row">
-                
-                {% if user.username %}
- 
-                {% else %}
-
-                {% endif %}
-
-            </div>
-        </div><!-- End Left side columns -->
-
-        <!-- Right side columns -->
-        <div class="col-lg-4">
-
-            {% if user.name %}
-            
-            {% else %}
-
-            {% endif %}
-        </div><!-- End Right side columns -->
-
+      {# Right Sidebar #}
+      <div class="col-lg-4">
+        {% if user.is_authenticated %}
+          {# User Profile/Sidebar Content #}
+          <!-- Add user-specific sidebar content here -->
+        {% else %}
+          {# Public Sidebar Content #}
+          <!-- Add public sidebar content (login, CTAs, etc) -->
+        {% endif %}
+      </div><!-- End Right side columns -->
     </div>
-</section>
-
+  </section>
 {% endblock %}

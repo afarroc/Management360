@@ -1,0 +1,138 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Barra de Búsqueda -->
+    <div class="search-bar mb-5">
+        <form class="search-form d-flex align-items-center" method="GET" action="{% url 'search_view' %}">
+            <input type="text" name="query" placeholder="Search" 
+                   value="{{ request.GET.query }}" title="Enter search keyword">
+            <button type="submit" title="Search"><i class="bi bi-search"></i></button>
+        </form>
+    </div>
+
+    <!-- Resultados -->
+    {% if query %}
+        <h2 class="mb-4">Search Results for "{{ query }}"</h2>
+        
+        {% if has_results %}
+            <div class="alert alert-info mb-3">
+                Found {{ total_results }} results across all categories
+            </div>
+
+            <!-- Artículos -->
+            {% if results.articles %}
+                <h4 class="mt-4">Articles</h4>
+                <div class="row">
+                    {% for article in results.articles %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ article.title }}</h5>
+                                <p class="card-text text-muted">
+                                    <small>{{ article.publication_date|date:"M d, Y" }}</small>
+                                </p>
+                                <p class="card-text">
+                                    {{ article.excerpt|truncatechars:200 }}
+                                </p>
+                                <a href="{{ article.get_absolute_url }}" class="btn btn-primary">
+                                    Read More
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Eventos -->
+            {% if results.events %}
+                <h4 class="mt-4">Events</h4>
+                <div class="row">
+                    {% for event in results.events %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ event.title }}</h5>
+                                <p class="card-text text-muted">
+                                    <small>{{ event.created_at|date:"M d, Y" }}</small>
+                                </p>
+                                <p class="card-text">
+                                    {{ event.description|truncatechars:200|default:"No description" }}
+                                </p>
+                                <div class="badge bg-primary">{{ event.event_category }}</div>
+                                <a href="{{ event.get_absolute_url }}" class="btn btn-primary mt-2">
+                                    View Event
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Proyectos -->
+            {% if results.projects %}
+                <h4 class="mt-4">Projects</h4>
+                <div class="row">
+                    {% for project in results.projects %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ project.title }}</h5>
+                                <p class="card-text text-muted">
+                                    <small>{{ project.created_at|date:"M d, Y" }}</small>
+                                </p>
+                                <p class="card-text">
+                                    {{ project.description|truncatechars:200|default:"No description" }}
+                                </p>
+                                <div class="badge bg-info">{{ project.project_status.status_name }}</div>
+                                <a href="{{ project.get_absolute_url }}" class="btn btn-primary mt-2">
+                                    View Project
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- Tareas -->
+            {% if results.tasks %}
+                <h4 class="mt-4">Tasks</h4>
+                <div class="row">
+                    {% for task in results.tasks %}
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ task.title }}</h5>
+                                <p class="card-text text-muted">
+                                    <small>{{ task.created_at|date:"M d, Y" }}</small>
+                                </p>
+                                <p class="card-text">
+                                    {{ task.description|truncatechars:200|default:"No description" }}
+                                </p>
+                                <div class="badge bg-warning">{{ task.task_status.status_name }}</div>
+                                <a href="{{ task.get_absolute_url }}" class="btn btn-primary mt-2">
+                                    View Task
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+        {% else %}
+            <div class="alert alert-warning">
+                No results found for "{{ query }}"
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-secondary">
+            Please enter a search term
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
