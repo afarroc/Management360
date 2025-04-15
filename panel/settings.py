@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'cv.apps.CvConfig',
     'kpis.apps.KpisConfig',
     'passgen',
+    
 ]
 
 MIDDLEWARE = [

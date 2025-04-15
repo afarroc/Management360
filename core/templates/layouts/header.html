@@ -1,15 +1,16 @@
 {% load static %}
 <header id="header" class="header fixed-top d-flex align-items-center">
     <div class="d-flex align-items-center justify-content-between">
-        <a href="{% url 'index' %}" class="logo d-flex align-items-center">
+        <a href="{% url 'home' %}" class="logo d-flex align-items-center">
             <img src="{% static 'assets/img/logo.png' %}" alt="">
             <span class="d-none d-lg-block">Management360</span>
         </a>
         <i class="bi bi-list toggle-sidebar-btn"></i>
     </div><!-- End Logo -->
     <div class="search-bar">
-        <form class="search-form d-flex align-items-center" method="GET" action="#">
-            <input type="text" name="query" placeholder="Search" title="Enter search keyword">
+        <form class="search-form d-flex align-items-center" method="GET" action="{% url 'search_view' %}">
+            <input type="text" name="query" placeholder="Search" 
+                   title="Enter search keyword" value="{{ request.GET.query }}">
             <button type="submit" title="Search"><i class="bi bi-search"></i></button>
         </form>
     </div><!-- End Search Bar -->
@@ -24,7 +25,6 @@
             {% if user.is_authenticated %}
             {% include 'layouts/includes/header/credit.html' %}
 
-            
             <li class="nav-item dropdown">
                 <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
                     <i class="bi bi-bell"></i>
