@@ -27,3 +27,8 @@ media/images/*
 !media/images/
 media/profile_pics/*
 !media/profile_pics/
+
+# Ignora migraciones en general, pero permite algunas
+*/migrations/*
+!*/migrations/__init__.py
+!core/migrations/
