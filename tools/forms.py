@@ -50,7 +50,7 @@ class DataUploadForm(forms.Form):
     clear_existing = forms.BooleanField(
         label="Limpiar datos existentes antes de cargar",
         required=False,
-        initial=True,
+        initial=False,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
     
