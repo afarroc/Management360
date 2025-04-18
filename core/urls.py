@@ -5,6 +5,7 @@ from events.setup_views import SetupView
 urlpatterns = [
     # URLs principales
     path('', views.home_view, name='home'),
+    path('', views.home_view, name='index'),
     path('about/', views.about_view, name='about'),
     path('contact/', views.contact_view, name='contact'),
     path('faq/', views.faq_view, name='faq'),
