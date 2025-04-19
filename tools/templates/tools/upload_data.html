@@ -169,8 +169,8 @@
                                     <select name="map_{{ col }}" class="form-select" required>
                                         <option value="">-- Seleccione --</option>
                                         {% for field in model_fields %}
-                                        <option value="{{ field }}" 
-                                        {% if field.lower == col.lower %}selected{% endif %}                                            {{ field }}
+                                        <option value="{{ field }}" {% if field.lower == col.lower %}selected{% endif %}>
+                                            {{ field }}
                                         </option>
                                         {% endfor %}
                                     </select>
