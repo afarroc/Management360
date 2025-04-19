@@ -1,7 +1,7 @@
 # Standard library imports
 import os
 import csv
-from io import BytesIO
+from io import BytesIO, StringIO
 
 # Third-party imports
 import pandas as pd
@@ -13,11 +13,169 @@ from django.http import JsonResponse
 from django.conf import settings
 from django.contrib import messages
 from django.apps import apps
+from django.core.exceptions import FieldDoesNotExist
 
 # Local imports
 from .planning import (AgentsFTE, utilisation)
 from .utils import calcular_trafico_intensidad
 from .forms import DataUploadForm
+
+
+
+
+
+class FileProcessor:
+    """Clase para unificar el procesamiento de archivos CSV y Excel"""
+    
+    @staticmethod
+    def detect_encoding(file):
+        """Detectar codificación de archivos CSV"""
+        raw_data = file.read(10240)
+        result = chardet.detect(raw_data)
+        file.seek(0)
+        if result['encoding'] in ['ISO-8859-1', 'Windows-1252']:
+            return 'latin-1'
+        return result['encoding'] if result['confidence'] > 0.6 else 'latin-1'
+    
+    @staticmethod
+    def normalize_name(name):
+        """Normalizar nombres de columnas"""
+        if not name:
+            return ''
+        name = str(name).strip().lower()
+        replacements = {
+            'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u',
+            ' ': '_', '-': '_', '.': '_', '/': '_'
+        }
+        for orig, repl in replacements.items():
+            name = name.replace(orig, repl)
+        return name
+    
+    @classmethod
+    def get_model_fields(cls, model):
+        """Obtener campos del modelo normalizados"""
+        return {
+            cls.normalize_name(f.name): f 
+            for f in model._meta.get_fields() 
+            if f.concrete and not f.auto_created
+        }
+    
+    @classmethod
+    def process_file(cls, file, model, sheet_name=None, cell_range=None, column_mapping=None):
+        """Procesar archivo (CSV o Excel) y devolver registros y metadatos"""  # Corregido typo
+        file_extension = os.path.splitext(file.name)[1].lower()
+        
+        if file_extension in ('.xls', '.xlsx'):
+            return cls.process_excel(file, model, sheet_name, cell_range, column_mapping)
+        else:
+            return cls.process_csv(file, model, column_mapping)
+      
+    @classmethod
+    def process_excel(cls, file, model, sheet_name=None, cell_range=None, column_mapping=None):
+        """Procesar archivo Excel"""
+        try:
+            df = pd.read_excel(
+                BytesIO(file.read()),
+                sheet_name=sheet_name or 0,
+                usecols=cell_range if cell_range else None
+            )
+            file.seek(0)
+            
+            preview_data = df.head().to_dict('records')
+            columns = [str(col) for col in df.columns.tolist()]
+            
+            if column_mapping:
+                records = cls._create_instances_with_mapping(df, model, column_mapping)
+            else:
+                records = cls._create_instances_auto(df, model)
+            
+            return records, preview_data, columns
+        
+        except Exception as e:
+            raise ValueError(f"Error al procesar Excel: {str(e)}")
+    
+    @classmethod
+    def process_csv(cls, file, model, column_mapping=None, delimiter=';'):  # Delimiter configurable
+        """Procesar archivo CSV"""
+        try:
+            encoding = cls.detect_encoding(file)
+            decoded_file = file.read().decode(encoding, errors='replace')
+            file.seek(0)
+            
+            reader = csv.DictReader(StringIO(decoded_file), delimiter=delimiter)  # Usar parámetro
+            reader.fieldnames = [cls.normalize_name(name) for name in (reader.fieldnames or [])]
+
+            reader.fieldnames = [cls.normalize_name(name) for name in (reader.fieldnames or [])]
+            
+            # Convertir a DataFrame para consistencia con Excel
+            df = pd.DataFrame(list(reader))
+            preview_data = df.head().to_dict('records')
+            columns = [str(col) for col in (df.columns.tolist() if not df.empty else [])]
+            
+            if column_mapping:
+                records = cls._create_instances_with_mapping(df, model, column_mapping)
+            else:
+                records = cls._create_instances_auto(df, model)
+            
+            return records, preview_data, columns
+        
+        except Exception as e:
+            raise ValueError(f"Error al procesar CSV: {str(e)}")
+    
+    @classmethod
+    def _create_instances_auto(cls, df, model):
+        """Crear instancias del modelo con mapeo automático"""
+        model_fields = cls.get_model_fields(model)
+        records = []
+        
+        for _, row in df.iterrows():
+            instance_data = {}
+            for field_name, field in model_fields.items():
+                if field_name in df.columns and pd.notna(row[field_name]):
+                    instance_data[field.name] = cls._convert_value(field, row[field_name])
+            
+            if instance_data:
+                records.append(model(**instance_data))
+        
+        return records
+    
+    @classmethod
+    def _create_instances_with_mapping(cls, df, model, column_mapping):
+        """Crear instancias del modelo con mapeo personalizado"""
+        records = []
+        
+        for _, row in df.iterrows():
+            instance_data = {}
+            for csv_col, model_field in column_mapping.items():
+                if model_field and csv_col in df.columns and pd.notna(row[csv_col]):
+                    try:
+                        field = model._meta.get_field(model_field)
+                        instance_data[model_field] = cls._convert_value(field, row[csv_col])
+                    except FieldDoesNotExist:
+                        continue
+            
+            if instance_data:
+                records.append(model(**instance_data))
+        
+        return records
+    
+    @staticmethod
+    def _convert_value(field, value):
+        """Convertir valor según el tipo de campo"""
+        if pd.isna(value):
+            return None
+            
+        if field.get_internal_type() == 'IntegerField':
+            return int(float(value))
+        elif field.get_internal_type() == 'FloatField':
+            if isinstance(value, str):
+                value = value.replace(',', '.')
+            return float(value)
+        elif field.get_internal_type() == 'CharField':
+            return str(value).strip()
+        elif field.get_internal_type() == 'BooleanField':
+            return bool(value)
+        return value
 
 
 # Calculator views
@@ -88,97 +246,6 @@ def file_tree_view(request):
     file_tree = get_file_tree(base_dir)
     return JsonResponse(file_tree, safe=False)
 
-
-# Helper functions for data processing
-def detect_encoding(file):
-    """Detectar codificación de archivos CSV"""
-    raw_data = file.read(10240)
-    result = chardet.detect(raw_data)
-    file.seek(0)
-    if result['encoding'] in ['ISO-8859-1', 'Windows-1252']:
-        return 'latin-1'
-    return result['encoding'] if result['confidence'] > 0.6 else 'latin-1'
-
-
-def normalize_name(name):
-    """Normalizar nombres de columnas"""
-    name = name.strip().lower()
-    replacements = {'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u'}
-    for orig, repl in replacements.items():
-        name = name.replace(orig, repl)
-    return name
-
-
-def process_excel(file, model, sheet_name=None, cell_range=None):
-    """Procesar archivo Excel y devolver registros, vista previa y columnas"""
-    df = pd.read_excel(
-        BytesIO(file.read()),
-        sheet_name=sheet_name or 0,
-        usecols=cell_range if cell_range else None
-    )
-    
-    # Convertir a lista de diccionarios para vista previa
-    preview_data = df.head().to_dict('records')
-    columns = df.columns.tolist()
-    
-    # Obtener campos del modelo
-    model_fields = {normalize_name(f.name): f for f in model._meta.get_fields() 
-                   if f.concrete and not f.auto_created}
-    
-    # Procesar registros
-    records = []
-    for _, row in df.iterrows():
-        instance_data = {}
-        for field_name, field in model_fields.items():
-            if field_name in df.columns:
-                value = row[field_name]
-                if pd.notna(value):
-                    if field.get_internal_type() == 'IntegerField':
-                        value = int(float(value))
-                    elif field.get_internal_type() == 'FloatField':
-                        value = float(value)
-                    elif field.get_internal_type() == 'CharField':
-                        value = str(value).strip()
-                    
-                    instance_data[field.name] = value
-        
-        if instance_data:
-            records.append(model(**instance_data))
-    
-    return records, preview_data, columns
-
-
-def process_excel_with_mapping(file, model, sheet_name, cell_range, column_mapping):
-    """Procesar Excel con mapeo personalizado de columnas"""
-    df = pd.read_excel(
-        BytesIO(file.read()),
-        sheet_name=sheet_name or 0,
-        usecols=cell_range if cell_range else None
-    )
-    
-    records = []
-    for _, row in df.iterrows():
-        instance_data = {}
-        for csv_col, model_field in column_mapping.items():
-            if model_field and csv_col in df.columns and pd.notna(row[csv_col]):
-                field = model._meta.get_field(model_field)
-                value = row[csv_col]
-                
-                if field.get_internal_type() == 'IntegerField':
-                    value = int(float(value))
-                elif field.get_internal_type() == 'FloatField':
-                    value = float(value)
-                elif field.get_internal_type() == 'CharField':
-                    value = str(value).strip()
-                
-                instance_data[model_field] = value
-        
-        if instance_data:
-            records.append(model(**instance_data))
-    
-    return records
-
-
 # Data upload view
 def upload_data(request):
     if request.method == 'POST':
@@ -188,33 +255,31 @@ def upload_data(request):
             file = request.FILES['file']
             
             try:
+                # Limpiar datos existentes si se solicita
                 if form.cleaned_data['clear_existing']:
                     model.objects.all().delete()
                     messages.info(request, f"Datos existentes en {model._meta.verbose_name} eliminados")
                 
-                # Detección case-insensitive de extensión
-                file_extension = os.path.splitext(file.name)[1].lower()
-                
-                if file_extension in ('.xls', '.xlsx'):
-                    # Procesar Excel
-                    records, preview_data, columns = process_excel(
+                # Procesar según el tipo de acción
+                if 'preview' in request.POST:
+                    # Vista previa para ambos tipos de archivo
+                    records, preview_data, columns = FileProcessor.process_file(
                         file,
                         model,
-                        form.cleaned_data['sheet_name'],
-                        form.cleaned_data['cell_range']
+                        form.cleaned_data.get('sheet_name'),
+                        form.cleaned_data.get('cell_range')
                     )
                     
-                    if 'preview' in request.POST:
-                        model_fields = [f.name for f in model._meta.get_fields() 
-                                     if f.concrete and not f.auto_created]
-                        
-                        return render(request, 'tools/upload_data.html', {
-                            'form': form,
-                            'preview_data': preview_data,
-                            'columns': columns,
-                            'model_fields': model_fields,
-                            'show_preview': True
-                        })
+                    model_fields = [f.name for f in model._meta.get_fields() 
+                                 if f.concrete and not f.auto_created]
+                    
+                    return render(request, 'tools/upload_data.html', {
+                        'form': form,
+                        'preview_data': preview_data,
+                        'columns': columns,
+                        'model_fields': model_fields,
+                        'show_preview': True
+                    })
                 
                 elif 'confirm_import' in request.POST:
                     # Procesar con mapeo personalizado
@@ -223,50 +288,43 @@ def upload_data(request):
                         for col in request.POST.keys() if col.startswith('map_')
                     }
                     
-                    records = process_excel_with_mapping(
+                    records, _, _ = FileProcessor.process_file(
                         file,
                         model,
-                        form.cleaned_data['sheet_name'],
-                        form.cleaned_data['cell_range'],
+                        form.cleaned_data.get('sheet_name'),
+                        form.cleaned_data.get('cell_range'),
                         column_mapping
                     )
+                    
+                    if records:
+                        model.objects.bulk_create(records)
+                        messages.success(request, f"{len(records)} registros cargados")
+                        return redirect('upload_data')
+                    else:
+                        messages.warning(request, "No se encontraron datos válidos para importar")
                 
                 else:
-                    # Procesar CSV
-                    encoding = detect_encoding(file)
-                    decoded_file = file.read().decode(encoding, errors='replace')
-                    file.seek(0)
+                    # Procesamiento normal (sin vista previa)
+                    records, _, _ = FileProcessor.process_file(
+                        file,
+                        model,
+                        form.cleaned_data.get('sheet_name'),
+                        form.cleaned_data.get('cell_range')
+                    )
                     
-                    reader = csv.DictReader(decoded_file.splitlines(), delimiter=';')
-                    reader.fieldnames = [normalize_name(name) for name in reader.fieldnames]
-                    
-                    model_fields = {normalize_name(f.name): f for f in model._meta.get_fields() 
-                                  if f.concrete and not f.auto_created}
-                    
-                    records = []
-                    for row in reader:
-                        instance_data = {}
-                        for field_name, field in model_fields.items():
-                            if field_name in reader.fieldnames and row[field_name]:
-                                value = row[field_name].strip()
-                                if field.get_internal_type() == 'IntegerField':
-                                    value = int(float(value))
-                                elif field.get_internal_type() == 'FloatField':
-                                    value = float(value.replace(',', '.'))
-                                elif field.get_internal_type() == 'CharField':
-                                    value = str(value).strip()
-                                
-                                instance_data[field.name] = value
-                        
-                        if instance_data:
-                            records.append(model(**instance_data))
-                
-                if records:
-                    model.objects.bulk_create(records)
-                    messages.success(request, f"{len(records)} registros cargados")
-                    return redirect('upload_data')
-                
+                    if records:
+                        model.objects.bulk_create(records)
+                        messages.success(request, f"{len(records)} registros cargados")
+                        return redirect('upload_data')
+                    else:
+                        messages.warning(request, "No se encontraron datos válidos para importar")
+            
             except Exception as e:
                 messages.error(request, f"Error durante la carga: {str(e)}")
+                # Log the full error for debugging
+                import logging
+                logging.error("Error en upload_data: %s", str(e), exc_info=True)
     
     return render(request, 'tools/upload_data.html', {'form': DataUploadForm()})
+
+
