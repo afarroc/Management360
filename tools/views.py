@@ -1,6 +1,26 @@
-from django.shortcuts import render
-from .planning import (AgentsFTE, utilisation)
+# Standard library imports
+import os
+import csv
+from io import BytesIO
 
+# Third-party imports
+import pandas as pd
+import chardet
+
+# Django imports
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from django.conf import settings
+from django.contrib import messages
+from django.apps import apps
+
+# Local imports
+from .planning import (AgentsFTE, utilisation)
+from .utils import calcular_trafico_intensidad
+from .forms import DataUploadForm
+
+
+# Calculator views
 def calculate_agents(request):
     if request.method == 'POST':
         calls = int(request.POST.get('calls'))
@@ -10,7 +30,8 @@ def calculate_agents(request):
         service_level_time = float(request.POST.get('service_level_time'))
         shrinkage = float(request.POST.get('shrinkage'))
 
-        agents_required = AgentsFTE(calls, reporting_period, average_handling_time, service_level_agreement, service_level_time, shrinkage)
+        agents_required = AgentsFTE(calls, reporting_period, average_handling_time, 
+                                  service_level_agreement, service_level_time, shrinkage)
         utilization = utilisation(calls, agents_required)
 
         context = {'agents_required': agents_required, 'utilization': utilization}
@@ -18,12 +39,6 @@ def calculate_agents(request):
     else:
         return render(request, 'calculator.html')
 
-
-
-    # myapp/views.py
-from django.shortcuts import render
-from django.http import JsonResponse
-from .utils import calcular_trafico_intensidad
 
 def calcular_trafico_intensidad_view(request):
     if request.method == 'POST':
@@ -36,10 +51,8 @@ def calcular_trafico_intensidad_view(request):
 
     return render(request, 'calculator.html')
 
-import os
-from django.http import JsonResponse
-from django.conf import settings
 
+# File management views
 def file_tree_view(request):
     """
     Generate a JSON response with the file tree structure of a given app directory.
@@ -75,15 +88,8 @@ def file_tree_view(request):
     file_tree = get_file_tree(base_dir)
     return JsonResponse(file_tree, safe=False)
 
-import pandas as pd
-from io import BytesIO
-import chardet
-import csv
-from django.shortcuts import render, redirect
-from django.contrib import messages
-from django.apps import apps
-from .forms import DataUploadForm
 
+# Helper functions for data processing
 def detect_encoding(file):
     """Detectar codificación de archivos CSV"""
     raw_data = file.read(10240)
@@ -93,6 +99,7 @@ def detect_encoding(file):
         return 'latin-1'
     return result['encoding'] if result['confidence'] > 0.6 else 'latin-1'
 
+
 def normalize_name(name):
     """Normalizar nombres de columnas"""
     name = name.strip().lower()
@@ -100,6 +107,7 @@ def normalize_name(name):
     for orig, repl in replacements.items():
         name = name.replace(orig, repl)
     return name
+
 
 def process_excel(file, model, sheet_name=None, cell_range=None):
     """Procesar archivo Excel y devolver registros, vista previa y columnas"""
@@ -139,6 +147,7 @@ def process_excel(file, model, sheet_name=None, cell_range=None):
     
     return records, preview_data, columns
 
+
 def process_excel_with_mapping(file, model, sheet_name, cell_range, column_mapping):
     """Procesar Excel con mapeo personalizado de columnas"""
     df = pd.read_excel(
@@ -169,6 +178,8 @@ def process_excel_with_mapping(file, model, sheet_name, cell_range, column_mappi
     
     return records
 
+
+# Data upload view
 def upload_data(request):
     if request.method == 'POST':
         form = DataUploadForm(request.POST, request.FILES)
@@ -181,7 +192,10 @@ def upload_data(request):
                     model.objects.all().delete()
                     messages.info(request, f"Datos existentes en {model._meta.verbose_name} eliminados")
                 
-                if file.name.endswith(('.xls', '.xlsx')):
+                # Detección case-insensitive de extensión
+                file_extension = os.path.splitext(file.name)[1].lower()
+                
+                if file_extension in ('.xls', '.xlsx'):
                     # Procesar Excel
                     records, preview_data, columns = process_excel(
                         file,
