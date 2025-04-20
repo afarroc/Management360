@@ -38,6 +38,7 @@
                             </div>
                             {% endfor %}
                         </div>
+                        
                         {% endif %}
 
                         <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
@@ -135,13 +136,18 @@
                 </table>
             </div>
 
-            <form method="post" enctype="multipart/form-data" class="mt-4">
+            <form method="post" enctype="multipart/form-data" class="mt-4" id="confirm-import-form">
                 {% csrf_token %}
+                
+                {# Campos ocultos para mantener los datos del formulario original #}
                 <input type="hidden" name="model" value="{{ form.model.value }}">
-                <input type="hidden" name="file" value="{{ form.file.value }}">
+                <input type="hidden" name="original_filename" value="{{ form.file.name }}">
                 <input type="hidden" name="sheet_name" value="{{ form.sheet_name.value|default:'' }}">
                 <input type="hidden" name="cell_range" value="{{ form.cell_range.value|default:'' }}">
-                <input type="hidden" name="clear_existing" value="{{ form.clear_existing.value|default:'False' }}">
+                <input type="hidden" name="clear_existing" value="{{ form.cleaned_data.clear_existing|default:'False' }}">
+                
+                {# Campo oculto para indicar que es una confirmación #}
+                <input type="hidden" name="is_confirmation" value="true">
                 
                 <h5 class="mb-3"><i class="bi bi-arrow-left-right me-2"></i> Mapeo de Columnas</h5>
                 
@@ -194,45 +200,118 @@
         </div>
     </div>
 </div>
+
+
 {% endif %}
 
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Mostrar/ocultar opciones de Excel
-    const fileInput = document.getElementById('id_file');
-    const excelOptions = document.getElementById('excel-options');
+    document.addEventListener('DOMContentLoaded', function() {
+        // Elementos del DOM
+        const fileInput = document.getElementById('id_file');
+        const excelOptions = document.getElementById('excel-options');
+        const cellRangeInput = document.getElementById('id_cell_range');
+        const fileLabel = document.querySelector('.file-label');
+        const form = document.querySelector('form.needs-validation');
     
-    fileInput.addEventListener('change', function() {
-        if (this.files[0] && this.files[0].name.match(/\.xls[x]?$/i)) {
-            excelOptions.style.display = 'block';
-        } else {
-            excelOptions.style.display = 'none';
-        }
+        // 1. Manejo de opciones para Excel
+        fileInput.addEventListener('change', function() {
+            const isExcel = this.files[0]?.name.match(/\.xls[x]?$/i);
+            excelOptions.style.display = isExcel ? 'block' : 'none';
+            
+            // Resetear campos de Excel si no es archivo Excel
+            if (!isExcel) {
+                document.getElementById('id_sheet_name').value = '';
+                document.getElementById('id_cell_range').value = '';
+            }
+        });
+    
+        // 2. Validación de rango de celdas con mejor feedback
+        cellRangeInput.addEventListener('input', function() {
+            this.classList.remove('is-invalid', 'is-valid');
+            
+            if (this.value && !this.value.match(/^[A-Za-z]+\d+:[A-Za-z]+\d+$/i)) {
+                this.classList.add('is-invalid');
+                document.getElementById('cellRangeHelp').classList.remove('d-none');
+            } else {
+                this.classList.add('is-valid');
+                document.getElementById('cellRangeHelp').classList.add('d-none');
+            }
+        });
+    
+        // 3. Actualización visual de la etiqueta del archivo
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const file = this.files[0];
+                const fileSizeMB = (file.size / (1024*1024)).toFixed(2);
+                
+                fileLabel.innerHTML = `
+                    <i class="bi bi-file-earmark-spreadsheet me-2"></i>
+                    ${file.name} (${fileSizeMB} MB)
+                `;
+                fileLabel.classList.replace('btn-primary', 'btn-success');
+                
+                // Validación temprana de tamaño
+                if (file.size > 10 * 1024 * 1024) {
+                    fileLabel.classList.add('btn-danger');
+                    fileLabel.innerHTML += ' - <strong>Muy grande!</strong>';
+                }
+            } else {
+                fileLabel.innerHTML = `<i class="bi bi-file-earmark-spreadsheet me-2"></i>Seleccionar archivo`;
+                fileLabel.className = 'file-label btn btn-primary w-100';
+            }
+        });
+    
+        // 4. Validación de formulario antes de enviar
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Validar archivo
+            if (!fileInput.files.length) {
+                fileLabel.classList.add('btn-danger');
+                isValid = false;
+            }
+            
+            // Validar rango de celdas si es Excel
+            if (excelOptions.style.display === 'block' && 
+                cellRangeInput.value && 
+                !cellRangeInput.value.match(/^[A-Za-z]+\d+:[A-Za-z]+\d+$/i)) {
+                cellRangeInput.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                e.preventDefault();
+                const errorElement = document.createElement('div');
+                errorElement.className = 'alert alert-danger mt-3';
+                errorElement.innerHTML = `
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Corrija los errores antes de enviar el formulario
+                `;
+                form.appendChild(errorElement);
+                
+                // Scroll al primer error
+                const firstInvalid = form.querySelector('.is-invalid, .btn-danger');
+                if (firstInvalid) {
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+    
+        // 5. Mostrar/ocultar ayuda para el rango de celdas
+        cellRangeInput.addEventListener('focus', function() {
+            document.getElementById('cellRangeHelp').classList.remove('d-none');
+        });
+        
+        cellRangeInput.addEventListener('blur', function() {
+            if (!this.value || this.value.match(/^[A-Za-z]+\d+:[A-Za-z]+\d+$/i)) {
+                document.getElementById('cellRangeHelp').classList.add('d-none');
+            }
+        });
     });
+    </script>
+    
 
-    // Validación de rango de celdas
-    const cellRangeInput = document.getElementById('id_cell_range');
-    cellRangeInput.addEventListener('blur', function() {
-        if (this.value && !this.value.match(/^[A-Za-z]+\d+:[A-Za-z]+\d+$/)) {
-            alert('Formato de rango inválido. Use formato como "B2:G500"');
-            this.focus();
-        }
-    });
-
-    // Actualizar etiqueta del archivo
-    const fileLabel = document.querySelector('.file-label');
-    fileInput.addEventListener('change', function() {
-        if (this.files.length > 0) {
-            fileLabel.innerHTML = `<i class="bi bi-file-earmark-spreadsheet me-2"></i>${this.files[0].name}`;
-            fileLabel.classList.replace('btn-primary', 'btn-success');
-        } else {
-            fileLabel.innerHTML = `<i class="bi bi-file-earmark-spreadsheet me-2"></i>Seleccionar archivo`;
-            fileLabel.classList.replace('btn-success', 'btn-primary');
-        }
-    });
-});
-</script>
 {% endblock %}
