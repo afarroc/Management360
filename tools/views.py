@@ -1,4 +1,5 @@
 # Standard library imports
+import logging
 import os
 import csv
 from io import BytesIO, StringIO
@@ -246,85 +247,158 @@ def file_tree_view(request):
     file_tree = get_file_tree(base_dir)
     return JsonResponse(file_tree, safe=False)
 
-# Data upload view
+
+from .constants import FORBIDDEN_MODELS, MAX_RECORDS_FOR_DELETION, MAX_RECORDS_FOR_IMPORT
+
 def upload_data(request):
     if request.method == 'POST':
         form = DataUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            model = form.cleaned_data['model']
-            file = request.FILES['file']
-            
             try:
-                # Limpiar datos existentes si se solicita
-                if form.cleaned_data['clear_existing']:
-                    model.objects.all().delete()
-                    messages.info(request, f"Datos existentes en {model._meta.verbose_name} eliminados")
+                model = form.cleaned_data['model']
+                file = request.FILES['file']
+                model_path = f"{model._meta.app_label}.{model.__name__}"
                 
-                # Procesar según el tipo de acción
-                if 'preview' in request.POST:
-                    # Vista previa para ambos tipos de archivo
-                    records, preview_data, columns = FileProcessor.process_file(
-                        file,
-                        model,
-                        form.cleaned_data.get('sheet_name'),
-                        form.cleaned_data.get('cell_range')
+                # Validación de modelo prohibido
+                if model_path in FORBIDDEN_MODELS:
+                    error_msg = (
+                        f"Acceso denegado: El modelo '{model._meta.verbose_name}' "
+                        f"({model_path}) es un modelo del sistema y no puede ser modificado."
                     )
+                    raise PermissionError(error_msg)
+                                
+                # Validación de permisos de usuario
+                if not request.user.is_superuser and hasattr(model, 'is_restricted') and model.is_restricted:
+                    error_msg = (
+                        f"Acceso denegado: No tiene permisos suficientes para modificar "
+                        f"el modelo '{model._meta.verbose_name}'."
+                    )
+                    raise PermissionError(error_msg)
+                
+                # Operación de limpieza
+                if form.cleaned_data['clear_existing']:
+                    record_count = model.objects.count()
+                    if record_count > MAX_RECORDS_FOR_DELETION:
+                        error_msg = (
+                            f"Operación cancelada: Intento de borrar {record_count} registros en "
+                            f"'{model._meta.verbose_name}'. El límite es {MAX_RECORDS_FOR_DELETION}."
+                        )
+                        raise SecurityError(error_msg)
                     
-                    model_fields = [f.name for f in model._meta.get_fields() 
-                                 if f.concrete and not f.auto_created]
-                    
-                    return render(request, 'tools/upload_data.html', {
-                        'form': form,
-                        'preview_data': preview_data,
-                        'columns': columns,
-                        'model_fields': model_fields,
-                        'show_preview': True
-                    })
+                    model.objects.all().delete()
+                    messages.info(
+                        request, 
+                        f"Se eliminaron todos los registros existentes en {model._meta.verbose_name}"
+                    )
+                                    
+                # Procesamiento según el tipo de acción
+                if 'preview' in request.POST:
+                    return handle_preview(request, form, model, file)
                 
                 elif 'confirm_import' in request.POST:
-                    # Procesar con mapeo personalizado
-                    column_mapping = {
-                        col: request.POST.get(f'map_{col}')
-                        for col in request.POST.keys() if col.startswith('map_')
-                    }
-                    
-                    records, _, _ = FileProcessor.process_file(
-                        file,
-                        model,
-                        form.cleaned_data.get('sheet_name'),
-                        form.cleaned_data.get('cell_range'),
-                        column_mapping
-                    )
-                    
-                    if records:
-                        model.objects.bulk_create(records)
-                        messages.success(request, f"{len(records)} registros cargados")
-                        return redirect('upload_data')
-                    else:
-                        messages.warning(request, "No se encontraron datos válidos para importar")
+                    return handle_import_with_mapping(request, form, model, file)
                 
                 else:
-                    # Procesamiento normal (sin vista previa)
-                    records, _, _ = FileProcessor.process_file(
-                        file,
-                        model,
-                        form.cleaned_data.get('sheet_name'),
-                        form.cleaned_data.get('cell_range')
-                    )
-                    
-                    if records:
-                        model.objects.bulk_create(records)
-                        messages.success(request, f"{len(records)} registros cargados")
-                        return redirect('upload_data')
-                    else:
-                        messages.warning(request, "No se encontraron datos válidos para importar")
+                    return handle_direct_import(request, form, model, file)
+            
+            except PermissionError as e:
+                messages.error(request, str(e))
+                logging.warning(
+                    f"Intento de acceso no autorizado a {model_path} por "
+                    f"usuario {request.user.id} - {request.user.username}"
+                )
+            
+            except SecurityError as e:
+                messages.error(request, str(e))
+                logging.error(
+                    f"Prevención de operación masiva en {model_path}. "
+                    f"Usuario: {request.user.id}, Registros afectados: {record_count}"
+                )
             
             except Exception as e:
-                messages.error(request, f"Error durante la carga: {str(e)}")
-                # Log the full error for debugging
-                import logging
-                logging.error("Error en upload_data: %s", str(e), exc_info=True)
+                error_msg = (
+                    "Ocurrió un error inesperado durante la carga de datos. "
+                    "Por favor contacte al administrador."
+                )
+                messages.error(request, error_msg)
+                logging.error(
+                    f"Error en upload_data - Modelo: {model_path}, "
+                    f"Usuario: {request.user.id}, Error: {str(e)}", 
+                    exc_info=True
+                )
     
-    return render(request, 'tools/upload_data.html', {'form': DataUploadForm()})
+    return render(request, 'tools/upload_data.html', {'form': form if 'form' in locals() else DataUploadForm()})
+
+# Funciones auxiliares para mejor organización
+def handle_preview(request, form, model, file):
+    """Maneja la solicitud de vista previa"""
+    records, preview_data, columns = FileProcessor.process_file(
+        file,
+        model,
+        form.cleaned_data.get('sheet_name'),
+        form.cleaned_data.get('cell_range')
+    )
+    
+    model_fields = [f.name for f in model._meta.get_fields() 
+                   if f.concrete and not f.auto_created]
+    
+    return render(request, 'tools/upload_data.html', {
+        'form': form,
+        'preview_data': preview_data,
+        'columns': columns,
+        'model_fields': model_fields,
+        'show_preview': True
+    })
+
+def handle_import_with_mapping(request, form, model, file):
+    """Maneja la importación con mapeo de columnas"""
+    column_mapping = {
+        col: request.POST.get(f'map_{col}')
+        for col in request.POST.keys() if col.startswith('map_')
+    }
+    
+    records, _, _ = FileProcessor.process_file(
+        file,
+        model,
+        form.cleaned_data.get('sheet_name'),
+        form.cleaned_data.get('cell_range'),
+        column_mapping
+    )
+    
+    if records:
+        if len(records) > 10000:  # Límite de registros por importación
+            raise SecurityError("Demasiados registros para importar de una vez (límite: 10,000)")
+        
+        model.objects.bulk_create(records)
+        messages.success(request, f"{len(records)} registros cargados en {model._meta.verbose_name}")
+        return redirect('upload_data')
+    
+    messages.warning(request, "No se encontraron datos válidos para importar")
+    return redirect('upload_data')
+
+def handle_direct_import(request, form, model, file):
+    """Maneja la importación directa sin vista previa"""
+    records, _, _ = FileProcessor.process_file(
+        file,
+        model,
+        form.cleaned_data.get('sheet_name'),
+        form.cleaned_data.get('cell_range')
+    )
+    
+    if records:
+        if len(records) > 10000:  # Límite de registros por importación
+            raise SecurityError("Demasiados registros para importar de una vez (límite: 10,000)")
+        
+        model.objects.bulk_create(records)
+        messages.success(request, f"{len(records)} registros cargados en {model._meta.verbose_name}")
+        return redirect('upload_data')
+    
+    messages.warning(request, "No se encontraron datos válidos para importar")
+    return redirect('upload_data')
+
+# Excepciones personalizadas
+class SecurityError(Exception):
+    """Excepción para problemas de seguridad"""
+    pass
 
 
