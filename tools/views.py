@@ -21,8 +21,13 @@ from .planning import (AgentsFTE, utilisation)
 from .utils import calcular_trafico_intensidad
 from .forms import DataUploadForm
 
+# Configurar el logger para incluir el nombre de la función
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(funcName)s - %(message)s'
+)
 
-
+logger = logging.getLogger(__name__)
 
 
 class FileProcessor:
@@ -64,6 +69,12 @@ class FileProcessor:
     @classmethod
     def process_file(cls, file, model, sheet_name=None, cell_range=None, column_mapping=None):
         """Procesar archivo (CSV o Excel) y devolver registros y metadatos"""  # Corregido typo
+        logger.info(f"Procesando archivo: {file.name}")
+        logger.info(f"Tipo de archivo: {file.content_type}")
+        logger.info(f"Nombre de la hoja: {sheet_name}")
+        logger.info(f"Rango de celdas: {cell_range}")
+        logger.info(f"Datos del mapeo: {column_mapping}")
+        
         file_extension = os.path.splitext(file.name)[1].lower()
         
         if file_extension in ('.xls', '.xlsx'):
@@ -252,12 +263,25 @@ from .constants import FORBIDDEN_MODELS, MAX_RECORDS_FOR_DELETION, MAX_RECORDS_F
 
 def upload_data(request):
     if request.method == 'POST':
+        logger.info(f"Usuario {request.user.id} - {request.user.username} inició la carga de datos")
+        logger.info(f"IP del usuario: {request.META.get('REMOTE_ADDR')}")
+        
         form = DataUploadForm(request.POST, request.FILES)
+        logger.info(f"Datos del formulario recibidos: {request.POST}")
+        logger.info(f"Archivos recibidos: {request.FILES}")
+        
         if form.is_valid():
             try:
+                logger.info("Formulario válido, procesando datos")
+                logger.info(f"Datos del formulario limpiados: {form.cleaned_data}")
+                logger.info(f"Datos del formulario: {form.cleaned_data.get('file')}")
+                logger.info(f"Datos del formulario: {form.cleaned_data.get('model')}")
+                
                 model = form.cleaned_data['model']
                 file = request.FILES['file']
                 model_path = f"{model._meta.app_label}.{model.__name__}"
+                logger.info(f"Modelo seleccionado: {model_path}")
+                logger.info(f"Archivo cargado: {file.name} (Tamaño: {file.size} bytes)")
                 
                 # Validación de modelo prohibido
                 if model_path in FORBIDDEN_MODELS:
@@ -265,66 +289,70 @@ def upload_data(request):
                         f"Acceso denegado: El modelo '{model._meta.verbose_name}' "
                         f"({model_path}) es un modelo del sistema y no puede ser modificado."
                     )
+                    logger.warning(error_msg)
                     raise PermissionError(error_msg)
-                                
+                
                 # Validación de permisos de usuario
                 if not request.user.is_superuser and hasattr(model, 'is_restricted') and model.is_restricted:
                     error_msg = (
                         f"Acceso denegado: No tiene permisos suficientes para modificar "
                         f"el modelo '{model._meta.verbose_name}'."
                     )
+                    logger.warning(error_msg)
                     raise PermissionError(error_msg)
                 
                 # Operación de limpieza
                 if form.cleaned_data['clear_existing']:
+                    logger.info(f"Se solicitó limpiar los datos existentes del modelo: {model_path}")
                     record_count = model.objects.count()
+                    logger.info(f"Registros existentes en el modelo: {record_count}")
+                    
                     if record_count > MAX_RECORDS_FOR_DELETION:
                         error_msg = (
                             f"Operación cancelada: Intento de borrar {record_count} registros en "
                             f"'{model._meta.verbose_name}'. El límite es {MAX_RECORDS_FOR_DELETION}."
                         )
+                        logger.error(error_msg)
                         raise SecurityError(error_msg)
                     
                     model.objects.all().delete()
+                    logger.info(f"Se eliminaron todos los registros existentes en {model_path}")
                     messages.info(
                         request, 
                         f"Se eliminaron todos los registros existentes en {model._meta.verbose_name}"
                     )
-                                    
+                
                 # Procesamiento según el tipo de acción
                 if 'preview' in request.POST:
+                    logger.info("Generando vista previa de importación")
                     return handle_preview(request, form, model, file)
                 
                 elif 'confirm_import' in request.POST:
+                    logger.info("Confirmando importación con mapeo de columnas")
                     return handle_import_with_mapping(request, form, model, file)
                 
                 else:
+                    logger.info("Realizando importación directa sin vista previa")
                     return handle_direct_import(request, form, model, file)
             
             except PermissionError as e:
+                logger.warning(f"Error de permisos: {str(e)}")
                 messages.error(request, str(e))
-                logging.warning(
-                    f"Intento de acceso no autorizado a {model_path} por "
-                    f"usuario {request.user.id} - {request.user.username}"
-                )
             
             except SecurityError as e:
+                logger.error(f"Error de seguridad: {str(e)}")
                 messages.error(request, str(e))
-                logging.error(
-                    f"Prevención de operación masiva en {model_path}. "
-                    f"Usuario: {request.user.id}, Registros afectados: {record_count}"
-                )
             
             except Exception as e:
-                error_msg = (
-                    "Ocurrió un error inesperado durante la carga de datos. "
-                    "Por favor contacte al administrador."
-                )
-                messages.error(request, error_msg)
-                logging.error(
-                    f"Error en upload_data - Modelo: {model_path}, "
+                logger.error(
+                    f"Error inesperado durante la carga de datos. Modelo: {model_path}, "
                     f"Usuario: {request.user.id}, Error: {str(e)}", 
                     exc_info=True
+                )
+                messages.error(
+                    request, 
+                    "Ocurrió un error inesperado durante la carga de datos. "
+                    "Por favor contacte al administrador."
                 )
     
     return render(request, 'tools/upload_data.html', {'form': form if 'form' in locals() else DataUploadForm()})
@@ -332,6 +360,20 @@ def upload_data(request):
 # Funciones auxiliares para mejor organización
 def handle_preview(request, form, model, file):
     """Maneja la solicitud de vista previa"""
+    # Obtener datos de la vista previa
+    # y procesar el archivo
+    logger.info("Generando vista previa de importación")
+    logger.info(f"Cantidad de registros a procesar: {file.size}")
+    logger.info(f"Nombre de la hoja: {form.cleaned_data.get('sheet_name')}")
+    logger.info(f"Rango de celdas: {form.cleaned_data.get('cell_range')}")
+    logger.info(f"Datos del mapeo: {request.POST.get('map_columns')}")
+    logger.info(f"Datos del formulario: {request.POST}")
+    logger.info(f"Usuario: {request.user.id} - {request.user.username}")
+    logger.info(f"IP del usuario: {request.META.get('REMOTE_ADDR')}")
+    logger.info(f"Nombre del archivo: {file.name}")
+    logger.info(f"Tipo de archivo: {file.content_type}")
+    
+    
     records, preview_data, columns = FileProcessor.process_file(
         file,
         model,
