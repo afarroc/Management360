@@ -78,6 +78,7 @@ class FileProcessor:
         file_extension = os.path.splitext(file.name)[1].lower()
         
         if file_extension in ('.xls', '.xlsx'):
+            
             return cls.process_excel(file, model, sheet_name, cell_range, column_mapping)
         else:
             return cls.process_csv(file, model, column_mapping)
@@ -109,29 +110,63 @@ class FileProcessor:
     @classmethod
     def process_csv(cls, file, model, column_mapping=None, delimiter=';'):  # Delimiter configurable
         """Procesar archivo CSV"""
+        logger.info(f"Iniciando procesamiento de archivo CSV: {file.name}")
+        logger.info(f"Tipo de archivo: {file.content_type}")
+        logger.info(f"Delimitador configurado: {delimiter}")
+        logger.info(f"Configuración de mapeo de columnas: {column_mapping}")
+        logger.info(f"Modelo destino: {model.__name__}")
+        
         try:
+            # Detectar codificación del archivo CSV
+            logger.info("Detectando codificación del archivo...")
             encoding = cls.detect_encoding(file)
-            decoded_file = file.read().decode(encoding, errors='replace')
-            file.seek(0)
+            logger.info(f"Codificación detectada: {encoding}")
             
-            reader = csv.DictReader(StringIO(decoded_file), delimiter=delimiter)  # Usar parámetro
+            logger.info("Decodificando archivo...")
+            decoded_file = file.read().decode(encoding, errors='replace')
+            file.seek(0)  # Resetear posición del archivo para posibles lecturas futuras
+            logger.debug(f"Primeros 100 caracteres decodificados: {decoded_file[:100]}...")
+            
+            logger.info("Creando lector CSV...")
+            reader = csv.DictReader(StringIO(decoded_file), delimiter=delimiter)
+            original_fieldnames = reader.fieldnames
             reader.fieldnames = [cls.normalize_name(name) for name in (reader.fieldnames or [])]
-
-            reader.fieldnames = [cls.normalize_name(name) for name in (reader.fieldnames or [])]
+            logger.info(f"Nombres de columnas originales: {original_fieldnames}")
+            logger.info(f"Nombres de columnas normalizados: {reader.fieldnames}")
             
             # Convertir a DataFrame para consistencia con Excel
+            logger.info("Convirtiendo datos a DataFrame...")
             df = pd.DataFrame(list(reader))
+            logger.info(f"DataFrame creado con {len(df)} filas y {len(df.columns)} columnas")
+            
             preview_data = df.head().to_dict('records')
             columns = [str(col) for col in (df.columns.tolist() if not df.empty else [])]
+            logger.debug(f"Datos de vista previa: {preview_data}")
+            logger.info(f"Columnas disponibles: {columns}")
             
             if column_mapping:
+                logger.info("Procesando con mapeo de columnas especificado...")
                 records = cls._create_instances_with_mapping(df, model, column_mapping)
+                logger.info(f"Se crearon {len(records)} instancias usando mapeo personalizado")
             else:
+                logger.info("Procesando con mapeo automático de columnas...")
                 records = cls._create_instances_auto(df, model)
+                logger.info(f"Se crearon {len(records)} instancias usando mapeo automático")
             
-            return records, preview_data, columns
+            logger.info("Procesamiento de CSV completado exitosamente")
+            return records, preview_data, columns 
         
+        except UnicodeDecodeError as e:
+            logger.error(f"Error de decodificación: {str(e)}")
+            raise ValueError(f"Error al decodificar el archivo: {str(e)}")
+        except csv.Error as e:
+            logger.error(f"Error de formato CSV: {str(e)}")
+            raise ValueError(f"Error en el formato del archivo CSV: {str(e)}")
+        except pd.errors.EmptyDataError:
+            logger.error("El archivo CSV está vacío")
+            raise ValueError("El archivo CSV está vacío o no contiene datos válidos")
         except Exception as e:
+            logger.error(f"Error inesperado al procesar CSV: {str(e)}", exc_info=True)
             raise ValueError(f"Error al procesar CSV: {str(e)}")
     
     @classmethod
@@ -263,12 +298,19 @@ from .constants import FORBIDDEN_MODELS, MAX_RECORDS_FOR_DELETION, MAX_RECORDS_F
 
 def upload_data(request):
     if request.method == 'POST':
+        form = DataUploadForm(request.POST, request.FILES)
         logger.info(f"Usuario {request.user.id} - {request.user.username} inició la carga de datos")
         logger.info(f"IP del usuario: {request.META.get('REMOTE_ADDR')}")
-        
-        form = DataUploadForm(request.POST, request.FILES)
         logger.info(f"Datos del formulario recibidos: {request.POST}")
         logger.info(f"Archivos recibidos: {request.FILES}")
+        logger.info(f"Archivo recibido: {request.FILES.get('file')}")
+        logger.info(f"Modelo recibido: {request.POST.get('model')}")
+        logger.info(f"Nombre de la hoja: {request.POST.get('sheet_name')}")
+        logger.info(f"Rango de celdas: {request.POST.get('cell_range')}")
+        logger.info(f"Datos del mapeo: {request.POST.get('map_columns')}")
+        logger.info(f"-----------------------------")
+        logger.info("Iniciando procesamiento del formulario")
+        logger.info(f"-----------------------------")
         
         if form.is_valid():
             try:
@@ -276,12 +318,16 @@ def upload_data(request):
                 logger.info(f"Datos del formulario limpiados: {form.cleaned_data}")
                 logger.info(f"Datos del formulario: {form.cleaned_data.get('file')}")
                 logger.info(f"Datos del formulario: {form.cleaned_data.get('model')}")
+                logger.info(f"Datos del formulario: {form.cleaned_data.get('sheet_name')}")
+                logger.info(f"Datos del formulario: {form.cleaned_data.get('cell_range')}")
+                logger.info(f"Datos del formulario: {request.POST.get('map_columns')}") 
+                logger.info(f"-----------------------------")
+                logger.info("Iniciando procesamiento del archivo")
+                logger.info(f"-----------------------------")
                 
                 model = form.cleaned_data['model']
                 file = request.FILES['file']
                 model_path = f"{model._meta.app_label}.{model.__name__}"
-                logger.info(f"Modelo seleccionado: {model_path}")
-                logger.info(f"Archivo cargado: {file.name} (Tamaño: {file.size} bytes)")
                 
                 # Validación de modelo prohibido
                 if model_path in FORBIDDEN_MODELS:
@@ -354,7 +400,11 @@ def upload_data(request):
                     "Ocurrió un error inesperado durante la carga de datos. "
                     "Por favor contacte al administrador."
                 )
-    
+        else:
+            logger.warning("Formulario inválido, mostrando errores")
+            messages.error(request, "Error en el formulario. Por favor revise los datos ingresados.")
+            return render(request, 'tools/upload_data.html', {'form': form})
+            
     return render(request, 'tools/upload_data.html', {'form': form if 'form' in locals() else DataUploadForm()})
 
 # Funciones auxiliares para mejor organización
