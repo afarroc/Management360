@@ -79,8 +79,18 @@ class FileProcessor:
         
         if file_extension in ('.xls', '.xlsx'):
             
+            logger.info(f"Archivo es Excel, procesando como Excel")
+            logger.info(f"Tipo de archivo: {file.content_type}")
             return cls.process_excel(file, model, sheet_name, cell_range, column_mapping)
         else:
+            logger.info(f"Archivo no es Excel, procesando como CSV")
+            logger.info(f"Tipo de archivo: {file.content_type}")
+                
+            logger.info(f"Nombre de la hoja: {sheet_name}")
+            logger.info(f"Rango de celdas: {cell_range}")
+            logger.info(f"Datos del mapeo: {column_mapping}")
+            logger.info(f"Datos del formulario: {file.name}")
+            logger.info(f"Datos del formulario: {file.content_type}")
             return cls.process_csv(file, model, column_mapping)
       
     @classmethod
@@ -141,7 +151,7 @@ class FileProcessor:
             
             preview_data = df.head().to_dict('records')
             columns = [str(col) for col in (df.columns.tolist() if not df.empty else [])]
-            logger.debug(f"Datos de vista previa: {preview_data}")
+            logger.info(f"Datos de vista previa: {preview_data}")
             logger.info(f"Columnas disponibles: {columns}")
             
             if column_mapping:
@@ -154,7 +164,7 @@ class FileProcessor:
                 logger.info(f"Se crearon {len(records)} instancias usando mapeo automático")
             
             logger.info("Procesamiento de CSV completado exitosamente")
-            return records, preview_data, columns 
+            return records, preview_data, columns
         
         except UnicodeDecodeError as e:
             logger.error(f"Error de decodificación: {str(e)}")
@@ -298,7 +308,29 @@ from .constants import FORBIDDEN_MODELS, MAX_RECORDS_FOR_DELETION, MAX_RECORDS_F
 
 def upload_data(request):
     if request.method == 'POST':
-        form = DataUploadForm(request.POST, request.FILES)
+        # Verificar si el usuario tiene permisos para cargar datos        
+        form = DataUploadForm(request.POST, request.FILES)        
+        is_confirmation = request.POST.get('is_confirmation') == 'true'
+
+        # Para confirmaciones, reconstruir el formulario con el archivo
+        if is_confirmation:
+            # Reconstruir el formulario con los datos originales
+            # Copiar los datos del formulario original
+            form_data = request.POST.copy()
+            form_files = request.FILES.copy()
+            logger.info("Confirmación de carga de datos")
+            logger.info(f"Datos del formulario original: {form_data}")
+            logger.info(f"Archivos del formulario original: {form_files}")
+            
+            # Si no hay archivo en FILES pero hay uno en el formulario original
+            if not form_files.get('file') and 'original_filename' in request.POST:
+                # Reconstruir el formulario con los datos originales
+                form = DataUploadForm(form_data, form_files)
+            else:
+                form = DataUploadForm(request.POST, request.FILES)
+        else:
+            form = DataUploadForm(request.POST, request.FILES)
+        
         logger.info(f"Usuario {request.user.id} - {request.user.username} inició la carga de datos")
         logger.info(f"IP del usuario: {request.META.get('REMOTE_ADDR')}")
         logger.info(f"Datos del formulario recibidos: {request.POST}")
@@ -310,8 +342,8 @@ def upload_data(request):
         logger.info(f"Datos del mapeo: {request.POST.get('map_columns')}")
         logger.info(f"-----------------------------")
         logger.info("Iniciando procesamiento del formulario")
-        logger.info(f"-----------------------------")
-        
+        logger.info(f"-----------------------------")         
+               
         if form.is_valid():
             try:
                 logger.info("Formulario válido, procesando datos")
@@ -326,7 +358,18 @@ def upload_data(request):
                 logger.info(f"-----------------------------")
                 
                 model = form.cleaned_data['model']
-                file = request.FILES['file']
+                file = form.cleaned_data.get('file')
+                
+                # Si es confirmación y no hay archivo en cleaned_data, intentar obtenerlo de FILES
+                if is_confirmation and not file:
+                    file = request.FILES.get('file')
+                
+                if not file:
+                    messages.error(request, "No se encontró el archivo para procesar")
+                    return redirect('upload_data')
+                
+                model_path = f"{model._meta.app_label}.{model.__name__}"
+                
                 model_path = f"{model._meta.app_label}.{model.__name__}"
                 
                 # Validación de modelo prohibido
@@ -390,21 +433,25 @@ def upload_data(request):
                 messages.error(request, str(e))
             
             except Exception as e:
-                logger.error(
-                    f"Error inesperado durante la carga de datos. Modelo: {model_path}, "
-                    f"Usuario: {request.user.id}, Error: {str(e)}", 
-                    exc_info=True
-                )
-                messages.error(
-                    request, 
-                    "Ocurrió un error inesperado durante la carga de datos. "
-                    "Por favor contacte al administrador."
-                )
+                
+                logger.error(f"Error inesperado: {str(e)}", exc_info=True)
+                messages.error(request, f"Error al procesar los datos: {str(e)}")                
+
+
+        
         else:
             logger.warning("Formulario inválido, mostrando errores")
-            messages.error(request, "Error en el formulario. Por favor revise los datos ingresados.")
-            return render(request, 'tools/upload_data.html', {'form': form})
+            logger.warning(f"Errores del formulario: {form.errors}")
+            messages.error(request, "Error en el formulario. Verifique los datos ingresados.")
+            # Mostrar errores específicos del formulario
             
+
+                
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+            return render(request, 'tools/upload_data.html', {'form': form})
+                
     return render(request, 'tools/upload_data.html', {'form': form if 'form' in locals() else DataUploadForm()})
 
 # Funciones auxiliares para mejor organización
@@ -444,29 +491,40 @@ def handle_preview(request, form, model, file):
 
 def handle_import_with_mapping(request, form, model, file):
     """Maneja la importación con mapeo de columnas"""
-    column_mapping = {
-        col: request.POST.get(f'map_{col}')
-        for col in request.POST.keys() if col.startswith('map_')
-    }
-    
-    records, _, _ = FileProcessor.process_file(
-        file,
-        model,
-        form.cleaned_data.get('sheet_name'),
-        form.cleaned_data.get('cell_range'),
-        column_mapping
-    )
-    
-    if records:
-        if len(records) > 10000:  # Límite de registros por importación
-            raise SecurityError("Demasiados registros para importar de una vez (límite: 10,000)")
+    try:
+        column_mapping = {
+            col: request.POST.get(f'map_{col}')
+            for col in request.POST.keys() if col.startswith('map_')
+        }
         
-        model.objects.bulk_create(records)
-        messages.success(request, f"{len(records)} registros cargados en {model._meta.verbose_name}")
+        logger.info(f"Mapeo de columnas recibido: {column_mapping}")
+        
+        records, _, _ = FileProcessor.process_file(
+            file,
+            model,
+            form.cleaned_data.get('sheet_name'),
+            form.cleaned_data.get('cell_range'),
+            column_mapping
+        )
+        
+        if records:
+            if len(records) > MAX_RECORDS_FOR_IMPORT:
+                raise SecurityError(f"Demasiados registros para importar de una vez (límite: {MAX_RECORDS_FOR_IMPORT})")
+            
+            model.objects.bulk_create(records)
+            msg = (f"¡Importación completada con éxito!<br>"
+                  f"<strong>{len(records)}</strong> registros cargados en <strong>{model._meta.verbose_name}</strong>")
+            messages.success(request, msg)
+            logger.info(f"Importación exitosa: {len(records)} registros en {model.__name__}")
+            return redirect('upload_data')
+        
+        messages.warning(request, "No se encontraron datos válidos para importar")
         return redirect('upload_data')
     
-    messages.warning(request, "No se encontraron datos válidos para importar")
-    return redirect('upload_data')
+    except Exception as e:
+        logger.error(f"Error en importación con mapeo: {str(e)}", exc_info=True)
+        messages.error(request, f"Error al importar datos: {str(e)}")
+        return redirect('upload_data')
 
 def handle_direct_import(request, form, model, file):
     """Maneja la importación directa sin vista previa"""
