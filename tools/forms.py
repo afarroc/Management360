@@ -2,19 +2,20 @@ import traceback
 from django import forms
 from django.apps import apps
 import re
-from .constants import FORBIDDEN_MODELS  # Importar desde constants.py
+from .constants import FORBIDDEN_MODELS  # Imported from constants.py
 
 def get_model_choices():
+    """Retrieve available model choices, excluding forbidden models."""
     choices = []
     for app_config in apps.get_app_configs():
-        # Omitir apps prohibidas
+        # Skip forbidden apps
         if any(app_config.name.startswith(f) for f in ['auth', 'admin', 'contenttypes']):
             continue
             
         for model in app_config.get_models():
             model_path = f"{app_config.name}.{model.__name__}"
             
-            # Verificar si el modelo está en la lista de prohibidos
+            # Check if the model is in the forbidden list
             is_forbidden = any(
                 model_path == path or model_path.endswith(f".{path.split('.')[-1]}")
                 for path in FORBIDDEN_MODELS.values()
@@ -30,13 +31,13 @@ def get_model_choices():
 
 class DataUploadForm(forms.Form):
     model = forms.ChoiceField(
-        label="Modelo destino",
+        label="Target Model",
         choices=get_model_choices,
         widget=forms.Select(attrs={'class': 'form-control'})
     )
     
     file = forms.FileField(
-        label="Archivo (CSV o Excel)",
+        label="File (CSV or Excel)",
         widget=forms.FileInput(attrs={
             'class': 'form-control',
             'accept': '.csv,.xls,.xlsx'
@@ -44,106 +45,107 @@ class DataUploadForm(forms.Form):
     )
     
     sheet_name = forms.CharField(
-        label="Hoja (solo Excel)",
+        label="Sheet (Excel only)",
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Dejar vacío para primera hoja'
+            'placeholder': 'Leave empty for the first sheet'
         })
     )
     
     cell_range = forms.CharField(
-        label="Rango (solo Excel)",
+        label="Range (Excel only)",
         required=False,
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': 'Ej: B2:G500'
+            'placeholder': 'E.g., B2:G500'
         })
     )
     
     clear_existing = forms.BooleanField(
-        label="Limpiar datos existentes antes de cargar",
+        label="Clear existing data before upload",
         required=False,
         initial=False,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
     
     def clean_model(self):
+        """Validate the selected model."""
         model_path = self.cleaned_data['model']
         
-        # Validación 1: Tipo de dato básico
+        # Validation 1: Basic data type check
         if not isinstance(model_path, str) or not model_path.strip():
             raise forms.ValidationError(
-                "El modelo debe ser una cadena de texto no vacía. "
-                f"Recibido: '{model_path}'"
+                "The model must be a non-empty string. "
+                f"Received: '{model_path}'"
             )
         
-        # Validación 2: Modelos prohibidos (comparación flexible)
+        # Validation 2: Forbidden models (flexible comparison)
         normalized_path = model_path.lower().strip()
         for forbidden_path in FORBIDDEN_MODELS.values():
             if normalized_path == forbidden_path.lower():
                 raise forms.ValidationError(
-                    f"El modelo '{model_path}' está restringido y no puede ser modificado. "
-                    "Contacte al administrador si necesita acceso."
+                    f"The model '{model_path}' is restricted and cannot be modified. "
+                    "Contact the administrator if access is needed."
                 )
         
-        # Validación 3: Formato general (permite múltiples puntos)
+        # Validation 3: General format (allows multiple dots)
         parts = model_path.split('.')
         if len(parts) < 2:
             raise forms.ValidationError(
-                "Formato de modelo inválido. Debe contener al menos un punto. "
-                "Ejemplos válidos:\n"
+                "Invalid model format. It must contain at least one dot. "
+                "Valid examples:\n"
                 "- app_label.model_name\n"
                 "- app_label.subapp.model_name\n"
-                f"Recibido: '{model_path}'"
+                f"Received: '{model_path}'"
             )
         
-        # Extraer componentes (maneja múltiples puntos)
+        # Extract components (handles multiple dots)
         app_label = parts[0]
         model_name = '.'.join(parts[1:])
         
         if not app_label or not model_name:
             raise forms.ValidationError(
-                "app_label y model_name no pueden estar vacíos. "
-                f"Recibido: '{model_path}'"
+                "app_label and model_name cannot be empty. "
+                f"Received: '{model_path}'"
             )
         
         try:
-            # Primero intenta con la forma estándar (app_label, model_name)
+            # First, try the standard form (app_label, model_name)
             model = apps.get_model(app_label, model_name)
             
             if model is None:
-                # Si falla, intenta con la ruta completa como app_label
+                # If it fails, try the full path as app_label
                 try:
                     model = apps.get_model(model_path)
                     if model is None:
                         raise forms.ValidationError(
-                            f"No se encontró el modelo '{model_path}'. "
-                            "Verifique que la aplicación esté instalada y el nombre sea correcto."
+                            f"The model '{model_path}' was not found. "
+                            "Ensure the app is installed and the name is correct."
                         )
                 except:
                     raise forms.ValidationError(
-                        f"El modelo '{model_name}' no existe en la aplicación '{app_label}'"
+                        f"The model '{model_name}' does not exist in the app '{app_label}'"
                     )
             
-            # Validación de capacidades del modelo
+            # Validate model capabilities
             if not hasattr(model.objects, 'bulk_create'):
                 raise forms.ValidationError(
-                    f"El modelo '{model._meta.verbose_name}' no soporta operaciones masivas. "
-                    "No se puede realizar la importación."
+                    f"The model '{model._meta.verbose_name}' does not support bulk operations. "
+                    "Import cannot proceed."
                 )
             
-            # Validación de restricciones adicionales
+            # Validate additional restrictions
             if getattr(model._meta, 'restricted', False):
                 raise forms.ValidationError(
-                    f"El modelo '{model._meta.verbose_name}' tiene acceso restringido. "
-                    "No se permiten modificaciones."
+                    f"The model '{model._meta.verbose_name}' is restricted. "
+                    "Modifications are not allowed."
                 )
             
             return model
             
         except LookupError as e:
-            # Manejo especial para modelos de Django con múltiples puntos
+            # Special handling for Django models with multiple dots
             if 'django.contrib' in model_path:
                 try:
                     model = apps.get_model(model_path)
@@ -153,17 +155,17 @@ class DataUploadForm(forms.Form):
                     pass
             
             raise forms.ValidationError(
-                f"No se encontró el modelo: {model_path}\n"
-                "Posibles causas:\n"
-                "1. La aplicación no está instalada\n"
-                "2. El nombre del modelo es incorrecto\n"
-                "3. Falta una migración"
+                f"Model not found: {model_path}\n"
+                "Possible causes:\n"
+                "1. The app is not installed\n"
+                "2. The model name is incorrect\n"
+                "3. A migration is missing"
             )
             
         except Exception as e:
             import logging
             logging.error(
-                "Error validando modelo",
+                "Error validating model",
                 extra={
                     'model_path': model_path,
                     'user': getattr(self, 'user', None),
@@ -172,33 +174,36 @@ class DataUploadForm(forms.Form):
                 }
             )
             raise forms.ValidationError(
-                "Error interno al validar el modelo. "
-                "El equipo técnico ha sido notificado. Por favor intente más tarde."
+                "Internal error while validating the model. "
+                "The technical team has been notified. Please try again later."
             )
     
     def clean_file(self):
+        """Validate the uploaded file."""
         file = self.cleaned_data['file']
         if not file.name.lower().endswith(('.csv', '.xls', '.xlsx')):
-            raise forms.ValidationError("Solo se permiten archivos CSV o Excel")
+            raise forms.ValidationError("Only CSV or Excel files are allowed.")
         
         max_size = 10 * 1024 * 1024  # 10MB
         if file.size > max_size:
-            raise forms.ValidationError("El archivo es demasiado grande. Tamaño máximo: 10MB")
+            raise forms.ValidationError("The file is too large. Maximum size: 10MB.")
         
         return file
     
     def clean_cell_range(self):
+        """Validate the cell range format."""
         cell_range = self.cleaned_data.get('cell_range', '').strip()
         if cell_range and not re.match(r'^[A-Za-z]+\d+:[A-Za-z]+\d+$', cell_range, re.IGNORECASE):
-            raise forms.ValidationError("Formato de rango inválido. Use formato como 'B2:G500'")
+            raise forms.ValidationError("Invalid range format. Use a format like 'B2:G500'.")
         return cell_range
     
     def clean(self):
+        """Perform additional validations."""
         cleaned_data = super().clean()
         file = cleaned_data.get('file')
         
         if file and file.name.lower().endswith(('.xls', '.xlsx')):
             if cleaned_data.get('cell_range') and not cleaned_data.get('sheet_name'):
-                self.add_error('sheet_name', "Debe especificar una hoja cuando usa un rango de celdas")
+                self.add_error('sheet_name', "You must specify a sheet when using a cell range.")
         
         return cleaned_data
