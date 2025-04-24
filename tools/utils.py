@@ -1,18 +1,18 @@
-def calcular_trafico_intensidad(llamadas, tiempo_manejo_promedio):
-    # Cálculo de minutos de llamada
-    minutos_llamada = llamadas * tiempo_manejo_promedio
+def calcular_trafico_intensidad(calls, average_handling_time):
+    # Calculate total call minutes
+    call_minutes = calls * average_handling_time
     
-    # Cálculo de horas de llamada
-    horas_llamada = minutos_llamada / 60
+    # Convert minutes to hours
+    call_hours = call_minutes / 60
     
-    # La intensidad del tráfico en Erlangs
-    trafico_intensidad = horas_llamada
+    # Traffic intensity in Erlangs
+    traffic_intensity = call_hours
     
-    return trafico_intensidad
+    return traffic_intensity
 
-# Ejemplo de uso
-llamadas = 200
-tiempo_manejo_promedio = 3  # En minutos
+# Example usage
+calls = 200
+average_handling_time = 3  # In minutes
 
-trafico_intensidad = calcular_trafico_intensidad(llamadas, tiempo_manejo_promedio)
-print(f"La intensidad del tráfico es {trafico_intensidad} Erlangs.")
+traffic_intensity = calcular_trafico_intensidad(calls, average_handling_time)
+print(f"The traffic intensity is {traffic_intensity} Erlangs.")
