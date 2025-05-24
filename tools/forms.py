@@ -190,13 +190,71 @@ class DataUploadForm(forms.Form):
         
         return file
     
-    def clean_cell_range(self):
-        """Validate the cell range format."""
-        cell_range = self.cleaned_data.get('cell_range', '').strip()
-        if cell_range and not re.match(r'^[A-Za-z]+\d+:[A-Za-z]+\d+$', cell_range, re.IGNORECASE):
-            raise forms.ValidationError("Invalid range format. Use a format like 'B2:G500'.")
-        return cell_range
+    def number_to_excel_column(self, n):
+        """Convierte un número a letra de columna Excel (1->A, 26->Z, 27->AA, etc.)"""
+        string = ""
+        while n > 0:
+            n, remainder = divmod(n - 1, 26)
+            string = chr(65 + remainder) + string
+        return string
     
+    def clean_cell_range(self):
+        """Validate the cell range format and check against file dimensions."""
+        cell_range = self.cleaned_data.get('cell_range', '').strip()
+        if not cell_range:
+            return cell_range
+        
+        # Validar formato básico
+        if not re.match(r'^[A-Za-z]+\d+:[A-Za-z]+\d+$', cell_range, re.IGNORECASE):
+            raise forms.ValidationError("Formato de rango inválido. Use formato como 'B2:G500'")
+        
+        try:
+            # Parsear el rango
+            start, end = cell_range.split(':')
+            start_col = start[0].upper()
+            start_row = int(start[1:])
+            end_col = end[0].upper()
+            end_row = int(end[1:])
+            
+            # Convertir letras de columna a números
+            def col_to_num(col):
+                num = 0
+                for c in col:
+                    num = num * 26 + (ord(c.upper()) - ord('A') + 1)
+                return num
+            
+            start_col_num = col_to_num(start_col)
+            end_col_num = col_to_num(end_col)
+            
+            # Validar orden de columnas y filas
+            if start_col_num > end_col_num:
+                raise forms.ValidationError("La columna inicial debe estar antes de la columna final")
+                
+            if start_row > end_row:
+                raise forms.ValidationError("La fila inicial debe ser menor o igual a la fila final")
+            
+            # Validar contra dimensiones del archivo (si está disponible)
+            if hasattr(self, 'file_data'):
+                max_col = self.file_data['max_col']
+                max_row = self.file_data['max_row']
+                
+                if start_col_num > max_col or end_col_num > max_col:
+                    available_cols = f"A-{self.number_to_excel_column(max_col)}"
+                    raise forms.ValidationError(
+                        f"El rango excede las columnas disponibles ({available_cols})"
+                    )
+                    
+                if end_row > max_row:
+                    raise forms.ValidationError(
+                        f"El rango excede las filas disponibles (máx: {max_row})"
+                    )
+        
+        except (ValueError, IndexError) as e:
+            raise forms.ValidationError("Formato de rango inválido. Use formato como 'B2:G500'")
+        
+        return cell_range
+
+
     def clean(self):
         """Perform additional validations."""
         cleaned_data = super().clean()

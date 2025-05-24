@@ -27,7 +27,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 # Local imports
 from .forms import SignUpForm
-from tools.views import file_tree_view
+from tools.views.file_views import file_tree_view
 
 # Logger configuration
 logger = logging.getLogger(__name__)
