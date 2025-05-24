@@ -31,10 +31,85 @@
         <div class="row">
           {% if user.is_authenticated %}
             {# Authenticated User Content #}
-            <!-- Add authenticated user content here -->
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">Quick Actions</h5>
+                  <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'event_create' %}" class="btn btn-primary">
+                      <i class="bi bi-calendar-plus"></i> Create Event
+                    </a>
+                    <a href="{% url 'chat' %}" class="btn btn-info text-white">
+                      <i class="bi bi-chat-left-text"></i> Open Chat
+                    </a>
+                    <a href="{% url 'generate_password' %}" class="btn btn-warning">
+                      <i class="bi bi-key"></i> Generate Password
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {# Recent Activities Card #}
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">Recent Activities</h5>
+                  <div class="activity">
+                    {% for activity in recent_activities|slice:":5" %}
+                      <div class="activity-item d-flex">
+                        <div class="activite-label">{{ activity.timestamp|timesince }} ago</div>
+                        <i class="bi bi-circle-fill activity-badge text-{{ activity.get_badge_color }} align-self-start"></i>
+                        <div class="activity-content">
+                          {{ activity.message }}
+                        </div>
+                      </div>
+                    {% empty %}
+                      <p class="text-muted">No recent activities</p>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
           {% else %}
             {# Anonymous User Content #}
-            <!-- Add public/anonymous content here -->
+            <div class="col-12">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title">Welcome to Our Platform</h5>
+                  <p class="card-text">
+                    Join our community to access all features including events, chat rooms, and productivity tools.
+                  </p>
+                  <div class="d-flex gap-2">
+                    <a href="{% url 'accounts:login' %}" class="btn btn-primary">
+                      <i class="bi bi-box-arrow-in-right"></i> Login
+                    </a>
+                    <a href="{% url 'accounts:register' %}" class="btn btn-success">
+                      <i class="bi bi-person-plus"></i> Register
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {# Features Showcase #}
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title"><i class="bi bi-calendar-event"></i> Event Management</h5>
+                  <p>Organize and track your events with our intuitive calendar system.</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-body">
+                  <h5 class="card-title"><i class="bi bi-chat-square-text"></i> Real-time Chat</h5>
+                  <p>Communicate instantly with other users through our chat system.</p>
+                </div>
+              </div>
+            </div>
           {% endif %}
         </div>
       </div><!-- End Left side columns -->
@@ -43,10 +118,113 @@
       <div class="col-lg-4">
         {% if user.is_authenticated %}
           {# User Profile/Sidebar Content #}
-          <!-- Add user-specific sidebar content here -->
+          <div class="card">
+            <div class="card-body profile-card pt-4 d-flex flex-column align-items-center">
+              <img src="{{ user.profile.avatar.url|default:'/static/images/default-avatar.png' }}" 
+                   alt="Profile" class="rounded-circle" width="100">
+              <h4>{{ user.get_full_name|default:user.username }}</h4>
+              <h6 class="text-muted">{{ user.profile.title|default:"Member" }}</h6>
+              
+              <div class="mt-3 w-100">
+                <div class="progress mb-2" style="height: 5px;">
+                  <div class="progress-bar bg-success" role="progressbar" 
+                       style="width: {{ profile_completion }}%" 
+                       aria-valuenow="{{ profile_completion }}" 
+                       aria-valuemin="0" 
+                       aria-valuemax="100"></div>
+                </div>
+                <small class="text-muted">Profile Completion: {{ profile_completion }}%</small>
+              </div>
+              
+              <ul class="nav nav-pills flex-column w-100 mt-3">
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'cv_detail' %}">
+                    <i class="bi bi-person"></i> My Profile
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'accounts' %}">
+                    <i class="bi bi-gear"></i> Settings
+                  </a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'logout' %}">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {# Upcoming Events #}
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Upcoming Events</h5>
+              {% if upcoming_events %}
+                <div class="list-group">
+                  {% for event in upcoming_events|slice:":3" %}
+                    <a href="{% url 'events:detail' event.id %}" 
+                       class="list-group-item list-group-item-action">
+                      <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ event.title }}</h6>
+                        <small>{{ event.start_time|timeuntil }}</small>
+                      </div>
+                      <small class="text-muted">{{ event.start_time|date:"M d, Y" }}</small>
+                    </a>
+                  {% endfor %}
+                </div>
+                <a href="{% url 'events:list' %}" class="btn btn-sm btn-outline-primary mt-2">
+                  View All Events
+                </a>
+              {% else %}
+                <p class="text-muted">No upcoming events</p>
+              {% endif %}
+            </div>
+          </div>
+
         {% else %}
           {# Public Sidebar Content #}
-          <!-- Add public sidebar content (login, CTAs, etc) -->
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Login</h5>
+              <form method="post" action="{% url 'accounts:login' %}">
+                {% csrf_token %}
+                <div class="mb-3">
+                  <label for="id_username" class="form-label">Username</label>
+                  <input type="text" class="form-control" name="username" id="id_username" required>
+                </div>
+                <div class="mb-3">
+                  <label for="id_password" class="form-label">Password</label>
+                  <input type="password" class="form-control" name="password" id="id_password" required>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <button type="submit" class="btn btn-primary">Login</button>
+                  <a href="{% url 'accounts:password_reset' %}" class="text-muted small">Forgot password?</a>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          {# Quick Stats #}
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Platform Stats</h5>
+              <div class="stats">
+                <div class="stat-item">
+                  <span class="stat-value">{{ total_users }}</span>
+                  <span class="stat-label">Users</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value">{{ total_events }}</span>
+                  <span class="stat-label">Events</span>
+                </div>
+                <div class="stat-item">
+                  <span class="stat-value">{{ active_chats }}</span>
+                  <span class="stat-label">Active Chats</span>
+                </div>
+              </div>
+            </div>
+          </div>
         {% endif %}
       </div><!-- End Right side columns -->
     </div>
