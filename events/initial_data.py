@@ -3,6 +3,7 @@ from faker import Faker
 import random
 import string
 from django.contrib.auth.models import User
+from .models import Status, ProjectStatus, TaskStatus  # Añade esta importación
 
 fake_en = Faker()
 fake_es = Faker('es_ES')
@@ -70,3 +71,61 @@ def create_default_users():
         })
 
         return user_data
+        
+# initial_data.py (add this function)
+def create_initial_statuses():
+    """Create default statuses for Events, Projects and Tasks if they don't exist"""
+    status_data = {
+        'Event': [
+            {'status_name': 'Created', 'color': '#3498db', 'icon': 'bi-file-earmark-plus'},
+            {'status_name': 'In Progress', 'color': '#f39c12', 'icon': 'bi-arrow-repeat'},
+            {'status_name': 'Paused', 'color': '#e74c3c', 'icon': 'bi-pause-fill'},
+            {'status_name': 'Completed', 'color': '#2ecc71', 'icon': 'bi-check-circle'},
+            {'status_name': 'Cancelled', 'color': '#95a5a6', 'icon': 'bi-x-circle'},
+        ],
+        'Project': [
+            {'status_name': 'Draft', 'color': '#bdc3c7', 'icon': 'bi-file-earmark-text'},
+            {'status_name': 'Planning', 'color': '#9b59b6', 'icon': 'bi-kanban'},
+            {'status_name': 'In Progress', 'color': '#f39c12', 'icon': 'bi-arrow-repeat'},
+            {'status_name': 'On Hold', 'color': '#e74c3c', 'icon': 'bi-pause-fill'},
+            {'status_name': 'Completed', 'color': '#2ecc71', 'icon': 'bi-check-circle'},
+        ],
+        'Task': [
+            {'status_name': 'To Do', 'color': '#bdc3c7', 'icon': 'bi-list-task'},
+            {'status_name': 'In Progress', 'color': '#f39c12', 'icon': 'bi-arrow-repeat'},
+            {'status_name': 'Blocked', 'color': '#e74c3c', 'icon': 'bi-exclamation-triangle'},
+            {'status_name': 'Completed', 'color': '#2ecc71', 'icon': 'bi-check-circle'},
+            {'status_name': 'Verified', 'color': '#27ae60', 'icon': 'bi-shield-check'},
+        ]
+    }
+    
+    created_statuses = []
+    
+    # Create Event Statuses
+    for status in status_data['Event']:
+        obj, created = Status.objects.get_or_create(
+            status_name=status['status_name'],
+            defaults={'color': status['color'], 'icon': status['icon']}
+        )
+        if created:
+            created_statuses.append(f"Event Status: {status['status_name']}")
+    
+    # Create Project Statuses
+    for status in status_data['Project']:
+        obj, created = ProjectStatus.objects.get_or_create(
+            status_name=status['status_name'],
+            defaults={'color': status['color'], 'icon': status['icon']}
+        )
+        if created:
+            created_statuses.append(f"Project Status: {status['status_name']}")
+    
+    # Create Task Statuses
+    for status in status_data['Task']:
+        obj, created = TaskStatus.objects.get_or_create(
+            status_name=status['status_name'],
+            defaults={'color': status['color'], 'icon': status['icon']}
+        )
+        if created:
+            created_statuses.append(f"Task Status: {status['status_name']}")
+    
+    return created_statuses

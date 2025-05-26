@@ -2,19 +2,15 @@ from django.views import View
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User, Group
-from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse
 from django.core.exceptions import ValidationError
 from cv.models import Curriculum as Profile
 from .utils import create_user_profile
-from .initial_data import generate_random_name, generate_random_username
+from .initial_data import generate_random_name, generate_random_username, create_initial_statuses  # Añadir import aquí
+from .models import Status, ProjectStatus, TaskStatus
 import random
 import string
-
- # setup_views.py (fragmento completo corregido)
-from cv.forms import CurriculumForm as ProfileForm  # Asegurar esta importación
-
 
 DOMAIN_BASE = 'localhost'
 
@@ -43,6 +39,9 @@ class SetupView(View):
 
         all_groups = Group.objects.all()
         all_users = User.objects.all()
+
+        if Status.objects.exists() and ProjectStatus.objects.exists() and TaskStatus.objects.exists():
+            completed_steps.append('3')
 
         return render(request, self.template_name, {
             'page_title': 'Setup',
@@ -85,27 +84,35 @@ class SetupView(View):
         elif 'create_profile' in request.POST:
             try:
                 su = User.objects.get(username='su')
-                form = ProfileForm(
-                    data=request.POST,
-                    files=request.FILES,
-                    instance=su.profile if hasattr(su, 'profile') else None
+                # Create or update profile with essential fields only
+                profile, created = Profile.objects.get_or_create(
+                    user=su,
+                    defaults={
+                        'full_name': request.POST.get('full_name', ''),
+                        'profession': request.POST.get('profession', ''),
+                        'role': request.POST.get('role', 'US'),
+                    }
                 )
-                if form.is_valid():
-                    profile = form.save(commit=False)
-                    profile.user = su  # Asignar usuario solo si es nuevo
-                    profile.save()
-                    messages.success(request, 'Perfil actualizado con éxito.')
-                    return redirect(reverse('setup') + '?step=3')
-                else:
-                    for field, errors in form.errors.items():
-                        for error in errors:
-                            messages.error(request, f"{field}: {error}")
+                
+                if not created:
+                    profile.full_name = request.POST.get('full_name', '')
+                    profile.profession = request.POST.get('profession', '')
+                    profile.role = request.POST.get('role', 'US')
+                
+                # Handle profile picture if provided
+                if 'profile_picture' in request.FILES:
+                    profile.profile_picture = request.FILES['profile_picture']
+                
+                profile.save()
+                messages.success(request, 'Profile created successfully!')
+                return redirect(reverse('setup') + '?step=3')
+                
             except User.DoesNotExist:
-                messages.error(request, 'Superusuario no existe. Cree uno primero.')
+                messages.error(request, 'Superuser does not exist. Please create one first.')
             except Exception as e:
-                messages.error(request, f'Error crítico: {str(e)}')
+                messages.error(request, f'Error creating profile: {str(e)}')
             return redirect(reverse('setup') + '?step=2')
-        
+
         elif 'create_random_users' in request.POST:
             domain = request.POST['domain']
             num_users = int(request.POST['num_users'])
@@ -179,4 +186,13 @@ class SetupView(View):
             else:
                 messages.error(request, 'El nombre de usuario ya existe.')
 
+        elif 'create_initial_statuses' in request.POST:
+            created_statuses = create_initial_statuses()
+            if created_statuses:
+                messages.success(request, 'Initial statuses created successfully:')
+                for status in created_statuses:
+                    messages.info(request, f'- {status}')
+            else:
+                messages.info(request, 'All initial statuses already exist.')
+            return redirect(reverse('setup') + '?step=4')
         return redirect(reverse('setup'))

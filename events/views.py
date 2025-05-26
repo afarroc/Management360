@@ -259,7 +259,7 @@ def project_create(request):
 
             # Si el campo de evento está vacío, crea un nuevo objeto Evento
             if not project.event:
-                status = get_object_or_404(Status,status_name='Creado')
+                status = get_object_or_404(Status,status_name='Created')
                 try:
                     with transaction.atomic():
                         
@@ -467,7 +467,7 @@ def project_activate(request, project_id=None):
     if project_id:
         project = get_object_or_404(Project, pk=project_id)
         try:
-            active_status = ProjectStatus.objects.get(status_name='En Curso')
+            active_status = ProjectStatus.objects.get(status_name='In Progress')
             project.project_status = active_status
             project.save()
             messages.success(request, 'El proyecto ha sido activado exitosamente.')
@@ -545,7 +545,7 @@ def task_create(request, project_id=None):
     
     if request.method == 'GET':
         try:
-            initial_status_name = 'Creado'
+            initial_status_name = 'To Do'
             initial_task_status = get_object_or_404(TaskStatus, status_name=initial_status_name)
         except Exception as e:
             messages.error(request, f"Error al obtener estado de tarea: {e}")
@@ -581,7 +581,7 @@ def task_create(request, project_id=None):
 
             # Si el campo de evento está vacío, crea un nuevo objeto Evento
             if not task.event:
-                status = get_object_or_404(Status, status_name='Creado')
+                status = get_object_or_404(Status, status_name='Created')
                 try:
                     with transaction.atomic():
                         
@@ -775,7 +775,7 @@ def update_status(obj, field_name, new_status, editor):
     obj.save()
 
 def task_activate(request, task_id=None):
-    switch = 'En Curso'
+    switch = 'In Progress'
     title = 'Task Activate'
     
     if task_id:
@@ -798,7 +798,7 @@ def task_activate(request, task_id=None):
             update_status(event, 'event_status', new_event_status, request.user)
             messages.success(request, f'El evento de la tarea ha sido cambiado a estado {switch} exitosamente.')
 
-            tasks_in_progress = Task.objects.filter(project_id=project.id, task_status__status_name='En Curso')
+            tasks_in_progress = Task.objects.filter(project_id=project.id, task_status__status_name='In Progress')
 
             if switch == 'Finalizado' and tasks_in_progress.exists():
                 messages.success(request, f'There are tasks in progress: {tasks_in_progress}')
@@ -813,7 +813,7 @@ def task_activate(request, task_id=None):
             if task.task_status.status_name == "Finalizado":
                 task_state = TaskState.objects.filter(
                     task=task,
-                    status__status_name='En Curso'
+                    status__status_name='In Progress'
                 ).latest('start_time')
                 
                 if task_state.end_time:
@@ -866,11 +866,11 @@ def events(request):
     if request.session.get('first_session', True):
         print("Primera sesión detectada.")
         try:
-            status_en_curso = Status.objects.get(status_name='En curso').id
-            print(f"Status 'En curso' encontrado: {status_en_curso}")
+            status_en_curso = Status.objects.get(status_name='In Progress').id
+            print(f"Status 'In Progress' encontrado: {status_en_curso}")
         except ObjectDoesNotExist:
             status_en_curso = None
-            print("Status 'En curso' no encontrado.")
+            print("Status 'In Progress' no encontrado.")
         
         cerrado = request.session.setdefault('filtered_cerrado', True)
         status = request.session.setdefault('filtered_status', status_en_curso)
@@ -1019,7 +1019,7 @@ def event_create(request):
     try:
         if request.method == 'GET':
             try:
-                default_status = Status.objects.get(status_name='Creado').id
+                default_status = Status.objects.get(status_name='Created').id
             except Status.DoesNotExist:
                 messages.error(request, 'El estado "Creado" no existe. ')
                 return redirect('index')
@@ -1040,7 +1040,7 @@ def event_create(request):
                     if 'inbound' in request.POST or (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU'):
                         initial_status_id = request.POST.get('event_status')
                     else:
-                        initial_status_id = Status.objects.get(status_name='Creado').id
+                        initial_status_id = Status.objects.get(status_name='Created').id
 
                     try:
                         initial_status = Status.objects.get(id=initial_status_id)
@@ -1207,7 +1207,7 @@ def event_panel(request, event_id=None):
     title = "Event Panel"
     event_statuses, project_statuses, task_statuses = statuses_get()
     events_states = EventState.objects.all().order_by('-start_time')[:10]
-    status_var = 'En Curso'
+    status_var = 'In Progress'
 
     try:
         status = Status.objects.get(status_name=status_var)
@@ -1292,7 +1292,7 @@ def event_history(request, event_id=None):
                 'events_history':events_history,
             })
     else:
-        productive_status_name='En Curso'
+        productive_status_name='In Progress'
         productive_status=get_object_or_404(Status, status_name=productive_status_name)
         events_history = EventState.objects.filter(Q(event_id=event_id, event_status=productive_status)).order_by('-start_time')
 
@@ -1671,9 +1671,9 @@ def add_credits(request):
     return render(request, 'credits/add_credits.html')
 
 def project_tasks_status_check(request, project_id):
-    task_active_status = TaskStatus.objects.filter(status_name='En curso').first()
+    task_active_status = TaskStatus.objects.filter(status_name='In Progress').first()
     task_finished_status = TaskStatus.objects.filter(status_name='Finalizado').first()
-    project_active_status = ProjectStatus.objects.filter(status_name='En curso').first()
+    project_active_status = ProjectStatus.objects.filter(status_name='In Progress').first()
     project_finished_status = ProjectStatus.objects.filter(status_name='Finalizado').first()
 
     if not task_active_status or not task_finished_status or not project_active_status or not project_finished_status:
@@ -1736,8 +1736,8 @@ def test_board(request, id=None):
     user = get_object_or_404(User, pk=request.user.id)
     messages.success(request, f'{page_title}: Este mensaje se cerrará en 60 segundos')
     
-    # Obtener el estado 'En Curso'
-    in_progress_status = get_object_or_404(TaskStatus, status_name='En Curso')
+    # Obtener el estado 'In Progress'
+    in_progress_status = get_object_or_404(TaskStatus, status_name='In Progress')
     
     # Obtener las tareas en curso y calcular duraciones
     task_states = TaskState.objects.filter(status=in_progress_status).annotate(
