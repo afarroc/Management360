@@ -1,0 +1,97 @@
+<div class="clipboard-details">
+      <!-- Add this at the top of the template, right after the opening div -->
+    <div class="d-flex justify-content-end mb-3">
+        <button class="btn btn-sm btn-success export-csv" data-clip-key="{{ clip.key }}">
+            <i class="bi bi-file-earmark-excel me-2"></i>Export to CSV
+        </button>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h5>Clipboard Information</h5>
+            <table class="table table-sm">
+                <tr>
+                    <th>Name:</th>
+                    <td>{{ clip.key }}</td>
+                </tr>
+                <tr>
+                    <th>Source File:</th>
+                    <td>{{ clip.metadata.filename|default:"Not specified" }}</td>
+                </tr>
+                <tr>
+                    <th>Target Model:</th>
+                    <td>{{ clip.metadata.model|default:"Not specified" }}</td>
+                </tr>
+                <tr>
+                    <th>Created:</th>
+                    <td>{{ clip.timestamp }}</td>
+                </tr>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <h5>Statistics</h5>
+            <table class="table table-sm">
+                <tr>
+                    <th>Rows:</th>
+                    <td>{{ clip.shape.0 }}</td>
+                </tr>
+                <tr>
+                    <th>Columns:</th>
+                    <td>{{ clip.shape.1 }}</td>
+                </tr>
+                <tr>
+                    <th>Size:</th>
+                    <td>{{ clip.size|filesizeformat }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="description-box mb-4 p-3 bg-light rounded">
+        <h6>Description:</h6>
+        <p>{{ clip.metadata.description|default:"No description provided" }}</p>
+    </div>
+
+    <div class="data-preview">
+        <h5>Data Preview (First 10 Rows)</h5>
+        <div class="table-responsive" style="max-height: 300px;">
+            <table class="table table-bordered table-striped table-sm">
+                <thead>
+                    <tr>
+                        {% for col in clip.data.columns %}
+                        <th>{{ col }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in clip.data.rows %}
+                    <tr>
+                        {% for val in row %}
+                        <td>{{ val|default:"<em>null</em>" }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if clip.metadata.sheet_info %}
+    <div class="excel-info mt-4">
+        <h5>Excel Information</h5>
+        <table class="table table-sm">
+            <tr>
+                <th>Selected Sheet:</th>
+                <td>{{ clip.metadata.sheet_info.selected_sheet }}</td>
+            </tr>
+            <tr>
+                <th>Available Sheets:</th>
+                <td>
+                    {% for sheet in clip.metadata.sheet_info.available_sheets %}
+                    <span class="badge bg-secondary me-1">{{ sheet }}</span>
+                    {% endfor %}
+                </td>
+            </tr>
+        </table>
+    </div>
+    {% endif %}
+</div>

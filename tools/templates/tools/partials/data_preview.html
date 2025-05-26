@@ -1,0 +1,287 @@
+<div class="preview-container">
+    <!-- Model Info Header -->
+    <div class="preview-header mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0">
+                <i class="bi bi-table me-2"></i> 
+                Preview: {{ model_verbose_name }}
+                <small class="text-muted ms-2">{{ target_model }}</small>
+            </h5>
+            <div>
+                <span class="badge bg-light text-dark me-2">
+                    <i class="bi bi-file-earmark-text me-1"></i>
+                    {% if excel_info %}
+                        {{ excel_info.selected_sheet }}
+                    {% else %}
+                        CSV File
+                    {% endif %}
+                </span>
+                <span class="badge bg-light text-dark">
+                    <i class="bi bi-grid-3x3-gap me-1"></i>
+                    {{ df_info.rows }} rows × {{ df_info.columns }} cols
+                </span>
+            </div>
+        </div>
+        
+        {% if excel_info %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Excel File Detected</strong> - Available sheets: 
+            {% for sheet in excel_info.available_sheets %}
+            <span class="badge bg-secondary me-1">{{ sheet }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Preview Tabs -->
+    <ul class="nav nav-tabs mb-4" id="previewTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="data-tab" data-bs-toggle="tab" data-bs-target="#data-preview" type="button" role="tab">
+                <i class="bi bi-table me-2"></i>Data Preview
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="mapping-tab" data-bs-toggle="tab" data-bs-target="#mapping-info" type="button" role="tab">
+                <i class="bi bi-diagram-3 me-2"></i>Column Mapping
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats-info" type="button" role="tab">
+                <i class="bi bi-graph-up me-2"></i>Statistics
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="previewTabsContent">
+        <!-- Data Preview Tab -->
+        <div class="tab-pane fade show active" id="data-preview" role="tabpanel">
+            <div class="table-responsive" style="max-height: 400px;">
+                <table class="table table-striped table-bordered table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            {% for col in df_preview.columns %}
+                            <th>
+                                {{ col }}
+                                {% for field in model_fields_info %}
+                                    {% if field.name|lower == col|lower or field.verbose_name|lower == col|lower %}
+                                        <br><small class="text-muted">{{ field.name }}</small>
+                                    {% endif %}
+                                {% endfor %}
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in df_preview.rows %}
+                        <tr>
+                            {% for val in row %}
+                            <td>{{ val|default:"<span class='text-muted'>NULL</span>" }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Column Mapping Tab -->
+        <div class="tab-pane fade" id="mapping-info" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>Column Mapping</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>File Column</th>
+                                            <th>Mapped To</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for col_info in column_mapping_info %}
+                                        <tr>
+                                            <td>{{ col_info.column }}</td>
+                                            <td>
+                                                {% if col_info.mapped_to %}
+                                                    {{ col_info.mapped_to }}
+                                                {% else %}
+                                                    <span class="text-muted">Not mapped</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if col_info.matched %}
+                                                    <span class="badge bg-success">Mapped</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">No match</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% if unmapped_columns %}
+                            <div class="alert alert-warning mt-3">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>Warning:</strong> Some columns couldn't be automatically mapped to model fields.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0"><i class="bi bi-list-check me-2"></i>Required Fields</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive" style="max-height: 300px;">
+        
+                                        <!-- Replace the statistics table section with: -->
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Column</th>
+                                            <th>Data Type</th>
+                                            <th>Null Values</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for col in df_info.column_stats %}
+                                        <tr>
+                                            <td>{{ col.name }}</td>
+                                            <td><span class="badge bg-secondary">{{ col.type }}</span></td>
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar bg-warning" role="progressbar" 
+                                                         style="width: {{ col.missing_percent|floatformat:2 }}%;"
+                                                         aria-valuenow="{{ col.missing_percent|floatformat:2 }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="100">
+                                                        {{ col.missing_count }}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+        
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div class="tab-pane fade" id="stats-info" role="tabpanel">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0"><i class="bi bi-card-checklist me-2"></i>Summary</h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Total Rows</span>
+                                    <span class="badge bg-primary rounded-pill">{{ df_info.rows }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Columns</span>
+                                    <span class="badge bg-primary rounded-pill">{{ df_info.columns }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Missing Values</span>
+                                    <span class="badge bg-warning rounded-pill">{{ df_info.missing_values }}</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>Mapped Columns</span>
+                                    <span class="badge bg-success rounded-pill">{{ mapped_columns_count }}/{{ df_info.columns }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-8">
+                    <div class="card h-100">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Data Types</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Column</th>
+                                            <th>Data Type</th>
+                                            <th>Null Values</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for col, dtype in df_info.column_types.items %}
+                                        <tr>
+                                            <td>{{ col }}</td>
+                                            <td><span class="badge bg-secondary">{{ dtype }}</span></td>
+                                            {% load tools_filters %}
+                                            
+                                            <!-- In the Statistics Tab section, replace the progress bar code with: -->
+                                            <td>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar bg-warning" role="progressbar" 
+                                                         style="width: {{ df_info.missing_percentages|get_item:col|floatformat:2 }}%;"
+                                                         aria-valuenow="{{ df_info.missing_percentages|get_item:col|floatformat:2 }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="100">
+                                                        {{ df_info.missing_values|get_item:col }}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="action-group">
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="confirm_upload" value="true">
+                <button type="submit" class="btn btn-success me-2">
+                    <i class="bi bi-check-circle me-2"></i>Confirm Upload
+                </button>
+            </form>
+            
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="save_to_clipboard" value="true">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-clipboard-plus me-2"></i>Save to Clipboard
+                </button>
+            </form>
+        </div>
+        
+        <div>
+            <a href="{% url 'data_upload' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Upload
+            </a>
+        </div>
+    </div>
+</div>
