@@ -28,7 +28,7 @@ class TaskManager:
     def get_active_status(self):
         # Attempt to retrieve the 'in_progress' status
         try:
-            return TaskStatus.objects.get(status_name='En Curso')
+            return TaskStatus.objects.get(status_name='In Progress')
         # Handle the exception when the status does not exist
         except TaskStatus.DoesNotExist:
             print("The 'in_progress' status does not exist in the database.")

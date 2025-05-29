@@ -18,6 +18,19 @@ def calcular_trafico_intensidad(calls, average_handling_time):
     call_hours = call_minutes / 60
     return call_hours
 
+# En tu archivo utils.py o similar
+import json
+from datetime import datetime, date
+from decimal import Decimal
+
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        elif isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
 class DataFrameClipboard:
     @staticmethod
     def _serialize_df(df):
