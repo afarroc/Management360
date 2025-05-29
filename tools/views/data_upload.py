@@ -5,6 +5,7 @@ from django.db import transaction
 from django.db.models import Field
 from difflib import get_close_matches
 import pandas as pd
+import numpy as np
 import sys
 from io import StringIO
 from tools.forms import DataUploadForm
@@ -59,6 +60,24 @@ class DataUploadDashboard:
                 return action_handlers[action](request)
         
         return redirect('data_upload')
+
+    @staticmethod
+    def _convert_to_consistent_format(upload_data):
+        """Convierte los datos de la sesión a un formato consistente"""
+        if isinstance(upload_data['df_rows'][0], dict):
+            # Ya está en el formato correcto (lista de diccionarios)
+            return upload_data
+        
+        # Convertir de lista de listas a lista de diccionarios
+        columns = upload_data['df_columns']
+        rows = upload_data['df_rows']
+        
+        dict_rows = []
+        for row in rows:
+            dict_rows.append(dict(zip(columns, row)))
+            
+        upload_data['df_rows'] = dict_rows
+        return upload_data
 
     @staticmethod
     def _handle_preview(request):
@@ -116,14 +135,18 @@ class DataUploadDashboard:
                 
             # Preparar datos para la sesión
             try:
+              
+                # Modificar esta parte:
                 session_data = {
+                  
                     'df_columns': df.columns.tolist(),
-                    'df_rows': df.applymap(lambda x: str(x) if pd.notna(x) else None).values.tolist(),
+                    'df_rows': df.replace({np.nan: None}).to_dict('records'),  # Cambiado a dict
                     'model_path': f"{model._meta.app_label}.{model._meta.model_name}",
                     'clear_existing': form.cleaned_data['clear_existing'],
                     'file_type': 'csv' if file.name.endswith('.csv') else 'excel',
                     'excel_info': excel_info
                 }
+  
                 request.session['upload_data'] = session_data
                 logger.debug("Datos de sesión preparados: %s", {k: v for k, v in session_data.items() if k != 'df_rows'})
             except Exception as e:
@@ -207,6 +230,7 @@ class DataUploadDashboard:
 
     @staticmethod
     def _handle_confirm_upload(request):
+        
         """
         Maneja la confirmación y carga de datos
         """
@@ -216,11 +240,23 @@ class DataUploadDashboard:
             return redirect('data_upload')
         
         try:
+          
+            upload_data = DataUploadDashboard._convert_to_consistent_format(upload_data)
+            df = pd.DataFrame.from_records(upload_data['df_rows'])
+            df.columns = upload_data['df_columns']
+            
             model = apps.get_model(upload_data['model_path'])
-            df = pd.DataFrame(
-                data=upload_data['df_rows'],
-                columns=[str(col) for col in upload_data['df_columns']]
-            )
+          
+            # Crear DataFrame compatible con ambos formatos
+            if isinstance(upload_data['df_rows'][0], dict):
+              
+                df = pd.DataFrame.from_records(upload_data['df_rows'])
+                df.columns = upload_data['df_columns']  # Asegurar orden de columnas
+            else:
+                df = pd.DataFrame(
+                    data=upload_data['df_rows'],
+                    columns=upload_data['df_columns']
+                )
             
             # Procesar campos del modelo
             model_fields = DataUploadDashboard._get_model_fields_info(model)
@@ -410,8 +446,8 @@ class DataUploadDashboard:
             'selected_sheet': sheet_name if isinstance(sheet_name, str) else excel_file.sheet_names[0],
             'max_columns': len(full_df.columns)
         }
-        return df, excel_info
-
+        return df.replace({np.nan: None}), excel_info
+ 
     @staticmethod
     def _analyze_model_fields(model, df):
         """Analiza los campos del modelo y su mapeo con las columnas del DataFrame"""
@@ -661,6 +697,150 @@ class DataUploadDashboard:
         except Exception as e:
             messages.error(request, f"Error en la transacción: {str(e)}")
             return redirect('data_upload')
+
+    @staticmethod
+    def _handle_clipboard_edit(request):
+        """
+        Maneja las acciones de edición del clipboard con validaciones mejoradas
+        """
+        if 'upload_data' not in request.session:
+            messages.error(request, "No hay datos para editar")
+            return redirect('data_upload')
+    
+        try:
+            upload_data = request.session['upload_data']
+            
+            # Crear DataFrame desde el formato correcto
+            upload_data = request.session['upload_data']
+            upload_data = DataUploadDashboard._convert_to_consistent_format(upload_data)
+            
+            # Crear DataFrame
+            df = pd.DataFrame.from_records(upload_data['df_rows'])
+            df.columns = upload_data['df_columns']  # Mantener orden de columnas
+    
+            # Procesar acciones con validaciones
+            if 'delete_columns' in request.POST:
+                columns_to_delete = request.POST.getlist('columns_to_delete')
+                
+                # Validar columnas a eliminar
+                valid_columns = [col for col in columns_to_delete if col in df.columns]
+                invalid_columns = set(columns_to_delete) - set(valid_columns)
+                
+                if invalid_columns:
+                    messages.warning(request, f"Columnas no encontradas: {', '.join(invalid_columns)}")
+                
+                if valid_columns:
+                    # Verificar si se está eliminando una columna requerida
+                    model = apps.get_model(upload_data['model_path']) if 'model_path' in upload_data else None
+                    if model:
+                        model_fields = DataUploadDashboard._get_model_fields_info(model)
+                        required_fields = [
+                            field_name for field_name, field_info in model_fields.items()
+                            if not field_info['null'] and not field_info['blank']
+                        ]
+                        
+                        deleted_required = [col for col in valid_columns if col in required_fields]
+                        if deleted_required:
+                            messages.error(request, 
+                                f"No se pueden eliminar columnas requeridas: {', '.join(deleted_required)}")
+                            return redirect('data_upload')
+                    
+                    df = df.drop(columns=valid_columns)
+                    messages.success(request, f"Columnas eliminadas: {', '.join(valid_columns)}")
+    
+            if 'replace_values' in request.POST:
+                column_to_replace = request.POST.get('replace_column')
+                old_value = request.POST.get('old_value', '')
+                new_value = request.POST.get('new_value', '')
+                
+                if not column_to_replace or column_to_replace not in df.columns:
+                    messages.error(request, "Columna inválida para reemplazo")
+                    return redirect('data_upload')
+                
+                try:
+                    # Preservar tipo de datos original
+                    original_dtype = df[column_to_replace].dtype
+                    df[column_to_replace] = df[column_to_replace].replace(old_value, new_value)
+                    
+                    # Intentar mantener el tipo de dato original
+                    try:
+                        if pd.api.types.is_numeric_dtype(original_dtype):
+                            df[column_to_replace] = pd.to_numeric(df[column_to_replace], errors='raise')
+                        elif pd.api.types.is_datetime64_any_dtype(original_dtype):
+                            df[column_to_replace] = pd.to_datetime(df[column_to_replace], errors='raise')
+                    except (ValueError, TypeError) as e:
+                        messages.warning(request, 
+                            f"El nuevo valor no coincide con el tipo original de la columna {column_to_replace}")
+                    
+                    messages.success(request, 
+                        f"Reemplazados '{old_value}' por '{new_value}' en {column_to_replace}")
+                except Exception as e:
+                    messages.error(request, f"Error al reemplazar valores: {str(e)}")
+                    return redirect('data_upload')
+    
+            if 'fill_na' in request.POST:
+                column_to_fill = request.POST.get('fill_column')
+                fill_value = request.POST.get('fill_value')
+                
+                if column_to_fill not in df.columns:
+                    messages.error(request, "Columna inválida para rellenar")
+                    return redirect('data_upload')
+                
+                try:
+                    # Convertir fill_value según el tipo de columna
+                    if pd.api.types.is_numeric_dtype(df[column_to_fill]):
+                        fill_value = float(fill_value) if fill_value else 0
+                    elif pd.api.types.is_datetime64_any_dtype(df[column_to_fill]):
+                        fill_value = pd.to_datetime(fill_value) if fill_value else pd.NaT
+                    elif pd.api.types.is_bool_dtype(df[column_to_fill]):
+                        fill_value = str(fill_value).lower() in ('true', '1', 'yes')
+                    
+                    df[column_to_fill] = df[column_to_fill].fillna(fill_value)
+                    messages.success(request, 
+                        f"Valores nulos en {column_to_fill} rellenados con '{fill_value}'")
+                except ValueError as e:
+                    messages.error(request, f"Valor de relleno inválido: {str(e)}")
+                    return redirect('data_upload')
+  
+            # Guardar en el formato consistente (lista de diccionarios)
+            # Guardar cambios
+            upload_data['df_columns'] = df.columns.tolist()
+            upload_data['df_rows'] = df.replace({np.nan: None}).to_dict('records')
+            request.session['upload_data'] = upload_data
+            request.session.modified = True
+    
+            return redirect(reverse('data_upload') + '#preview-section')
+    
+        except pd.errors.EmptyDataError:
+            messages.error(request, "No hay datos para editar")
+        except ValueError as e:
+            messages.error(request, f"Error en los valores proporcionados: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error inesperado editando datos: {str(e)}", exc_info=True)
+            messages.error(request, "Ocurrió un error inesperado al editar los datos")
+        
+        return redirect('data_upload')
+    # Actualizar el action_handlers para incluir la nueva acción
+    @staticmethod
+    def _handle_post_actions(request):
+        """
+        Maneja todas las acciones POST del dashboard
+        """
+        action_handlers = {
+            'preview': DataUploadDashboard._handle_preview,
+            'confirm_upload': DataUploadDashboard._handle_confirm_upload,
+            'save_to_clipboard': DataUploadDashboard._handle_save_to_clipboard,
+            'load_from_clipboard': DataUploadDashboard._handle_load_from_clipboard,
+            'delete_clip': DataUploadDashboard._handle_delete_clip,
+            'clear_all_clips': DataUploadDashboard._handle_clear_all_clips,
+            'edit_clipboard': DataUploadDashboard._handle_clipboard_edit  # Nueva acción
+        }
+    
+        for action in action_handlers:
+            if action in request.POST:
+                return action_handlers[action](request)
+        
+        return redirect('data_upload')
 
 def process_excel_with_range(file, sheet_name, cell_range):
     """Procesa archivos Excel con rango de celdas especificado"""

@@ -29,7 +29,7 @@ class ProjectManager:
 
     def get_active_status(self):
         try:
-            return ProjectStatus.objects.get(status_name='En Curso')
+            return ProjectStatus.objects.get(status_name='In Progress')
         except ProjectStatus.DoesNotExist:
             # Manejar la excepción cuando no existe el estado 'in_progress'
             print("El estado 'in_progress' no existe en la base de datos.")
@@ -48,7 +48,7 @@ class ProjectManager:
     def get_project_data(self, project_id):
         project = self.user_projects.filter(id=project_id).first()
         tasks = self.tasks_by_project.get(project_id, [])
-        tasks_in_progress = [task for task in tasks if task.task_status.status_name == 'En Curso']
+        tasks_in_progress = [task for task in tasks if task.task_status.status_name == 'In Progress']
         return {
             'project': project,
             'count_tasks': len(tasks),

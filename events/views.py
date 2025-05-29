@@ -414,7 +414,7 @@ def project_edit(request, project_id=None):
 
 def project_panel(request, project_id=None):
     # Title of the page
-    title = "Project detail"
+    title = "Project Panel"
 
     # Retrieve projects and statuses
     project_manager = ProjectManager(request.user)
@@ -786,7 +786,7 @@ def task_activate(request, task_id=None):
         amount = 0
         
         if task.task_status.status_name == switch:
-            switch = 'Finalizado'
+            switch = 'Completed'
             amount += 1           
 
         try:
@@ -800,7 +800,7 @@ def task_activate(request, task_id=None):
 
             tasks_in_progress = Task.objects.filter(project_id=project.id, task_status__status_name='In Progress')
 
-            if switch == 'Finalizado' and tasks_in_progress.exists():
+            if switch == 'Completed' and tasks_in_progress.exists():
                 messages.success(request, f'There are tasks in progress: {tasks_in_progress}')
             else:
                 new_project_status = ProjectStatus.objects.get(status_name=switch)
@@ -810,7 +810,7 @@ def task_activate(request, task_id=None):
                 update_status(project_event, 'event_status', new_event_status, request.user)
                 messages.success(request, f'El evento del proyecto ha sido cambiado a estado {switch} exitosamente.')
 
-            if task.task_status.status_name == "Finalizado":
+            if task.task_status.status_name == "Completed":
                 task_state = TaskState.objects.filter(
                     task=task,
                     status__status_name='In Progress'
@@ -854,138 +854,145 @@ def task_activate(request, task_id=None):
         except Exception as e:
             messages.error(request, f'Ha ocurrido un error: {e}')
             return redirect('task_panel')
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 @login_required
 def events(request):
-    print("Iniciando la función events...")
-    today = timezone.now().date()
-    title = "Events Origen"
-    print(f"Fecha actual: {today}")
-    print(f"Título: {title}")
-
-    if request.session.get('first_session', True):
-        print("Primera sesión detectada.")
-        try:
-            status_en_curso = Status.objects.get(status_name='In Progress').id
-            print(f"Status 'In Progress' encontrado: {status_en_curso}")
-        except ObjectDoesNotExist:
-            status_en_curso = None
-            print("Status 'In Progress' no encontrado.")
-        
-        cerrado = request.session.setdefault('filtered_cerrado', True)
-        status = request.session.setdefault('filtered_status', status_en_curso)
-        date = request.session.setdefault('filtered_date', today.isoformat())
-        request.session['first_session'] = False
-        print(f"Valores iniciales - cerrado: {cerrado}, status: {status}, date: {date}")
-
+    logger.info("Starting events view processing")
+    
     try:
-        event_manager = EventManager(request.user)  # Usar EventManager
-        events, active_events = event_manager.get_all_events()  # Obtener eventos y eventos activos
+        today = timezone.now().date()
+        title = "Events Origin"
+        logger.debug(f"Current date: {today}, Page title: {title}")
 
+        # Initialize session variables for first-time visitors
+        if request.session.get('first_session', True):
+            logger.info("Initializing session variables for new user session")
+            try:
+                status_in_progress = Status.objects.get(status_name='In Progress').id
+                logger.debug(f"Found 'In Progress' status with ID: {status_in_progress}")
+            except ObjectDoesNotExist:
+                status_in_progress = None
+                logger.warning("'In Progress' status not found in database")
+            
+            completed = request.session.setdefault('filtered_completed', True)
+            status = request.session.setdefault('filtered_status', status_in_progress)
+            date = request.session.setdefault('filtered_date', today.isoformat())
+            request.session['first_session'] = False
+            logger.debug(f"Initial filter values - Completed: {completed}, Status: {status}, Date: {date}")
+
+        # Get events data
+        logger.info("Retrieving events data")
+        event_manager = EventManager(request.user)
+        events, active_events = event_manager.get_all_events()
         event_statuses = Status.objects.all().order_by('status_name')
-        print(f"Event statuses obtenidos: {event_statuses.count()}")
+        logger.debug(f"Retrieved {len(events)} events and {event_statuses.count()} status options")
 
         if request.method == 'POST':
-            print("Método POST detectado.")
-            cerrado = request.POST.get('cerrado', 'False').lower() == 'true'
+            logger.info("Processing POST request with new filters")
+            completed = request.POST.get('completed', 'False').lower() == 'true'
             status = int(request.POST.get('status')) if request.POST.get('status') else None
             date = request.POST.get('date')
-            print(f"Valores POST - cerrado: {cerrado}, status: {status}, date: {date}")
+            logger.debug(f"Received filter values - Completed: {completed}, Status: {status}, Date: {date}")
 
             try:
-                if cerrado:
-                    status_cerrado = Status.objects.get(status_name='Cerrado')
-                    events = [event for event in events if event['event'].event_status_id != status_cerrado.id]
-                    request.session['filtered_cerrado'] = True
-                    print("Eventos cerrados excluidos.")
+                # Apply completed filter
+                if completed:
+                    logger.debug("Applying completed events filter")
+                    status_completed = Status.objects.get(status_name='Completed')
+                    events = [event for event in events if event['event'].event_status_id != status_completed.id]
+                    request.session['filtered_completed'] = True
+                    logger.info(f"Filtered out completed events, remaining: {len(events)}")
                 else:
-                    request.session['filtered_cerrado'] = False
-                    print("No se excluyen eventos cerrados.")
+                    request.session['filtered_completed'] = False
+                    logger.debug("Including completed events in results")
 
-            except Status.DoesNotExist as e:
-                messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
-                print(f"Error al filtrar eventos: {e}")
-                
-            if status:
-                events = [event for event in events if event['event'].event_status_id == status]
-                request.session['filtered_status'] = status
-                print(f"Eventos filtrados por status: {status}")
-            else:
-                request.session['filtered_status'] = status
-                print("No se aplica filtro por status.")
-
-            if date:
-                events = [event for event in events if event['event'].updated_at.date() == datetime.date.fromisoformat(date)]
-                request.session['filtered_date'] = date
-                print(f"Eventos filtrados por fecha: {date}")
-            else:
-                request.session['filtered_date'] = date
-                print("No se aplica filtro por fecha.")
-            
-            count_events = len(events)
-            events_updated_today = len([event for event in events if event['event'].updated_at.date() == today])
-            events_states = EventState.objects.all().order_by('-start_time')[:10]
-
-            print(f"Eventos actualizados hoy: {events_updated_today}")
-            print(f"Total de eventos filtrados: {count_events}")
-            return render(request, 'events/events.html', {
-                'title': title,
-                'events_updated_today': events_updated_today,
-                'count_events': count_events,
-                'events': events,
-                'event_statuses': event_statuses,
-                'events_states': events_states,
-            })
-            
-        else:
-            print("Método GET detectado.")
-            status = request.session.get('filtered_status')
-            date = request.session.get('filtered_date')
-            cerrado = request.session.get('filtered_cerrado')
-            print(f"Valores de sesión - cerrado: {cerrado}, status: {status}, date: {date}")
-
-            try:
-                if cerrado:
-                    status_cerrado = Status.objects.get(status_name='Cerrado')
-                    events = [event for event in events if event['event'].event_status_id != status_cerrado.id]
-                    print("Eventos cerrados excluidos.")
+                # Apply status filter
                 if status:
                     events = [event for event in events if event['event'].event_status_id == status]
-                    print(f"Eventos filtrados por status: {status}")
+                    request.session['filtered_status'] = status
+                    logger.info(f"Filtered by status ID {status}, remaining: {len(events)}")
+                else:
+                    request.session['filtered_status'] = status
+                    logger.debug("No status filter applied")
+
+                # Apply date filter
                 if date:
-                    events = [event for event in events if event['event'].updated_at.date() == datetime.date.fromisoformat(date)]
-                    print(f"Eventos filtrados por fecha: {date}")
+                    filter_date = datetime.date.fromisoformat(date)
+                    events = [event for event in events if event['event'].updated_at.date() == filter_date]
+                    request.session['filtered_date'] = date
+                    logger.info(f"Filtered by date {date}, remaining: {len(events)}")
+                else:
+                    request.session['filtered_date'] = date
+                    logger.debug("No date filter applied")
 
             except Status.DoesNotExist as e:
-                messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
-                print(f"Error al filtrar eventos: {e}")
-                
+                logger.error(f"Status filtering error: {str(e)}", exc_info=True)
+                messages.error(request, f'An error occurred while filtering events: {e}')
             except Exception as e:
-                messages.error(request, f'Ha ocurrido un error al filtrar los eventos: {e}')
-                print(f"Error inesperado al filtrar eventos: {e}")
+                logger.error(f"Unexpected filtering error: {str(e)}", exc_info=True)
+                messages.error(request, f'An error occurred while filtering events: {e}')
+
+        else:  # GET request
+            logger.info("Processing GET request with stored filters")
+            status = request.session.get('filtered_status')
+            date = request.session.get('filtered_date')
+            completed = request.session.get('filtered_completed')
+            logger.debug(f"Using stored filter values - Completed: {completed}, Status: {status}, Date: {date}")
+
+            try:
+                # Apply stored completed filter
+                if completed:
+                    logger.debug("Applying stored completed filter")
+                    status_completed = Status.objects.get(status_name='Completed')
+                    events = [event for event in events if event['event'].event_status_id != status_completed.id]
+                    logger.info(f"Filtered out completed events, remaining: {len(events)}")
+
+                # Apply stored status filter
+                if status:
+                    events = [event for event in events if event['event'].event_status_id == status]
+                    logger.info(f"Filtered by stored status ID {status}, remaining: {len(events)}")
+
+                # Apply stored date filter
+                if date:
+                    filter_date = datetime.date.fromisoformat(date)
+                    events = [event for event in events if event['event'].updated_at.date() == filter_date]
+                    logger.info(f"Filtered by stored date {date}, remaining: {len(events)}")
+
+            except Status.DoesNotExist as e:
+                logger.error(f"Status filtering error: {str(e)}", exc_info=True)
+                messages.error(request, f'An error occurred while filtering events: {e}')
+            except Exception as e:
+                logger.error(f"Unexpected filtering error: {str(e)}", exc_info=True)
+                messages.error(request, f'An error occurred while filtering events: {e}')
                 return redirect('index')
-            
-            count_events = len(events)
-            events_updated_today = len([event for event in events if event['event'].updated_at.date() == today])
-            events_states = EventState.objects.all().order_by('-start_time')[:10]
 
-            print(f"Eventos actualizados hoy: {events_updated_today}")
-            print(f"Total de eventos filtrados: {count_events}")
-            
-            return render(request, 'events/events.html', {
-                'events_updated_today': events_updated_today,
-                'count_events': count_events,
-                'events': events,
-                'event_statuses': event_statuses,
-                'title': title,
-                'events_states': events_states,
-            })
-            
+        # Prepare response data
+        count_events = len(events)
+        events_updated_today = len([event for event in events if event['event'].updated_at.date() == today])
+        events_states = EventState.objects.all().order_by('-start_time')[:10]
+        
+        logger.info(f"Preparing response with {count_events} events ({events_updated_today} updated today)")
+        
+        context = {
+            'title': title,
+            'events_updated_today': events_updated_today,
+            'count_events': count_events,
+            'events': events,
+            'event_statuses': event_statuses,
+            'events_states': events_states,
+        }
+        
+        return render(request, 'events/events.html', context)
+
     except Exception as e:
-        messages.error(request, 'Ha ocurrido un error al obtener los eventos: {}'.format(e))
-        print(f"Error inesperado en la función events: {e}")
+        logger.critical(f"Unexpected error in events view: {str(e)}", exc_info=True)
+        messages.error(request, f'An error occurred while processing events: {e}')
         return redirect('index')
-
+        
 @login_required
 def assign_attendee_to_event(request, event_id, user_id):
     try:
@@ -1583,7 +1590,7 @@ def management(request):
         # Actualiza el evento
         evento.classification = classification
         evento.comentario = comentario
-        evento.estado = 'Finalizado'
+        evento.estado = 'Completed'
         evento.save()
 
         messages.success(request, 'Evento actualizado con éxito.')
@@ -1605,7 +1612,7 @@ def update_event(request):
         evento = Event.objects.get(id=evento_id)
 
         # Actualiza el estado del evento
-        evento.estado = 'Finalizado' if selected else 'No finalizado'
+        evento.estado = 'Completed' if selected else 'No Completed'
         evento.save()
 
         return JsonResponse({'success': True})
@@ -1672,9 +1679,9 @@ def add_credits(request):
 
 def project_tasks_status_check(request, project_id):
     task_active_status = TaskStatus.objects.filter(status_name='In Progress').first()
-    task_finished_status = TaskStatus.objects.filter(status_name='Finalizado').first()
+    task_finished_status = TaskStatus.objects.filter(status_name='Completed').first()
     project_active_status = ProjectStatus.objects.filter(status_name='In Progress').first()
-    project_finished_status = ProjectStatus.objects.filter(status_name='Finalizado').first()
+    project_finished_status = ProjectStatus.objects.filter(status_name='Completed').first()
 
     if not task_active_status or not task_finished_status or not project_active_status or not project_finished_status:
         return render(request, 'projects/projects_check.html', {
@@ -1711,7 +1718,7 @@ def project_tasks_status_check(request, project_id):
                 else:
                     print('doesnt have event')
 
-            # Actualizar el estado del proyecto a finalizado
+            # Actualizar el estado del proyecto a Completed
             old_status = project.project_status
             project.record_edit(
                 editor=request.user,
