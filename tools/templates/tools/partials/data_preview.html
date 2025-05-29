@@ -51,6 +51,12 @@
                 <i class="bi bi-graph-up me-2"></i>Statistics
             </button>
         </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="edit-tab" data-bs-toggle="tab" data-bs-target="#data-edit" type="button" role="tab">
+                <i class="bi bi-pencil-fill me-2"></i>Edit Clip
+            </button>
+        </li>
+ 
     </ul>
 
     <div class="tab-content" id="previewTabsContent">
@@ -256,6 +262,115 @@
                 </div>
             </div>
         </div>
+  
+        <!-- Data edit Tab -->
+        <div class="tab-pane fade" id="data-edit" role="tabpanel">
+            <div class="row">
+
+                <!-- Añadir esta sección en data_preview.html -->
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Edit Data</h6>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" id="editForm">
+                            {% csrf_token %}
+                            
+                            <!-- Delete Columns Section -->
+                            <div class="mb-4">
+                                <h6><i class="bi bi-trash me-2"></i>Delete Columns</h6>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <button type="button" id="selectAllColumns" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-check-all me-1"></i> Select All
+                                    </button>
+                                    <button type="button" id="deselectAllColumns" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-x-circle me-1"></i> Deselect All
+                                    </button>
+                                </div>
+                                <div class="column-checkboxes">
+                                    {% for col in df_preview.columns %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="columns_to_delete" value="{{ col }}" id="del_{{ forloop.counter }}">
+                                        <label class="form-check-label" for="del_{{ forloop.counter }}">
+                                            {{ col }}
+                                            {% if col in required_fields %}
+                                            <span class="badge bg-danger ms-1">Requerido</span>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <button type="submit" name="edit_clipboard" value="delete_columns" 
+                                        class="btn btn-danger btn-sm mt-2 confirm-action"
+                                        data-confirm-message="¿Está seguro que desea eliminar las columnas seleccionadas?">
+                                    <i class="bi bi-trash-fill me-1"></i> Delete Selected Columns
+                                </button>
+                            </div>
+                            
+                            <!-- Replace Values Section -->
+                            <div class="mb-4">
+                                <h6><i class="bi bi-arrow-left-right me-2"></i>Replace Values</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label for="replace_column" class="form-label">Column</label>
+                                        <select class="form-select" name="replace_column" id="replace_column" required>
+                                            <option value="">Select column...</option>
+                                            {% for col in df_preview.columns %}
+                                            <option value="{{ col }}">{{ col }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="old_value" class="form-label">Value to replace</label>
+                                        <input type="text" class="form-control" name="old_value" id="old_value" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="new_value" class="form-label">New value</label>
+                                        <input type="text" class="form-control" name="new_value" id="new_value" required>
+                                    </div>
+                                </div>
+                                <button type="submit" name="edit_clipboard" value="replace_values" 
+                                        class="btn btn-warning btn-sm mt-2 confirm-action"
+                                        data-confirm-message="¿Está seguro que desea reemplazar estos valores?">
+                                    <i class="bi bi-arrow-repeat me-1"></i> Replace Values
+                                </button>
+                            </div>
+                            
+                            <!-- Fill NA Values Section -->
+                            <div class="mb-4">
+                                <h6><i class="bi bi-input-cursor-text me-2"></i>Fill Empty Values</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="fill_column" class="form-label">Column</label>
+                                        <select class="form-select" name="fill_column" id="fill_column" required>
+                                            <option value="">Select column...</option>
+                                            {% for col in df_preview.columns %}
+                                            <option value="{{ col }}" data-type="{{ df_info.column_stats|get_item:col|get_item:'type' }}">
+                                                {{ col }} ({{ df_info.column_stats|get_item:col|get_item:'missing_count' }} vacíos)
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="fill_value" class="form-label">Fill with</label>
+                                        <input type="text" class="form-control" name="fill_value" id="fill_value" required>
+                                        <small class="text-muted" id="fill_value_hint"></small>
+                                    </div>
+                                </div>
+                                <button type="submit" name="edit_clipboard" value="fill_na" 
+                                        class="btn btn-info btn-sm mt-2 confirm-action"
+                                        data-confirm-message="¿Está seguro que desea rellenar los valores vacíos?">
+                                    <i class="bi bi-pencil-fill me-1"></i> Fill Empty Values
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+  
     </div>
 
     <!-- Action Buttons -->
