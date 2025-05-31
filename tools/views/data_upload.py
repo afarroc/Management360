@@ -12,6 +12,7 @@ from tools.forms import DataUploadForm
 from tools.utils import DataFrameClipboard
 from django.views.decorators.http import require_http_methods
 import logging
+from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 
@@ -262,7 +263,7 @@ class DataUploadDashboard:
             model_fields = DataUploadDashboard._get_model_fields_info(model)
             
             # Mapeo de columnas
-            column_mapping, unused_columns = DataUploadDashboard._map_columns_to_model(df, model_fields)
+            column_mapping, unused_columns = DataUploadDashboard._map_columns_to_model(request, df, model_fields)
             
             # Validar campos requeridos
             missing_required = DataUploadDashboard._validate_required_fields(model_fields, column_mapping)
@@ -526,7 +527,7 @@ class DataUploadDashboard:
         return model_fields
 
     @staticmethod
-    def _map_columns_to_model(df, model_fields):
+    def _map_columns_to_model(request, df, model_fields):
         """Mapea columnas del DataFrame a campos del modelo"""
         column_mapping = {}
         unused_columns = []
