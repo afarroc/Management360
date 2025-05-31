@@ -82,10 +82,10 @@
                     Join our community to access all features including events, chat rooms, and productivity tools.
                   </p>
                   <div class="d-flex gap-2">
-                    <a href="{% url 'accounts:login' %}" class="btn btn-primary">
+                    <a href="{% url 'login' %}" class="btn btn-primary">
                       <i class="bi bi-box-arrow-in-right"></i> Login
                     </a>
-                    <a href="{% url 'accounts:register' %}" class="btn btn-success">
+                    <a href="{% url 'signup' %}" class="btn btn-success">
                       <i class="bi bi-person-plus"></i> Register
                     </a>
                   </div>
@@ -187,7 +187,7 @@
           <div class="card">
             <div class="card-body">
               <h5 class="card-title">Login</h5>
-              <form method="post" action="{% url 'accounts:login' %}">
+              <form method="post" action="{% url 'login' %}">
                 {% csrf_token %}
                 <div class="mb-3">
                   <label for="id_username" class="form-label">Username</label>
@@ -199,7 +199,7 @@
                 </div>
                 <div class="d-flex justify-content-between align-items-center">
                   <button type="submit" class="btn btn-primary">Login</button>
-                  <a href="{% url 'accounts:password_reset' %}" class="text-muted small">Forgot password?</a>
+                  <a href="{% url 'password_reset' %}" class="text-muted small">Forgot password?</a>
                 </div>
               </form>
             </div>
