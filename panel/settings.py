@@ -2,6 +2,7 @@
 import os
 from pathlib import Path
 from decouple import config  # Importa config desde python-decouple
+import dj_database_url
 
 # Base Configuration
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -100,18 +101,12 @@ CHANNEL_LAYERS = {
     }
 }
 
-# Database Configuration
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': config('DATABASE_NAME', default='projects'),
-        'USER': config('DATABASE_USER'),
-        'PASSWORD': config('DATABASE_PASSWORD'),
-        'HOST': config('DATABASE_HOST'),
-        'PORT': config('DATABASE_PORT', default='3306'),
-        'OPTIONS': {'charset': 'utf8mb4'},
-        }
-    }
+    'default': dj_database_url.config(
+        default='postgresql://postgres:postgres@localhost:5432/mysite',
+        conn_max_age=600
+    )
+}
 
 # Authentication
 AUTH_PASSWORD_VALIDATORS = [
