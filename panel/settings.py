@@ -4,6 +4,7 @@ from pathlib import Path
 from decouple import config  # Importa config desde python-decouple
 import dj_database_url
 
+
 # Base Configuration
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
@@ -101,10 +102,12 @@ CHANNEL_LAYERS = {
     }
 }
 
+
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgresql://postgres:postgres@localhost:5432/mysite',
-        conn_max_age=600
+        default=config('DATABASE_URL'),  # Lee de variable de entorno
+        conn_max_age=600,
+        ssl_require=True  # Obligatorio para Render PostgreSQL
     )
 }
 
