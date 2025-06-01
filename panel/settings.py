@@ -102,14 +102,33 @@ CHANNEL_LAYERS = {
     }
 }
 
+# Configuración base
+DEBUG = config('DEBUG', default=False, cast=bool)
+SECRET_KEY = config('SECRET_KEY')
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default=config('DATABASE_URL'),  # Lee de variable de entorno
-        conn_max_age=600,
-        ssl_require=True  # Obligatorio para Render PostgreSQL
-    )
-}
+# Configuración de la base de datos
+if DEBUG:
+    # Configuración para desarrollo (MySQL local)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': config('DATABASE_NAME', default='projects'),
+            'USER': config('DATABASE_USER'),
+            'PASSWORD': config('DATABASE_PASSWORD'),
+            'HOST': config('DATABASE_HOST'),
+            'PORT': config('DATABASE_PORT', default='3306'),
+            'OPTIONS': {'charset': 'utf8mb4'},
+        }
+    }
+else:
+    # Configuración para producción (PostgreSQL en Render)
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=config('DATABASE_URL'),  # Lee de variable de entorno
+            conn_max_age=600,
+            ssl_require=True
+        )
+    }
 
 # Authentication
 AUTH_PASSWORD_VALIDATORS = [
