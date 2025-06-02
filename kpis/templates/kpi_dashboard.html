@@ -150,10 +150,11 @@ document.addEventListener('DOMContentLoaded', function() {
     createChart('servicioChart', chartData, 'AHT por Servicio');
     
     // Preparar datos para gráfico por canal
+    const canalRaw = JSON.parse('{{ aht_por_canal|safe|escapejs|default:"[]" }}');
     const canalData = {
-        labels: {{ aht_por_canal|safe|default:'[]' }}.map(item => item.canal || 'Sin canal'),
-        data: {{ aht_por_canal|safe|default:'[]' }}.map(item => parseFloat(item.avg_aht)),
-        backgroundColors: {{ aht_por_canal|safe|default:'[]' }}.map(() => 
+        labels: canalRaw.map(item => item.canal || 'Sin canal'),
+        data: canalRaw.map(item => parseFloat(item.avg_aht)),
+        backgroundColors: canalRaw.map(() => 
             `rgba(${Math.floor(Math.random() * 150) + 50}, 
                   ${Math.floor(Math.random() * 150) + 50}, 
                   ${Math.floor(Math.random() * 150) + 50}, 0.6)`)
@@ -161,10 +162,11 @@ document.addEventListener('DOMContentLoaded', function() {
     createChart('canalChart', canalData, 'AHT por Canal');
     
     // Preparar datos para gráfico por semana
+    const semanaRaw = JSON.parse('{{ aht_por_semana|safe|escapejs|default:"[]" }}');
     const semanaData = {
-        labels: {{ aht_por_semana|safe|default:'[]' }}.map(item => `Sem ${item.semana}`),
-        data: {{ aht_por_semana|safe|default:'[]' }}.map(item => parseFloat(item.avg_aht)),
-        backgroundColors: {{ aht_por_semana|safe|default:'[]' }}.map(() => 
+        labels: semanaRaw.map(item => `Sem ${item.semana}`),
+        data: semanaRaw.map(item => parseFloat(item.avg_aht)),
+        backgroundColors: semanaRaw.map(() => 
             `rgba(54, 162, 235, 0.6)`) // Color consistente para series temporales
     };
     createChart('semanaChart', semanaData, 'AHT por Semana');
