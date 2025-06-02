@@ -5,10 +5,11 @@ from random import randint
 import csv
 import chardet
 from django.shortcuts import render, redirect
-from .forms import UploadCSVForm
+from .forms import UploadCSVForm, DataGenerationForm
 from .models import CallRecord
 from django.http import JsonResponse
 from django.contrib import messages
+import unicodedata
 
 def detect_encoding(file):
     # Leer primeros 10KB para detección más precisa
@@ -20,6 +21,17 @@ def detect_encoding(file):
     if result['encoding'] in ['ISO-8859-1', 'Windows-1252']:
         return 'latin-1'
     return result['encoding'] if result['confidence'] > 0.6 else 'latin-1'
+
+def normalize_header(header):
+    # Elimina tildes, convierte a minúsculas y elimina espacios
+    if not header:
+        return ''
+    header = header.strip().lower()
+    header = ''.join(
+        c for c in unicodedata.normalize('NFD', header)
+        if unicodedata.category(c) != 'Mn'
+    )
+    return header
 
 def upload_csv(request):
     if request.method == 'POST':
@@ -43,7 +55,12 @@ def upload_csv(request):
                         "Algunos caracteres fueron reemplazados debido a problemas de codificación")
                 
                 # 3. Procesar CSV
-                reader = csv.DictReader(decoded_file.splitlines(), delimiter=';')
+                # Detectar delimitador automáticamente si es necesario
+                sample_line = decoded_file.splitlines()[0]
+                delimiter = ';'
+                if sample_line.count(',') > sample_line.count(';'):
+                    delimiter = ','  # <-- Corrige: debe ser string, no tupla
+                reader = csv.DictReader(decoded_file.splitlines(), delimiter=delimiter)
                 
                 # 4. Validar headers
                 required_headers = {
@@ -57,13 +74,38 @@ def upload_csv(request):
                     'evaluaciones': {'evaluaciones', 'evaluations', 'calificaciones'},
                     'satisfacción': {'satisfacción', 'satisfaccion', 'satisfaction', 'nps'}
                 }
-                
-                normalized_headers = {col.lower().strip(): col for col in reader.fieldnames}
+
+                # Normalizar encabezados del CSV
+                normalized_headers = {}
+                for col in reader.fieldnames:
+                    norm_col = normalize_header(col)
+                    normalized_headers[norm_col] = col
+
+                # Mapear cada clave requerida a la columna real del CSV
+                header_map = {}
+                for key, aliases in required_headers.items():
+                    found = None
+                    for alias in aliases:
+                        norm_alias = normalize_header(alias)
+                        # Buscar coincidencia exacta con los encabezados normalizados
+                        if norm_alias in normalized_headers:
+                            found = normalized_headers[norm_alias]
+                            break
+                        # Buscar coincidencia por inclusión (por si hay variantes)
+                        for norm_col in normalized_headers:
+                            if norm_alias == norm_col or norm_alias in norm_col or norm_col in norm_alias:
+                                found = normalized_headers[norm_col]
+                                break
+                        if found:
+                            break
+                    if found:
+                        header_map[key] = found
+
                 missing_columns = [
-                    key for key, aliases in required_headers.items()
-                    if not any(alias in normalized_headers for alias in aliases)
+                    key for key in required_headers.keys()
+                    if key not in header_map
                 ]
-                
+
                 if missing_columns:
                     friendly_names = {
                         'semana': 'Semana', 'agente': 'Agente', 'supervisor': 'Supervisor',
@@ -77,20 +119,20 @@ def upload_csv(request):
                 # 5. Procesar registros
                 records = []
                 total_rows = 0
-                
+
                 for row_num, row in enumerate(reader, start=2):
                     try:
-                        # Normalizar nombres de columnas
+                        # Usar header_map para obtener los valores correctos
                         normalized_row = {
-                            'Semana': row.get(normalized_headers.get('semana', 'semana')),
-                            'Agente': row.get(normalized_headers.get('agente', 'agente')),
-                            'Supervisor': row.get(normalized_headers.get('supervisor', 'supervisor')),
-                            'Servicio': row.get(normalized_headers.get('servicio', 'servicio')),
-                            'Canal': row.get(normalized_headers.get('canal', 'canal')),
-                            'Eventos': row.get(normalized_headers.get('eventos', 'eventos')),
-                            'AHT': row.get(normalized_headers.get('aht', 'aht')),
-                            'Evaluaciones': row.get(normalized_headers.get('evaluaciones', 'evaluaciones')),
-                            'Satisfacción': row.get(normalized_headers.get('satisfacción', 'satisfacción'))
+                            'Semana': row.get(header_map['semana']),
+                            'Agente': row.get(header_map['agente']),
+                            'Supervisor': row.get(header_map['supervisor']),
+                            'Servicio': row.get(header_map['servicio']),
+                            'Canal': row.get(header_map['canal']),
+                            'Eventos': row.get(header_map['eventos']),
+                            'AHT': row.get(header_map['aht']),
+                            'Evaluaciones': row.get(header_map['evaluaciones']),
+                            'Satisfacción': row.get(header_map['satisfacción'])
                         }
                         
                         records.append(CallRecord(
@@ -178,6 +220,9 @@ def aht_dashboard(request):
         'aht_por_canal': aht_por_canal,
         'aht_por_semana': aht_por_semana,
         'aht_por_supervisor': aht_por_supervisor,
+        # Serialización para los gráficos secundarios
+        'aht_por_canal_json': json.dumps(aht_por_canal, ensure_ascii=False),
+        'aht_por_semana_json': json.dumps(aht_por_semana, ensure_ascii=False),
         
         # Datos adicionales para resumen
         'total_llamadas': CallRecord.objects.count(),
@@ -189,14 +234,9 @@ def aht_dashboard(request):
     return render(request, 'kpi_dashboard.html', context)
 
 
-# kpis/views.py
-from django.shortcuts import render, redirect
-from django.contrib import messages
 from faker import Faker
 import random
 import numpy as np
-from .models import CallRecord
-from .forms import DataGenerationForm
 
 def generate_fake_data(request):
     if request.method == 'POST':
