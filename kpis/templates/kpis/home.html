@@ -1,0 +1,180 @@
+{% extends 'layouts/base.html' %}
+
+{% block content %}
+<div class="pagetitle">
+    <h1>Indicadores - Panel Principal</h1>
+</div>
+<section class="section dashboard">
+    <div class="row">
+
+        <!-- Left side columns -->
+        <div class="col-lg-8">
+            <div class="row">
+
+                <!-- Card 1 -->
+                <div class="col-xxl-4 col-md-6">
+                    <div class="card info-card sales-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Ventas <span>| Hoy</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-cart"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>145</h6>
+                                    <span class="text-success small pt-1 fw-bold">12%</span> 
+                                    <span class="text-muted small pt-2 ps-1">aumento</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Card 1 -->
+
+                <!-- Card 2 -->
+                <div class="col-xxl-4 col-md-6">
+                    <div class="card info-card revenue-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Ingresos <span>| Este mes</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-currency-dollar"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>$3,264</h6>
+                                    <span class="text-success small pt-1 fw-bold">8%</span> 
+                                    <span class="text-muted small pt-2 ps-1">aumento</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Card 2 -->
+
+                <!-- Card 3 -->
+                <div class="col-xxl-4 col-xl-12">
+                    <div class="card info-card customers-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Clientes <span>| Este año</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-people"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>1,245</h6>
+                                    <span class="text-danger small pt-1 fw-bold">-4%</span> 
+                                    <span class="text-muted small pt-2 ps-1">disminución</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- End Card 3 -->
+
+                <!-- Visual: Ventas Mensuales -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Ventas Mensuales</h5>
+                            <canvas id="ventasMensualesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <!-- Visual: Distribución de Clientes -->
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Distribución de Clientes por Segmento</h5>
+                            <canvas id="clientesSegmentoChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- End Left side columns -->
+
+        <!-- Right side columns -->
+        <div class="col-lg-4">
+            <!-- Widget: Resumen rápido -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Resumen Rápido</h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">Indicador A: <span class="badge bg-success">Activo</span></li>
+                        <li class="list-group-item">Indicador B: <span class="badge bg-warning">Pendiente</span></li>
+                        <li class="list-group-item">Indicador C: <span class="badge bg-danger">Crítico</span></li>
+                    </ul>
+                </div>
+            </div>
+            <!-- Widget: Notificaciones -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Notificaciones</h5>
+                    <p>No hay notificaciones recientes.</p>
+                </div>
+            </div>
+        </div><!-- End Right side columns -->
+
+    </div>
+</section>
+
+<!-- Scripts para visualizaciones -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Ejemplo de datos para Ventas Mensuales
+    const ventasMensualesData = {
+        labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul'],
+        datasets: [{
+            label: 'Ventas',
+            data: [120, 150, 170, 140, 180, 200, 210],
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1,
+            borderRadius: 4
+        }]
+    };
+    new Chart(document.getElementById('ventasMensualesChart'), {
+        type: 'bar',
+        data: ventasMensualesData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                title: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // Ejemplo de datos para Distribución de Clientes
+    const clientesSegmentoData = {
+        labels: ['Premium', 'Estándar', 'Básico'],
+        datasets: [{
+            label: 'Clientes',
+            data: [400, 600, 245],
+            backgroundColor: [
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(255, 205, 86, 0.7)',
+                'rgba(255, 99, 132, 0.7)'
+            ],
+            borderColor: [
+                'rgba(75, 192, 192, 1)',
+                'rgba(255, 205, 86, 1)',
+                'rgba(255, 99, 132, 1)'
+            ],
+            borderWidth: 1
+        }]
+    };
+    new Chart(document.getElementById('clientesSegmentoChart'), {
+        type: 'doughnut',
+        data: clientesSegmentoData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' },
+                title: { display: false }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
