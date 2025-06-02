@@ -1,0 +1,26 @@
+{% extends 'layouts/base.html' %}
+{% block content %}
+<div class="pagetitle">
+    <h1>Detalle del Portal</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'lobby' %}">Lobby</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'portal_list' %}">Portales</a></li>
+            <li class="breadcrumb-item active">{{ portal.name }}</li>
+        </ol>
+    </nav>
+</div>
+<section class="section">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">{{ portal.name }}</h5>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item"><strong>Destino:</strong> {{ portal.destination }}</li>
+                <li class="list-group-item"><strong>Último uso:</strong> {{ portal.last_used|date:"d/m/Y H:i" }}</li>
+                <li class="list-group-item"><strong>Descripción:</strong> {{ portal.description }}</li>
+            </ul>
+            <a href="{% url 'portal_list' %}" class="btn btn-secondary mt-3">Volver a la lista</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

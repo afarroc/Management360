@@ -1,0 +1,17 @@
+{% extends 'layouts/base.html' %}
+{% block content %}
+<div class="pagetitle">
+    <h1>Detalles de Entrada/Salida</h1>
+</div>
+
+<section class="section">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">{{ entrance_exit.name }}</h5>
+            <p><strong>Descripción:</strong> {{ entrance_exit.description }}</p>
+            <p><strong>Tipo:</strong> {{ entrance_exit.type }}</p>
+            <p><strong>Cara:</strong> {{ entrance_exit.face }}</p>
+        </div>
+    </div>
+</section>
+{% endblock %}
