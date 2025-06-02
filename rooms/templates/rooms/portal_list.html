@@ -1,0 +1,45 @@
+{% extends 'layouts/base.html' %}
+{% block content %}
+<div class="pagetitle">
+    <h1>Lista de Portales</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'lobby' %}">Lobby</a></li>
+            <li class="breadcrumb-item active">Portales</li>
+        </ol>
+    </nav>
+</div>
+<section class="section">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Portales Disponibles</h5>
+            {% if portals %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Destino</th>
+                            <th>Último Uso</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for portal in portals %}
+                        <tr>
+                            <td>{{ portal.name }}</td>
+                            <td>{{ portal.destination }}</td>
+                            <td>{{ portal.last_used|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <a href="{% url 'portal_detail' portal.pk %}" class="btn btn-sm btn-primary">Ver</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <div class="alert alert-info">No hay portales disponibles.</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

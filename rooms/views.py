@@ -12,47 +12,53 @@ from rest_framework.decorators import api_view
 from .exceptions import RoomManagerError
 from django.http import Http404
 from django.db.models import Q  # Import for search functionality
+from django.utils import timezone
+from datetime import timedelta
 
 # Ensure Room refers to the model, not overridden
 from .models import Room  # Ensure this import is not shadowed
 
 @login_required
 def lobby(request):
-    page_title = 'Lobby'
-    try:
-        logger.debug("Fetching all rooms and portals from the database.")
-        rooms = Room.objects.all()
-        portals = Portal.objects.all()
+    # Secciones dinámicas
+    sections = [
+        {
+            'title': 'Recent Rooms',
+            'url_name': 'room_list',
+            'detail_url_name': 'room_detail',
+            'icon': 'bi-house',
+            'items': Room.objects.all().order_by('-created_at')[:5]
+        },
+        # Puedes agregar más secciones aquí si lo necesitas
+    ]
 
-        if not rooms.exists():
-            logger.warning("No rooms found in the database.")
-        if not portals.exists():
-            logger.warning("No portals found in the database.")
-        
-        logger.debug(f"Rooms count: {rooms.count()}, Portals count: {portals.count()}")
-        logger.debug("Preparing sections for the lobby view.")
-        
-        
-        # Estructura de datos para las secciones dinámicas
-        sections = [
-            {'title': 'Salas disponibles', 'items': rooms, 'url_name': 'room_detail'},
-            {'title': 'Portales disponibles', 'items': portals, 'url_name': 'portal_detail'}
-        ]
+    # Estadísticas rápidas
+    stats = [
+        {
+            'title': 'Total Rooms',
+            'value': Room.objects.count(),
+            'icon': 'bi-house-door',
+            'trend': 12,
+            'trend_color': 'success',
+            'period': 'This month'
+        },
+        # Puedes agregar más estadísticas aquí si lo necesitas
+    ]
 
-        logger.debug("Preparing context for the lobby view.")
-        context = {
-            'page_title': page_title,
-            'sections': sections,  # Para el nuevo formato del template
-            'rooms': rooms,         # Mantenido por compatibilidad
-            'portals': portals     # Mantenido por compatibilidad
-        }
+    # Filtros rápidos para la búsqueda
+    quick_filters = ['Available', 'Recently Added', 'Popular']
 
-        logger.debug("Rendering the lobby view with the prepared context.")
-        return render(request, 'rooms/lobby.html', context)
-        
-    except Exception as e:
-        logger.error(f"Error in lobby view: {str(e)}", exc_info=True)
-        raise Http404("Error loading the lobby. Please try again later.")
+    # Actividad reciente
+    recent_activities = get_recent_activities()
+
+    context = {
+        'page_title': 'Lobby',
+        'sections': sections,
+        'stats': stats,
+        'quick_filters': quick_filters,
+        'recent_activities': recent_activities,
+    }
+    return render(request, 'rooms/lobby.html', context)
     
 # Vista para crear una nueva sala
 @login_required
@@ -187,7 +193,7 @@ def entrance_exit_list(request):
 # Vista para mostrar los detalles de una entrada/salida
 def entrance_exit_detail(request, pk):
     entrance_exit = get_object_or_404(EntranceExit, pk=pk)
-    return render(request, 'entrance_exit_detail.html', {'entrance_exit': entrance_exit})
+    return render(request, 'rooms/entrance_exit_detail.html', {'entrance_exit': entrance_exit})  # Asegúrate de que esta plantilla exista
 
 # Vista para crear un nuevo portal
 @login_required
@@ -196,22 +202,37 @@ def create_portal(request):
         form = PortalForm(request.POST)
         if form.is_valid():
             portal = form.save(commit=False)
+            portal.last_used = timezone.now()  # Establecer la fecha de último uso
             portal.save()
             messages.success(request, 'Portal creado con éxito')
             return HttpResponseRedirect(reverse_lazy('portal_list'))
     else:
         form = PortalForm()
-    return render(request, 'create_portal.html', {'form': form})
+    
+    return render(request, 'rooms/portal_create.html', {
+        'form': form,
+        'page_title': 'Crear Nuevo Portal'
+    })
 
 # Vista para mostrar la lista de portales
 def portal_list(request):
     portals = Portal.objects.all()
-    return render(request, 'portal_list.html', {'portals': portals})
+    return render(request, 'rooms/portal_list.html', {'portals': portals})
 
 # Vista para mostrar los detalles de un portal
 def portal_detail(request, pk):
     portal = get_object_or_404(Portal, pk=pk)
-    return render(request, 'portal_detail.html', {'portal': portal})
+    return render(request, 'rooms/portal_detail.html', {'portal': portal})
+
+# Vista para mostrar la lista de portales
+def portal_list(request):
+    portals = Portal.objects.all()
+    return render(request, 'rooms/portal_list.html', {'portals': portals})
+
+# Vista para mostrar los detalles de un portal
+def portal_detail(request, pk):
+    portal = get_object_or_404(Portal, pk=pk)
+    return render(request, 'rooms/portal_detail.html', {'portal': portal})
 
 # Vista para mostrar la lista de salas
 def room_list(request):
@@ -490,3 +511,48 @@ def room_detail_view(request, pk):
     except Http404:
         logger.warning(f"Room with ID {pk} not found.")
         return JsonResponse({'detail': 'No Room matches the given query.'}, status=404)
+
+def get_recent_activities(limit=5):
+    """
+    Get recent activities across the system.
+    Returns a list of activity dictionaries with user, action, timestamp, icon, and color.
+    """
+    activities = []
+    now = timezone.now()
+    past_24h = now - timedelta(hours=24)
+
+    # Get recent room creations
+    recent_rooms = Room.objects.filter(
+        created_at__gte=past_24h
+    ).select_related('creator')[:limit]
+
+    for room in recent_rooms:
+        activities.append({
+            'user': room.creator.username,
+            'action': f'created room "{room.name}"',
+            'timestamp': room.created_at,
+            'icon': 'bi-house-add',
+            'color': 'success'
+        })
+
+    # Only add portal activities if Portal has created_at field
+    if hasattr(Portal, 'created_at'):
+        recent_portals = Portal.objects.filter(
+            created_at__gte=past_24h
+        ).select_related('room')[:limit]
+
+        for portal in recent_portals:
+            # Defensive: check if portal.room and portal.room.creator exist
+            user = getattr(getattr(portal.room, 'creator', None), 'username', None)
+            if user:
+                activities.append({
+                    'user': user,
+                    'action': f'created portal in {portal.room.name}',
+                    'timestamp': portal.created_at,
+                    'icon': 'bi-door-open',
+                    'color': 'info'
+                })
+
+    # Sort all activities by timestamp
+    activities.sort(key=lambda x: x['timestamp'], reverse=True)
+    return activities[:limit]

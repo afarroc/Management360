@@ -1,16 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Entrance/Exit List</title>
-</head>
-<body>
-    <h1>Entrance/Exit List</h1>
-    <ul>
-        {% for entrance_exit in entrance_exits %}
-            <li>{{ entrance_exit.name }} - {{ entrance_exit.description }}</li>
-        {% endfor %}
-    </ul>
-</body>
-</html>
+{% extends 'layouts/base.html' %}
+{% block content %}
+<div class="pagetitle">
+    <h1>Lista de Entradas/Salidas</h1>  
+</div>
+<section class="section">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Entradas/Salidas</h5>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Tipo</th>
+                        <th>Cara</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entrance_exit in entrance_exits %}
+                    <tr>
+                        <td>{{ entrance_exit.id }}</td>
+                        <td>{{ entrance_exit.name }}</td>
+                        <td>{{ entrance_exit.description }}</td>
+                        <td>{{ entrance_exit.type }}</td>
+                        <td>{{ entrance_exit.face }}</td>
+                        <td>
+                            <a href="{% url 'entrance_exit_detail' entrance_exit.id %}" class="btn btn-info">Ver Detalles</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>  
+</section>
+{% endblock %}
+
+
+
+
+
+

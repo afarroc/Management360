@@ -1,0 +1,37 @@
+<div class="modal fade" id="createPortal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Portal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" class="row g-3">
+                    {% csrf_token %}
+                    <div class="col-12">
+                        <div class="form-floating mb-3">
+                            {{ portal_form.name }}
+                            <label for="floatingPortalName">Portal Name</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            {{ portal_form.description }}
+                            <label for="floatingPortalDescription">Description</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            {{ portal_form.entrance }}
+                            <label for="floatingEntrance">Entrance</label>
+                        </div>
+                        <div class="form-floating mb-3">
+                            {{ portal_form.exit }}
+                            <label for="floatingExit">Exit</label>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" name="create_portal">Create</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
