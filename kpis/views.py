@@ -309,6 +309,9 @@ def generate_fake_data(request):
 
 def export_data(request):  
     data = list(CallRecord.objects.values())  
-    return JsonResponse(data, safe=False)  
+    return JsonResponse(data, safe=False)
+
+def kpi_home(request):
+    return render(request, 'kpis/home.html')
 
 
