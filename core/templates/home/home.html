@@ -12,221 +12,897 @@
     {% include 'layouts/includes/alert.html' %}
   {% endif %}
 
-  {# Page Header #}
-  <div class="pagetitle">
-    <h1>{{ page_title }}</h1>
-    <nav>
-      <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
-        <li class="breadcrumb-item active">{{ page_title }}</li>
-      </ol>
-    </nav>
-  </div><!-- End Page Title -->
+  {# Page Header with Navigation #}
+  <div class="pagetitle" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container">
+      <h1 class="text-white">{{ page_title }}</h1>
+      <nav>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-white">Home</a></li>
+          <li class="breadcrumb-item active text-white">{{ page_title }}</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
 
-  {# Main Content Section #}
-  <section class="section dashboard">
-    <div class="row">
-      {# Left Side Content #}
-      <div class="col-lg-8">
+  {# Main Navigation Tabs #}
+  <div class="container-fluid mb-4">
+    <ul class="nav nav-tabs" id="mainTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">
+          <i class="bi bi-speedometer2 me-1"></i> Dashboard
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab">
+          <i class="bi bi-calendar-event me-1"></i> Events
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab">
+          <i class="bi bi-kanban me-1"></i> Projects
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tools-tab" data-bs-toggle="tab" data-bs-target="#tools" type="button" role="tab">
+          <i class="bi bi-tools me-1"></i> Tools
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  {# Main Content Sections #}
+  <div class="tab-content" id="mainTabsContent">
+    
+    {# Dashboard Tab #}
+    <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+      <section class="section dashboard">
         <div class="row">
-          {% if user.is_authenticated %}
-            {# Authenticated User Content #}
-            <div class="col-12">
-              <div class="card">
-                <div class="card-body">
-                  <h5 class="card-title">Quick Actions</h5>
-                  <div class="d-flex flex-wrap gap-2">
-                    <a href="{% url 'event_create' %}" class="btn btn-primary">
-                      <i class="bi bi-calendar-plus"></i> Create Event
-                    </a>
-                    <a href="{% url 'chat' %}" class="btn btn-info text-white">
-                      <i class="bi bi-chat-left-text"></i> Open Chat
-                    </a>
-                    <a href="{% url 'generate_password' %}" class="btn btn-warning">
-                      <i class="bi bi-key"></i> Generate Password
-                    </a>
+          {# Left Side Content #}
+          <div class="col-lg-8">
+            {# Quick Stats Row #}
+            <div class="row">
+              <div class="col-md-4">
+                <div class="card info-card stats-card shadow-sm">
+                  <div class="card-body">
+                    <h5 class="card-title">Tasks</h5>
+                    <div class="d-flex align-items-center">
+                      <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-primary">
+                        <i class="bi bi-list-check"></i>
+                      </div>
+                      <div class="ps-3">
+                        <h6>{{ pending_tasks }}</h6>
+                        <span class="text-muted small pt-2 ps-1">Pending</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="card info-card stats-card shadow-sm">
+                  <div class="card-body">
+                    <h5 class="card-title">Events</h5>
+                    <div class="d-flex align-items-center">
+                      <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-info">
+                        <i class="bi bi-calendar-event"></i>
+                      </div>
+                      <div class="ps-3">
+                        <h6>{{ upcoming_events_count }}</h6>
+                        <span class="text-muted small pt-2 ps-1">Upcoming</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-4">
+                <div class="card info-card stats-card shadow-sm">
+                  <div class="card-body">
+                    <h5 class="card-title">Projects</h5>
+                    <div class="d-flex align-items-center">
+                      <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-success">
+                        <i class="bi bi-kanban"></i>
+                      </div>
+                      <div class="ps-3">
+                        <h6>{{ active_projects }}</h6>
+                        <span class="text-muted small pt-2 ps-1">Active</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {# Recent Activities Card #}
-            <div class="col-12">
-              <div class="card">
-                <div class="card-body">
+            {# Quick Actions #}
+            <div class="card shadow-sm mb-4">
+              <div class="card-body">
+                <h5 class="card-title">Quick Actions</h5>
+                <div class="d-flex flex-wrap gap-2 quick-actions">
+                  <a href="{% url 'event_create' %}" class="btn btn-primary action-btn">
+                    <i class="bi bi-calendar-plus"></i> Create Event
+                  </a>
+                  <a href="{% url 'task_create' %}" class="btn btn-success action-btn">
+                    <i class="bi bi-plus-circle"></i> Add Task
+                  </a>
+                  <a href="{% url 'project_create' %}" class="btn btn-info text-white action-btn">
+                    <i class="bi bi-folder-plus"></i> New Project
+                  </a>
+                  <a href="{% url 'chat' %}" class="btn btn-warning action-btn">
+                    <i class="bi bi-chat-left-text"></i> Open Chat
+                  </a>
+                  <a href="{% url 'generate_password' %}" class="btn btn-secondary action-btn">
+                    <i class="bi bi-key"></i> Generate Password
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {# Recent Activities Timeline #}
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
                   <h5 class="card-title">Recent Activities</h5>
-                  <div class="activity">
-                    {% for activity in recent_activities|slice:":5" %}
-                      <div class="activity-item d-flex">
-                        <div class="activite-label">{{ activity.timestamp|timesince }} ago</div>
-                        <i class="bi bi-circle-fill activity-badge text-{{ activity.get_badge_color }} align-self-start"></i>
-                        <div class="activity-content">
-                          {{ activity.message }}
-                        </div>
+                  <a href="{#}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="activity timeline">
+                  {% for activity in recent_activities|slice:":5" %}
+                    <div class="activity-item d-flex timeline-item">
+                      <div class="activite-label">{{ activity.timestamp|timesince }} ago</div>
+                      <i class="bi bi-circle-fill activity-badge text-{{ activity.get_badge_color }} align-self-start"></i>
+                      <div class="activity-content">
+                        {{ activity.message }}
+                        <small class="text-muted d-block">{{ activity.timestamp|date:"M d, h:i A" }}</small>
                       </div>
-                    {% empty %}
-                      <p class="text-muted">No recent activities</p>
-                    {% endfor %}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          {% else %}
-            {# Anonymous User Content #}
-            <div class="col-12">
-              <div class="card">
-                <div class="card-body">
-                  <h5 class="card-title">Welcome to Our Platform</h5>
-                  <p class="card-text">
-                    Join our community to access all features including events, chat rooms, and productivity tools.
-                  </p>
-                  <div class="d-flex gap-2">
-                    <a href="{% url 'login' %}" class="btn btn-primary">
-                      <i class="bi bi-box-arrow-in-right"></i> Login
-                    </a>
-                    <a href="{% url 'signup' %}" class="btn btn-success">
-                      <i class="bi bi-person-plus"></i> Register
-                    </a>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {# Features Showcase #}
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-body">
-                  <h5 class="card-title"><i class="bi bi-calendar-event"></i> Event Management</h5>
-                  <p>Organize and track your events with our intuitive calendar system.</p>
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="card">
-                <div class="card-body">
-                  <h5 class="card-title"><i class="bi bi-chat-square-text"></i> Real-time Chat</h5>
-                  <p>Communicate instantly with other users through our chat system.</p>
-                </div>
-              </div>
-            </div>
-          {% endif %}
-        </div>
-      </div><!-- End Left side columns -->
-
-      {# Right Sidebar #}
-      <div class="col-lg-4">
-        {% if user.is_authenticated %}
-          {# User Profile/Sidebar Content #}
-          <div class="card">
-            <div class="card-body profile-card pt-4 d-flex flex-column align-items-center">
-              <img src="{{ user.profile.avatar.url|default:'/static/images/default-avatar.png' }}" 
-                   alt="Profile" class="rounded-circle" width="100">
-              <h4>{{ user.get_full_name|default:user.username }}</h4>
-              <h6 class="text-muted">{{ user.profile.title|default:"Member" }}</h6>
-              
-              <div class="mt-3 w-100">
-                <div class="progress mb-2" style="height: 5px;">
-                  <div class="progress-bar bg-success" role="progressbar" 
-                       style="width: {{ profile_completion }}%" 
-                       aria-valuenow="{{ profile_completion }}" 
-                       aria-valuemin="0" 
-                       aria-valuemax="100"></div>
-                </div>
-                <small class="text-muted">Profile Completion: {{ profile_completion }}%</small>
-              </div>
-              
-              <ul class="nav nav-pills flex-column w-100 mt-3">
-                <li class="nav-item">
-                  <a class="nav-link" href="{% url 'cv_detail' %}">
-                    <i class="bi bi-person"></i> My Profile
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="{% url 'accounts' %}">
-                    <i class="bi bi-gear"></i> Settings
-                  </a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="{% url 'logout' %}">
-                    <i class="bi bi-box-arrow-right"></i> Logout
-                  </a>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {# Upcoming Events #}
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Upcoming Events</h5>
-              {% if upcoming_events %}
-                <div class="list-group">
-                  {% for event in upcoming_events|slice:":3" %}
-                    <a href="{% url 'events:detail' event.id %}" 
-                       class="list-group-item list-group-item-action">
-                      <div class="d-flex w-100 justify-content-between">
-                        <h6 class="mb-1">{{ event.title }}</h6>
-                        <small>{{ event.start_time|timeuntil }}</small>
-                      </div>
-                      <small class="text-muted">{{ event.start_time|date:"M d, Y" }}</small>
-                    </a>
+                    </div>
+                  {% empty %}
+                    <div class="text-center py-4">
+                      <i class="bi bi-activity text-muted" style="font-size: 2rem;"></i>
+                      <p class="text-muted mt-2">No recent activities</p>
+                    </div>
                   {% endfor %}
                 </div>
-                <a href="{% url 'events:list' %}" class="btn btn-sm btn-outline-primary mt-2">
+              </div>
+            </div>
+          </div>
+
+          {# Right Sidebar #}
+          <div class="col-lg-4">
+            {# User Profile Card #}
+            <div class="card profile-card shadow-sm">
+              <div class="card-body pt-4 d-flex flex-column align-items-center">
+                <div class="profile-avatar-container">
+                  <img src="{{ user.profile.avatar.url|default:'/static/images/default-avatar.png' }}" 
+                       alt="Profile" class="rounded-circle profile-avatar" width="100">
+                  <div class="online-status {% if user.profile.is_online %}online{% else %}offline{% endif %}"></div>
+                </div>
+                <h4 class="mt-3">{{ user.get_full_name|default:user.username }}</h4>
+                <h6 class="text-muted">{{ user.profile.title|default:"Member" }}</h6>
+                
+                <div class="mt-3 w-100">
+                  <div class="d-flex justify-content-between mb-1">
+                    <span class="small">Profile Completion</span>
+                    <span class="small">{{ profile_completion }}%</span>
+                  </div>
+                  <div class="progress" style="height: 8px;">
+                    <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
+                         role="progressbar" 
+                         style="width: {{ profile_completion }}%" 
+                         aria-valuenow="{{ profile_completion }}" 
+                         aria-valuemin="0" 
+                         aria-valuemax="100"></div>
+                  </div>
+                </div>
+                
+                <ul class="nav nav-pills flex-column w-100 mt-3">
+                  <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center" href="{% url 'cv_detail' %}">
+                      <i class="bi bi-file-earmark-person me-2"></i> My CV
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center" href="{% url 'accounts' %}">
+                      <i class="bi bi-gear me-2"></i> Settings
+                    </a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link d-flex align-items-center" href="{% url 'logout' %}">
+                      <i class="bi bi-box-arrow-right me-2"></i> Logout
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {# Upcoming Events #}
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="card-title">Upcoming Events</h5>
+                  <a href="{% url 'event_create' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus"></i> Add
+                  </a>
+                </div>
+                
+                {% if upcoming_events %}
+                  <div class="list-group event-list">
+                    {% for event in upcoming_events|slice:":3" %}
+                      <a href="{% url 'event_detail' event.id %}" 
+                         class="list-group-item list-group-item-action event-item">
+                        <div class="d-flex align-items-center">
+                          <div class="event-indicator bg-{{ event.get_priority_class }}"></div>
+                          <div class="ms-2">
+                            <h6 class="mb-0">{{ event.title|truncatechars:25 }}</h6>
+                            <small class="text-muted">
+                              <i class="bi bi-clock"></i> {{ event.start_time|date:"M d, h:i A" }}
+                            </small>
+                          </div>
+                        </div>
+                      </a>
+                    {% endfor %}
+                  </div>
+                  <a href="{% url 'events' %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                    View All Events
+                  </a>
+                {% else %}
+                  <div class="text-center py-4">
+                    <i class="bi bi-calendar text-muted" style="font-size: 2rem;"></i>
+                    <p class="text-muted mt-2">No upcoming events</p>
+                    <a href="{% url 'event_create' %}" class="btn btn-sm btn-primary">Create Event</a>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    {# Events Tab #}
+    <div class="tab-pane fade" id="events" role="tabpanel">
+      <section class="section">
+        <div class="row">
+          <div class="col-lg-8">
+            {# Events Calendar View #}
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="card-title">Events Calendar</h5>
+                  <div>
+                    <a href="{% url 'event_create' %}" class="btn btn-sm btn-primary">
+                      <i class="bi bi-plus"></i> New Event
+                    </a>
+                    <a href="{% url 'event_panel' %}" class="btn btn-sm btn-outline-secondary">
+                      <i class="bi bi-grid"></i> Panel View
+                    </a>
+                  </div>
+                </div>
+                <div id="calendar"></div>
+              </div>
+            </div>
+
+            {# Recent Events #}
+            <div class="card shadow-sm mt-4">
+              <div class="card-body">
+                <h5 class="card-title">Recent Events</h5>
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for event in recent_events|slice:":5" %}
+                        <tr>
+                          <td>{{ event.title }}</td>
+                          <td>{{ event.start_time|date:"M d, Y" }}</td>
+                          <td><span class="badge bg-{{ event.get_status_class }}">{{ event.get_status_display }}</span></td>
+                          <td>
+                            <a href="{% url 'event_detail' event.id %}" class="btn btn-sm btn-outline-primary">
+                              <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'event_edit' event.id %}" class="btn btn-sm btn-outline-secondary">
+                              <i class="bi bi-pencil"></i>
+                            </a>
+                          </td>
+                        </tr>
+                      {% empty %}
+                        <tr>
+                          <td colspan="4" class="text-center py-4 text-muted">No recent events</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                <a href="{% url 'events' %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
                   View All Events
                 </a>
-              {% else %}
-                <p class="text-muted">No upcoming events</p>
-              {% endif %}
+              </div>
             </div>
           </div>
 
-        {% else %}
-          {# Public Sidebar Content #}
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Login</h5>
-              <form method="post" action="{% url 'login' %}">
-                {% csrf_token %}
-                <div class="mb-3">
-                  <label for="id_username" class="form-label">Username</label>
-                  <input type="text" class="form-control" name="username" id="id_username" required>
+          <div class="col-lg-4">
+            {# Event Categories #}
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="card-title">Event Categories</h5>
+                  <a href="#" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                    <i class="bi bi-plus"></i> Add
+                  </a>
                 </div>
-                <div class="mb-3">
-                  <label for="id_password" class="form-label">Password</label>
-                  <input type="password" class="form-control" name="password" id="id_password" required>
+                <div class="list-group">
+                  {% for category in event_categories %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                      <span>
+                        <span class="badge me-2" style="background-color: {{ category.color }}">&nbsp;</span>
+                        {{ category.name }}
+                      </span>
+                      <div>
+                        <a href="#" class="btn btn-sm p-0 text-primary"><i class="bi bi-pencil"></i></a>
+                        <a href="#" class="btn btn-sm p-0 text-danger"><i class="bi bi-trash"></i></a>
+                      </div>
+                    </div>
+                  {% empty %}
+                    <div class="text-center py-4 text-muted">
+                      <i class="bi bi-tags" style="font-size: 2rem;"></i>
+                      <p class="mt-2">No categories defined</p>
+                    </div>
+                  {% endfor %}
                 </div>
-                <div class="d-flex justify-content-between align-items-center">
-                  <button type="submit" class="btn btn-primary">Login</button>
-                  <a href="{% url 'password_reset' %}" class="text-muted small">Forgot password?</a>
+              </div>
+            </div>
+
+            {# Event Status Management #}
+            <div class="card shadow-sm mt-4">
+              <div class="card-body">
+                <h5 class="card-title">Event Status</h5>
+                <div class="list-group">
+                  {% for status in event_statuses %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                      <span>
+                        <span class="badge bg-{{ status.color_class }} me-2">{{ status.name }}</span>
+                        {{ status.description }}
+                      </span>
+                      <div>
+                        <a href="{% url 'status_edit' status.id %}" class="btn btn-sm p-0 text-primary">
+                          <i class="bi bi-pencil"></i>
+                        </a>
+                      </div>
+                    </div>
+                  {% empty %}
+                    <div class="text-center py-4 text-muted">
+                      <i class="bi bi-list-check" style="font-size: 2rem;"></i>
+                      <p class="mt-2">No statuses defined</p>
+                    </div>
+                  {% endfor %}
                 </div>
-              </form>
+                <a href="{% url 'status_create' %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                  <i class="bi bi-plus"></i> Add Status
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    {# Projects Tab #}
+    <div class="tab-pane fade" id="projects" role="tabpanel">
+      <section class="section">
+        <div class="row">
+          <div class="col-lg-8">
+            {# Projects Overview #}
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="card-title">My Projects</h5>
+                  <a href="{% url 'project_create' %}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus"></i> New Project
+                  </a>
+                </div>
+                
+                <div class="row">
+                  {% for project in active_projects_list|slice:":3" %}
+                    <div class="col-md-4">
+                      <div class="card project-card mb-3">
+                        <div class="card-body">
+                          <div class="d-flex justify-content-between align-items-start">
+                            <h6>{{ project.name }}</h6>
+                            <span class="badge bg-{{ project.get_status_class }}">{{ project.get_status_display }}</span>
+                          </div>
+                          <p class="small text-muted mt-2">{{ project.description|truncatechars:60 }}</p>
+                          <div class="progress mb-2" style="height: 5px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: {{ project.completion_percentage }}%" 
+                                 aria-valuenow="{{ project.completion_percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                          </div>
+                          <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">{{ project.completion_percentage }}% complete</small>
+                            <small class="text-muted">{{ project.tasks.count }} tasks</small>
+                          </div>
+                          <div class="mt-3 d-flex gap-2">
+                            <a href="{% url 'project_detail' project.id %}" class="btn btn-sm btn-outline-primary">
+                              <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'project_edit' project.id %}" class="btn btn-sm btn-outline-secondary">
+                              <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'task_create' %}?project={{ project.id }}" class="btn btn-sm btn-outline-success">
+                              <i class="bi bi-plus"></i> Task
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  {% empty %}
+                    <div class="col-12 text-center py-4 text-muted">
+                      <i class="bi bi-folder" style="font-size: 2rem;"></i>
+                      <p class="mt-2">No active projects</p>
+                      <a href="{% url 'project_create' %}" class="btn btn-sm btn-primary">Create Project</a>
+                    </div>
+                  {% endfor %}
+                </div>
+                
+                <a href="{% url 'projects' %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                  View All Projects
+                </a>
+              </div>
+            </div>
+
+            {# Project Tasks #}
+            <div class="card shadow-sm mt-4">
+              <div class="card-body">
+                <h5 class="card-title">Recent Tasks</h5>
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead>
+                      <tr>
+                        <th>Task</th>
+                        <th>Project</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for task in recent_tasks|slice:":5" %}
+                        <tr>
+                          <td>{{ task.title }}</td>
+                          <td>
+                            {% if task.project %}
+                              <a href="{% url 'project_detail' task.project.id %}">{{ task.project.name }}</a>
+                            {% else %}
+                              <span class="text-muted">None</span>
+                            {% endif %}
+                          </td>
+                          <td>{{ task.due_date|date:"M d, Y"|default:"-" }}</td>
+                          <td><span class="badge bg-{{ task.get_status_class }}">{{ task.get_status_display }}</span></td>
+                          <td>
+                            <a href="{% url 'task_edit' task.id %}" class="btn btn-sm btn-outline-primary">
+                              <i class="bi bi-pencil"></i>
+                            </a>
+                          </td>
+                        </tr>
+                      {% empty %}
+                        <tr>
+                          <td colspan="5" class="text-center py-4 text-muted">No recent tasks</td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                <a href="{% url 'tasks' %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                  View All Tasks
+                </a>
+              </div>
             </div>
           </div>
 
-          {# Quick Stats #}
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Platform Stats</h5>
-              <div class="stats">
-                <div class="stat-item">
-                  <span class="stat-value">{{ total_users }}</span>
-                  <span class="stat-label">Users</span>
+          <div class="col-lg-4">
+            {# Project Status Management #}
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <h5 class="card-title">Project Status</h5>
+                <div class="list-group">
+                  {% for status in project_statuses %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                      <span>
+                        <span class="badge bg-{{ status.color_class }} me-2">{{ status.name }}</span>
+                        {{ status.description }}
+                      </span>
+                      <div>
+                        <a href="{% url 'status_edit' status.id %}" class="btn btn-sm p-0 text-primary">
+                          <i class="bi bi-pencil"></i>
+                        </a>
+                      </div>
+                    </div>
+                  {% empty %}
+                    <div class="text-center py-4 text-muted">
+                      <i class="bi bi-list-check" style="font-size: 2rem;"></i>
+                      <p class="mt-2">No statuses defined</p>
+                    </div>
+                  {% endfor %}
                 </div>
-                <div class="stat-item">
-                  <span class="stat-value">{{ total_events }}</span>
-                  <span class="stat-label">Events</span>
+                <a href="{% url 'status_create' %}?model=project" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                  <i class="bi bi-plus"></i> Add Status
+                </a>
+              </div>
+            </div>
+
+            {# Project Categories #}
+            <div class="card shadow-sm mt-4">
+              <div class="card-body">
+                <h5 class="card-title">Project Categories</h5>
+                <div class="list-group">
+                  {% for category in project_categories %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                      <span>{{ category.name }}</span>
+                      <div>
+                        <a href="{% url 'edit_classification' category.id %}" class="btn btn-sm p-0 text-primary">
+                          <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'delete_classification' category.id %}" class="btn btn-sm p-0 text-danger">
+                          <i class="bi bi-trash"></i>
+                        </a>
+                      </div>
+                    </div>
+                  {% empty %}
+                    <div class="text-center py-4 text-muted">
+                      <i class="bi bi-tags" style="font-size: 2rem;"></i>
+                      <p class="mt-2">No categories defined</p>
+                    </div>
+                  {% endfor %}
                 </div>
-                <div class="stat-item">
-                  <span class="stat-value">{{ active_chats }}</span>
-                  <span class="stat-label">Active Chats</span>
+                <a href="{% url 'create_classification' %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                  <i class="bi bi-plus"></i> Add Category
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    {# Tools Tab #}
+    <div class="tab-pane fade" id="tools" role="tabpanel">
+      <section class="section">
+        <div class="row">
+          {# CV Tools #}
+          <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <i class="bi bi-file-earmark-person me-2"></i> CV Management
+                </h5>
+                <p class="card-text">Manage your professional curriculum vitae and documents.</p>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                  <a href="{% url 'cv_detail' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-eye"></i> View CV
+                  </a>
+                  <a href="{% url 'cv_edit' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-pencil"></i> Edit Basic
+                  </a>
+                  <a href="{% url 'full_cv_edit' %}" class="btn btn-outline-info">
+                    <i class="bi bi-pencil-square"></i> Full Edit
+                  </a>
+                  <a href="{% url 'document_upload' %}" class="btn btn-outline-success">
+                    <i class="bi bi-upload"></i> Upload Docs
+                  </a>
                 </div>
               </div>
             </div>
           </div>
-        {% endif %}
-      </div><!-- End Right side columns -->
+
+          {# Password Generator #}
+          <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <i class="bi bi-key me-2"></i> Password Generator
+                </h5>
+                <p class="card-text">Generate secure passwords for your accounts.</p>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                  <a href="{% url 'generate_password' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-key"></i> Generate
+                  </a>
+                  <a href="{% url 'password_help' %}" class="btn btn-outline-info">
+                    <i class="bi bi-question-circle"></i> Help
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {# Memento Mori #}
+          <div class="col-md-6 mt-4">
+            <div class="card shadow-sm h-100">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <i class="bi bi-clock-history me-2"></i> Memento Mori
+                </h5>
+                <p class="card-text">Reflect on the passage of time and life's impermanence.</p>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                  <a href="{% url 'memento_default' %}" class="btn btn-outline-dark">
+                    <i class="bi bi-eye"></i> View
+                  </a>
+                  <a href="{% url 'memento_create' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-gear"></i> Configure
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {# Chat Tools #}
+          <div class="col-md-6 mt-4">
+            <div class="card shadow-sm h-100">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <i class="bi bi-chat-left-text me-2"></i> Chat Tools
+                </h5>
+                <p class="card-text">Communicate with your team and AI assistant.</p>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                  <a href="{% url 'chat' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-chat"></i> General Chat
+                  </a>
+                  <a href="{% url 'assistant' %}" class="btn btn-outline-info">
+                    <i class="bi bi-robot"></i> AI Assistant
+                  </a>
+                  <a href="{% url 'clear' %}" class="btn btn-outline-danger">
+                    <i class="bi bi-trash"></i> Clear Chat
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {# KPI Dashboard #}
+          <div class="col-md-6 mt-4">
+            <div class="card shadow-sm h-100">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <i class="bi bi-bar-chart-line me-2"></i> KPI Dashboard
+                </h5>
+                <p class="card-text">Track your key performance indicators and metrics.</p>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                  <a href="{% url 'dashboard' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-speedometer2"></i> View Dashboard
+                  </a>
+                  <a href="{% url 'export_data' %}" class="btn btn-outline-success">
+                    <i class="bi bi-download"></i> Export Data
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {# Room Management #}
+          <div class="col-md-6 mt-4">
+            <div class="card shadow-sm h-100">
+              <div class="card-body">
+                <h5 class="card-title">
+                  <i class="bi bi-door-open me-2"></i> Room Management
+                </h5>
+                <p class="card-text">Manage your virtual rooms and spaces.</p>
+                <div class="d-flex flex-wrap gap-2 mt-3">
+                  <a href="{% url 'chatroom' 'general' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-door-open"></i> Join Room
+                  </a>
+                  <a href="#" class="btn btn-outline-secondary">
+                    <i class="bi bi-gear"></i> Manage
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
-  </section>
+  </div>
+
+  {# Add Category Modal #}
+  <div class="modal fade" id="addCategoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Add New Category</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form method="post" action="{% url 'status_create' %}">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label for="categoryName" class="form-label">Category Name</label>
+              <input type="text" class="form-control" id="categoryName" name="name" required>
+            </div>
+            <div class="mb-3">
+              <label for="categoryColor" class="form-label">Color</label>
+              <input type="color" class="form-control form-control-color" id="categoryColor" name="color" value="#0d6efd">
+            </div>
+            <div class="mb-3">
+              <label for="categoryDescription" class="form-label">Description</label>
+              <textarea class="form-control" id="categoryDescription" name="description" rows="3"></textarea>
+            </div>
+            <div class="d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save Category</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script>
+    // Initialize the calendar
+    document.addEventListener('DOMContentLoaded', function() {
+      // Tab functionality
+      const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
+      tabEls.forEach(tabEl => {
+        tabEl.addEventListener('shown.bs.tab', function (event) {
+          // You can add specific code to load content when tabs are shown
+        });
+      });
+
+      // Animated counters for stats
+      const counters = document.querySelectorAll('.counter');
+      const speed = 200;
+      
+      counters.forEach(counter => {
+        const target = +counter.getAttribute('data-target');
+        const count = +counter.innerText;
+        const increment = target / speed;
+        
+        if (count < target) {
+          counter.innerText = Math.ceil(count + increment);
+          setTimeout(updateCounter, 1);
+        } else {
+          counter.innerText = target;
+        }
+        
+        function updateCounter() {
+          const count = +counter.innerText;
+          if (count < target) {
+            counter.innerText = Math.ceil(count + increment);
+            setTimeout(updateCounter, 1);
+          } else {
+            counter.innerText = target;
+          }
+        }
+      });
+      
+      // Initialize FullCalendar if needed
+      if (document.getElementById('calendar')) {
+        // Initialize calendar here
+        // You'll need to include FullCalendar JS library
+      }
+    });
+  </script>
+{% endblock %}
+
+{% block extra_css %}
+  <style>
+    /* Custom styles for the enhanced template */
+    .pagetitle {
+      padding: 20px 0;
+      margin-bottom: 0;
+      border-radius: 0;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .nav-tabs {
+      border-bottom: 2px solid #dee2e6;
+    }
+    
+    .nav-tabs .nav-link {
+      border: none;
+      color: #495057;
+      font-weight: 500;
+    }
+    
+    .nav-tabs .nav-link.active {
+      color: #0d6efd;
+      border-bottom: 2px solid #0d6efd;
+      background: transparent;
+    }
+    
+    .nav-tabs .nav-link:hover {
+      border-color: transparent;
+      color: #0d6efd;
+    }
+    
+    .card {
+      border: none;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+      margin-bottom: 20px;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .quick-actions .btn {
+      transition: all 0.2s ease;
+    }
+    
+    .activity.timeline {
+      position: relative;
+      padding-left: 30px;
+    }
+    
+    .activity.timeline::before {
+      content: '';
+      position: absolute;
+      left: 9px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #e9ecef;
+    }
+    
+    .activity-item.timeline-item {
+      position: relative;
+      padding-bottom: 20px;
+    }
+    
+    .activity-badge {
+      position: absolute;
+      left: -30px;
+      z-index: 1;
+    }
+    
+    .profile-avatar-container {
+      position: relative;
+    }
+    
+    .online-status {
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      border: 2px solid white;
+    }
+    
+    .online-status.online {
+      background-color: #28a745;
+    }
+    
+    .online-status.offline {
+      background-color: #6c757d;
+    }
+    
+    .project-card {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .project-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .event-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    
+    .stats-card .card-icon {
+      font-size: 1.5rem;
+    }
+    
+    .tab-content {
+      padding: 20px 0;
+    }
+  </style>
 {% endblock %}

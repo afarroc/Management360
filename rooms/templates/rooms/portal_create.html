@@ -1,0 +1,20 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load schedule_filters %}
+
+{% block content %}
+
+{% if messages %}
+{% include 'layouts/includes/alert.html' %}
+{% endif %}
+
+<div class="container mt-4">
+    <h2>Crear Nuevo Portal</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Crear Portal</button>
+        <a href="{% url 'portal_list' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock %}

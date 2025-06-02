@@ -135,7 +135,7 @@ class EntranceExitForm(forms.ModelForm):
 class PortalForm(forms.ModelForm):
     class Meta:
         model = Portal
-        fields = ['name', 'entrance', 'exit', 'energy_cost']  # Ensure only valid fields from the Portal model are listed here
+        fields = ['name', 'entrance', 'exit', 'energy_cost', 'cooldown']
         widgets = {
             'entrance': forms.Select(attrs={
                 'class': 'form-select entrance-select'
@@ -146,17 +146,27 @@ class PortalForm(forms.ModelForm):
             'energy_cost': forms.NumberInput(attrs={
                 'min': 0,
                 'class': 'form-control'
+            }),
+            'cooldown': forms.NumberInput(attrs={
+                'min': 0,
+                'class': 'form-control'
             })
         }
 
     def clean(self):
-        if self.cleaned_data.get('entrance') and self.cleaned_data.get('exit'):
-            if self.cleaned_data['entrance'].room == self.cleaned_data['exit'].room:
+        cleaned_data = super().clean()
+        entrance = cleaned_data.get('entrance')
+        exit = cleaned_data.get('exit')
+        
+        if entrance and exit:
+            if entrance.room == exit.room:
                 raise forms.ValidationError("La entrada y salida deben estar en habitaciones distintas.")
             
-    def clean(self):
-        if not self.cleaned_data.get('position_x') or not self.cleaned_data.get('position_y'):
-            self.cleaned_data = self.instance.assign_default_position()        
+            # Verificar que no exista ya un portal con estas entradas/salidas
+            if Portal.objects.filter(entrance=entrance, exit=exit).exists():
+                raise forms.ValidationError("Ya existe un portal con estas entradas y salidas.")
+        
+        return cleaned_data
 
     def __init__(self, *args, **kwargs):
         room_id = kwargs.pop('room_id', None)
@@ -164,6 +174,4 @@ class PortalForm(forms.ModelForm):
         
         if room_id:
             self.fields['entrance'].queryset = EntranceExit.objects.filter(room_id=room_id)
-            self.fields['exit'].queryset = EntranceExit.objects.filter(
-                room__connections__from_room_id=room_id
-            ).distinct()
+            self.fields['exit'].queryset = EntranceExit.objects.exclude(room_id=room_id)
