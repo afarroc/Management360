@@ -98,12 +98,13 @@ REDIS_DB = config('REDIS_DB', default=0, cast=int)
 REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 
 # For Channels (WebSockets)
+# In your settings.py
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [REDIS_URL],
-            "symmetric_encryption_keys": [SECRET_KEY],
+            "hosts": [os.environ.get('REDIS_URL', f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")],
+            # Make sure Redis is running at the above host/port.
         },
     }
 }
