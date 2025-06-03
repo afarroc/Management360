@@ -15,6 +15,8 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(','
 
 if RENDER_EXTERNAL_HOSTNAME := os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    # Ensure WebSockets allowed from external host
+    CSRF_TRUSTED_ORIGINS = [f"https://{RENDER_EXTERNAL_HOSTNAME}"]
 
 # Application Definition
 INSTALLED_APPS = [
@@ -96,25 +98,27 @@ REDIS_DB = config('REDIS_DB', default=0, cast=int)
 REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 print(f"Using Redis URL: {REDIS_URL}")
 # For Channels (WebSockets)
-# In your settings.py
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [os.environ.get('REDIS_URL', f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")],
-            # Make sure Redis is running at the above host/port.
         },
     }
 }
 
-# If you need SSL (for production with Redis Cloud/Upstash)
 if not DEBUG:
+    # Use SSL for Redis in production
     CHANNEL_LAYERS['default']['CONFIG']['hosts'] = [
         {
             'address': f"rediss://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}",
-            'ssl_cert_reqs': None  # For self-signed certificates
+            'ssl_cert_reqs': None
         }
     ]
+    # Ensure secure cookies and trusted origins for WebSockets
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    CSRF_TRUSTED_ORIGINS = [f"https://{RENDER_EXTERNAL_HOSTNAME}"] if RENDER_EXTERNAL_HOSTNAME else []
 
 # Configuración de la base de datos
 if DEBUG:
