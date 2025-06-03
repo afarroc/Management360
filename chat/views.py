@@ -2,58 +2,71 @@
 from django.shortcuts import render
 from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 import asyncio
 import json
 from .ollama_api import generate_response
- 
 
+
+@login_required
 @csrf_exempt
 def chat_view(request):
     if request.method == "POST":
-        user_input = request.POST["user_input"]
-        chat_history = json.loads(request.POST.get("chat_history", "[]"))
-        
-        # Construir el historial de mensajes para Ollama
-        messages = []
-        for msg in chat_history:
-            if msg['sender'] == 'user':
-                messages.append({"role": "user", "content": msg['content']})
-            else:
-                messages.append({"role": "assistant", "content": msg['content']})
-        
-        # Agregar el nuevo mensaje del usuario
-        messages.append({"role": "user", "content": user_input})
+        try:
+            # Get user input safely
+            user_input = request.POST.get("user_input", "").strip()
+            if not user_input:
+                return JsonResponse({"error": "Empty message"}, status=400)
+                
+            chat_history = json.loads(request.POST.get("chat_history", "[]"))
+            
+            # Validate and prepare message history
+            messages = []
+            for msg in chat_history:
+                if not isinstance(msg, dict):
+                    continue
+                if msg.get('sender') == 'user':
+                    messages.append({"role": "user", "content": str(msg.get('content', ''))})
+                else:
+                    messages.append({"role": "assistant", "content": str(msg.get('content', ''))})
+            
+            messages.append({"role": "user", "content": user_input})
 
-        async def async_chat_view():
-            async for chunk in generate_response(messages):
-                yield chunk['message']['content'].replace('\n', '   ')
-
-        async def stream():
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            async_generator = async_chat_view()
-            while True:
+            async def stream_generator():
                 try:
-                    chunk = await async_generator.asend(None)
-                    yield chunk
-                except StopAsyncIteration:
-                    break
+                    async for chunk in generate_response(messages):
+                        content = chunk.get('message', {}).get('content', '')
+                        yield content.replace('\n', '   ')
+                except Exception as e:
+                    yield f"[ERROR: {str(e)}]"
 
-        return StreamingHttpResponse(stream(), content_type='text/event-stream charset=utf-8')
+            response = StreamingHttpResponse(
+                stream_generator(),
+                content_type='text/event-stream; charset=utf-8'
+            )
+            response['Cache-Control'] = 'no-cache'
+            return response
+
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid chat history format"}, status=400)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
 
     return render(request, "chat/assistant.html", {
         "pagetitle": "Chat IA",
         "initial_history": json.dumps([])
     })
 
+
+@login_required
 @csrf_exempt
 def clear_chat(request):
     if request.method == "POST":
         try:
-            # Limpiar el historial en el servidor (si es necesario)
+            # Add any server-side cleanup logic here
             return JsonResponse({
                 "status": "success",
-                "message": "Chat limpiado correctamente"
+                "message": "Chat cleared successfully"
             })
         except Exception as e:
             return JsonResponse({
@@ -63,15 +76,22 @@ def clear_chat(request):
     
     return JsonResponse({
         "status": "error",
-        "message": "Método no permitido"
+        "message": "Method not allowed"
     }, status=405)
 
+
+@login_required
 def index(request):
     return render(request, "chat/index.html", {
-        'pagetitle':'Chat Page',
+        'pagetitle': 'Chat Page',
     })
 
+
+@login_required
 def chatroom(request, room_name):
+    if not room_name or not str(room_name).isdigit():
+        return JsonResponse({"error": "Invalid room ID"}, status=400)
+        
     return render(request, "chat/room.html", {
         "room_name": room_name,
     })
