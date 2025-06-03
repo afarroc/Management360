@@ -1,0 +1,17 @@
+<li class="nav-item">
+    <a class="nav-link collapsed" data-bs-target="#chat-nav" data-bs-toggle="collapse" href="#">
+        <i class="bi bi-chat-dots"></i><span>Chat</span><i class="bi bi-chevron-down ms-auto"></i>
+    </a>
+    <ul id="chat-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
+        <li>
+            <a href="{% url 'chat' %}">
+                <i class="bi bi-circle"></i><span>General Chat</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'assistant' %}">
+                <i class="bi bi-robot"></i><span>Chat IA</span>
+            </a>
+        </li>
+    </ul>
+</li>
