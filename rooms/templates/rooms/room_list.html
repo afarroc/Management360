@@ -1,28 +1,85 @@
-﻿<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ page_title }}</title>
-</head>
-<body>
+﻿{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+{% if messages %}
+    {% include 'layouts/includes/alert.html' %}
+{% endif %}
+
+<div class="pagetitle">
     <h1>{{ page_title }}</h1>
-    
-    {% if rooms %}
-        <ul>
-            {% for room in rooms %}
-                <li>
-                    <h2><a href="{% url 'room_detail' room.pk %}">{{ room.name }}</a></h2>
-                    <p><strong>Descripción:</strong> {{ room.description|default:"Sin descripción" }}</p>
-                    <p><strong>Capacidad:</strong> {{ room.capacity }}</p>
-                    <p><strong>Dirección:</strong> {{ room.address|default:"No especificada" }}</p>
-                    <p><strong>Calificación:</strong> {{ room.rating }}</p>
-                    <p><strong>Fecha de creación:</strong> {{ room.created_at }}</p>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p>No hay salas disponibles.</p>
-    {% endif %}
-</body>
-</html>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'lobby' %}">Home</a></li>
+            <li class="breadcrumb-item active">Rooms</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title">Available Rooms</h5>
+                        <a href="{% url 'room_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> New Room
+                        </a>
+                    </div>
+
+                    {% if rooms %}
+                    <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                        {% for room in rooms %}
+                        <div class="col">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        <a href="{% url 'room_detail' room.pk %}" class="text-primary">{{ room.name }}</a>
+                                    </h5>
+                                    <p class="card-text">{{ room.description|default:"Sin descripción"|truncatechars:100 }}</p>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="badge bg-primary">
+                                            <i class="bi bi-people"></i> {{ room.capacity }}
+                                        </span>
+                                        <div class="rating">
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                            <span>{{ room.rating|default:"N/A" }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-muted small">
+                                        <i class="bi bi-geo-alt"></i> {{ room.address|default:"No especificada" }}
+                                    </div>
+                                    <div class="text-muted small">
+                                        <i class="bi bi-calendar"></i> {{ room.created_at|date:"d M Y" }}
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-flex justify-content-between">
+                                        <a href="{% url 'room_detail' room.pk %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-info-circle"></i> Details
+                                        </a>
+                                        <a href="{% url 'room_comments' room.pk %}" class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi bi-chat"></i> Comments
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-building fs-1 text-muted"></i>
+                        <p class="text-muted mt-3">No hay salas disponibles.</p>
+                        <a href="{% url 'room_create' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Create First Room
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
