@@ -1,15 +1,13 @@
 # chat/urls.py
 from django.urls import path
 
-from . import views, views_redis
+from . import views
 
 app_name = 'chat'  # Namespace definition
 
 urlpatterns = [
-    path('', views.index, name='index'),
-    path('assistant/', views.chat_view, name='assistant'),
-    path('room/<str:room_name>/', views.chatroom, name='room'),
-    path('clear/', views.clear_chat, name='clear'),
-    path('check-redis/', views_redis.check_redis, name='check_redis'),
-    path('room-list/', views.room_list, name='room_list'),  # New URL pattern
+    path('', views.room_list, name='room_list'),
+    path('room/<str:room_name>/', views.room, name='room'),
+    path('assistant/', views.assistant_view, name='assistant'),
+    path('clear/', views.clear_history, name='clear_history'),
 ]
