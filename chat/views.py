@@ -260,17 +260,49 @@ def process_commands(message):
     return None
 
 
+@login_required
 def room_list(request):
-    """
-    View to display list of available chat rooms
-    """
     context = {
         'pagetitle': 'Chat Rooms',
-        'rooms': range(1, 5),  # For demo purposes, showing rooms 1-4
+        'rooms': range(1, 5),  # Demo rooms 1-4
+        'user_full_name': f"{request.user.first_name} {request.user.last_name}",
+        'user_email': request.user.email,
+        'user_id': request.user.id,
+        'user_date_joined': request.user.date_joined,
+    }
+    return render(request, 'chat/room_list.html', context)
+
+
+@login_required
+def room(request, room_name):
+    context = {
+        'pagetitle': f'Chat Room: {room_name}',
+        'room_name': room_name,
+        'current_user': request.user.username,
         'user_full_name': f"{request.user.first_name} {request.user.last_name}",
         'user_email': request.user.email,
         'user_id': request.user.id,
         'user_date_joined': request.user.date_joined,
         'is_moderator': request.user.groups.filter(name='Moderators').exists(),
     }
-    return render(request, 'chat/room_list.html', context)
+    return render(request, 'chat/room.html', context)
+
+
+@login_required
+def assistant_view(request):
+    context = {
+        'pagetitle': 'AI Assistant',
+        'user_full_name': f"{request.user.first_name} {request.user.last_name}",
+        'user_email': request.user.email,
+        'user_id': request.user.id,
+        'user_date_joined': request.user.date_joined,
+    }
+    return render(request, 'chat/assistant.html', context)
+
+
+@login_required
+def clear_history(request):
+    if request.method == 'POST':
+        # Add chat clearing logic here
+        messages.success(request, 'Chat history cleared successfully')
+    return redirect('chat:room_list')

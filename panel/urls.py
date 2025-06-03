@@ -15,7 +15,7 @@ urlpatterns = [
     
     # Apps
     path('accounts/', include('accounts.urls')),
-    path('chat/', include('chat.urls')),
+    path('chat/', include('chat.urls', namespace='chat')),
     path('cv/', include('cv.urls')),
     path('events/', include('events.urls')),
     path('kpis/', include('kpis.urls')),
