@@ -1,0 +1,49 @@
+{% extends 'layouts/mask.html' %}
+{% load static %}
+
+{% block content %}
+{{ block.super }}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Redis Connection Status</h5>
+
+                {% if status == 'connected' %}
+                <div class="alert alert-success" role="alert">
+                    Redis is connected and running!
+                </div>
+                
+                <table class="table">
+                    <tbody>
+                        <tr>
+                            <th>Redis Version</th>
+                            <td>{{ redis_version }}</td>
+                        </tr>
+                        <tr>
+                            <th>Connected Clients</th>
+                            <td>{{ connected_clients }}</td>
+                        </tr>
+                        <tr>
+                            <th>Memory Usage</th>
+                            <td>{{ used_memory_human }}</td>
+                        </tr>
+                        <tr>
+                            <th>Redis URL</th>
+                            <td><code>{{ redis_url }}</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="alert alert-danger" role="alert">
+                    {{ message }}
+                </div>
+                <p>Attempted connection to: <code>{{ redis_url }}</code></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
