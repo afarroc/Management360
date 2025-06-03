@@ -11,6 +11,8 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.db import IntegrityError
 from datetime import datetime, timedelta
+from django.views import View
+import redis
 
 # API Views
 def get_csrf(request):
@@ -101,3 +103,13 @@ def signup_view(request):
     return render(request, 'accounts/signup.html', {
         'form': UserCreationForm()
     })
+
+class RedisTestView(View):
+    def get(self, request):
+        try:
+            r = redis.StrictRedis.from_url(settings.REDIS_URL)
+            r.set('test_key', 'redis_ok', ex=10)
+            value = r.get('test_key')
+            return JsonResponse({'status': 'success', 'value': value.decode() if value else None})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'error': str(e)})
