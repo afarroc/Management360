@@ -4,6 +4,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from . import views
+from .views import RedisTestView
 
 urlpatterns = [
     # Admin
@@ -33,4 +34,7 @@ urlpatterns = [
     
     # API (Recomendado mover a una app dedicada)
     path('api/', include('api.urls')),  # Crear app "api" para estos endpoints
+
+    # Redis Test
+    path('redis-test/', RedisTestView.as_view(), name='redis_test'),
 ]
