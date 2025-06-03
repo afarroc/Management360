@@ -14,7 +14,17 @@ admin.site.register(TaskStatus)
 admin.site.register(Classification)
 admin.site.register(Tag)
 
-# Modelos de Proyecto
+# Modelos de estados e historial
+admin.site.register(ProjectState)
+admin.site.register(ProjectHistory)
+admin.site.register(TaskState)
+admin.site.register(TaskHistory)
+admin.site.register(EventState)
+admin.site.register(EventHistory)
+
+# Modelos con administración personalizada
+
+# Proyecto
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
     list_display = ('title', 'host', 'project_status', 'created_at')
@@ -26,7 +36,7 @@ class ProjectAttendeeAdmin(admin.ModelAdmin):
     list_display = ('user', 'project', 'registration_time', 'has_paid')
     list_filter = ('has_paid', 'registration_time')
 
-# Modelos de Tarea
+# Tarea
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
     list_display = ('title', 'project', 'task_status', 'assigned_to')
@@ -38,7 +48,7 @@ class TaskProgramAdmin(admin.ModelAdmin):
     list_display = ('title', 'task', 'start_time', 'end_time')
     list_filter = ('start_time', 'end_time')
 
-# Modelos de Evento
+# Evento
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     list_display = ('title', 'host', 'event_status', 'venue')
@@ -50,7 +60,7 @@ class EventAttendeeAdmin(admin.ModelAdmin):
     list_display = ('user', 'event', 'registration_time', 'has_paid')
     list_filter = ('has_paid', 'registration_time')
 
-# Modelos adicionales
+# Otros modelos
 @admin.register(CreditAccount)
 class CreditAccountAdmin(admin.ModelAdmin):
     list_display = ('user', 'balance')
