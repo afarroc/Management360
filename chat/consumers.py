@@ -4,6 +4,7 @@ import logging
 import datetime
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
+from channels.exceptions import StopConsumer
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
 
@@ -51,13 +52,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close(code=4000)  # Custom close code for other errors
 
     async def disconnect(self, close_code):
-        if hasattr(self, 'room_group_name') and self.room_group_name:
+        try:
             # Leave room group
             await self.channel_layer.group_discard(
                 self.room_group_name,
                 self.channel_name
             )
-            logger.info(f"User {self.user} disconnected from room {self.room_name}")
+        except:
+            pass
+        raise StopConsumer()
 
     async def receive(self, text_data=None, bytes_data=None):
         try:
@@ -75,7 +78,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
-                        "type": "chat.message",
+                        "type": "chat_message",
                         "message": processed_message,
                         "sender": str(self.user),
                         "user_id": str(self.user.id)
