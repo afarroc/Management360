@@ -157,74 +157,118 @@
     const currentUser = JSON.parse(document.getElementById('current-user').textContent);
     let chatSocket = null;
     let reconnectAttempt = 0;
+    const maxReconnectAttempts = 5;
     const maxReconnectDelay = 5000;
+    let reconnectTimeout = null;
+    let connectionStatus = document.getElementById('connection-status');
+
+    function updateConnectionStatus(message, type) {
+        if (connectionStatus) {
+            connectionStatus.className = `alert alert-${type}`;
+            connectionStatus.textContent = message;
+        }
+    }
+
+    function cleanupConnection() {
+        if (chatSocket) {
+            chatSocket.onclose = null; // Prevent recursive reconnection
+            chatSocket.close();
+            chatSocket = null;
+        }
+        if (reconnectTimeout) {
+            clearTimeout(reconnectTimeout);
+            reconnectTimeout = null;
+        }
+    }
 
     function connect() {
+        cleanupConnection();
+
+        if (reconnectAttempt >= maxReconnectAttempts) {
+            updateConnectionStatus('Connection failed. Please refresh the page.', 'danger');
+            return;
+        }
+
         const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
         const wsUrl = wsScheme + '://' + window.location.host + '/ws/chat/' + roomName + '/';
         
-        chatSocket = new WebSocket(wsUrl);
+        try {
+            chatSocket = new WebSocket(wsUrl);
 
-        chatSocket.onopen = function() {
-            document.getElementById('connection-status').className = 'alert alert-success';
-            document.getElementById('connection-status').textContent = 'Connected';
-            reconnectAttempt = 0;
-        };
+            chatSocket.onopen = function() {
+                updateConnectionStatus('Connected', 'success');
+                reconnectAttempt = 0;
+                // Start health check
+                startHealthCheck();
+            };
 
-        chatSocket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            const timestamp = new Date().toLocaleTimeString('es-ES', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-            });
-            
-            const isOutgoing = data.user_id === currentUser;
-            const messageHtml = `
-                <div class="chat-message">
-                    <div class="message-bubble ${isOutgoing ? 'outgoing text-white' : 'incoming'}">
-                        <div class="message-header d-flex justify-content-between align-items-center px-3 pt-2">
-                            <small class="user-name ${isOutgoing ? 'text-white' : 'text-muted'}">
-                                ${isOutgoing ? 'You' : (data.display_name || 'User #' + data.user_id)}
-                            </small>
-                        </div>
-                        <div class="message-content">
-                            ${formatMessage(data.message)}
-                        </div>
-                        <div class="message-time text-end pe-3">
-                            <small class="${isOutgoing ? 'text-white' : 'text-muted'}">${timestamp}</small>
-                            ${isOutgoing ? '<i class="bi bi-check2-all ms-1"></i>' : ''}
+            chatSocket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                const timestamp = new Date().toLocaleTimeString('es-ES', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true
+                });
+                
+                const isOutgoing = data.user_id === currentUser;
+                const messageHtml = `
+                    <div class="chat-message">
+                        <div class="message-bubble ${isOutgoing ? 'outgoing text-white' : 'incoming'}">
+                            <div class="message-header d-flex justify-content-between align-items-center px-3 pt-2">
+                                <small class="user-name ${isOutgoing ? 'text-white' : 'text-muted'}">
+                                    ${isOutgoing ? 'You' : (data.display_name || 'User #' + data.user_id)}
+                                </small>
+                            </div>
+                            <div class="message-content">
+                                ${formatMessage(data.message)}
+                            </div>
+                            <div class="message-time text-end pe-3">
+                                <small class="${isOutgoing ? 'text-white' : 'text-muted'}">${timestamp}</small>
+                                ${isOutgoing ? '<i class="bi bi-check2-all ms-1"></i>' : ''}
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
-            
-            const chatLog = document.querySelector('#chat-log');
-            chatLog.insertAdjacentHTML('beforeend', messageHtml);
-            chatLog.scrollTop = chatLog.scrollHeight;
-            
-            if (data.typing) {
-                showTypingIndicator(data.user_id);
+                `;
+                
+                const chatLog = document.querySelector('#chat-log');
+                chatLog.insertAdjacentHTML('beforeend', messageHtml);
+                chatLog.scrollTop = chatLog.scrollHeight;
+                
+                if (data.typing) {
+                    showTypingIndicator(data.user_id);
+                }
+            };
+
+            chatSocket.onclose = function(e) {
+                cleanupConnection();
+                updateConnectionStatus('Disconnected. Reconnecting...', 'warning');
+                
+                if (reconnectAttempt < maxReconnectAttempts) {
+                    const timeout = Math.min(1000 * Math.pow(2, reconnectAttempt), maxReconnectDelay);
+                    reconnectAttempt++;
+                    reconnectTimeout = setTimeout(connect, timeout);
+                } else {
+                    updateConnectionStatus('Connection failed. Please refresh the page.', 'danger');
+                }
+            };
+
+            chatSocket.onerror = function(e) {
+                console.error('WebSocket error:', e);
+                updateConnectionStatus('Connection error', 'danger');
+            };
+        } catch (error) {
+            console.error('Connection error:', error);
+            updateConnectionStatus('Failed to establish connection', 'danger');
+            reconnectTimeout = setTimeout(connect, 1000);
+        }
+    }
+
+    function startHealthCheck() {
+        setInterval(() => {
+            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                chatSocket.send(JSON.stringify({ 'action': 'ping' }));
             }
-        };
-
-        chatSocket.onclose = function(e) {
-            document.getElementById('connection-status').className = 'alert alert-warning';
-            document.getElementById('connection-status').textContent = 'Disconnected. Reconnecting...';
-            
-            const timeout = Math.min(1000 * Math.pow(2, reconnectAttempt), maxReconnectDelay);
-            reconnectAttempt++;
-            
-            setTimeout(function() {
-                connect();
-            }, timeout);
-        };
-
-        chatSocket.onerror = function(e) {
-            console.error('WebSocket error:', e);
-            document.getElementById('connection-status').className = 'alert alert-danger';
-            document.getElementById('connection-status').textContent = 'Connection error';
-        };
+        }, 30000); // Check every 30 seconds
     }
 
     function formatMessage(message) {
@@ -259,7 +303,11 @@
         document.getElementById('connected-count').textContent = users.length;
     }
 
+    // Initial connection
     connect();
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', cleanupConnection);
 
     document.querySelector('#chat-message-input').focus();
     document.querySelector('#chat-message-input').onkeyup = function(e) {
