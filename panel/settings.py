@@ -83,15 +83,21 @@ TEMPLATES = [
     },
 ]
 
-# ASGI/Channels Configuration
 ASGI_APPLICATION = 'panel.asgi.application'
 
-REDIS_HOST = config('REDIS_HOST', default='192.168.18.49')
-REDIS_PORT = config('REDIS_PORT', default='6379')
-REDIS_DB = config('REDIS_DB', default='1')
-REDIS_PASSWORD = config('REDIS_PASSWORD', default='123456')
 
+# settings.py
+
+# Redis Configuration (for both Django and Channels)
+REDIS_HOST = config('REDIS_HOST', default='localhost')
+REDIS_PORT = config('REDIS_PORT', default=6379, cast=int)
+REDIS_PASSWORD = config('REDIS_PASSWORD', default='')
+REDIS_DB = config('REDIS_DB', default=0, cast=int)
+
+# For standard Redis connections
 REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+
+# For Channels (WebSockets)
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
@@ -101,6 +107,15 @@ CHANNEL_LAYERS = {
         },
     }
 }
+
+# If you need SSL (for production with Redis Cloud/Upstash)
+if not DEBUG:
+    CHANNEL_LAYERS['default']['CONFIG']['hosts'] = [
+        {
+            'address': f"rediss://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}",
+            'ssl_cert_reqs': None  # For self-signed certificates
+        }
+    ]
 
 # Configuración base
 DEBUG = config('DEBUG', default=False, cast=bool)
