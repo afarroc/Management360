@@ -11,7 +11,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'chat:index' %}">Chat</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'chat:room_list' %}">Chat</a></li>
             <li class="breadcrumb-item active">Room #{{ room_name }}</li>
         </ol>
     </nav>
@@ -190,10 +190,11 @@
         }
 
         const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
-        const wsUrl = wsScheme + '://' + window.location.host + '/ws/chat/' + roomName + '/';
+        const wsHost = window.location.host;
+        const wsPath = `${wsScheme}://${wsHost}/ws/chat/${roomName}/`;
         
         try {
-            chatSocket = new WebSocket(wsUrl);
+            chatSocket = new WebSocket(wsPath);
 
             chatSocket.onopen = function() {
                 updateConnectionStatus('Connected', 'success');
@@ -361,5 +362,4 @@
         }, 1000);
     });
 </script>
-
 {% endblock %}

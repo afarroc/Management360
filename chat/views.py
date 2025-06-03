@@ -258,3 +258,19 @@ def process_commands(message):
         if command in commands:
             return commands[command]()
     return None
+
+
+def room_list(request):
+    """
+    View to display list of available chat rooms
+    """
+    context = {
+        'pagetitle': 'Chat Rooms',
+        'rooms': range(1, 5),  # For demo purposes, showing rooms 1-4
+        'user_full_name': f"{request.user.first_name} {request.user.last_name}",
+        'user_email': request.user.email,
+        'user_id': request.user.id,
+        'user_date_joined': request.user.date_joined,
+        'is_moderator': request.user.groups.filter(name='Moderators').exists(),
+    }
+    return render(request, 'chat/room_list.html', context)
