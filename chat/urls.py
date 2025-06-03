@@ -11,4 +11,5 @@ urlpatterns = [
     path('room/<str:room_name>/', views.chatroom, name='room'),
     path('clear/', views.clear_chat, name='clear'),
     path('check-redis/', views_redis.check_redis, name='check_redis'),
+    path('room-list/', views.room_list, name='room_list'),  # New URL pattern
 ]
