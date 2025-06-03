@@ -85,9 +85,6 @@ TEMPLATES = [
     },
 ]
 
-ASGI_APPLICATION = 'panel.asgi.application'
-
-
 # Redis Configuration (for both Django and Channels)
 REDIS_HOST = config('REDIS_HOST', default='localhost')
 REDIS_PORT = config('REDIS_PORT', default=6379, cast=int)
@@ -97,18 +94,22 @@ REDIS_DB = config('REDIS_DB', default=0, cast=int)
 # For standard Redis connections
 REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 print(f"Using Redis URL: {REDIS_URL}")
-# For Channels (WebSockets)
+
+# WebSocket configuration
+ASGI_APPLICATION = 'panel.asgi.application'
+
+# Channel Layers Configuration
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [os.environ.get('REDIS_URL', f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")],
+            "hosts": [os.environ.get('REDIS_URL', REDIS_URL)],
         },
     }
 }
 
+# Production settings for secure WebSocket connections
 if not DEBUG:
-    # Use SSL for Redis in production
     CHANNEL_LAYERS['default']['CONFIG']['hosts'] = [
         {
             'address': f"rediss://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}",
