@@ -86,8 +86,6 @@ TEMPLATES = [
 ASGI_APPLICATION = 'panel.asgi.application'
 
 
-# settings.py
-
 # Redis Configuration (for both Django and Channels)
 REDIS_HOST = config('REDIS_HOST', default='localhost')
 REDIS_PORT = config('REDIS_PORT', default=6379, cast=int)
@@ -96,7 +94,7 @@ REDIS_DB = config('REDIS_DB', default=0, cast=int)
 
 # For standard Redis connections
 REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
-
+print(f"Using Redis URL: {REDIS_URL}")
 # For Channels (WebSockets)
 # In your settings.py
 CHANNEL_LAYERS = {
@@ -117,10 +115,6 @@ if not DEBUG:
             'ssl_cert_reqs': None  # For self-signed certificates
         }
     ]
-
-# Configuración base
-DEBUG = config('DEBUG', default=False, cast=bool)
-SECRET_KEY = config('SECRET_KEY')
 
 # Configuración de la base de datos
 if DEBUG:
