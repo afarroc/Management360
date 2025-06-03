@@ -35,16 +35,23 @@ def chat_view(request):
             async def stream_generator():
                 try:
                     async for chunk in generate_response(messages):
+                        if not chunk or not isinstance(chunk, dict):
+                            continue
                         content = chunk.get('message', {}).get('content', '')
-                        yield content.replace('\n', '   ')
+                        if content:
+                            # Replace newlines and escape special characters
+                            yield f"data: {json.dumps({'content': content})}\n\n"
                 except Exception as e:
-                    yield f"[ERROR: {str(e)}]"
+                    yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                finally:
+                    yield "data: [DONE]\n\n"
 
             response = StreamingHttpResponse(
                 stream_generator(),
-                content_type='text/event-stream; charset=utf-8'
+                content_type='text/event-stream'
             )
             response['Cache-Control'] = 'no-cache'
+            response['X-Accel-Buffering'] = 'no'
             return response
 
         except json.JSONDecodeError:
