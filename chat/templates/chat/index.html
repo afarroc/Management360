@@ -23,45 +23,142 @@
 
 <section class="section dashboard">
     <div class="row">
-        <!-- Left side columns -->
-        <div class="col-lg-12">
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <p>Chat Rooms</p>
-                            What chat room would you like to enter?<br>
-                            <input id="room-name-input" type="text" size="100"><br>
-                            <input id="room-name-submit" type="button" value="Enter">
-
-                            <script>
-                                document.querySelector('#room-name-input').focus();
-                                document.querySelector('#room-name-input').onkeyup = function(e) {
-                                    if (e.key === 'Enter') {  // enter, return
-                                        document.querySelector('#room-name-submit').click();
-                                    }
-                                };
-
-                                document.querySelector('#room-name-submit').onclick = function(e) {
-                                    var roomName = document.querySelector('#room-name-input').value;
-                                    window.location.pathname = '/chat/room/' + roomName + '/';
-                                };
-                            </script>
-
-
-
-
-
-
-
-
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Available Chat Rooms</h5>
+                    
+                    <!-- Rooms Grid -->
+                    <div class="row row-cols-1 row-cols-md-2 g-4 mb-4">
+                        <!-- Recent Rooms -->
+                        <div class="col">
+                            <div class="card h-100 border-primary">
+                                <div class="card-body">
+                                    <h5 class="card-title text-primary">
+                                        <i class="bi bi-chat-text me-2"></i>General
+                                    </h5>
+                                    <small class="text-muted">Room #1</small>
+                                    <p class="card-text mt-2">Main discussion room for general topics.</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            <i class="bi bi-people-fill"></i> 
+                                            <span id="users-room-1">0</span> users online
+                                        </small>
+                                        <a href="{% url 'chat:room' room_name=1 %}" class="btn btn-sm btn-primary">
+                                            Join Room <i class="bi bi-arrow-right-circle ms-1"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+
+                        <!-- Support Room -->
+                        <div class="col">
+                            <div class="card h-100 border-success">
+                                <div class="card-body">
+                                    <h5 class="card-title text-success">
+                                        <i class="bi bi-headset me-2"></i>Support
+                                    </h5>
+                                    <small class="text-muted">Room #2</small>
+                                    <p class="card-text mt-2">Get help and support from our team.</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">
+                                            <i class="bi bi-people-fill"></i> 
+                                            <span id="users-room-2">0</span> users online
+                                        </small>
+                                        <a href="{% url 'chat:room' room_name=2 %}" class="btn btn-sm btn-success">
+                                            Join Room <i class="bi bi-arrow-right-circle ms-1"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Create New Room -->
+                    <div class="card border-primary">
+                        <div class="card-body">
+                            <h5 class="card-title">Create or Join Room</h5>
+                            <div class="input-group">
+                                <input id="room-name-input" type="text" class="form-control" 
+                                       placeholder="Enter room number..." 
+                                       aria-label="Room number">
+                                <button class="btn btn-primary" type="button" id="room-name-submit">
+                                    <i class="bi bi-door-open me-1"></i> Enter Room
+                                </button>
+                            </div>
+                            <small class="text-muted mt-2 d-block">
+                                Enter a room number to create or join an existing room.
+                            </small>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div><!-- End Left side columns -->
-    </div>
+        </div>
 
+        <!-- Right Side Stats -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Chat Statistics</h5>
+                    <div class="list-group">
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            Active Rooms
+                            <span class="badge bg-primary rounded-pill" id="active-rooms">2</span>
+                        </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            Total Users Online
+                            <span class="badge bg-success rounded-pill" id="total-users">0</span>
+                        </div>
+                        {% if is_moderator %}
+                        <div class="list-group-item">
+                            <button class="btn btn-sm btn-outline-primary w-100" id="refresh-stats">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh Stats
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </section>
 
+<script>
+    document.querySelector('#room-name-input').focus();
+    document.querySelector('#room-name-input').onkeyup = function(e) {
+        if (e.key === 'Enter') {  // enter, return
+            document.querySelector('#room-name-submit').click();
+        }
+    };
+
+    document.querySelector('#room-name-submit').onclick = function(e) {
+        var roomName = document.querySelector('#room-name-input').value;
+        window.location.pathname = '/chat/room/' + roomName + '/';
+    };
+
+    // Actualizar estadísticas
+    function updateStats() {
+        fetch('/chat/stats/')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('total-users').textContent = data.total_users;
+                document.getElementById('active-rooms').textContent = data.active_rooms;
+                data.rooms.forEach(room => {
+                    const userCounter = document.getElementById(`users-room-${room.id}`);
+                    if (userCounter) {
+                        userCounter.textContent = room.users;
+                    }
+                });
+            });
+    }
+
+    // Actualizar estadísticas cada 30 segundos
+    updateStats();
+    setInterval(updateStats, 30000);
+
+    // Botón de actualización manual
+    document.getElementById('refresh-stats')?.addEventListener('click', updateStats);
+</script>
 
 {% endblock %}
