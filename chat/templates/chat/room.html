@@ -151,6 +151,13 @@
 </style>
 
 <script>
+    // Add heartbeat configuration
+    const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+    const HEARTBEAT_TIMEOUT = 35000; // 35 seconds
+    let heartbeatInterval = null;
+    let missedHeartbeats = 0;
+    const MAX_MISSED_HEARTBEATS = 3;
+    
     // Agregar variables para la información del usuario
     const userName = '{{ user_full_name }}' || '{{ display_name }}' || '{{ current_user }}';
     const roomName = JSON.parse(document.getElementById('room-name').textContent);
@@ -170,6 +177,7 @@
     }
 
     function cleanupConnection() {
+        stopHeartbeat();
         if (chatSocket) {
             chatSocket.onclose = null; // Prevent recursive reconnection
             chatSocket.close();
@@ -199,12 +207,19 @@
             chatSocket.onopen = function() {
                 updateConnectionStatus('Connected', 'success');
                 reconnectAttempt = 0;
-                // Start health check
-                startHealthCheck();
+                startHeartbeat();
             };
 
+            // Update onmessage to handle heartbeat responses
             chatSocket.onmessage = function(e) {
                 const data = JSON.parse(e.data);
+                
+                // Handle heartbeat response
+                if (data.type === 'pong') {
+                    missedHeartbeats = 0;
+                    return;
+                }
+
                 const timestamp = new Date().toLocaleTimeString('es-ES', {
                     hour: '2-digit',
                     minute: '2-digit',
@@ -241,7 +256,13 @@
             };
 
             chatSocket.onclose = function(e) {
+                stopHeartbeat();
                 cleanupConnection();
+                
+                if (e.code === 1006) { // Abnormal closure
+                    console.warn('WebSocket closed abnormally');
+                }
+                
                 updateConnectionStatus('Disconnected. Reconnecting...', 'warning');
                 
                 if (reconnectAttempt < maxReconnectAttempts) {
@@ -264,12 +285,34 @@
         }
     }
 
-    function startHealthCheck() {
-        setInterval(() => {
-            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
-                chatSocket.send(JSON.stringify({ 'action': 'ping' }));
+    function startHeartbeat() {
+        stopHeartbeat(); // Clear any existing heartbeat
+        
+        heartbeatInterval = setInterval(() => {
+            try {
+                missedHeartbeats++;
+                if (missedHeartbeats >= MAX_MISSED_HEARTBEATS) {
+                    console.warn('Too many missed heartbeats');
+                    chatSocket.close();
+                    return;
+                }
+                
+                chatSocket.send(JSON.stringify({
+                    'type': 'ping',
+                    'timestamp': new Date().toISOString()
+                }));
+            } catch (e) {
+                console.error('Failed to send heartbeat:', e);
             }
-        }, 30000); // Check every 30 seconds
+        }, HEARTBEAT_INTERVAL);
+    }
+
+    function stopHeartbeat() {
+        if (heartbeatInterval) {
+            clearInterval(heartbeatInterval);
+            heartbeatInterval = null;
+        }
+        missedHeartbeats = 0;
     }
 
     function formatMessage(message) {
