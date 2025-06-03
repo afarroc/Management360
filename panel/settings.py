@@ -93,7 +93,6 @@ REDIS_DB = config('REDIS_DB', default=0, cast=int)
 
 # For standard Redis connections
 REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
-print(f"Using Redis URL: {REDIS_URL}")
 
 # WebSocket configuration
 ASGI_APPLICATION = 'panel.asgi.application'
