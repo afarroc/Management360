@@ -199,158 +199,163 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Load clipboard details in modal
-    // In your template's JavaScript section
-    document.querySelectorAll('.view-clip-details').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const clipKey = this.dataset.clipKey;
+    // Clipboard operations
+    const clipboardOperations = {
+        // Load clipboard details in modal
+        loadDetails: function(btn) {
+            const clipKey = btn.dataset.clipKey;
             fetch(`/tools/upload-data/clipboard-details/?key=${clipKey}`)
                 .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
+                    if (!response.ok) throw new Error('Network response was not ok');
                     return response.json();
                 })
                 .then(data => {
                     const modalBody = document.getElementById('clipboardModalBody');
                     modalBody.innerHTML = data.html;
-                    const modal = new bootstrap.Modal(document.getElementById('clipboardModal'));
-                    modal.show();
+                    new bootstrap.Modal(document.getElementById('clipboardModal')).show();
                 })
                 .catch(error => {
                     console.error('Error:', error);
                     alert('Error loading clipboard details');
                 });
-        });
-    });
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('export-csv') || 
-            e.target.closest('.export-csv')) {
-            const button = e.target.classList.contains('export-csv') ? 
-                          e.target : e.target.closest('.export-csv');
-            const clipKey = button.dataset.clipKey;
-            
-            // Cambiar a una simple navegación ya que es una descarga directa
+        },
+        
+        // Export clipboard to CSV
+        exportCSV: function(btn) {
+            const clipKey = btn.dataset.clipKey;
             window.location.href = `/tools/upload-data/export-clipboard-csv/?key=${clipKey}`;
         }
+    };
+
+    // Delegated event listeners for clipboard actions
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.view-clip-details')) {
+            clipboardOperations.loadDetails(e.target.closest('.view-clip-details'));
+        }
+        if (e.target.closest('.export-csv')) {
+            clipboardOperations.exportCSV(e.target.closest('.export-csv'));
+        }
     });
-    
-    
-    // Data manipulation helpers
 
-
-    document.addEventListener('DOMContentLoaded', function() {
-        // Select all/none for column deletion
-        document.getElementById('selectAllColumns').addEventListener('click', function() {
+    // Data transformation helpers
+    const dataTransformation = {
+        // Column selection
+        toggleColumnSelection: function(selectAll) {
             const checkboxes = document.querySelectorAll('input[name="columns_to_delete"]');
             checkboxes.forEach(checkbox => {
-                checkbox.checked = true;
+                checkbox.checked = selectAll;
             });
-        });
-    
-        document.getElementById('deselectAllColumns').addEventListener('click', function() {
-            const checkboxes = document.querySelectorAll('input[name="columns_to_delete"]');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = false;
-            });
-        });
-    
+        },
+        
         // Sample values for replacement
-        document.getElementById('replace_column').addEventListener('change', function() {
-            const column = this.value;
-            if (column) {
-                // Find first non-null value in the preview table for this column
-                const colIndex = Array.from(document.querySelectorAll('thead th')).findIndex(th => 
-                    th.textContent.trim().includes(column));
-                
-                if (colIndex >= 0) {
-                    const firstRow = document.querySelector('tbody tr');
-                    if (firstRow) {
-                        const cells = firstRow.querySelectorAll('td');
-                        if (cells.length > colIndex) {
-                            document.getElementById('old_value').value = cells[colIndex].textContent.trim() || '';
-                        }
+        getSampleValue: function(columnName) {
+            const colIndex = Array.from(document.querySelectorAll('thead th')).findIndex(th => 
+                th.textContent.trim().includes(columnName));
+            
+            if (colIndex >= 0) {
+                const firstRow = document.querySelector('tbody tr');
+                if (firstRow) {
+                    const cells = firstRow.querySelectorAll('td');
+                    if (cells.length > colIndex) {
+                        return cells[colIndex].textContent.trim() || '';
                     }
                 }
             }
-        });
-    });
-
-      // Añadir al bloque JavaScript existente
-    document.addEventListener('DOMContentLoaded', function() {
-        // Select all/none for column deletion
-        document.getElementById('selectAllColumns')?.addEventListener('click', function() {
-            const checkboxes = document.querySelectorAll('input[name="columns_to_delete"]');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = true;
-            });
-        });
-    
-        document.getElementById('deselectAllColumns')?.addEventListener('click', function() {
-            const checkboxes = document.querySelectorAll('input[name="columns_to_delete"]');
-            checkboxes.forEach(checkbox => {
-                checkbox.checked = false;
-            });
-        });
-    
-        // Sample values for replacement
-        document.getElementById('replace_column')?.addEventListener('change', function() {
-            const column = this.value;
-            if (column) {
-                // Find first non-null value in the preview table for this column
-                const colIndex = Array.from(document.querySelectorAll('thead th')).findIndex(th => 
-                    th.textContent.trim().includes(column));
-                
-                if (colIndex >= 0) {
-                    const firstRow = document.querySelector('tbody tr');
-                    if (firstRow) {
-                        const cells = firstRow.querySelectorAll('td');
-                        if (cells.length > colIndex) {
-                            document.getElementById('old_value').value = cells[colIndex].textContent.trim() || '';
-                        }
-                    }
-                }
-            }
-        });
-    
+            return '';
+        },
+        
         // Fill NA helpers
-        document.getElementById('fill_column')?.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
+        updateFillHint: function(selectElement) {
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
             const colType = selectedOption.dataset.type;
             const hintElement = document.getElementById('fill_value_hint');
             
-            if (colType.includes('int') || colType.includes('float')) {
-                hintElement.textContent = "Ingrese un número (ej. 0, 1.5)";
-            } else if (colType.includes('date') || colType.includes('time')) {
-                hintElement.textContent = "Ingrese una fecha (ej. 2023-01-01)";
-            } else if (colType.includes('bool')) {
-                hintElement.textContent = "Ingrese true/false, 1/0, yes/no";
-            } else {
-                hintElement.textContent = "Ingrese el valor de relleno";
-            }
-        });
-    
-        // Validate before submitting edit form
-        document.getElementById('editForm')?.addEventListener('submit', function(e) {
-            const action = Array.from(e.submitter?.formData?.values() || []).find(v => 
-                ['delete_columns', 'replace_values', 'fill_na'].includes(v));
+            const hints = {
+                'int': "Enter a number (e.g., 0, 1.5)",
+                'float': "Enter a number (e.g., 0, 1.5)",
+                'date': "Enter a date (e.g., 2023-01-01)",
+                'time': "Enter a date/time (e.g., 2023-01-01 14:30)",
+                'bool': "Enter true/false, 1/0, yes/no",
+                'default': "Enter the fill value"
+            };
             
+            hintElement.textContent = 
+                colType.includes('int') ? hints.int :
+                colType.includes('float') ? hints.float :
+                colType.includes('date') ? hints.date :
+                colType.includes('time') ? hints.time :
+                colType.includes('bool') ? hints.bool :
+                hints.default;
+        },
+        
+        // Date conversion helpers
+        updateDateHint: function(selectElement) {
+            const column = selectElement.value;
+            if (!column) return;
+            
+            const colIndex = Array.from(document.querySelectorAll('thead th')).findIndex(th => 
+                th.textContent.trim().includes(column));
+            
+            if (colIndex >= 0) {
+                const firstRows = document.querySelectorAll('tbody tr');
+                const sampleValues = [];
+                
+                // Get up to 3 non-empty sample values
+                for (let i = 0; i < firstRows.length && sampleValues.length < 3; i++) {
+                    const cell = firstRows[i].querySelectorAll('td')[colIndex];
+                    const value = cell?.textContent.trim();
+                    if (value) sampleValues.push(value);
+                }
+                
+                const hintElement = document.getElementById('date_format');
+                if (sampleValues.length > 0) {
+                    hintElement.placeholder = `Example: ${sampleValues[0]}`;
+                }
+            }
+        },
+        
+        // Form validation
+        validateEditForm: function(form, action) {
             if (action === 'delete_columns') {
-                const checked = document.querySelectorAll('input[name="columns_to_delete"]:checked').length;
+                const checked = form.querySelectorAll('input[name="columns_to_delete"]:checked').length;
                 if (checked === 0) {
-                    alert('Por favor seleccione al menos una columna para eliminar');
-                    e.preventDefault();
+                    alert('Please select at least one column to delete');
                     return false;
                 }
             }
             return true;
-        });
+        }
+    };
+
+    // Set up event listeners for data transformation
+    document.getElementById('selectAllColumns')?.addEventListener('click', () => 
+        dataTransformation.toggleColumnSelection(true));
+    
+    document.getElementById('deselectAllColumns')?.addEventListener('click', () => 
+        dataTransformation.toggleColumnSelection(false));
+    
+    document.getElementById('replace_column')?.addEventListener('change', function() {
+        document.getElementById('old_value').value = dataTransformation.getSampleValue(this.value);
     });
-  
-  
+    
+    document.getElementById('fill_column')?.addEventListener('change', function() {
+        dataTransformation.updateFillHint(this);
+    });
+    
+    document.getElementById('date_column')?.addEventListener('change', function() {
+        dataTransformation.updateDateHint(this);
+    });
+    
+    document.getElementById('editForm')?.addEventListener('submit', function(e) {
+        const action = Array.from(new FormData(this).values()).find(v => 
+            ['delete_columns', 'replace_values', 'fill_na', 'convert_to_date'].includes(v));
+        
+        if (!dataTransformation.validateEditForm(this, action)) {
+            e.preventDefault();
+        }
+    });
 });
 </script>
-
 <style>
 /* Custom styles for the upload manager */
 .notification-container {

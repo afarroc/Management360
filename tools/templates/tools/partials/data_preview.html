@@ -366,6 +366,38 @@
                             </div>
                         </form>
                     </div>
+                    <!-- En la sección de edición, después de los otros formularios -->
+                    <div class="edit-section">
+                        <h6><i class="bi bi-calendar-date"></i> Convertir a Fecha</h6>
+                        <form method="post" id="dateConversionForm">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="date_column" class="form-label">Columna a convertir:</label>
+                                <select class="form-select" id="date_column" name="date_column" required>
+                                    <option value="">Seleccionar columna...</option>
+                                    {% for col in df_preview.columns %}
+                                    <option value="{{ col }}">{{ col }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="date_format" class="form-label">Formato de fecha:</label>
+                                <input type="text" class="form-control" id="date_format" name="date_format" 
+                                       placeholder="Ej: %d/%m/%Y para 31/12/2022">
+                                <small class="form-text text-muted">
+                                    Dejar vacío para detección automática. Ver 
+                                    <a href="https://strftime.org/" target="_blank">formatos soportados</a>
+                                </small>
+                            </div>
+                            
+                            <div class="edit-actions">
+                                <button type="submit" name="convert_to_date" class="btn btn-warning">
+                                    <i class="bi bi-magic"></i> Convertir a Fecha
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
 
             </div>

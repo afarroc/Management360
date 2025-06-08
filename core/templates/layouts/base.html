@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    {# Meta Tags #}
+    {# Metadatos básicos #}
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -11,40 +11,39 @@
     <meta name="keywords" content="management, platform, business">
     <meta name="author" content="Management360">
 
-    {# Title #}
-    <title>
-        {% block title %}
-            {{ page_title|default:"Management360" }} - Management360
-        {% endblock %}
-    </title>
+    {# Título dinámico #}
+    <title>{% block title %}{{ page_title|default:"Management360" }} - Management360{% endblock %}</title>
 
     {# Favicons #}
     <link rel="icon" href="{% static 'assets/img/favicon.png' %}">
     <link rel="apple-touch-icon" href="https://cdn.glitch.com/49d34dc6-8fbd-46bb-8221-b99ffd36f1af%2Ftouchicon-180.png?v=1566411949736">
 
-    {# Preconnects & Preloads #}
+    {# Preconexiones y precargas #}
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i">
+    <link rel="preload" as="style" href="{% static 'assets/css/style.css' %}">
 
-    {# Google Fonts #}
+    {# Fuentes de Google - Carga optimizada #}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" media="print" onload="this.media='all'">
     <noscript>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i">
     </noscript>
 
-    {# Vendor CSS #}
+    {# CSS de Vendor - Agrupado por prioridad #}
     <link rel="stylesheet" href="{% static 'assets/vendor/bootstrap/css/bootstrap.min.css' %}">
     <link rel="stylesheet" href="{% static 'assets/vendor/bootstrap-icons/bootstrap-icons.css' %}">
     <link rel="stylesheet" href="{% static 'assets/vendor/boxicons/css/boxicons.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/vendor/remixicon/remixicon.css' %}">
+    
+    {# CSS de Vendor - Secundario #}
     <link rel="stylesheet" href="{% static 'assets/vendor/quill/quill.snow.css' %}">
     <link rel="stylesheet" href="{% static 'assets/vendor/quill/quill.bubble.css' %}">
-    <link rel="stylesheet" href="{% static 'assets/vendor/remixicon/remixicon.css' %}">
     <link rel="stylesheet" href="{% static 'assets/vendor/simple-datatables/style.css' %}">
 
-    {# Main CSS #}
+    {# CSS Principal #}
     <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
 
-    {# Extra Head Content Block #}
+    {# Bloque para head adicional #}
     {% block extra_head %}{% endblock %}
 </head>
 
@@ -52,46 +51,66 @@
     {# Header #}
     {% include 'layouts/header.html' %}
 
-    {# Main Content #}
+    {# Sidebar #}
     {% include 'layouts/sidebar.html' %}
     
+    {# Contenido principal #}
     <main id="main" class="main">
+        {# Mensajes flash #}
         {% if messages %}
-            <div class="message-container">
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
+        <div class="message-container">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
+            {% endfor %}
+        </div>
         {% endif %}
 
+        {# Contenedor del contenido #}
         {% block content_wrapper %}
-            <div class="container-fluid">
-                {% block content %}{% endblock %}
-            </div>
+        <div class="container-fluid">
+            {% block content %}{% endblock %}
+        </div>
         {% endblock %}
     </main>
 
-    {# Footer #}
+    {# Footer con créditos #}
     <footer id="footer" class="footer">
-        <div class="copyright">
-            &copy; Copyright <strong><span>Management360</span></strong>. All Rights Reserved
-        </div>
-        <div class="credits">
-            Designed by <a href="https://bootstrapmade.com/" rel="noopener noreferrer" target="_blank">BootstrapMade</a>
+        <div class="container">
+            <div class="row">
+                {# Créditos del proyecto #}
+                <div class="col-md-6">
+                    <div class="project-credits">
+                    <div class="copyright">
+                            &copy; Copyright <strong><span>Management360</span></strong>. Todos los derechos reservados
+                        </div>
+                    </div>
+                </div>
+                
+                {# Créditos de terceros #}
+                <div class="col-md-6">
+                    <div class="third-party-credits">
+                        <div class="credits">
+                            <p>Plantilla base: <strong>NiceAdmin</strong></p>
+                            <p>&copy; Copyright <strong>NiceAdmin</strong>. All Rights Reserved</p>
+                            <p>Diseñado por <a href="https://bootstrapmade.com/" rel="noopener noreferrer" target="_blank">BootstrapMade</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </footer>
 
-    {# Back to Top Button #}
+    {# Botón para volver arriba #}
     <a href="#" class="back-to-top d-flex align-items-center justify-content-center" aria-label="Back to top">
         <i class="bi bi-arrow-up-short"></i>
     </a>
 
-    {# Vendor JS #}
-    <script src="{% static 'assets/vendor/apexcharts/apexcharts.min.js' %}" defer></script>
+    {# JavaScript de Vendor - Agrupado y con defer #}
     <script src="{% static 'assets/vendor/bootstrap/js/bootstrap.bundle.min.js' %}" defer></script>
+    <script src="{% static 'assets/vendor/apexcharts/apexcharts.min.js' %}" defer></script>
     <script src="{% static 'assets/vendor/chart.js/chart.umd.js' %}" defer></script>
     <script src="{% static 'assets/vendor/echarts/echarts.min.js' %}" defer></script>
     <script src="{% static 'assets/vendor/quill/quill.js' %}" defer></script>
@@ -99,38 +118,53 @@
     <script src="{% static 'assets/vendor/tinymce/tinymce.min.js' %}" defer></script>
     <script src="{% static 'assets/vendor/php-email-form/validate.js' %}" defer></script>
 
-    {# Main JS #}
+    {# JavaScript Principal #}
     <script src="{% static 'assets/js/main.js' %}" defer></script>
 
-    {# Extra JS Block #}
+    {# Bloque para JS adicional #}
     {% block extra_js %}{% endblock %}
 
-    {# Inline JavaScript #}
+    {# JavaScript Inline Optimizado #}
     <script nonce="{{ request.csp_nonce }}">
         document.addEventListener('DOMContentLoaded', function() {
-            // Auto-dismiss alerts
+            // Configuración de alertas
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(alert => {
+                const closeButton = alert.querySelector('.btn-close');
+                if (closeButton) {
+                    closeButton.addEventListener('click', () => {
+                        alert.style.transition = 'opacity 0.5s ease';
+                        alert.style.opacity = '0';
+                        setTimeout(() => alert.remove(), 500);
+                    });
+                }
+                
                 setTimeout(() => {
-                    alert.style.transition = 'opacity 5.s ease';
+                    alert.style.transition = 'opacity 0.5s ease';
                     alert.style.opacity = '0';
-                    setTimeout(() => alert.remove(), 5000);
-                }, 15000);
+                    setTimeout(() => alert.remove(), 500);
+                }, 5000);
             });
-            
-            // Back to top button
+
+            // Configuración del botón "Volver arriba"
             const backToTopButton = document.querySelector('.back-to-top');
             if (backToTopButton) {
-                window.addEventListener('scroll', () => {
-                    if (window.pageYOffset > 100) {
-                        backToTopButton.style.display = 'flex';
-                    } else {
-                        backToTopButton.style.display = 'none';
-                    }
+                const toggleVisibility = () => {
+                    backToTopButton.style.display = window.pageYOffset > 100 ? 'flex' : 'none';
+                };
+
+                window.addEventListener('scroll', toggleVisibility);
+                toggleVisibility(); // Estado inicial
+                
+                backToTopButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
                 });
             }
         });
     </script>
 </body>
-
 </html>
