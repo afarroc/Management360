@@ -40,12 +40,81 @@ class PlayerProfile(models.Model):
             return self.position_x, 0
         elif direction == 'SOUTH':
             return self.position_x, self.current_room.width
-        # ... otras direcciones ...
-    
-    def __str__(self):
-        return f"{self.user.username}'s Profile"
-    
-    
+
+    def get_available_exits(self):
+        """Devuelve todas las salidas disponibles de la habitación actual."""
+        exits = []
+        current_room = self.current_room
+        
+        # 1. Entradas físicas habilitadas
+        for entrance in current_room.entrance_exits.filter(enabled=True):
+            if entrance.connection:
+                exits.append({
+                    'type': 'entrance',
+                    'id': entrance.id,
+                    'direction': entrance.face,
+                    'name': entrance.name,
+                    'to_room': entrance.connection.to_room.id,
+                    'energy_cost': entrance.connection.energy_cost
+                })
+        
+        # 2. Portales activos
+        for portal in current_room.portals.all():
+            if portal.is_active():
+                exits.append({
+                    'type': 'portal',
+                    'id': portal.id,
+                    'name': portal.name,
+                    'to_room': portal.exit.room.id,
+                    'energy_cost': portal.energy_cost
+                })
+        
+        # 3. Objetos transportables
+        for obj in current_room.room_objects.filter(object_type__in=['DOOR', 'PORTAL']):
+            exits.append({
+                'type': 'object',
+                'id': obj.id,
+                'name': obj.name,
+                'interaction': obj.object_type.lower()
+            })
+        
+        return exits
+
+    def can_use_exit(self, exit_type, exit_id):
+        """Verifica si el jugador puede usar una salida específica."""
+        if exit_type == 'entrance':
+            entrance = EntranceExit.objects.get(id=exit_id)
+            return entrance.enabled and entrance.connection
+        elif exit_type == 'portal':
+            portal = Portal.objects.get(id=exit_id)
+            return portal.is_active() and self.energy >= portal.energy_cost
+        return True
+
+    def use_exit(self, exit_type, exit_id):
+        """Utiliza una salida y actualiza la posición del jugador"""
+        if not self.can_use_exit(exit_type, exit_id):
+            return False
+        
+        if exit_type == 'entrance':
+            entrance = EntranceExit.objects.get(id=exit_id)
+            self.current_room = entrance.connection.to_room
+            # Posicionar al jugador frente a la entrada correspondiente
+            opposite_entrance = entrance.connection.entrance
+            self.position_x = opposite_entrance.position_x
+            self.position_y = opposite_entrance.position_y
+            self.energy -= entrance.connection.energy_cost
+            
+        elif exit_type == 'portal':
+            portal = Portal.objects.get(id=exit_id)
+            self.current_room = portal.exit.room
+            self.position_x = portal.exit.position_x
+            self.position_y = portal.exit.position_y
+            self.energy -= portal.energy_cost
+            portal.last_used = timezone.now()
+            portal.save()
+        
+        self.save()
+        return True
 
 class RoomManager(models.Manager):
     pass
@@ -214,9 +283,13 @@ class Portal(models.Model):
     cooldown = models.IntegerField(default=300)
     last_used = models.DateTimeField(null=True, blank=True)
 
+    def is_active(self):
+        """Un portal está activo si no está en cooldown"""
+        return (self.last_used is None or 
+                self.last_used + timedelta(seconds=self.cooldown) < timezone.now())    
     def __str__(self):
-        return f"{self.name} ({self.entrance.room.name} ↔ {self.exit.room.name})"
-
+        return f"{self.user.username}'s Profile"
+ 
 
 class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

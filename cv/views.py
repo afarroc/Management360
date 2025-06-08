@@ -1,328 +1,145 @@
-# cv/views.py (Versión corregida)
-from io import BytesIO
-from django.views import View
+from django.views.generic import View, FormView, DetailView, UpdateView
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
-from django.db import transaction
-from django.core.exceptions import PermissionDenied
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
-from django.views.decorators.http import require_POST
-from openpyxl import load_workbook
-from .models import Curriculum, Experience, Education, Skill
-from .forms import CurriculumForm, ExperienceForm, EducationForm, SkillForm
+from django.urls import reverse_lazy
 from django.forms import modelformset_factory
-
-
-# Configuración mejorada de formsets
-# Modificar los formsets para usar modelformset_factory
-ExperienceFormSet = modelformset_factory(
-    Experience, 
-    form=ExperienceForm, 
-    extra=1, 
-    can_delete=True
+from django.db import transaction
+from .models import Curriculum, Experience, Education, Skill, Document, Image, Database
+from .forms import (
+    CurriculumForm, ExperienceForm, EducationForm, SkillForm,
+    DocumentForm, ImageForm, DatabaseForm
 )
 
-EducationFormSet = modelformset_factory(
-    Education,
-    form=EducationForm,
-    extra=1,
-    can_delete=True
-)
+class CurriculumDetailView(LoginRequiredMixin, DetailView):
+    model = Curriculum
+    template_name = 'cv/detail.html'
+    context_object_name = 'cv'
 
-SkillFormSet = modelformset_factory(
-    Skill,
-    form=SkillForm,
-    extra=1,
-    can_delete=True
-)
+    def get_object(self):
+        return get_object_or_404(Curriculum, user=self.request.user)
 
-@method_decorator(login_required, name='dispatch')
-class CurriculumView(View):
+class CurriculumUpdateView(LoginRequiredMixin, View):
     template_name = 'cv/curriculum_form.html'
-    success_url = 'cv_detail'
+    success_url = reverse_lazy('cv_detail')
 
-    def get(self, request, user_id=None):
-        if user_id and request.user.id != user_id:
-            raise PermissionDenied("Acceso no autorizado")
-        
-        # Crear o obtener el Curriculum
-        cv, created = Curriculum.objects.get_or_create(user=request.user)
-        
-        # Configurar formsets con datos iniciales
-        experience_formset = ExperienceFormSet(
-            prefix='experiences',
-            instance=cv,
-            queryset=cv.experiences.all()
+    def get_formsets(self, cv):
+        ExperienceFormSet = modelformset_factory(
+            Experience, form=ExperienceForm, extra=1, can_delete=True
         )
-        
-        education_formset = EducationFormSet(
-            prefix='education',
-            instance=cv,
-            queryset=cv.educations.all()
+        EducationFormSet = modelformset_factory(
+            Education, form=EducationForm, extra=1, can_delete=True
         )
-        
-        skill_formset = SkillFormSet(
-            prefix='skills',
-            instance=cv,
-            queryset=cv.skills_list.all()
+        SkillFormSet = modelformset_factory(
+            Skill, form=SkillForm, extra=1, can_delete=True
         )
 
-        return render(request, self.template_name, {
+        return {
+            'experience_formset': ExperienceFormSet(
+                prefix='experiences',
+                queryset=cv.experiences.all()
+            ),
+            'education_formset': EducationFormSet(
+                prefix='education',
+                queryset=cv.educations.all()
+            ),
+            'skill_formset': SkillFormSet(
+                prefix='skills',
+                queryset=cv.skills_list.all()
+            )
+        }
+
+    def get(self, request):
+        cv = get_object_or_404(Curriculum, user=request.user)
+        context = {
             'form': CurriculumForm(instance=cv),
-            'experience_formset': experience_formset,
-            'education_formset': education_formset,
-            'skill_formset': skill_formset,
-            'cv': cv
-        })
+            'cv': cv,
+            **self.get_formsets(cv)
+        }
+        return render(request, self.template_name, context)
 
-    # Actualizar el método post
     @transaction.atomic
-    def post(self, request, user_id=None):
+    def post(self, request):
         cv = get_object_or_404(Curriculum, user=request.user)
         form = CurriculumForm(request.POST, request.FILES, instance=cv)
-        
-        experience_formset = ExperienceFormSet(
-            request.POST,
-            prefix='experiences',
-            queryset=cv.experiences.all()
-        )
-        
-        education_formset = EducationFormSet(
-            request.POST,
-            prefix='education',
-            queryset=cv.educations.all()
-        )
-        
-        skill_formset = SkillFormSet(
-            request.POST,
-            prefix='skills',
-            queryset=cv.skills_list.all()
-        )
+        formsets = self.get_formsets(cv)
 
-        if all([
-            form.is_valid(),
-            experience_formset.is_valid(),
-            education_formset.is_valid(),
-            skill_formset.is_valid()
-        ]):
-            try:
-                form.save()
-                # Guardar formsets
-                instances = experience_formset.save(commit=False)
-                for obj in instances:
-                    obj.cv = cv
-                    obj.save()
-                
-                instances = education_formset.save(commit=False)
-                for obj in instances:
-                    obj.cv = cv
-                    obj.save()
-                
-                instances = skill_formset.save(commit=False)
-                for obj in instances:
-                    obj.cv = cv
-                    obj.save()
-                
-                # Eliminar marcados para borrar
-                for obj in experience_formset.deleted_objects:
-                    obj.delete()
-                
-                for obj in education_formset.deleted_objects:
-                    obj.delete()
-                
-                for obj in skill_formset.deleted_objects:
-                    obj.delete()
-                
-                messages.success(request, 'Perfil actualizado correctamente')
-                return redirect('cv_detail')
-                
-            except Exception as e:
-                messages.error(request, f'Error al guardar: {str(e)}')
-        
-        return render(request, self.template_name, {
-            'form': form,
-            'experience_formset': experience_formset,
-            'education_formset': education_formset,
-            'skill_formset': skill_formset,
-            'cv': cv
-        })
-    # Resto de las vistas permanecen igual...
-
-@method_decorator(login_required, name='dispatch')
-class ViewCurriculumView(View):
-    def get(self, request, user_id):
-        cv = get_object_or_404(Curriculum, user_id=user_id)
-        return render(request, 'cv/view_curriculum.html', {
-            'cv': cv,
-            'experiences': cv.experiences.all(),
-            'education': cv.educations.all(),
-            'skills': cv.skills_list.all()
-        })
-
-@login_required
-def cv_edit(request):
-    cv = get_object_or_404(Curriculum, user=request.user)
-    
-    if request.method == 'POST':
-        form = CurriculumForm(request.POST, request.FILES, instance=cv)
-        if form.is_valid():
+        if form.is_valid() and all(fs.is_valid() for fs in formsets.values()):
             form.save()
-            messages.success(request, 'Cambios guardados exitosamente')
-            return redirect('cv_detail')
-        messages.error(request, 'Error en el formulario')
-    
-    form = CurriculumForm(instance=cv)
-    return render(request, 'cv/edit.html', {'form': form})
+            self.save_formsets(cv, formsets)
+            messages.success(request, 'Perfil actualizado correctamente')
+            return redirect(self.success_url)
 
-@login_required
-def cv_detail(request):
-    try:
-        cv = get_object_or_404(Curriculum, user=request.user)
-        return render(request, 'cv/detail.html', {
-            'cv': cv,
-            'experiences': cv.experiences.all(),
-            'educations': cv.educations.all(),
-            'skills_list': cv.skills_list.all()
-        })
-    except Exception as e:
-        # Manejo de errores genérico para capturar problemas inesperados
-        messages.error(request, f'Error al cargar el detalle del CV: {str(e)}')
-        return redirect('home')  # Redirigir a una página segura en caso de error
+        context = {'form': form, 'cv': cv, **formsets}
+        return render(request, self.template_name, context)
 
+    def save_formsets(self, cv, formsets):
+        for formset in formsets.values():
+            instances = formset.save(commit=False)
+            for obj in instances:
+                obj.cv = cv
+                obj.save()
+            for obj in formset.deleted_objects:
+                obj.delete()
 
-@require_POST
-@login_required
-def delete_profile_picture(request):
-    try:
-        cv = get_object_or_404(Curriculum, user=request.user)
-        if cv.profile_picture:
-            cv.profile_picture.delete(save=False)  # Eliminar archivo del sistema
-            cv.profile_picture = None
-            cv.save(update_fields=['profile_picture'])
-            messages.success(request, 'Imagen eliminada correctamente')
-        else:
-            messages.warning(request, 'No hay imagen para eliminar')
-    except Curriculum.DoesNotExist:
-        # Manejo específico si no se encuentra el CV
-        messages.error(request, 'No se encontró el CV asociado al usuario')
-    except Exception as e:
-        # Manejo de errores genérico
-        messages.error(request, f'Error al eliminar la imagen: {str(e)}')
-    return redirect('cv_detail')
+class PublicCurriculumView(DetailView):
+    model = Curriculum
+    template_name = 'cv/view_curriculum.html'
+    context_object_name = 'cv'
+    pk_url_kwarg = 'user_id'
 
-from .models import Document, Image, Database
-from .forms import DocumentForm, ImageForm, DatabaseForm
+    def get_object(self):
+        return get_object_or_404(Curriculum, user_id=self.kwargs['user_id'])
 
-def document_view(request):
-    documents = Document.objects.all()  # Obtiene todos los documentos
-    images = Image.objects.all()        # Obtiene todas las imágenes
-    databases = Database.objects.all()        # Obtiene todas las imágenes
-    context = {
-        'documents': documents,
-        'images': images,
-        'databases': databases,
+class FileUploadView(LoginRequiredMixin, FormView):
+    template_name = 'documents/upload.html'
+    success_url = reverse_lazy('docsview')
+
+    def form_valid(self, form):
+        file = form.cleaned_data['file']
+        self.model.objects.create(upload=file, cv=self.get_cv())
+        messages.success(self.request, 'Archivo subido correctamente')
+        return super().form_valid(form)
+
+    def get_cv(self):
+        return get_object_or_404(Curriculum, user=self.request.user)
+
+class DocumentUploadView(FileUploadView):
+    form_class = DocumentForm
+    model = Document
+
+class ImageUploadView(FileUploadView):
+    form_class = ImageForm
+    model = Image
+
+class DatabaseUploadView(FileUploadView):
+    form_class = DatabaseForm
+    model = Database
+
+class FileDeleteView(LoginRequiredMixin, View):
+    models = {
+        'document': Document,
+        'image': Image,
+        'database': Database
     }
-    return render(request, 'documents/docsview.html', context)
 
-def delete_file(request, file_id, file_type):
-    if file_type == 'document':
-        file_model = Document
-    elif file_type == 'image':
-        file_model = Image
-    else:
-        messages.error(request, 'Tipo de archivo no válido.')
+    def post(self, request, file_type, file_id):
+        model = self.models.get(file_type)
+        if not model:
+            messages.error(request, 'Tipo de archivo no válido')
+            return redirect('docsview')
+
+        file_instance = get_object_or_404(model, id=file_id, cv__user=request.user)
+        file_instance.delete()
+        messages.success(request, 'Archivo eliminado correctamente')
         return redirect('docsview')
 
-    file_instance = get_object_or_404(file_model, id=file_id)
-    if request.method == 'POST':
-        file_instance.upload.delete()  # Esto elimina el archivo del sistema de archivos.
-        file_instance.delete()         # Esto elimina la instancia del modelo de la base de datos.
-        messages.success(request, f'El {file_type} ha sido eliminado exitosamente.')
-        return redirect('docsview')
-    else:
-        # Si no es una solicitud POST, muestra la página de confirmación.
-        return render(request, 'documents/confirmar_eliminacion.html', {'file': file_instance, 'type': file_type})
-
-from django.views.generic import FormView
-from django.urls import reverse, reverse_lazy
-
-
-# Vista para subir documentos
-class DocumentUploadView(FormView):
-    template_name = 'documents/upload.html' # El nombre del template que quieres usar
-    form_class = DocumentForm # El formulario que quieres usar
-    success_url = reverse_lazy('docsview')# La url a la que quieres redirigir después de subir el archivo
-    def form_valid(self, form):
-        # Este método se ejecuta si el formulario es válido
-        # Aquí puedes guardar el archivo en tu modelo
-        file = form.cleaned_data['file'] # Obtiene el archivo del formulario
-        document = Document(upload=file) # Crea una instancia de tu modelo con el archivo
-        document.save() # Guarda el archivo en la base de datos
-        return super().form_valid(form) # Retorna la vista de éxito
-
-# Vista para subir imágenes
-class ImageUploadView(FormView):
-    template_name = 'documents/upload.html' # El nombre del template que quieres usar
-    form_class = ImageForm # El formulario que quieres usar
-    success_url = reverse_lazy('docsview')# La url a la que quieres redirigir después de subir el archivo
-
-    def form_valid(self, form):
-        # Este método se ejecuta si el formulario es válido
-        # Aquí puedes guardar el archivo en tu modelo
-        file = form.cleaned_data['file'] # Obtiene el archivo del formulario
-        image = Image(upload=file) # Crea una instancia de tu modelo con el archivo
-        image.save() # Guarda el archivo en la base de datos
-        return super().form_valid(form) # Retorna la vista de éxito
-    
-    # Vista para subir db
-
-# Vista para subir bases de datos
-class UploadDatabase(FormView):
-    template_name = 'documents/upload.html' # El nombre del template que quieres usar
-    form_class = DatabaseForm # El formulario que quieres usar
-    success_url = reverse_lazy('docsview')# La url a la que quieres redirigir después de subir el archivo
-
-    def form_valid(self, form):
-        # Este método se ejecuta si el formulario es válido
-        # Aquí puedes guardar el archivo en tu modelo
-        file = form.cleaned_data['file'] # Obtiene el archivo del formulario
-        db = Database(upload=file) # Crea una instancia de tu modelo con el archivo
-        db.save() # Guarda el archivo en la base de datos
-        return super().form_valid(form) # Retorna la vista de éxito
-
-# Vista para subir bases de datos
-
-# views.py
-
-def upload_xlsx(request):
-    if request.method == 'POST':
-        form = DatabaseForm(request.POST, request.FILES)
-        if form.is_valid():
-            file_in_memory = request.FILES['file'].read()
-            wb = load_workbook(filename=BytesIO(file_in_memory))
-            print('Form is valid')
-            # Procesa el archivo y realiza las operaciones necesarias
-            # (filtrar columnas, cambiar títulos, etc.)
-            # Luego, crea un nuevo archivo o modelo con los datos finales.
-            # ...
-            # Devuelve una respuesta al usuario (descargar archivo o mostrar datos).
-    else:
-        form = DatabaseForm()
-    return render(request, 'documents/upload_xlsx.html', {'form': form})
-
-# about upload
-from django.core.files.storage import FileSystemStorage
-
-def upload_image(request):
-    if request.method == 'POST':
-        try:
-            image = request.FILES['image']
-            fs = FileSystemStorage()
-            filename = fs.save(image.name, image)
-            uploaded_file_url = fs.url(filename)
-            messages.success(request, 'Imagen subida con éxito.')
-            return redirect('about')
-        except KeyError:
-            messages.error(request, 'Por favor, selecciona una imagen para subir.')
-    return render(request, 'about/about.html')
+class DocumentListView(LoginRequiredMixin, View):
+    def get(self, request):
+        cv = get_object_or_404(Curriculum, user=request.user)
+        context = {
+            'documents': cv.documents.all(),
+            'images': cv.images.all(),
+            'databases': cv.databases.all(),
+        }
+        return render(request, 'documents/docsview.html', context)
