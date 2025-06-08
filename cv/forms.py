@@ -1,93 +1,85 @@
-# cv/forms.py
 from django import forms
-from .models import Curriculum, Experience, Education, Skill
-    
+from .models import Curriculum, Experience, Education, Skill, Document, Image, Database
+from django.core.validators import FileExtensionValidator
 
-class CurriculumForm(forms.ModelForm):
+class BaseModelForm(forms.ModelForm):
+    """Formulario base con estilos comunes"""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.update({'class': 'form-control'})
+
+class CurriculumForm(BaseModelForm):
     class Meta:
         model = Curriculum
-        fields = [
-            'full_name', 'profession', 'bio', 'skills', 'experience', 'education',
-            'location', 'profile_picture', 'linkedin_url', 'github_url', 'twitter_url',
-            'facebook_url', 'instagram_url', 'role', 'company', 'job_title', 'country',
-            'address', 'phone', 'email'
-        ]
+        fields = '__all__'
+        exclude = ['user', 'created_at', 'updated_at']
         widgets = {
             'bio': forms.Textarea(attrs={'rows': 3}),
-            'skills': forms.Textarea(attrs={'rows': 2, 'placeholder': 'Separar habilidades con comas'}),
-            'experience': forms.Textarea(attrs={'rows': 5}),
-            'education': forms.Textarea(attrs={'rows': 3}),
             'address': forms.TextInput(attrs={'placeholder': 'Calle, número, ciudad'}),
-            'phone': forms.TextInput(attrs={'placeholder': '+34 600 000 000'}),
-        }
-        labels = {
-            'full_name': 'Nombre completo',
-            'profession': 'Profesión',
-            'bio': 'Biografía profesional'
         }
 
-class ExperienceForm(forms.ModelForm):
+class ExperienceForm(BaseModelForm):
     class Meta:
         model = Experience
-        fields = ['job_title', 'company_name', 'start_date', 'end_date', 'description']
+        fields = '__all__'
+        exclude = ['cv']
         widgets = {
             'start_date': forms.DateInput(attrs={'type': 'date'}),
             'end_date': forms.DateInput(attrs={'type': 'date'}),
             'description': forms.Textarea(attrs={'rows': 3}),
         }
-        labels = {
-            'job_title': 'Puesto de trabajo',
-            'company_name': 'Nombre de la empresa',
-            'start_date': 'Fecha de inicio',
-            'end_date': 'Fecha de finalización',
-            'description': 'Descripción de funciones'
-        }
 
-class EducationForm(forms.ModelForm):
+class EducationForm(BaseModelForm):
     class Meta:
         model = Education
-        fields = ['institution_name', 'degree', 'field_of_study', 'start_date', 'end_date', 'description']
+        fields = '__all__'
+        exclude = ['cv']
         widgets = {
             'start_date': forms.DateInput(attrs={'type': 'date'}),
             'end_date': forms.DateInput(attrs={'type': 'date'}),
-            'description': forms.Textarea(attrs={'rows': 2}),
-        }
-        labels = {
-            'degree': 'Título obtenido',
-            'field_of_study': 'Área de estudio'
         }
 
-class SkillForm(forms.ModelForm):
+class SkillForm(BaseModelForm):
     class Meta:
         model = Skill
-        fields = ['skill_name', 'proficiency_level']
+        fields = '__all__'
+        exclude = ['cv']
         widgets = {
-            'skill_name': forms.TextInput(attrs={'placeholder': 'Ej: Python, Django'}),
-            'proficiency_level': forms.Select(choices=[
-                ('', 'Seleccione nivel'),
-                ('B', 'Básico'),
-                ('I', 'Intermedio'),
-                ('A', 'Avanzado')
-            ])
+            'proficiency_level': forms.Select(attrs={'class': 'form-control'}),
         }
-        labels = {
-            'skill_name': 'Habilidad técnica',
-            'proficiency_level': 'Nivel de dominio'
-        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['proficiency_level'].choices = [
+            ('', 'Seleccione nivel'),
+            ('B', 'Básico'),
+            ('I', 'Intermedio'),
+            ('A', 'Avanzado')
+        ]
 
+class FileUploadForm(forms.Form):
+    """Formulario base para subida de archivos"""
+    file = forms.FileField(widget=forms.FileInput(attrs={'class': 'form-control'}))
+    
+    def __init__(self, *args, **kwargs):
+        valid_extensions = kwargs.pop('valid_extensions', [])
+        super().__init__(*args, **kwargs)
+        self.fields['file'].validators.append(
+            FileExtensionValidator(valid_extensions)
+        )
 
+class DocumentForm(FileUploadForm):
+    def __init__(self, *args, **kwargs):
+        kwargs['valid_extensions'] = ['pdf', 'docx', 'ppt']
+        super().__init__(*args, **kwargs)
 
-from django import forms
-from django.core.validators import FileExtensionValidator
+class ImageForm(FileUploadForm):
+    def __init__(self, *args, **kwargs):
+        kwargs['valid_extensions'] = ['jpg', 'jpeg', 'png', 'gif']
+        super().__init__(*args, **kwargs)
 
-        
-# Formulario para subir documentos
-class DocumentForm(forms.Form):
-    file = forms.FileField(validators=[FileExtensionValidator(['pdf', 'docx', 'ppt'])])
-
-# Formulario para subir imágenes
-class ImageForm(forms.Form):
-    file = forms.FileField(validators=[FileExtensionValidator(['jpg', 'bmp', 'png'])])
-
-class DatabaseForm(forms.Form):
-    file = forms.FileField(validators=[FileExtensionValidator(['csv', 'txt', 'xlsx', 'xlsm'])])
+class DatabaseForm(FileUploadForm):
+    def __init__(self, *args, **kwargs):
+        kwargs['valid_extensions'] = ['csv', 'xlsx', 'xls']
+        super().__init__(*args, **kwargs)

@@ -2,7 +2,8 @@
 from django.urls import path
 from . import views
 from .views import RoomListViewSet, RoomDetailViewSet, RoomSearchViewSet, \
-    MessageListCreateAPIView, JoinRoomView, LeaveRoomView
+    MessageListCreateAPIView, JoinRoomView, LeaveRoomView, \
+    room_view, navigate_room
 
 
 urlpatterns = [
@@ -34,4 +35,10 @@ urlpatterns = [
     path('api/rooms/<int:room_id>/messages/', MessageListCreateAPIView.as_view(), name='room-messages-api'),
     path('api/rooms/<int:room_id>/join/', JoinRoomView.as_view(), name='join-room-api'),
     path('api/rooms/<int:room_id>/leave/', LeaveRoomView.as_view(), name='leave-room-api'),
+
+   # ... otras URLs existentes ...
+    path('room/', room_view, name='current_room'),
+    path('room/<int:room_id>/', room_view, name='room_view'),
+    path('navigate/<str:direction>/', navigate_room, name='navigate_room'),
 ]
+

@@ -1,16 +1,17 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
-{% load crispy_forms_tags %}  <!-- ¡Esta línea es crucial! -->
+
+{% block title %}Perfil de Usuario{% endblock %}
 
 {% block content %}
 
 <div class="pagetitle">
-    <h1>Profile</h1>
+    <h1>Perfil de Usuario</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item">Users</li>
-            <li class="breadcrumb-item active">Profile</li>
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+            <li class="breadcrumb-item">Usuarios</li>
+            <li class="breadcrumb-item active">Perfil</li>
         </ol>
     </nav>
 </div><!-- End Page Title -->
@@ -18,46 +19,54 @@
 <section class="section profile">
     <div class="row">
         
-        {% include 'cv/includes/profile.html' %}
+        {% include 'cv/includes/profile.html' with user_profile=cv %}
 
         <div class="col-xl-8">
-
             <div class="card">
                 <div class="card-body pt-3">
                     <!-- Bordered Tabs -->
-                    <ul class="nav nav-tabs nav-tabs-bordered">
-
-                        <li class="nav-item">
-                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile-overview">Overview</button>
+                    <ul class="nav nav-tabs nav-tabs-bordered" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile-overview" 
+                                    type="button" role="tab" aria-controls="profile-overview" aria-selected="true">
+                                Resumen
+                            </button>
                         </li>
 
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-edit">Edit Profile</button>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-edit" 
+                                    type="button" role="tab" aria-controls="profile-edit" aria-selected="false">
+                                Editar Perfil
+                            </button>
                         </li>
 
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-settings">Settings</button>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-settings" 
+                                    type="button" role="tab" aria-controls="profile-settings" aria-selected="false">
+                                Configuración
+                            </button>
                         </li>
 
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-change-password">Change Password</button>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-change-password" 
+                                    type="button" role="tab" aria-controls="profile-change-password" aria-selected="false">
+                                Cambiar Contraseña
+                            </button>
                         </li>
-
                     </ul>
+
                     <div class="tab-content pt-2">
-
-                        {% include 'cv/includes/profile_overview.html' %}
-                        {% include 'cv/includes/profile_edit.html' %}
+                        {% include 'cv/includes/profile_overview.html' with cv=cv %}
+                        
+                        {% include 'cv/includes/profile_edit.html' with form=form %}
+                        
                         {% include 'cv/includes/profile_settings.html' %}
+                        
                         {% include 'cv/includes/profile_change_password.html' %}
-
                     </div><!-- End Bordered Tabs -->
-
                 </div>
             </div>
-
         </div>
-
     </div>
 </section>
 

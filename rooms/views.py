@@ -556,3 +556,124 @@ def get_recent_activities(limit=5):
     # Sort all activities by timestamp
     activities.sort(key=lambda x: x['timestamp'], reverse=True)
     return activities[:limit]
+    
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from .models import PlayerProfile, Room, EntranceExit, RoomConnection
+from django.http import JsonResponse
+
+@login_required
+def navigate_room(request, direction):
+    """
+    Vista para manejar la navegación entre habitaciones
+    """
+    player = request.user.player_profile
+    
+    if not player.current_room:
+        return JsonResponse({
+            'success': False,
+            'message': 'No estás en ninguna habitación actualmente'
+        }, status=400)
+    
+    # Intentar mover al jugador
+    success = player.move_to_room(direction)
+    
+    if success:
+        new_room = player.current_room
+        entrance = new_room.entrance_exits.filter(face=direction.opposite()).first()
+        
+        # Obtener información de la nueva habitación
+        room_info = {
+            'id': new_room.id,
+            'name': new_room.name,
+            'description': new_room.description,
+            'image_url': new_room.get_image_url() or '/static/images/default-room.jpg',
+            'connections': get_available_exits(new_room),
+            'objects': list(new_room.room_objects.values('id', 'name', 'object_type', 'position_x', 'position_y')),
+            'entrance_position': {
+                'x': entrance.position_x if entrance else new_room.length // 2,
+                'y': entrance.position_y if entrance else new_room.width // 2
+            } if entrance else None
+        }
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Te has movido a {new_room.name}',
+            'room': room_info
+        })
+    else:
+        return JsonResponse({
+            'success': False,
+            'message': 'No hay conexión disponible en esa dirección'
+        }, status=400)
+
+def get_available_exits(room):
+    """
+    Obtiene las salidas disponibles de una habitación
+    """
+    exits = []
+    for entrance in room.entrance_exits.filter(enabled=True):
+        if entrance.connection:
+            exits.append({
+                'direction': entrance.face,
+                'to_room': entrance.connection.to_room.name,
+                'to_room_id': entrance.connection.to_room.id,
+                'energy_cost': entrance.connection.energy_cost
+            })
+    return exits
+
+@login_required
+def room_view(request, room_id=None):
+    """Vista principal para mostrar una habitación"""
+    player = request.user.player_profile
+    
+    # Si no se especifica room_id, usar la actual
+    room = player.current_room if room_id is None else get_object_or_404(Room, id=room_id)
+    
+    # Actualizar habitación del jugador si es diferente
+    if player.current_room != room:
+        player.current_room = room
+        player.save()
+    
+    return JsonResponse({
+        'room': {
+            'id': room.id,
+            'name': room.name,
+            'description': room.description,
+            'image_url': room.get_image_url() or '/static/default-room.jpg'
+        },
+        'exits': player.get_available_exits(),
+        'player': {
+            'energy': player.energy,
+            'position': [player.position_x, player.position_y]
+        }
+    })
+
+@login_required
+def navigate(request):
+    """Maneja la navegación entre habitaciones"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    player = request.user.player_profile
+    exit_type = request.POST.get('exit_type')
+    exit_id = request.POST.get('exit_id')
+    
+    if not exit_type or not exit_id:
+        return JsonResponse({'error': 'Faltan parámetros'}, status=400)
+    
+    if player.use_exit(exit_type, exit_id):
+        return JsonResponse({
+            'success': True,
+            'new_room': {
+                'id': player.current_room.id,
+                'name': player.current_room.name
+            },
+            'energy': player.energy,
+            'position': [player.position_x, player.position_y]
+        })
+    else:
+        return JsonResponse({
+            'success': False,
+            'error': 'No se puede usar esta salida'
+        }, status=400)

@@ -1,0 +1,98 @@
+{% extends 'layouts/base.html' %}
+{% load static crispy_forms_tags %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>Editar Currículum</h2>
+            <form method="post" enctype="multipart/form-data" class="mt-4">
+                {% csrf_token %}
+                
+                <!-- Formulario principal -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Información Personal</h4>
+                    </div>
+                    <div class="card-body">
+                        {{ form|crispy }}
+                    </div>
+                </div>
+                
+                <!-- Experiencia Laboral -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Experiencia Laboral</h4>
+                    </div>
+                    <div class="card-body">
+                        {{ experience_formset.management_form }}
+                        {% for form in experience_formset %}
+                            <div class="formset-row mb-3 p-3 border rounded">
+                                {{ form|crispy }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Educación -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Educación</h4>
+                    </div>
+                    <div class="card-body">
+                        {{ education_formset.management_form }}
+                        {% for form in education_formset %}
+                            <div class="formset-row mb-3 p-3 border rounded">
+                                {{ form|crispy }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Habilidades -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Habilidades</h4>
+                    </div>
+                    <div class="card-body">
+                        {{ skill_formset.management_form }}
+                        {% for form in skill_formset %}
+                            <div class="formset-row mb-3 p-3 border rounded">
+                                {{ form|crispy }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                <a href="{% url 'cv_detail' %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript para formsets dinámicos -->
+<script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
+<script src="{% static 'js/jquery.formset.js' %}"></script>
+<script>
+    $(function() {
+        $('.formset-row').formset({
+            prefix: '{{ experience_formset.prefix }}',
+            deleteText: 'Eliminar',
+            addText: 'Añadir otro'
+        });
+        
+        $('.education-formset').formset({
+            prefix: '{{ education_formset.prefix }}',
+            deleteText: 'Eliminar',
+            addText: 'Añadir otro'
+        });
+        
+        $('.skill-formset').formset({
+            prefix: '{{ skill_formset.prefix }}',
+            deleteText: 'Eliminar',
+            addText: 'Añadir otro'
+        });
+    });
+</script>
+{% endblock %}
