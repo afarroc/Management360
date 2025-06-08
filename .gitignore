@@ -1,34 +1,65 @@
-# Ignora la base de datos SQLite
-db.sqlite3
-
-# Ignora secrets.py
-panel/secrets.py
-
-# Ignora el archivo de variables de entorno
-.env
-
-# Ignora el entorno virtual
-env/
-
-# Ignora todos los directorios __pycache__
+# ================================
+# Python/Django específico
+# ================================
+*.pyc
+*.pyo
+*.pyd
 __pycache__/
-*.pyc  # Agregado para ignorar archivos .pyc
+*.so
+*.egg-info/
+*.egg
+.python-version
+venv/
+env/
+.venv/
+ENV/
 
-# Ignora todos los vscode
-.vscode 
+# ================================
+# Configuración y secretos
+# ================================
+.env
+.env.*
+panel/secrets.py
+*.key
+*.cert
 
-# Ignora todos los vscode
-**/.vs/
+# ================================
+# Sistema/Editores
+# ================================
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
 
-# Ignora el contenido de las carpetas internas
-media/documents/*
-!media/documents/
-media/images/*
-!media/images/
-media/profile_pics/*
-!media/profile_pics/
+# ================================
+# Base de datos
+# ================================
+db.sqlite3
+*.dump
 
-# Ignora migraciones en general, pero permite algunas
+# ================================
+# Migraciones (excepciones incluidas)
+# ================================
 */migrations/*
 !*/migrations/__init__.py
 !core/migrations/
+
+# ================================
+# Media/Static files
+# ================================
+/media/*
+!/media/.gitkeep
+/media/documents/*
+!media/documents/
+/media/images/*
+!media/images/
+/media/profile_pics/*
+!media/profile_pics/
+/staticfiles/
+
+# ================================
+# Logs y reportes
+# ================================
+*.log
+logs/

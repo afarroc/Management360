@@ -66,7 +66,7 @@ class Room(models.Model):
     administrators = models.ManyToManyField(User, related_name='administered_rooms', blank=True)
     capacity = models.IntegerField(default=0)
     address = models.CharField(max_length=255, blank=True)
-    image = models.ImageField(upload_to='room_images/', blank=True)
+    image = models.ImageField(upload_to='./room_images/', blank=True)
     permissions = models.CharField(max_length=255, choices=[
         ('public', 'Public'),
         ('private', 'Private'),
