@@ -42,6 +42,84 @@ class DataUploadDashboard:
             'dashboard_mode': True
         })
 
+    # Añadir esto en data_upload.py dentro de la clase DataUploadDashboard
+    
+    @staticmethod
+    def _handle_date_conversion(request):
+        """
+        Maneja la conversión de una columna de string a fecha
+        """
+        if 'upload_data' not in request.session:
+            messages.error(request, "No hay datos para editar")
+            return redirect('data_upload')
+    
+        try:
+            upload_data = request.session['upload_data']
+            upload_data = DataUploadDashboard._convert_to_consistent_format(upload_data)
+            
+            # Crear DataFrame
+            df = pd.DataFrame.from_records(upload_data['df_rows'])
+            df.columns = upload_data['df_columns']
+    
+            # Obtener parámetros del formulario
+            column_to_convert = request.POST.get('date_column')
+            date_format = request.POST.get('date_format', '%Y-%m-%d')  # Formato por defecto
+            
+            if not column_to_convert or column_to_convert not in df.columns:
+                messages.error(request, "Columna inválida para conversión")
+                return redirect('data_upload')
+    
+            try:
+                # Intentar conversión a fecha
+                original_col = df[column_to_convert]
+                
+                # Primero intentar con el formato especificado
+                df[column_to_convert] = pd.to_datetime(
+                    df[column_to_convert], 
+                    format=date_format,
+                    errors='coerce'  # Convertir errores a NaT
+                )
+                
+                # Si hay muchos valores nulos, intentar inferir el formato
+                if df[column_to_convert].isna().mean() > 0.5:  # Si más del 50% son nulos
+                    df[column_to_convert] = pd.to_datetime(
+                        original_col,
+                        infer_datetime_format=True,
+                        errors='coerce'
+                    )
+                
+                # Verificar si la conversión fue exitosa
+                success_rate = 1 - df[column_to_convert].isna().mean()
+                if success_rate < 0.7:  # Si menos del 70% se convirtió
+                    raise ValueError(f"Solo {success_rate:.0%} de los valores se pudieron convertir")
+                
+                # Actualizar datos de sesión
+                upload_data['df_rows'] = df.replace({np.nan: None}).to_dict('records')
+                request.session['upload_data'] = upload_data
+                request.session.modified = True
+                
+                messages.success(
+                    request, 
+                    f"Columna '{column_to_convert}' convertida a fecha. "
+                    f"Éxito: {success_rate:.0%}"
+                )
+                
+            except ValueError as e:
+                # Revertir cambios si falla
+                df[column_to_convert] = original_col
+                messages.error(
+                    request, 
+                    f"Error al convertir '{column_to_convert}' a fecha: {str(e)}"
+                )
+            
+            return redirect(reverse('data_upload') + '#preview-section')
+            
+        except Exception as e:
+            logger.error(f"Error inesperado en conversión de fecha: {str(e)}", exc_info=True)
+            messages.error(request, "Error inesperado al procesar la conversión")
+            return redirect('data_upload')
+    
+    # Actualizar el action_handlers para incluir la nueva acción
     @staticmethod
     def _handle_post_actions(request):
         """
@@ -53,15 +131,16 @@ class DataUploadDashboard:
             'save_to_clipboard': DataUploadDashboard._handle_save_to_clipboard,
             'load_from_clipboard': DataUploadDashboard._handle_load_from_clipboard,
             'delete_clip': DataUploadDashboard._handle_delete_clip,
-            'clear_all_clips': DataUploadDashboard._handle_clear_all_clips
+            'clear_all_clips': DataUploadDashboard._handle_clear_all_clips,
+            'edit_clipboard': DataUploadDashboard._handle_clipboard_edit,
+            'convert_to_date': DataUploadDashboard._handle_date_conversion  # Nueva acción
         }
-
+    
         for action in action_handlers:
             if action in request.POST:
                 return action_handlers[action](request)
         
         return redirect('data_upload')
-
     @staticmethod
     def _convert_to_consistent_format(upload_data):
         """Convierte los datos de la sesión a un formato consistente"""
