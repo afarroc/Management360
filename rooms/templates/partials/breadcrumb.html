@@ -1,0 +1,12 @@
+<!-- partials/breadcrumb.html -->
+<nav class="smart-breadcrumb">
+  <ol>
+    <li><a href="{% url 'lobby' %}"><i class="bi bi-house"></i></a></li>
+    {% if room %}
+      <li><a href="{% url 'room_list' %}">Habitaciones</a></li>
+      <li class="active">{{ room.name }}</li>
+    {% else %}
+      <li class="active">Lobby</li>
+    {% endif %}
+  </ol>
+</nav>
