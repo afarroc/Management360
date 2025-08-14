@@ -348,8 +348,19 @@ def generate_fake_data(request):
     return render(request, 'generate_data.html', {'form': form})
 
 def export_data(request):  
-    data = list(CallRecord.objects.values())  
-    return JsonResponse(data, safe=False)
+    # Export all CallRecord data as CSV
+    import csv
+    from django.http import HttpResponse
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="call_records.csv"'
+    writer = csv.writer(response)
+    # Write header
+    fields = [f.name for f in CallRecord._meta.fields]
+    writer.writerow(fields)
+    # Write data
+    for obj in CallRecord.objects.all():
+        writer.writerow([getattr(obj, f) for f in fields])
+    return response
 
 def kpi_home(request):
     return render(request, 'kpis/home.html')

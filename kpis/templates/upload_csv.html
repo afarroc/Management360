@@ -62,6 +62,26 @@
                                 </div>
                             </div>
 
+                            {% if preview_columns %}
+                            <div class="form-group mt-4">
+                                <label>Delimitador de columnas:</label>
+                                {{ form.delimiter }}
+                                <small class="form-text text-muted">
+                                    Selecciona el delimitador de columnas de tu archivo CSV. Si no estás seguro, deja la opción "Auto".
+                                    <br>Opciones: Coma (,), Punto y coma (;), Tabulación (\t), Barra vertical (|)
+                                </small>
+                            </div>
+                            <div class="mt-3">
+                                <strong>Vista previa de columnas detectadas:</strong>
+                                <ul>
+                                    {% for col in preview_columns %}
+                                        <li>{{ col }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <input type="hidden" name="confirm_delimiter" value="1">
+                            {% endif %}
+
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-success btn-lg">
                                     <i class="bi bi-upload me-2"></i>
@@ -94,7 +114,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Mejor manejo de la selección de archivo
     const fileInput = document.getElementById('csvFile');
     const fileLabel = document.querySelector('.file-label');
-    
     fileInput.addEventListener('change', function(e) {
         if(this.files.length > 0) {
             const fileName = this.files[0].name;

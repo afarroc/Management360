@@ -1,3 +1,4 @@
+{% load tools_filters %}
 <div class="preview-container">
     <!-- Model Info Header -->
     <div class="preview-header mb-4">
@@ -149,37 +150,32 @@
                         </div>
                         <div class="card-body">
                             <div class="table-responsive" style="max-height: 300px;">
-        
-                                        <!-- Replace the statistics table section with: -->
                                 <table class="table table-sm">
                                     <thead>
                                         <tr>
-                                            <th>Column</th>
-                                            <th>Data Type</th>
-                                            <th>Null Values</th>
+                                            <th>Field Name</th>
+                                            <th>Verbose Name</th>
+                                            <th>Type</th>
+                                            <th>Mapped?</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for col in df_info.column_stats %}
+                                        {% for field in required_fields %}
                                         <tr>
-                                            <td>{{ col.name }}</td>
-                                            <td><span class="badge bg-secondary">{{ col.type }}</span></td>
+                                            <td>{{ field.name }}</td>
+                                            <td>{{ field.verbose_name }}</td>
+                                            <td><span class="badge bg-secondary">{{ field.type }}</span></td>
                                             <td>
-                                                <div class="progress" style="height: 20px;">
-                                                    <div class="progress-bar bg-warning" role="progressbar" 
-                                                         style="width: {{ col.missing_percent|floatformat:2 }}%;"
-                                                         aria-valuenow="{{ col.missing_percent|floatformat:2 }}" 
-                                                         aria-valuemin="0" 
-                                                         aria-valuemax="100">
-                                                        {{ col.missing_count }}
-                                                    </div>
-                                                </div>
+                                                {% if field.name|is_field_mapped:column_mapping_info %}
+                                                    <span class="badge bg-success">Yes</span>
+                                                {% else %}
+                                                    <span class="badge bg-danger">No</span>
+                                                {% endif %}
                                             </td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
-        
                             </div>
                         </div>
                     </div>
