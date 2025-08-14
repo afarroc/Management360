@@ -206,9 +206,11 @@ class DataUploadDashboard:
             # Procesar información del modelo
             try:
                 logger.info("Analizando campos del modelo...")
-                model_fields_info, mapped_columns, required_fields = DataUploadDashboard._analyze_model_fields(model, df)
+                model_fields_info, mapped_columns, required_fields_names = DataUploadDashboard._analyze_model_fields(model, df)
+                # required_fields será una lista de dicts con la info de los campos requeridos
+                required_fields = [field for field in model_fields_info if field['required']]
                 logger.debug("Campos del modelo analizados. Campos mapeados: %d, Requeridos: %s", 
-                            len(mapped_columns), required_fields)
+                            len(mapped_columns), [f['name'] for f in required_fields])
             except Exception as e:
                 logger.error("Error al analizar campos del modelo: %s", str(e), exc_info=True)
                 raise
