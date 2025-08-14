@@ -3,6 +3,13 @@ from .models import CallRecord
 
 class UploadCSVForm(forms.Form):  
     csv_file = forms.FileField(label="Subir CSV")  
+    delimiter = forms.ChoiceField(
+        label="Delimitador",
+        choices=[(',', 'Coma (,)'), (';', 'Punto y coma (;)'), ('\t', 'Tabulación'), ('|', 'Pipe (|)'), ('auto', 'Detectar automáticamente')],
+        initial='auto',
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
 
     def clean_csv_file(self):  
         file = self.cleaned_data['csv_file']  

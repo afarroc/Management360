@@ -2,12 +2,25 @@ from django import template
 
 register = template.Library()
 
+@register.filter
+def is_field_mapped(field_name, column_mapping_info):
+    """
+    Devuelve True si el campo requerido está mapeado en column_mapping_info.
+    """
+    if not field_name or not column_mapping_info:
+        return False
+    field_name = str(field_name).lower()
+    for col_info in column_mapping_info:
+        mapped_to = col_info.get('mapped_to')
+        if mapped_to and str(mapped_to).lower() == field_name:
+            return True
+    return False
+
 @register.filter(name='is_excel_file')
 def is_excel_file(value):
     if value:
         return value.name.endswith(('.xls', '.xlsx'))
     return False
-    
 
 @register.filter
 def get_item(container, key):
