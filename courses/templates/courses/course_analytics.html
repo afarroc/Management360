@@ -1,0 +1,178 @@
+{% extends "courses/base.html" %}
+{% load humanize %}
+
+{% block course_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Analíticas de {{ course.title }}</h1>
+    <div>
+        <a href="{% url 'courses:edit_course' course.slug %}" class="btn btn-outline-primary btn-sm me-1">
+            <i class="fas fa-edit me-1"></i> Editar
+        </a>
+        <a href="{% url 'courses:manage_courses' %}" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Volver
+        </a>
+    </div>
+</div>
+
+<!-- Tarjetas de resumen -->
+<div class="row mb-4">
+    <div class="col-md-3 col-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-primary mb-2">
+                    <i class="fas fa-users fa-2x"></i>
+                </div>
+                <h3 class="card-title">{{ total_students }}</h3>
+                <p class="card-text text-muted">Total Estudiantes</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-success mb-2">
+                    <i class="fas fa-graduation-cap fa-2x"></i>
+                </div>
+                <h3 class="card-title">{{ completed_students }}</h3>
+                <p class="card-text text-muted">Completados</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-warning mb-2">
+                    <i class="fas fa-star fa-2x"></i>
+                </div>
+                <h3 class="card-title">{{ course.average_rating|floatformat:1 }}/5</h3>
+                <p class="card-text text-muted">Rating Promedio</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 col-6 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <div class="text-info mb-2">
+                    <i class="fas fa-comment fa-2x"></i>
+                </div>
+                <h3 class="card-title">{{ course.reviews.count }}</h3>
+                <p class="card-text text-muted">Reseñas</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de progreso de estudiantes -->
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Progreso de Estudiantes</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Estudiante</th>
+                        <th>Progreso</th>
+                        <th>Estado</th>
+                        <th>Último acceso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in progress_data %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <img src="{% if data.student.profile.avatar %}{{ data.student.profile.avatar.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}" 
+                                         alt="{{ data.student.username }}" class="rounded-circle" width="32" height="32">
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    {{ data.student.username }}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                    <div class="progress-bar" role="progressbar" 
+                                         style="width: {{ data.progress }}%;" 
+                                         aria-valuenow="{{ data.progress }}" 
+                                         aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <small class="text-muted">{{ data.progress|floatformat:0 }}%</small>
+                            </div>
+                        </td>
+                        <td>
+                            {% if data.progress == 100 %}
+                            <span class="badge bg-success">Completado</span>
+                            {% else %}
+                            <span class="badge bg-primary">En progreso</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="text-muted">Hace 2 días</small>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4">
+                            <i class="fas fa-users-slash fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">No hay estudiantes inscritos aún.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Reseñas recientes -->
+<div class="card">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Reseñas Recientes</h5>
+        <span class="badge bg-primary rounded-pill">{{ course.reviews.count }}</span>
+    </div>
+    <div class="card-body">
+        {% if course.reviews.all %}
+            {% for review in course.reviews.all|slice:":3" %}
+            <div class="border-bottom pb-3 mb-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="d-flex align-items-center">
+                        <img src="{% if review.student.profile.avatar %}{{ review.student.profile.avatar.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}" 
+                             alt="{{ review.student.username }}" class="rounded-circle me-2" width="32" height="32">
+                        <strong>{{ review.student.username }}</strong>
+                    </div>
+                    <div>
+                        {% for i in "12345" %}
+                        {% if forloop.counter <= review.rating %}
+                        <i class="fas fa-star text-warning"></i>
+                        {% else %}
+                        <i class="far fa-star text-warning"></i>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <p class="mb-1">{{ review.comment }}</p>
+                <small class="text-muted">{{ review.created_at|date:"d M Y" }}</small>
+            </div>
+            {% endfor %}
+            
+            {% if course.reviews.count > 3 %}
+            <div class="text-center">
+                <a href="#" class="btn btn-sm btn-outline-primary">Ver todas las reseñas</a>
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-3">
+                <i class="fas fa-comment-slash fa-2x text-muted mb-2"></i>
+                <p class="text-muted mb-0">Este curso aún no tiene reseñas.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

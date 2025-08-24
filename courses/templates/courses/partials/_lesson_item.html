@@ -1,0 +1,12 @@
+<li class="list-group-item d-flex justify-content-between align-items-center">
+    <div>
+        <i class="fas fa-{% if lesson.lesson_type == 'video' %}play-circle{% elif lesson.lesson_type == 'quiz' %}question-circle{% else %}file-alt{% endif %} me-2 text-muted"></i>
+        {{ lesson.title }}
+    </div>
+    <div>
+        <span class="badge bg-secondary rounded-pill me-2">{{ lesson.duration_minutes }} min</span>
+        {% if lesson.is_free %}
+        <span class="badge bg-success rounded-pill">Gratis</span>
+        {% endif %}
+    </div>
+</li>

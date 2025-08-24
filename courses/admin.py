@@ -1,0 +1,94 @@
+from django.contrib import admin
+from .models import CourseCategory, Course, Module, Lesson, Enrollment, Progress, Review
+
+@admin.register(CourseCategory)
+class CourseCategoryAdmin(admin.ModelAdmin):
+    list_display = ['name', 'slug']
+    prepopulated_fields = {'slug': ('name',)}
+    search_fields = ['name']
+
+class ModuleInline(admin.StackedInline):
+    model = Module
+    extra = 1
+
+@admin.register(Course)
+class CourseAdmin(admin.ModelAdmin):
+    list_display = ['title', 'tutor', 'category', 'level', 'price', 'is_published', 'is_featured', 'students_count', 'average_rating']
+    list_filter = ['is_published', 'is_featured', 'category', 'level', 'created_at']
+    search_fields = ['title', 'description', 'tutor__username']
+    prepopulated_fields = {'slug': ('title',)}
+    readonly_fields = ['students_count', 'average_rating', 'created_at', 'updated_at', 'published_at']
+    inlines = [ModuleInline]
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('title', 'slug', 'description', 'short_description', 'category', 'level')
+        }),
+        ('Multimedia', {
+            'fields': ('thumbnail',)
+        }),
+        ('Detalles', {
+            'fields': ('tutor', 'price', 'duration_hours')
+        }),
+        ('Estado', {
+            'fields': ('is_published', 'is_featured', 'published_at')
+        }),
+        ('Métricas', {
+            'fields': ('students_count', 'average_rating', 'created_at', 'updated_at')
+        }),
+    )
+
+class LessonInline(admin.StackedInline):
+    model = Lesson
+    extra = 1
+    fields = ['title', 'lesson_type', 'order', 'is_free', 'duration_minutes']
+
+@admin.register(Module)
+class ModuleAdmin(admin.ModelAdmin):
+    list_display = ['title', 'course', 'order']
+    list_filter = ['course']
+    search_fields = ['title', 'course__title']
+    inlines = [LessonInline]
+
+@admin.register(Lesson)
+class LessonAdmin(admin.ModelAdmin):
+    list_display = ['title', 'module', 'lesson_type', 'order', 'is_free', 'duration_minutes']
+    list_filter = ['lesson_type', 'is_free', 'module__course']
+    search_fields = ['title', 'module__title']
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('module', 'title', 'lesson_type', 'order', 'is_free', 'duration_minutes')
+        }),
+        ('Contenido', {
+            'fields': ('content', 'video_url'),
+            'classes': ('collapse',)
+        }),
+        ('Quiz', {
+            'fields': ('quiz_questions',),
+            'classes': ('collapse',)
+        }),
+        ('Tarea', {
+            'fields': ('assignment_instructions', 'assignment_file', 'assignment_due_date'),
+            'classes': ('collapse',)
+        }),
+    )
+
+@admin.register(Enrollment)
+class EnrollmentAdmin(admin.ModelAdmin):
+    list_display = ['student', 'course', 'status', 'enrolled_at', 'completed_at']
+    list_filter = ['status', 'enrolled_at', 'course']
+    search_fields = ['student__username', 'course__title']
+    readonly_fields = ['enrolled_at']
+
+@admin.register(Progress)
+class ProgressAdmin(admin.ModelAdmin):
+    list_display = ['enrollment', 'lesson', 'completed', 'completed_at', 'score']
+    list_filter = ['completed', 'lesson__module__course']
+    search_fields = ['enrollment__student__username', 'lesson__title']
+    readonly_fields = ['completed_at']
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ['student', 'course', 'rating', 'created_at']
+    list_filter = ['rating', 'created_at', 'course']
+    search_fields = ['student__username', 'course__title']
+    readonly_fields = ['created_at', 'updated_at']

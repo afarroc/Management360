@@ -1,0 +1,45 @@
+<div class="col-md-4 mb-4">
+    <div class="card h-100 course-card">
+        {% if course.thumbnail %}
+        <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}" style="height: 200px; object-fit: cover;">
+        {% else %}
+        <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+            <i class="fas fa-book-open fa-3x text-light"></i>
+        </div>
+        {% endif %}
+        
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <h5 class="card-title">{{ course.title }}</h5>
+                <span class="badge bg-secondary">{{ course.get_level_display }}</span>
+            </div>
+            
+            <p class="card-text">{{ course.short_description|truncatewords:20 }}</p>
+            
+            <div class="d-flex justify-content-between text-muted small mb-2">
+                <span><i class="fas fa-clock me-1"></i> {{ course.duration_hours }}h</span>
+                <span><i class="fas fa-users me-1"></i> {{ course.students_count }} estudiantes</span>
+            </div>
+            
+            <div class="d-flex align-items-center mb-2">
+                <div class="me-2">
+                    {% for i in "12345" %}
+                    {% if forloop.counter <= course.average_rating %}
+                    <i class="fas fa-star text-warning"></i>
+                    {% else %}
+                    <i class="far fa-star text-warning"></i>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <small class="text-muted">({{ course.average_rating|floatformat:1 }})</small>
+            </div>
+        </div>
+        
+        <div class="card-footer bg-transparent">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="h5 mb-0 text-primary">${{ course.price }}</span>
+                <a href="{% url 'courses:course_detail' course.slug %}" class="btn btn-primary btn-sm">Ver detalles</a>
+            </div>
+        </div>
+    </div>
+</div>

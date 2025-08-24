@@ -1,0 +1,141 @@
+{% extends "courses/base.html" %}
+
+{% block course_content %}
+<div class="row">
+    <div class="col-md-8">
+        {% if course.thumbnail %}
+        <img src="{{ course.thumbnail.url }}" class="img-fluid rounded mb-4" alt="{{ course.title }}">
+        {% endif %}
+        
+        <h1>{{ course.title }}</h1>
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-secondary me-2">{{ course.get_level_display }}</span>
+            <span class="text-muted">{{ course.duration_hours }} horas</span>
+            <span class="text-muted ms-3">{{ course.students_count }} estudiantes</span>
+            <div class="ms-3">
+                {% for i in "12345" %}
+                {% if forloop.counter <= course.average_rating %}
+                <i class="fas fa-star text-warning"></i>
+                {% else %}
+                <i class="far fa-star text-warning"></i>
+                {% endif %}
+                {% endfor %}
+                <span class="text-muted">({{ course.average_rating|floatformat:1 }})</span>
+            </div>
+        </div>
+        
+        <div class="mb-4">
+            <h3>Descripción del curso</h3>
+            <p>{{ course.description|linebreaks }}</p>
+        </div>
+        
+        <div class="mb-4">
+            <h3>Lo que aprenderás</h3>
+            <ul>
+                <!-- Aquí podrías agregar objetivos de aprendizaje específicos -->
+                <li>Habilidades prácticas en {{ course.category.name }}</li>
+                <li>Técnicas avanzadas de análisis de datos</li>
+                <li>Creación de visualizaciones efectivas</li>
+            </ul>
+        </div>
+        
+        <div class="mb-4">
+            <h3>Contenido del curso</h3>
+            <div class="accordion" id="courseContent">
+                {% for module in course.modules.all %}
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="heading{{ module.id }}">
+                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ module.id }}" aria-expanded="true" aria-controls="collapse{{ module.id }}">
+                            {{ module.title }} ({{ module.lessons.count }} lecciones)
+                        </button>
+                    </h2>
+                    <div id="collapse{{ module.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ module.id }}" data-bs-parent="#courseContent">
+                        <div class="accordion-body">
+                            <ul class="list-group">
+                                {% for lesson in module.lessons.all %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ lesson.title }}
+                                    <span class="badge bg-secondary rounded-pill">{{ lesson.duration_minutes }} min</span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="mb-4">
+            <h3>Instructor</h3>
+            <div class="d-flex align-items-center">
+                {% with tutor_profile=course.get_tutor_profile %}
+                {% if tutor_profile and tutor_profile.profile_picture %}
+                <img src="{{ tutor_profile.profile_picture.url }}" class="rounded-circle me-3" width="80" height="80" alt="{{ tutor_profile.full_name }}">
+                {% endif %}
+                <div>
+                    <h5>{{ tutor_profile.full_name|default:course.tutor.username }}</h5>
+                    <p class="text-muted">{{ tutor_profile.profession|default:"Instructor" }}</p>
+                    <p>{{ tutor_profile.bio|default:"Instructor experto en su campo."|truncatewords:30 }}</p>
+                </div>
+                {% endwith %}
+            </div>
+        </div>
+        
+        <div class="mb-4">
+            <h3>Reseñas</h3>
+            {% for review in reviews %}
+            <div class="card mb-2">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="card-title">{{ review.student.username }}</h6>
+                        <div>
+                            {% for i in "12345" %}
+                            {% if forloop.counter <= review.rating %}
+                            <i class="fas fa-star text-warning"></i>
+                            {% else %}
+                            <i class="far fa-star text-warning"></i>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <p class="card-text">{{ review.comment }}</p>
+                    <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-muted">Este curso aún no tiene reseñas.</p>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card sticky-top" style="top: 20px;">
+            <div class="card-body">
+                <h3 class="card-title">${{ course.price }}</h3>
+                
+                {% if user.is_authenticated %}
+                    {% if is_enrolled %}
+                    <a href="{% url 'courses:course_learning' course.slug %}" class="btn btn-success w-100 mb-2">Continuar aprendiendo</a>
+                    {% else %}
+                    <a href="{% url 'courses:enroll' course.id %}" class="btn btn-primary w-100 mb-2">Inscribirse ahora</a>
+                    {% endif %}
+                {% else %}
+                <a href="{% url 'accounts:login' %}?next={% url 'courses:course_detail' course.slug %}" class="btn btn-primary w-100 mb-2">Iniciar sesión para inscribirse</a>
+                {% endif %}
+                
+                <div class="mt-3">
+                    <h5>Este curso incluye:</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-play-circle me-2"></i> {{ course.modules.all|length }} módulos</li>
+                        <li><i class="fas fa-clock me-2"></i> {{ course.duration_hours }} horas de contenido</li>
+                        <li><i class="fas fa-infinity me-2"></i> Acceso de por vida</li>
+                        <li><i class="fas fa-mobile-alt me-2"></i> Acceso en dispositivos móviles</li>
+                        <li><i class="fas fa-certificate me-2"></i> Certificado de finalización</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <div class="d-flex align-items-center">
+                <img src="{% if review.student.profile.avatar %}{{ review.student.profile.avatar.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}" 
+                     alt="{{ review.student.username }}" class="rounded-circle me-2" width="40" height="40">
+                <div>
+                    <h6 class="mb-0">{{ review.student.username }}</h6>
+                    <small class="text-muted">{{ review.created_at|date:"d M Y" }}</small>
+                </div>
+            </div>
+            <div>
+                {% for i in "12345" %}
+                {% if forloop.counter <= review.rating %}
+                <i class="fas fa-star text-warning"></i>
+                {% else %}
+                <i class="far fa-star text-warning"></i>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        <p class="card-text mb-0">{{ review.comment }}</p>
+    </div>
+</div>
