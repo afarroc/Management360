@@ -1,0 +1,183 @@
+{% extends "courses/base.html" %}
+{% load static %}
+
+{% block course_content %}
+<div class="row">
+    <!-- Sidebar con el índice del curso -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">{{ course.title }}</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for module in modules %}
+                    <div class="list-group-item module-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">{{ module.title }}</h6>
+                            <span class="badge bg-secondary">{{ module.lessons.count }}</span>
+                        </div>
+                        
+                        <ul class="list-unstyled mt-2 ms-3">
+                            {% for lesson in module.lessons.all %}
+                            <li class="mb-1">
+                                <a href="{% url 'courses:course_learning_lesson' course.slug lesson.id %}" 
+                                   class="text-decoration-none lesson-link {% if lesson.id == current_lesson.id %}active fw-bold{% endif %}">
+                                    <i class="fas fa-{% if lesson.lesson_type == 'video' %}play-circle{% elif lesson.lesson_type == 'quiz' %}question-circle{% else %}file-alt{% endif %} me-1"></i>
+                                    {{ lesson.title }}
+                                </a>
+                                {% if lesson.id in completed_lessons %}
+                                <i class="fas fa-check-circle text-success ms-1"></i>
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenido principal de la lección -->
+    <div class="col-md-9">
+        {% if current_lesson %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">{{ current_lesson.title }}</h4>
+                <span class="badge bg-{% if current_lesson.lesson_type == 'video' %}info{% elif current_lesson.lesson_type == 'quiz' %}warning{% else %}secondary{% endif %}">
+                    {{ current_lesson.get_lesson_type_display }}
+                </span>
+            </div>
+            
+            <div class="card-body">
+                <!-- Contenido según el tipo de lección -->
+                {% if current_lesson.lesson_type == 'video' and current_lesson.video_url %}
+                <div class="ratio ratio-16x9 mb-4">
+                    <iframe src="{{ current_lesson.video_url }}" allowfullscreen></iframe>
+                </div>
+                {% elif current_lesson.lesson_type == 'text' %}
+                <div class="lesson-content">
+                    {{ current_lesson.content|linebreaks }}
+                </div>
+                {% elif current_lesson.lesson_type == 'quiz' %}
+                <div class="quiz-container">
+                    <h5>Cuestionario</h5>
+                    <form id="quiz-form" method="post">
+                        {% csrf_token %}
+                        {% for question in current_lesson.quiz_questions %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ forloop.counter }}. {{ question.question }}</h6>
+                                {% for option in question.options %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" 
+                                           name="question_{{ forloop.parentloop.counter }}" 
+                                           id="q{{ forloop.parentloop.counter }}_o{{ forloop.counter }}" 
+                                           value="{{ option }}">
+                                    <label class="form-check-label" for="q{{ forloop.parentloop.counter }}_o{{ forloop.counter }}">
+                                        {{ option }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-primary">Enviar respuestas</button>
+                    </form>
+                </div>
+                {% elif current_lesson.lesson_type == 'assignment' %}
+                <div class="assignment-container">
+                    <h5>Tarea</h5>
+                    <div class="assignment-instructions mb-4">
+                        {{ current_lesson.assignment_instructions|linebreaks }}
+                    </div>
+                    
+                    {% if current_lesson.assignment_file %}
+                    <div class="mb-3">
+                        <a href="{{ current_lesson.assignment_file.url }}" class="btn btn-outline-primary" download>
+                            <i class="fas fa-download me-1"></i> Descargar recursos
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="submission_file" class="form-label">Subir tu trabajo</label>
+                            <input type="file" class="form-control" id="submission_file" name="submission_file" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Enviar tarea</button>
+                    </form>
+                </div>
+                {% endif %}
+
+                <!-- Progreso y navegación -->
+                <div class="mt-4 pt-3 border-top">
+                    {% if lesson_progress and lesson_progress.completed %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-1"></i> Completado el {{ lesson_progress.completed_at|date:"d M Y" }}
+                    </div>
+                    {% else %}
+                    <form method="post" action="{% url 'courses:mark_lesson_complete' current_lesson.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-check me-1"></i> Marcar como completado
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+
+                <!-- Navegación entre lecciones -->
+                <div class="d-flex justify-content-between mt-4">
+                    {% if previous_lesson %}
+                    <a href="{% url 'courses:course_learning_lesson' course.slug previous_lesson.id %}" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-1"></i> Lección anterior
+                    </a>
+                    {% else %}
+                    <span></span>
+                    {% endif %}
+
+                    {% if next_lesson %}
+                    <a href="{% url 'courses:course_learning_lesson' course.slug next_lesson.id %}" class="btn btn-primary">
+                        Siguiente lección <i class="fas fa-arrow-right ms-1"></i>
+                    </a>
+                    {% else %}
+                    <a href="{% url 'courses:course_detail' course.slug %}" class="btn btn-success">
+                        <i class="fas fa-graduation-cap me-1"></i> Finalizar curso
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-1"></i> No hay lecciones disponibles para este curso.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.module-item {
+    border-left: 4px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.module-item:hover {
+    border-left-color: #0d6efd;
+    background-color: #f8f9fa;
+}
+
+.lesson-link {
+    color: #6c757d;
+    transition: color 0.2s ease;
+}
+
+.lesson-link:hover, .lesson-link.active {
+    color: #0d6efd;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}Cursos - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            {% block sidebar %}
+            <div class="card">
+                <div class="card-header">
+                    <h5>Categorías</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'courses:course_list' %}">Todos los cursos</a></li>
+                        {% for category in categories %}
+                        <li><a href="{% url 'courses:course_list_by_category' category.slug %}">{{ category.name }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            
+            {% if user.is_authenticated %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>Mi Aprendizaje</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><a href="{% url 'courses:dashboard' %}">Mi Dashboard</a></li>
+                        <li><a href="{% url 'courses:manage_courses' %}">Mis Cursos (Tutor)</a></li>
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+            {% endblock %}
+        </div>
+        
+        <div class="col-md-9">
+            {% block messages %}
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endblock %}
+            
+            {% block course_content %}
+            {% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}

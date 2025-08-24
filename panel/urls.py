@@ -23,6 +23,7 @@ urlpatterns = [
     path('passgen/', include('passgen.urls')),
     path('rooms/', include('rooms.urls')),
     path('tools/', include('tools.urls')),
+    path('courses/', include('courses.urls')),
     
     # API Endpoints (alphabetical order)
     path('api/csrf/', views.get_csrf, name='api-csrf'),
