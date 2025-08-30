@@ -1,0 +1,92 @@
+{% extends "courses/base.html" %}
+
+{% block course_content %}
+<h1>Mi Dashboard</h1>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <h2>Mis Cursos Inscritos</h2>
+        
+        {% if enrollment_stats %}
+            {% for stat in enrollment_stats %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h5 class="card-title">{{ stat.enrollment.course.title }}</h5>
+                        <span class="badge bg-{% if stat.progress_percentage == 100 %}success{% else %}primary{% endif %}">
+                            {{ stat.progress_percentage|floatformat:0 }}%
+                        </span>
+                    </div>
+                    <p class="card-text">{{ stat.enrollment.course.short_description }}</p>
+                    
+                    <div class="progress mb-2">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ stat.progress_percentage }}%;" 
+                             aria-valuenow="{{ stat.progress_percentage }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ stat.progress_percentage|floatformat:0 }}%
+                        </div>
+                    </div>
+                    
+                    <small class="text-muted">
+                        {{ stat.completed_lessons }} de {{ stat.total_lessons }} lecciones completadas
+                    </small>
+                    
+                    <a href="{% url 'courses:course_learning' stat.enrollment.course.slug %}" 
+                       class="btn btn-primary btn-sm mt-2">
+                        {% if stat.progress_percentage > 0 %}Continuar aprendiendo{% else %}Comenzar curso{% endif %}
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Aún no estás inscrito en ningún curso. 
+                <a href="{% url 'courses:course_list' %}">Explora nuestros cursos</a>.
+            </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <h2>Estadísticas</h2>
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Resumen de aprendizaje</h5>
+                <p class="card-text">Cursos inscritos: {{ enrollment_stats|length }}</p>
+                <p class="card-text">
+                    Cursos completados: 
+                    {{ enrollment_stats|length|default:0 }}
+                </p>
+            </div>
+        </div>
+        
+        {% if taught_courses %}
+        <h2 class="mt-4">Mis Cursos como Tutor</h2>
+        {% for course in taught_courses %}
+        <div class="card mb-2">
+            <div class="card-body">
+                <h6 class="card-title">{{ course.title }}</h6>
+                <p class="card-text">{{ course.student_count }} estudiantes</p>
+                {% if course.avg_rating %}
+                <div class="small">
+                    {% for i in "12345" %}
+                    {% if forloop.counter <= course.avg_rating %}
+                    <i class="fas fa-star text-warning"></i>
+                    {% else %}
+                    <i class="far fa-star text-warning"></i>
+                    {% endif %}
+                    {% endfor %}
+                    ({{ course.avg_rating|floatformat:1 }})
+                </div>
+                {% endif %}
+                <a href="{% url 'courses:course_analytics' course.slug %}" class="btn btn-sm btn-outline-primary mt-1">
+                    Ver analíticas
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

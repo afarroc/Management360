@@ -187,18 +187,11 @@ class Enrollment(models.Model):
     enrolled_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     
+    # Si no tienes updated_at, añade este campo:
+    updated_at = models.DateTimeField(auto_now=True)  # ← Añade esta línea si no existe
+    
     class Meta:
         unique_together = ['student', 'course']
-    
-    def __str__(self):
-        return f"{self.student.username} - {self.course.title}"
-    
-    def save(self, *args, **kwargs):
-        # Actualizar contador de estudiantes cuando se crea una nueva inscripción
-        if self._state.adding and self.status == EnrollmentStatusChoices.ACTIVE:
-            self.course.students_count += 1
-            self.course.save()
-        super().save(*args, **kwargs)
 
 class Progress(models.Model):
     enrollment = models.ForeignKey(

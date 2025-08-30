@@ -1,5 +1,6 @@
 {% extends "courses/base.html" %}
 {% load static %}
+{% load course_filters %}
 
 {% block course_content %}
 <div class="row">
@@ -8,6 +9,7 @@
         <div class="card">
             <div class="card-header bg-primary text-white">
                 <h5 class="mb-0">{{ course.title }}</h5>
+                <small class="opacity-75">Progreso: {{ enrollment.progress_percentage|default:0 }}%</small>
             </div>
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
@@ -22,7 +24,7 @@
                             {% for lesson in module.lessons.all %}
                             <li class="mb-1">
                                 <a href="{% url 'courses:course_learning_lesson' course.slug lesson.id %}" 
-                                   class="text-decoration-none lesson-link {% if lesson.id == current_lesson.id %}active fw-bold{% endif %}">
+                                   class="text-decoration-none lesson-link {% if lesson.id == current_lesson.id %}active fw-bold text-primary{% endif %}">
                                     <i class="fas fa-{% if lesson.lesson_type == 'video' %}play-circle{% elif lesson.lesson_type == 'quiz' %}question-circle{% else %}file-alt{% endif %} me-1"></i>
                                     {{ lesson.title }}
                                 </a>
@@ -41,7 +43,14 @@
 
     <!-- Contenido principal de la lección -->
     <div class="col-md-9">
-        {% if current_lesson %}
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'courses:course_detail' course.slug %}">{{ course.title }}</a></li>
+                <li class="breadcrumb-item"><a href="#">{{ current_lesson.module.title }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ current_lesson.title }}</li>
+            </ol>
+        </nav>
+
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h4 class="mb-0">{{ current_lesson.title }}</h4>
@@ -54,16 +63,45 @@
                 <!-- Contenido según el tipo de lección -->
                 {% if current_lesson.lesson_type == 'video' and current_lesson.video_url %}
                 <div class="ratio ratio-16x9 mb-4">
-                    <iframe src="{{ current_lesson.video_url }}" allowfullscreen></iframe>
+                    {% if 'youtube.com' in current_lesson.video_url or 'youtu.be' in current_lesson.video_url %}
+                        <!-- Usar el filtro personalizado para URLs de YouTube -->
+                        <iframe src="{{ current_lesson.video_url|youtube_embed_url }}" 
+                                allowfullscreen 
+                                frameborder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+                    {% else %}
+                        <!-- Video genérico -->
+                        <video controls class="w-100">
+                            <source src="{{ current_lesson.video_url }}" type="video/mp4">
+                            Tu navegador no soporta el elemento de video.
+                        </video>
+                    {% endif %}
                 </div>
+                
+                {% if current_lesson.content %}
+                <div class="lesson-content mt-4">
+                    <h5>Descripción</h5>
+                    {{ current_lesson.content|linebreaks }}
+                </div>
+                {% endif %}
+                
                 {% elif current_lesson.lesson_type == 'text' %}
                 <div class="lesson-content">
                     {{ current_lesson.content|linebreaks }}
                 </div>
+                
                 {% elif current_lesson.lesson_type == 'quiz' %}
                 <div class="quiz-container">
                     <h5>Cuestionario</h5>
-                    <form id="quiz-form" method="post">
+                    <p class="text-muted">Responde las siguientes preguntas para completar esta lección.</p>
+                    
+                    {% if lesson_progress.completed %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Ya completaste este quiz. Tu puntuación: {{ lesson_progress.score|floatformat:1 }}%
+                    </div>
+                    {% else %}
+                    <form method="post">
                         {% csrf_token %}
                         {% for question in current_lesson.quiz_questions %}
                         <div class="card mb-3">
@@ -74,7 +112,9 @@
                                     <input class="form-check-input" type="radio" 
                                            name="question_{{ forloop.parentloop.counter }}" 
                                            id="q{{ forloop.parentloop.counter }}_o{{ forloop.counter }}" 
-                                           value="{{ option }}">
+                                           value="{{ option }}" 
+                                           {% if question.correct_answer == option %}data-correct="true"{% endif %}
+                                           required>
                                     <label class="form-check-label" for="q{{ forloop.parentloop.counter }}_o{{ forloop.counter }}">
                                         {{ option }}
                                     </label>
@@ -85,19 +125,36 @@
                         {% endfor %}
                         <button type="submit" class="btn btn-primary">Enviar respuestas</button>
                     </form>
+                    {% endif %}
                 </div>
+                
                 {% elif current_lesson.lesson_type == 'assignment' %}
                 <div class="assignment-container">
                     <h5>Tarea</h5>
+                    
+                    {% if lesson_progress.completed %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle me-2"></i>
+                        ¡Ya completaste esta tarea el {{ lesson_progress.completed_at|date:"d M Y" }}!
+                    </div>
+                    {% else %}
                     <div class="assignment-instructions mb-4">
+                        <h6>Instrucciones:</h6>
                         {{ current_lesson.assignment_instructions|linebreaks }}
                     </div>
                     
                     {% if current_lesson.assignment_file %}
                     <div class="mb-3">
                         <a href="{{ current_lesson.assignment_file.url }}" class="btn btn-outline-primary" download>
-                            <i class="fas fa-download me-1"></i> Descargar recursos
+                            <i class="fas fa-download me-1"></i> Descargar recursos de la tarea
                         </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if current_lesson.assignment_due_date %}
+                    <div class="alert alert-warning mb-3">
+                        <i class="fas fa-clock me-2"></i>
+                        Fecha límite: {{ current_lesson.assignment_due_date|date:"d M Y H:i" }}
                     </div>
                     {% endif %}
                     
@@ -105,33 +162,63 @@
                         {% csrf_token %}
                         <div class="mb-3">
                             <label for="submission_file" class="form-label">Subir tu trabajo</label>
-                            <input type="file" class="form-control" id="submission_file" name="submission_file" required>
+                            <input type="file" class="form-control" id="submission_file" name="submission_file" 
+                                   accept=".pdf,.doc,.docx,.zip,.rar" required>
+                            <div class="form-text">Formatos aceptados: PDF, DOC, DOCX, ZIP, RAR. Tamaño máximo: 10MB.</div>
                         </div>
-                        <button type="submit" class="btn btn-primary">Enviar tarea</button>
+                        
+                        <div class="mb-3">
+                            <label for="submission_notes" class="form-label">Notas adicionales (opcional)</label>
+                            <textarea class="form-control" id="submission_notes" name="submission_notes" 
+                                      rows="3" placeholder="Añade cualquier comentario sobre tu entrega..."></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane me-1"></i> Enviar tarea
+                        </button>
                     </form>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Información adicional de la lección -->
+                {% if current_lesson.duration_minutes %}
+                <div class="mt-3">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        Duración estimada: {{ current_lesson.duration_minutes }} minutos
+                    </small>
                 </div>
                 {% endif %}
 
                 <!-- Progreso y navegación -->
                 <div class="mt-4 pt-3 border-top">
-                    {% if lesson_progress and lesson_progress.completed %}
+                    {% if lesson_progress.completed %}
                     <div class="alert alert-success">
-                        <i class="fas fa-check-circle me-1"></i> Completado el {{ lesson_progress.completed_at|date:"d M Y" }}
+                        <i class="fas fa-check-circle me-1"></i> 
+                        Completado el {{ lesson_progress.completed_at|date:"d M Y" }}
+                        {% if lesson_progress.score is not None %}
+                        - Puntuación: {{ lesson_progress.score|floatformat:1 }}%
+                        {% endif %}
                     </div>
                     {% else %}
-                    <form method="post" action="{% url 'courses:mark_lesson_complete' current_lesson.id %}">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-check me-1"></i> Marcar como completado
-                        </button>
-                    </form>
+                    <div class="d-flex align-items-center">
+                        <form method="post" action="{% url 'courses:mark_lesson_complete' current_lesson.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success me-2">
+                                <i class="fas fa-check me-1"></i> Marcar como completado
+                            </button>
+                        </form>
+                        <small class="text-muted">(Solo si ya revisaste todo el contenido)</small>
+                    </div>
                     {% endif %}
                 </div>
 
                 <!-- Navegación entre lecciones -->
                 <div class="d-flex justify-content-between mt-4">
                     {% if previous_lesson %}
-                    <a href="{% url 'courses:course_learning_lesson' course.slug previous_lesson.id %}" class="btn btn-outline-primary">
+                    <a href="{% url 'courses:course_learning_lesson' course.slug previous_lesson.id %}" 
+                       class="btn btn-outline-primary">
                         <i class="fas fa-arrow-left me-1"></i> Lección anterior
                     </a>
                     {% else %}
@@ -139,22 +226,18 @@
                     {% endif %}
 
                     {% if next_lesson %}
-                    <a href="{% url 'courses:course_learning_lesson' course.slug next_lesson.id %}" class="btn btn-primary">
+                    <a href="{% url 'courses:course_learning_lesson' course.slug next_lesson.id %}" 
+                       class="btn btn-primary">
                         Siguiente lección <i class="fas fa-arrow-right ms-1"></i>
                     </a>
                     {% else %}
                     <a href="{% url 'courses:course_detail' course.slug %}" class="btn btn-success">
-                        <i class="fas fa-graduation-cap me-1"></i> Finalizar curso
+                        <i class="fas fa-graduation-cap me-1"></i> Volver al curso
                     </a>
                     {% endif %}
                 </div>
             </div>
         </div>
-        {% else %}
-        <div class="alert alert-info">
-            <i class="fas fa-info-circle me-1"></i> No hay lecciones disponibles para este curso.
-        </div>
-        {% endif %}
     </div>
 </div>
 {% endblock %}
@@ -174,10 +257,214 @@
 .lesson-link {
     color: #6c757d;
     transition: color 0.2s ease;
+    font-size: 0.9rem;
 }
 
 .lesson-link:hover, .lesson-link.active {
     color: #0d6efd;
+    text-decoration: underline;
+}
+
+.quiz-container .card, .assignment-container {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+
+.lesson-content {
+    line-height: 1.7;
+    font-size: 1.05rem;
+}
+
+.lesson-content h1, .lesson-content h2, .lesson-content h3, 
+.lesson-content h4, .lesson-content h5, .lesson-content h6 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
+.lesson-content p {
+    margin-bottom: 1rem;
+    color: #34495e;
+}
+
+.lesson-content ul, .lesson-content ol {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+}
+
+.lesson-content li {
+    margin-bottom: 0.5rem;
+}
+
+.lesson-content blockquote {
+    border-left: 4px solid #3498db;
+    padding-left: 1rem;
+    margin-left: 0;
+    color: #7f8c8d;
+    font-style: italic;
+}
+
+.lesson-content code {
+    background-color: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+}
+
+.lesson-content pre {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 0.375rem;
+    overflow-x: auto;
+    margin-bottom: 1rem;
+}
+
+.lesson-content pre code {
+    background: none;
+    padding: 0;
+}
+
+/* Estilos para la navegación */
+.navigation-buttons {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .lesson-content {
+        font-size: 1rem;
+    }
+    
+    .navigation-buttons .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+/* Mejoras de accesibilidad */
+.btn:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.lesson-link:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
 }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Script para manejar la reproducción de video y tracking de progreso
+document.addEventListener('DOMContentLoaded', function() {
+    // Para lecciones de video, marcar como completado cuando se termine de ver
+    const videoElement = document.querySelector('video');
+    if (videoElement) {
+        videoElement.addEventListener('ended', function() {
+            // Marcar automáticamente como completado al terminar el video
+            fetch("{% url 'courses:mark_lesson_complete' current_lesson.id %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Recargar la página para actualizar el estado
+                    location.reload();
+                }
+            });
+        });
+    }
+    
+    // Para lecciones de texto, marcar como leído cuando se llega al final
+    const lessonContent = document.querySelector('.lesson-content');
+    if (lessonContent && !{{ lesson_progress.completed|yesno:"true,false" }}) {
+        let isMarked = false;
+        
+        window.addEventListener('scroll', function() {
+            if (isMarked) return;
+            
+            const contentHeight = lessonContent.offsetHeight;
+            const scrollPosition = window.scrollY;
+            const windowHeight = window.innerHeight;
+            
+            // Si el usuario ha llegado al final del contenido
+            if (scrollPosition + windowHeight >= contentHeight + 100) {
+                isMarked = true;
+                
+                // Marcar como completado
+                fetch("{% url 'courses:mark_lesson_complete' current_lesson.id %}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        // Mostrar mensaje de confirmación
+                        const alert = document.createElement('div');
+                        alert.className = 'alert alert-success alert-dismissible fade show';
+                        alert.innerHTML = `
+                            <i class="fas fa-check-circle me-1"></i> 
+                            ¡Lección marcada como completada!
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.querySelector('.card-body').prepend(alert);
+                    }
+                });
+            }
+        });
+    }
+    
+    // Validación de archivos para tareas
+    const submissionFileInput = document.getElementById('submission_file');
+    if (submissionFileInput) {
+        submissionFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validar tamaño máximo (10MB)
+                const maxSize = 10 * 1024 * 1024; // 10MB en bytes
+                if (file.size > maxSize) {
+                    alert('El archivo es demasiado grande. El tamaño máximo permitido es 10MB.');
+                    e.target.value = ''; // Limpiar el input
+                    return;
+                }
+                
+                // Validar tipo de archivo
+                const allowedExtensions = ['.pdf', '.doc', '.docx', '.zip', '.rar'];
+                const fileName = file.name.toLowerCase();
+                const isValidExtension = allowedExtensions.some(ext => fileName.endsWith(ext));
+                
+                if (!isValidExtension) {
+                    alert('Formato de archivo no permitido. Use: ' + allowedExtensions.join(', '));
+                    e.target.value = ''; // Limpiar el input
+                }
+            }
+        });
+    }
+    
+    // Mejorar la experiencia de quizzes
+    const quizForm = document.querySelector('.quiz-container form');
+    if (quizForm) {
+        quizForm.addEventListener('submit', function(e) {
+            // Aquí podrías añadir validación adicional o animaciones
+            const submitButton = this.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Procesando...';
+        });
+    }
+});
+</script>
 {% endblock %}
