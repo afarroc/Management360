@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'passgen',
     'courses.apps.CoursesConfig',
     
+    'django.contrib.humanize',
 ]
 
 MIDDLEWARE = [
