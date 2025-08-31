@@ -1,0 +1,27 @@
+<li class="nav-item">
+    <a class="nav-link collapsed" data-bs-target="#courses-nav" data-bs-toggle="collapse" href="{% url 'courses:course_list' %}">
+        <i class="bi bi-journal-bookmark"></i><span>Cursos</span><i class="bi bi-chevron-down ms-auto"></i>
+    </a>
+    <ul id="courses-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+        <li>
+            <a href="{% url 'courses:course_list' %}">
+                <i class="bi bi-circle"></i><span>Todos los cursos</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'courses:dashboard' %}">
+                <i class="bi bi-circle"></i><span>Panel Cursos</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'courses:manage_courses' %}">
+                <i class="bi bi-circle"></i><span>Gestionar Cursos</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'courses:create_course' %}">
+                <i class="bi bi-circle"></i><span>Crear Curso</span>
+            </a>
+        </li>
+    </ul>
+</li><!-- End courses Nav -->
