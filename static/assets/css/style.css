@@ -1,3 +1,27 @@
+/* Espacio extra para selects en form-floating para evitar que el label tape el texto */
+.form-floating > .form-select {
+  padding-top: 2.625rem;
+}
+/* Fix para label de select en form-floating */
+.label-select-fix {
+  font-size: 0.95em;
+  top: -0.6em;
+  left: 0.75rem;
+  opacity: 0.85;
+  background: white;
+  padding: 0 0.25em;
+  z-index: 2;
+}
+/* Altura uniforme para el texto de ayuda en la calculadora */
+.help-text-uniform {
+  min-height: 2.8em;
+  max-height: 2.8em;
+  display: block;
+  overflow: hidden;
+  line-height: 1.3;
+  white-space: normal;
+  word-break: break-word;
+}
 /**
 * Template Name: NiceAdmin
 * Template URL: https://bootstrapmade.com/nice-admin-bootstrap-admin-html-template/
@@ -1218,16 +1242,16 @@ h6 {
   font-size: 14px;
   transition: all 0.3s;
   border-top: 1px solid #cddfff;
+  text-align: center;
 }
 
 .footer .copyright {
-  text-align: center;
   color: #012970;
+  margin-bottom: 0.5rem;
 }
 
 .footer .credits {
   padding-top: 5px;
-  text-align: center;
   font-size: 13px;
   color: #012970;
 }

@@ -23,12 +23,12 @@ from tools.constants import FORBIDDEN_MODELS, MAX_RECORDS_FOR_DELETION, MAX_RECO
 def calculate_agents(request):
     if request.method == 'POST':
         # Extract input parameters from the request
-        calls = int(request.POST.get('calls'))
-        reporting_period = int(request.POST.get('reporting_period'))
-        average_handling_time = float(request.POST.get('average_handling_time'))
-        service_level_agreement = float(request.POST.get('service_level_agreement'))
-        service_level_time = float(request.POST.get('service_level_time'))
-        shrinkage = float(request.POST.get('shrinkage'))
+        calls = int(request.POST.get('calls', 0))
+        reporting_period = int(request.POST.get('reporting_period', 60))
+        average_handling_time = float(request.POST.get('average_handling_time', 0))
+        service_level_agreement = float(request.POST.get('service_level_agreement', 0))
+        service_level_time = float(request.POST.get('service_level_time', 0))
+        shrinkage = float(request.POST.get('shrinkage', 0))
 
         # Perform calculations
         agents_required = AgentsFTE(
@@ -37,8 +37,16 @@ def calculate_agents(request):
         )
         utilization = utilisation(calls, agents_required)
 
-        # Render the results in the template
-        context = {'agents_required': agents_required, 'utilization': utilization}
+        context = {
+            'agents_required': agents_required,
+            'utilization': utilization,
+            'calls': calls,
+            'reporting_period': reporting_period,
+            'average_handling_time': average_handling_time,
+            'service_level_agreement': service_level_agreement,
+            'service_level_time': service_level_time,
+            'shrinkage': shrinkage,
+        }
         return render(request, 'calculator.html', context)
     return render(request, 'calculator.html')
 
