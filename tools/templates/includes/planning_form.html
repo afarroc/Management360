@@ -1,69 +1,62 @@
 
 
 
-<div class="card">
+
+<div class="card w-100" style="max-width: 1100px; margin: 0 auto;">
     <div class="card-body">
         <h5 class="card-title">Full-Time Equivalent Calculator</h5>
         <!-- Floating Labels Form -->
-        <form method="post" class="row g-3">
+    <form method="post" class="row g-3 justify-content-center align-items-end">
             {% csrf_token %}
-
-            <div class="col-md-3">
-                <div class="col-sm-12">
-                    <div class="form-floating">
-                        <input type="number" class="form-control" id="floatingCalls" placeholder="Calls" name="calls" required>
-                        <label for="floatingCalls">Calls</label>
-                    </div>
+            <div class="col-12 col-sm-6 col-md-4 d-flex flex-column align-items-stretch" style="height: 120px;">
+                <div class="flex-grow-1 mb-2 d-flex flex-column justify-content-end">
+                    <label for="floatingCalls" class="form-label fw-semibold mb-1">Llamadas (Calls) <span class="text-muted" style="font-size:12px;">[número]</span></label>
+                    <input type="number" class="form-control py-3" id="floatingCalls" placeholder="Ej: 200" name="calls" required>
                 </div>
+                <div class="form-text text-secondary small help-text-uniform">Ejemplo: <b>200</b> llamadas recibidas en el periodo</div>
             </div>
-            <div class="col-md-3">
-                <div class="col-sm-12">
-                    <div class="form-floating">
-                        <select class="form-select" id="floatingPeriod" aria-label="State" name="reporting_period" required>
-                            <option value=60 selected="selected">1 Hou</option>
-                            <option value=30>30 Min</option>
-                            <option value=15>15 Min</option>
-                        </select>
-                        <label for="floatingPeriod">Period</label>
-                    </div>
+            <div class="col-12 col-sm-6 col-md-4 d-flex flex-column align-items-stretch" style="height: 120px;">
+                <div class="flex-grow-1 mb-2 d-flex flex-column justify-content-end">
+                    <label for="floatingPeriod" class="form-label fw-semibold mb-1">Periodo <span class="text-muted" style="font-size:12px;">[minutos]</span></label>
+                    <select class="form-select py-3" id="floatingPeriod" aria-label="State" name="reporting_period" required>
+                        <option value=60 selected="selected">1 Hora</option>
+                        <option value=30>30 Min</option>
+                        <option value=15>15 Min</option>
+                    </select>
                 </div>
+                <div class="form-text text-secondary small help-text-uniform">Ejemplo: <b>60</b> para 1 hora</div>
             </div>
-            <div class="col-md-3">
-                <div class="col-sm-12">
-                    <div class="form-floating">
-                        <input type="number" class="form-control" id="floatingAHT" placeholder="AHT" step="0.01" name="average_handling_time" required>
-                        <label for="floatingAHT">AHT</label>
-                    </div>
+            <div class="col-12 col-sm-6 col-md-4 d-flex flex-column align-items-stretch" style="height: 120px;">
+                <div class="flex-grow-1 mb-2 d-flex flex-column justify-content-end">
+                    <label for="floatingAHT" class="form-label fw-semibold mb-1">AHT <span class="text-muted" style="font-size:12px;">[segundos]</span></label>
+                    <input type="number" class="form-control py-3" id="floatingAHT" placeholder="Ej: 300" step="0.01" name="average_handling_time" required>
                 </div>
+                <div class="form-text text-secondary small help-text-uniform">Ejemplo: <b>300</b> (5 minutos por llamada)</div>
             </div>
-            <div class="col-md-3">
-                <div class="col-sm-12">
-                    <div class="form-floating">
-                        <input type="number" class="form-control" id="floatingSLA" placeholder="SLA" step="0.01" name="service_level_agreement" required>
-                        <label for="floatingSLA">SLA</label>
-                    </div>
+            <div class="col-12 col-sm-6 col-md-4 d-flex flex-column align-items-stretch" style="height: 120px;">
+                <div class="flex-grow-1 mb-2 d-flex flex-column justify-content-end">
+                    <label for="floatingSLA" class="form-label fw-semibold mb-1">SLA <span class="text-muted" style="font-size:12px;">[proporción]</span></label>
+                    <input type="number" class="form-control py-3" id="floatingSLA" placeholder="Ej: 0.8" step="0.01" name="service_level_agreement" required>
                 </div>
+                <div class="form-text text-secondary small help-text-uniform">Ejemplo: <b>0.8</b> para 80%</div>
             </div>
-            <div class="col-md-3">
-                <div class="col-sm-12">
-                    <div class="form-floating">
-                        <input type="number" class="form-control" id="floatingSLA" placeholder="Response" step="0.01" name="service_level_time" required>
-                        <label for="floatingResponse">Response Time</label>
-                    </div>
+            <div class="col-12 col-sm-6 col-md-4 d-flex flex-column align-items-stretch" style="height: 120px;">
+                <div class="flex-grow-1 mb-2 d-flex flex-column justify-content-end">
+                    <label for="floatingResponse" class="form-label fw-semibold mb-1">Tiempo de respuesta <span class="text-muted" style="font-size:12px;">[segundos]</span></label>
+                    <input type="number" class="form-control py-3" id="floatingSLA" placeholder="Ej: 20" step="0.01" name="service_level_time" required>
                 </div>
+                <div class="form-text text-secondary small help-text-uniform">Ejemplo: <b>20</b> segundos para cumplir SLA</div>
             </div>
-            <div class="col-md-3">
-                <div class="col-sm-12">
-                    <div class="form-floating">
-                        <input type="number" class="form-control" id="floatingShrinkage" placeholder="Shrinkage" step="0.01" name="shrinkage" required>
-                        <label for="floatingShrinkage">Shrinkage</label>
-                    </div>
+            <div class="col-12 col-sm-6 col-md-4 d-flex flex-column align-items-stretch" style="height: 120px;">
+                <div class="flex-grow-1 mb-2 d-flex flex-column justify-content-end">
+                    <label for="floatingShrinkage" class="form-label fw-semibold mb-1">Shrinkage <span class="text-muted" style="font-size:12px;">[proporción]</span></label>
+                    <input type="number" class="form-control py-3" id="floatingShrinkage" placeholder="Ej: 0.3" step="0.01" name="shrinkage" required>
                 </div>
+                <div class="form-text text-secondary small help-text-uniform">Ejemplo: <b>0.3</b> para 30%</div>
             </div>
-
-            <div class="text-center">
-                <button type="submit" class="btn btn-primary">Calculate</button>
-                <button type="reset" class="btn btn-secondary">Reset</button>
+            <div class="col-12 col-md-4 text-center">
+                <button type="submit" class="btn btn-primary w-100 mb-2">Calculate</button>
+                <button type="reset" class="btn btn-secondary w-100">Reset</button>
             </div>
         </form><!-- End floating Labels Form -->
     </div>
@@ -72,9 +65,42 @@
 
 
 
-<div id="result">
-    <p>Required FTE: {{ agents_required }}</p>
-    <p>Utilization: {{ utilization }}</p>
+
+<div id="result" class="mt-4">
+    {% if agents_required or utilization %}
+    <div class="card border-success shadow-sm">
+        <div class="card-body">
+            <h6 class="card-title text-success mb-3"><i class="bi bi-calculator"></i> Resultado</h6>
+            <div class="mb-3">
+                <span class="fw-bold text-secondary">Valores usados:</span>
+                <ul class="mb-2 small ps-3">
+                    <li>Llamadas: <b>{{ calls }}</b></li>
+                    <li>Periodo: <b>{{ reporting_period }}</b> min</li>
+                    <li>AHT: <b>{{ average_handling_time }}</b> seg</li>
+                    <li>SLA: <b>{{ service_level_agreement }}</b></li>
+                    <li>Tiempo de respuesta: <b>{{ service_level_time }}</b> seg</li>
+                    <li>Shrinkage: <b>{{ shrinkage }}</b></li>
+                </ul>
+            </div>
+            <div class="row">
+                <div class="col-12 col-md-6 mb-2 mb-md-0">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-people-fill me-2 text-primary"></i>
+                        <span class="fw-bold">Agentes requeridos:</span>
+                        <span class="ms-2">{{ agents_required|floatformat:2 }}</span>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-graph-up-arrow me-2 text-info"></i>
+                        <span class="fw-bold">Utilización:</span>
+                        <span class="ms-2">{{ utilization|floatformat:2 }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <script>
