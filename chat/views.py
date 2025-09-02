@@ -62,16 +62,29 @@ def chat_view(request):
             cache.set(cache_key, chat_history, timeout=3600)  # 1 hour expiry
 
             # Validate and prepare message history
+            user_full_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
             messages = []
             for msg in chat_history:
                 if not isinstance(msg, dict):
                     continue
                 if msg.get('sender') == 'user':
-                    messages.append({"role": "user", "content": str(msg.get('content', ''))})
+                    messages.append({
+                        "role": "user",
+                        "content": str(msg.get('content', '')),
+                        "sender_name": msg.get('sender_name', user_full_name)
+                    })
                 else:
-                    messages.append({"role": "assistant", "content": str(msg.get('content', ''))})
-            
-            messages.append({"role": "user", "content": user_input})
+                    messages.append({
+                        "role": "assistant",
+                        "content": str(msg.get('content', '')),
+                        "sender_name": msg.get('sender_name', 'Asistente')
+                    })
+            # Añadir el mensaje actual del usuario con su nombre
+            messages.append({
+                "role": "user",
+                "content": user_input,
+                "sender_name": user_full_name
+            })
 
             async def stream_generator():
                 try:
@@ -275,11 +288,12 @@ def room_list(request):
 
 @login_required
 def room(request, room_name):
+    user_full_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
     context = {
         'pagetitle': f'Chat Room: {room_name}',
         'room_name': room_name,
         'current_user': request.user.username,
-        'user_full_name': f"{request.user.first_name} {request.user.last_name}",
+        'user_full_name': user_full_name,
         'user_email': request.user.email,
         'user_id': request.user.id,
         'user_date_joined': request.user.date_joined,

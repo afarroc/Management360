@@ -73,7 +73,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 
                 # Validate and process message
                 processed_message = await self.process_message(message)
-                
+                # Obtener nombre completo o username
+                user_full_name = f"{self.user.first_name} {self.user.last_name}".strip() or self.user.username
                 # Send message to room group
                 await self.channel_layer.group_send(
                     self.room_group_name,
@@ -81,10 +82,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         "type": "chat_message",
                         "message": processed_message,
                         "sender": str(self.user),
-                        "user_id": str(self.user.id)
+                        "user_id": str(self.user.id),
+                        "display_name": user_full_name
                     }
                 )
-                
         except json.JSONDecodeError:
             await self.send(text_data=json.dumps({
                 "error": "Invalid JSON format"
@@ -106,6 +107,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "message": event["message"],
                 "sender": event["sender"],
                 "user_id": event["user_id"],
+                "display_name": event.get("display_name", "Usuario"),
                 "timestamp": str(datetime.datetime.now().isoformat())
             }))
         except Exception as e:

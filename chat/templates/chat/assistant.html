@@ -330,9 +330,14 @@
         // Render a single message
         function renderMessage(msg) {
             const bubbleClass = msg.sender === 'user' ? 'user-bubble' : 'ai-bubble';
-            const senderName = msg.sender === 'user' ? 'Tú' : 'Asistente';
+            // Mostrar el nombre real si existe sender_name, si no, fallback
+            let senderName = 'Asistente';
+            if (msg.sender === 'user') {
+                senderName = msg.sender_name || 'Tú';
+            } else if (msg.sender_name) {
+                senderName = msg.sender_name;
+            }
             const timestamp = formatTimestamp(msg.timestamp);
-            
             return `
                 <div class="chat-bubble ${bubbleClass}">
                     <div class="chat-message">
