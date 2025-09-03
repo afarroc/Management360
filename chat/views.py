@@ -1,3 +1,65 @@
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import StreamingHttpResponse, JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib import messages
+from django.utils import timezone
+from django.core.cache import cache
+from django.core.files.storage import default_storage
+from django.conf import settings
+import asyncio
+import json
+import re
+from .ollama_api import generate_response
+from rooms.models import Room, Message
+from datetime import datetime
+import csv
+
+# Redirección automática a la sala por defecto
+@login_required
+def redirect_to_last_room(request):
+    last_message = Message.objects.filter(user=request.user).order_by('-created_at').first()
+    if last_message:
+        room_name = str(last_message.room.id)
+    else:
+        room_name = 'global'
+    return redirect('chat:room', room_name=room_name)
+
+@login_required
+def last_room_api(request):
+    user = request.user
+    last_message = Message.objects.filter(user=user).order_by('-created_at').first()
+    if last_message:
+        return JsonResponse({'room_name': str(last_message.room.id)})
+    # Si no hay historial, usar 'global'
+    return JsonResponse({'room_name': 'global'})
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+# Borra el historial de mensajes de una sala
+@login_required
+@require_POST
+def clear_history_room(request, room_name):
+    from rooms.models import Room, Message
+    try:
+        room = Room.objects.get(id=room_name)
+        Message.objects.filter(room=room).delete()
+        # Broadcast to all clients in the room
+        from channels.layers import get_channel_layer
+        from asgiref.sync import async_to_sync
+        channel_layer = get_channel_layer()
+        group_name = f"chat_{room_name}"
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                'type': 'history_cleared',
+            }
+        )
+        return JsonResponse({'success': True})
+    except Room.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Room not found'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
 class AIResponseError(Exception):
     """Excepción personalizada para errores en la respuesta de la IA."""
     pass
@@ -15,8 +77,11 @@ import asyncio
 import json
 import re
 from .ollama_api import generate_response
+from rooms.models import Room, Message
 from datetime import datetime
+
 import csv
+from rooms.models import Room, Message
 
 
 # Rate limiting function
@@ -306,15 +371,47 @@ def room_list(request):
 @login_required
 def room(request, room_name):
     user_full_name = f"{request.user.first_name} {request.user.last_name}".strip() or request.user.username
+    # Buscar la sala por nombre o id
+    try:
+        room_obj = Room.objects.get(id=room_name)
+    except Room.DoesNotExist:
+        messages.error(request, "Room not found")
+        return redirect('chat:room_list')
+
+    # Obtener historial de mensajes (últimos 50)
+    color_palette = [
+        "#007bff", "#28a745", "#dc3545", "#fd7e14", "#6610f2",
+        "#20c997", "#6f42c1", "#e83e8c", "#17a2b8", "#ffc107", "#343a40"
+    ]
+    chat_history = Message.objects.filter(room=room_obj).select_related('user').order_by('created_at')[:50]
+    history = []
+    for msg in chat_history:
+        user_id = msg.user.id if msg.user else 0
+        color = color_palette[user_id % len(color_palette)]
+        if msg.user:
+            display_name = f"{msg.user.first_name} {msg.user.last_name}".strip()
+            if not display_name:
+                display_name = msg.user.username
+        else:
+            display_name = f"User #{user_id}" if user_id else "Usuario"
+        history.append({
+            'user_id': user_id,
+            'display_name': display_name,
+            'content': msg.content,
+            'timestamp': msg.created_at,
+            'color': color,
+        })
+
     context = {
-        'pagetitle': f'Chat Room: {room_name}',
-        'room_name': room_name,
+        'pagetitle': f'Chat Room: {room_obj.name}',
+        'room_name': room_obj.id,
         'current_user': request.user.username,
         'user_full_name': user_full_name,
         'user_email': request.user.email,
         'user_id': request.user.id,
         'user_date_joined': request.user.date_joined,
         'is_moderator': request.user.groups.filter(name='Moderators').exists(),
+        'chat_history': history,
     }
     return render(request, 'chat/room.html', context)
 
