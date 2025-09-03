@@ -1,3 +1,6 @@
+class AIResponseError(Exception):
+    """Excepción personalizada para errores en la respuesta de la IA."""
+    pass
 # chat/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import StreamingHttpResponse, JsonResponse, HttpResponse
@@ -35,9 +38,12 @@ def moderate_message(content):
     return True
 
 
+
 @login_required
 @csrf_exempt
 def chat_view(request):
+    if request.method == "GET":
+        return JsonResponse({"status": "ok", "message": "Chat API disponible. Usa POST para interactuar."})
     if request.method == "POST":
         try:
             if not check_rate_limit(request.user.id):
@@ -45,18 +51,18 @@ def chat_view(request):
 
             # Get user input safely
             user_input = request.POST.get("user_input", "").strip()
-            
+
             # Procesar comandos
             command_response = process_commands(user_input)
             if command_response:
                 return JsonResponse({"command_response": command_response})
-            
+
             # Moderación
             if not moderate_message(user_input):
                 return JsonResponse({"error": "Message contains inappropriate content"}, status=400)
-            
+
             chat_history = json.loads(request.POST.get("chat_history", "[]"))
-            
+
             # Store chat history in cache
             cache_key = f'chat_history_{request.user.id}'
             cache.set(cache_key, chat_history, timeout=3600)  # 1 hour expiry
@@ -67,36 +73,49 @@ def chat_view(request):
             for msg in chat_history:
                 if not isinstance(msg, dict):
                     continue
-                if msg.get('sender') == 'user':
+                role = msg.get('role') or msg.get('sender')
+                if role == 'user':
                     messages.append({
                         "role": "user",
                         "content": str(msg.get('content', '')),
                         "sender_name": msg.get('sender_name', user_full_name)
                     })
-                else:
+                elif role == 'assistant':
                     messages.append({
                         "role": "assistant",
                         "content": str(msg.get('content', '')),
                         "sender_name": msg.get('sender_name', 'Asistente')
                     })
-            # Añadir el mensaje actual del usuario con su nombre
-            messages.append({
-                "role": "user",
-                "content": user_input,
-                "sender_name": user_full_name
-            })
+
+            # Validar que haya mensaje del usuario
+            if not user_input and not messages:
+                return JsonResponse({"error": "No se recibió mensaje del usuario ni historial."}, status=400)
+
+            # Añadir el mensaje actual del usuario solo si no está ya como último mensaje
+            if user_input and not (messages and messages[-1]["role"] == "user" and messages[-1]["content"] == user_input):
+                messages.append({
+                    "role": "user",
+                    "content": user_input,
+                    "sender_name": user_full_name
+                })
+
 
             async def stream_generator():
                 try:
                     async for chunk in generate_response(messages):
                         if not chunk or not isinstance(chunk, dict):
                             continue
+                        if 'error' in chunk:
+                            raise AIResponseError(chunk['error'])
                         content = chunk.get('message', {}).get('content', '')
                         if content:
                             # Replace newlines and escape special characters
                             yield f"data: {json.dumps({'content': content})}\n\n"
+                            await asyncio.sleep(0)  # Forzar flush inmediato del chunk
+                except AIResponseError as ai_err:
+                    yield f"data: {json.dumps({'error': f'AIResponseError: {str(ai_err)}'})}\n\n"
                 except Exception as e:
-                    yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                    yield f"data: {json.dumps({'error': f'InternalError: {str(e)}'})}\n\n"
                 finally:
                     yield "data: [DONE]\n\n"
 
@@ -113,10 +132,8 @@ def chat_view(request):
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=500)
 
-    return render(request, "chat/assistant.html", {
-        "pagetitle": "Chat IA",
-        "initial_history": json.dumps([])
-    })
+    # Si no es GET ni POST, devolver JSON de error
+    return JsonResponse({"error": "Método no permitido. Usa POST para interactuar con el chat."}, status=405)
 
 
 @login_required
@@ -310,6 +327,7 @@ def assistant_view(request):
         'user_email': request.user.email,
         'user_id': request.user.id,
         'user_date_joined': request.user.date_joined,
+        'initial_history': [],
     }
     return render(request, 'chat/assistant.html', context)
 

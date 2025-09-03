@@ -278,16 +278,41 @@
         let chatHistory = JSON.parse('{{ initial_history|escapejs }}' || '[]');
         let isProcessing = false;
         
-        // Initialize chat
-        function initializeChat() {
+
+        // Verifica la conexión con la API de chat
+        async function checkChatApiConnection() {
             try {
-                // Check if we have initial history from template
+                const response = await fetch('/chat/assistant/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: new URLSearchParams({
+                        'user_input': '__ping__',
+                        'chat_history': '[]'
+                    })
+                });
+                if (!response.ok) throw new Error('No responde la API');
+                // Si responde, no hacer nada especial
+            } catch (e) {
+                showToast('No se pudo conectar con la API de chat. Verifica que Ollama esté corriendo en localhost.', 'error');
+            }
+        }
+
+        // Initialize chat
+        async function initializeChat() {
+            try {
+                // Si no hay historial inicial, limpiar localStorage para evitar historial pegado
+                if (!chatHistory || chatHistory.length === 0) {
+                    localStorage.removeItem('chatHistory');
+                }
+                // Solo renderizar historial local o inicial, nunca llamar a la API aquí
                 if (chatHistory.length > 0) {
                     renderChatHistory();
                     return;
                 }
-                
-                // Fallback to localStorage
+                // Fallback a localStorage solo si no se limpió
                 const savedHistory = localStorage.getItem('chatHistory');
                 if (savedHistory) {
                     const parsedHistory = JSON.parse(savedHistory);
@@ -464,6 +489,23 @@
             scrollToBottom();
             
             try {
+                // Solo enviar historial relevante: usuario y respuestas finales del asistente
+                const filteredHistory = chatHistory
+                    .filter(m => m.sender === 'user' || m.sender === 'ai')
+                    .map(m => {
+                        let content = m.content;
+                        if (m.sender === 'ai') {
+                            // Quitar pensamiento si está incluido
+                            const idx = content.indexOf('[Pensamiento]');
+                            if (idx !== -1) {
+                                content = content.substring(idx + '[Pensamiento]'.length).trim();
+                            }
+                        }
+                        return {
+                            role: m.sender === 'user' ? 'user' : 'assistant',
+                            content: content
+                        };
+                    });
                 const response = await fetch('/chat/assistant/', {
                     method: 'POST',
                     headers: {
@@ -472,7 +514,7 @@
                     },
                     body: new URLSearchParams({
                         'user_input': userInput,
-                        'chat_history': JSON.stringify(chatHistory.filter(m => !m.id))
+                        'chat_history': JSON.stringify(filteredHistory.filter(m => m.content && m.content.trim() !== ''))
                     })
                 });
                 
@@ -505,36 +547,130 @@
                 
                 scrollToBottom();
                 
-                // Stream response
+                // Stream response SSE-style
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let aiResponse = '';
-                
-                while (true) {
-                    const {done, value} = await reader.read();
-                    if (done) break;
-                    
-                    aiResponse += decoder.decode(value, {stream: true});
-                    aiBubble.find('.ai-response-content').html(aiResponse.replace(/\n/g, '<br>'));
-                    scrollToBottom();
+                let aiThought = '';
+                let inThought = false;
+                let isHtmlError = false;
+                let done = false;
+                while (!done) {
+                    const { value, done: doneReading } = await reader.read();
+                    done = doneReading;
+                    if (value) {
+                        const chunk = decoder.decode(value, {stream: true});
+                        // Detect if chunk contains HTML (error)
+                        if (chunk.trim().startsWith('<')) {
+                            isHtmlError = true;
+                            break;
+                        }
+                        // Procesar cada línea SSE
+                        const lines = chunk.split(/\r?\n/);
+                        for (const line of lines) {
+                            if (line.startsWith('data:')) {
+                                try {
+                                    const json = JSON.parse(line.replace('data:', '').trim());
+                                    if (typeof json.content === 'string' && json.content.length > 0) {
+                                        let frag = json.content;
+                                        let renderChanged = false;
+                                        // Manejo incremental de pensamiento
+                                        while (frag.length > 0) {
+                                            if (!inThought) {
+                                                const tStart = frag.indexOf('<|thought|>');
+                                                if (tStart !== -1) {
+                                                    // Hay inicio de pensamiento
+                                                    aiResponse += frag.substring(0, tStart);
+                                                    frag = frag.substring(tStart + 11);
+                                                    inThought = true;
+                                                    renderChanged = true;
+                                                    continue;
+                                                }
+                                            }
+                                            if (inThought) {
+                                                const tEnd = frag.indexOf('<|endofthought|>');
+                                                if (tEnd !== -1) {
+                                                    // Fin de pensamiento
+                                                    aiThought += frag.substring(0, tEnd);
+                                                    frag = frag.substring(tEnd + 16);
+                                                    inThought = false;
+                                                    renderChanged = true;
+                                                    continue;
+                                                } else {
+                                                    // Pensamiento parcial
+                                                    // Eliminar etiqueta si viene pegada
+                                                    if (frag.startsWith('<|thought|>')) {
+                                                        frag = frag.substring(11);
+                                                    }
+                                                    aiThought += frag;
+                                                    frag = '';
+                                                    renderChanged = true;
+                                                    break;
+                                                }
+                                            }
+                                            // Si no hay etiquetas, todo es texto normal
+                                            aiResponse += frag;
+                                            frag = '';
+                                            renderChanged = true;
+                                            break;
+                                        }
+                                        if (renderChanged) {
+                                            let html = '';
+                                            if (aiThought.length > 0 || inThought) {
+                                                html += `<div style="background:#f1f1f1;border-radius:8px;padding:8px 12px;margin-bottom:6px;color:#888;font-style:italic;font-size:0.95em;">🤔 <b>Pensamiento:</b> ${(aiThought).replace(/\n/g,'<br>')}</div>`;
+                                            }
+                                            // Renderizar **negrita** y *cursiva* en la respuesta
+                                            let rendered = aiResponse
+                                                // Bloques de código multilinea
+                                                .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+                                                // Encabezados ###
+                                                .replace(/(^|\n)###\s?([^\n]+)/g, '$1<h3>$2</h3>')
+                                                // Encabezados ##
+                                                .replace(/(^|\n)##\s?([^\n]+)/g, '$1<h2>$2</h2>')
+                                                // Saltos de línea
+                                                .replace(/\n/g, '<br>')
+                                                // Negrita y cursiva
+                                                .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+                                                .replace(/\*([^*]+)\*/g, '<i>$1</i>');
+                                            html += rendered;
+                                            aiBubble.find('.ai-response-content').html(html);
+                                            scrollToBottom();
+                                            await Promise.resolve().then(() => {});
+                                        }
+                                    }
+                                    if (json.error) {
+                                        aiBubble.find('.ai-response-content').html('<span style=\"color:red\">❌ ' + json.error + '</span>');
+                                    }
+                                } catch (e) {
+                                    // Ignorar líneas mal formateadas
+                                }
+                            }
+                        }
+                    }
                 }
-                
-                // Update message in history
-                const msgIndex = chatHistory.findIndex(m => m.id === aiMsgId);
-                if (msgIndex !== -1) {
-                    chatHistory[msgIndex].content = aiResponse;
-                }
-                
-                // Initialize copy button for AI response
-                aiBubble.find('.copy-btn').click(function() {
-                    const messageText = $(this).siblings('.ai-response-content').text();
-                    navigator.clipboard.writeText(messageText).then(() => {
-                        showToast('Mensaje copiado', 'success');
+                if (isHtmlError || (!aiResponse && !aiThought)) {
+                    aiBubble.find('.ai-response-content').html('<span style="color:red">❌ Error inesperado del servidor. Intenta nuevamente.</span>');
+                } else {
+                    // Update message in history
+                    const msgIndex = chatHistory.findIndex(m => m.id === aiMsgId);
+                    if (msgIndex !== -1) {
+                        let fullContent = '';
+                        if (aiThought.length > 0) {
+                            fullContent += `[Pensamiento] ${aiThought}\n`;
+                        }
+                        fullContent += aiResponse;
+                        chatHistory[msgIndex].content = fullContent;
+                    }
+                    // Initialize copy button for AI response
+                    aiBubble.find('.copy-btn').click(function() {
+                        const messageText = $(this).siblings('.ai-response-content').text();
+                        navigator.clipboard.writeText(messageText).then(() => {
+                            showToast('Mensaje copiado', 'success');
+                        });
                     });
-                });
-                
-                // Save history to localStorage
-                localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                    // Save history to localStorage
+                    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                }
                 
             } catch (error) {
                 console.error('Error:', error);
@@ -589,8 +725,8 @@
             }
         }
         
-        // Initialize chat
-        initializeChat();
+    // Initialize chat
+    initializeChat();
         
         // Event listeners
         $("#send-btn").click(sendMessage);
