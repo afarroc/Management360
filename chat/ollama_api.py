@@ -1,22 +1,30 @@
+
+import os
+from dotenv import load_dotenv
 from ollama import AsyncClient
 import logging
 from typing import AsyncGenerator
 import json
 
+
+# Cargar variables de entorno
+load_dotenv()
+
 # Configuración del cliente y logging
-client = AsyncClient(host='localhost:11434')
+OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'localhost:11434')
+client = AsyncClient(host=OLLAMA_HOST)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configuración del modelo
+# Configuración del modelo desde .env
 MODEL_CONFIG = {
-    'model': 'deepseek-r1:8b',
+    'model': os.getenv('OLLAMA_MODEL', 'deepseek-r1:8b'),
     'options': {
-        'temperature': 0.7,
-        'num_ctx': 2048,
-        'repeat_penalty': 1.1,
-        'top_k': 40,
-        'top_p': 0.9
+        'temperature': float(os.getenv('OLLAMA_TEMPERATURE', 0.7)),
+        'num_ctx': int(os.getenv('OLLAMA_NUM_CTX', 2048)),
+        'repeat_penalty': float(os.getenv('OLLAMA_REPEAT_PENALTY', 1.1)),
+        'top_k': int(os.getenv('OLLAMA_TOP_K', 40)),
+        'top_p': float(os.getenv('OLLAMA_TOP_P', 0.9)),
     }
 }
 
