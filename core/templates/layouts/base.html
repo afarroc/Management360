@@ -72,6 +72,11 @@
         {% block content_wrapper %}
         <div class="container-fluid">
             {% block content %}{% endblock %}
+
+            {# Chat flotante y minimizable en todas las páginas #}
+            {% if '/chat/room' not in request.path %}
+                {% include 'chat/panel.html' %}
+            {% endif %}
         </div>
         {% endblock %}
     </main>

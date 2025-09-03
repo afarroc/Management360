@@ -11,6 +11,13 @@ from django.core.exceptions import PermissionDenied
 logger = logging.getLogger(__name__)
 
 class ChatConsumer(AsyncWebsocketConsumer):
+    async def history_cleared(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'history_cleared'
+        }))
+    # Diccionario de usuarios conectados por sala (en memoria, por proceso)
+    connected_users = {}
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.room_name = None
@@ -21,7 +28,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             # Get room name and validate
             self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
-            if not self.room_name or not str(self.room_name).isdigit():
+            # Permitir nombres de sala alfanuméricos (no solo dígitos)
+            if not self.room_name or not str(self.room_name).isalnum():
                 raise ValueError("Invalid room name")
                 
             self.room_group_name = f"chat_{self.room_name}"
@@ -41,8 +49,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
             
+            # Añadir usuario a la lista de conectados
+            await self.add_connected_user()
+
             await self.accept()
             logger.info(f"User {self.user} connected to room {self.room_name}")
+
+            # Notificar a todos los usuarios la lista actualizada
+            await self.broadcast_connected_users()
 
         except PermissionDenied as e:
             logger.warning(f"Connection refused: {str(e)}")
@@ -58,9 +72,51 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.room_group_name,
                 self.channel_name
             )
+            await self.remove_connected_user()
+            await self.broadcast_connected_users()
         except:
             pass
         raise StopConsumer()
+    @database_sync_to_async
+    def get_user_info(self):
+        return {
+            'id': str(self.user.id),
+            'username': self.user.username,
+            'display_name': f"{self.user.first_name} {self.user.last_name}".strip() or self.user.username
+        }
+
+    async def add_connected_user(self):
+        room = self.room_group_name
+        if room not in self.connected_users:
+            self.connected_users[room] = set()
+        self.connected_users[room].add((str(self.user.id), self.user.username, f"{self.user.first_name} {self.user.last_name}".strip() or self.user.username))
+
+    async def remove_connected_user(self):
+        room = self.room_group_name
+        if room in self.connected_users:
+            self.connected_users[room] = set(u for u in self.connected_users[room] if u[0] != str(self.user.id))
+            if not self.connected_users[room]:
+                del self.connected_users[room]
+
+    async def broadcast_connected_users(self):
+        room = self.room_group_name
+        users = []
+        if room in self.connected_users:
+            for user_id, username, display_name in self.connected_users[room]:
+                users.append({'id': user_id, 'username': username, 'display_name': display_name})
+        await self.channel_layer.group_send(
+            room,
+            {
+                'type': 'users_list',
+                'users': users
+            }
+        )
+
+    async def users_list(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'users',
+            'users': event['users']
+        }))
 
     async def receive(self, text_data=None, bytes_data=None):
         try:
@@ -73,8 +129,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 
                 # Validate and process message
                 processed_message = await self.process_message(message)
-                # Obtener nombre completo o username
                 user_full_name = f"{self.user.first_name} {self.user.last_name}".strip() or self.user.username
+
+                # Guardar mensaje en la base de datos
+                await self.save_message(self.room_name, self.user, processed_message)
+
                 # Send message to room group
                 await self.channel_layer.group_send(
                     self.room_group_name,
@@ -99,6 +158,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({
                 "error": "Internal server error"
             }))
+
+    @database_sync_to_async
+    def save_message(self, room_id, user, content):
+        from rooms.models import Room, Message
+        try:
+            room = Room.objects.get(id=room_id)
+            Message.objects.create(room=room, user=user, content=content)
+        except Exception as e:
+            logger.error(f"Error saving message: {str(e)}")
 
     async def chat_message(self, event):
         try:
