@@ -25,6 +25,15 @@
             {% if user.is_authenticated %}
             {% include 'layouts/includes/header/credit.html' %}
 
+            <!-- Chat Notification Icon -->
+            <li class="nav-item dropdown">
+                <a class="nav-link nav-icon position-relative" href="#" id="chat-notification-icon" title="Chat">
+                    <i class="bi bi-chat-dots"></i>
+                    <span id="chat-unread-count" class="badge bg-danger badge-number" style="display:none;position:absolute;top:0;right:0;">0</span>
+                </a>
+            </li>
+            <!-- End Chat Notification Icon -->
+
             <li class="nav-item dropdown">
                 <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
                     <i class="bi bi-bell"></i>

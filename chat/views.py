@@ -1,3 +1,5 @@
+from rooms.models import Room, Message
+from rooms.models import MessageRead
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
@@ -15,6 +17,100 @@ from .ollama_api import generate_response
 from rooms.models import Room, Message
 from datetime import datetime
 import csv
+
+@login_required
+@csrf_exempt
+def mark_messages_read_api(request):
+    """Marca como leídos los mensajes indicados por el usuario en una sala."""
+    if request.method == 'POST':
+        user = request.user
+        data = json.loads(request.body)
+        room_id = data.get('room_id')
+        message_ids = data.get('message_ids', [])
+        if not room_id or not message_ids:
+            return JsonResponse({'error': 'room_id y message_ids requeridos'}, status=400)
+        for msg_id in message_ids:
+            MessageRead.objects.get_or_create(user=user, message_id=msg_id)
+        return JsonResponse({'status': 'ok'})
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@login_required
+@csrf_exempt
+def unread_count_api(request):
+    """Devuelve el número de mensajes no leídos por sala para el usuario actual."""
+    user = request.user
+    room_id = request.GET.get('room_id')
+    if not room_id:
+        return JsonResponse({'error': 'room_id requerido'}, status=400)
+    total_msgs = Message.objects.filter(room_id=room_id).count()
+    read_msgs = MessageRead.objects.filter(user=user, message__room_id=room_id).count()
+    unread = max(total_msgs - read_msgs, 0)
+    return JsonResponse({'unread_count': unread})
+
+
+@login_required
+@csrf_exempt
+def room_history_api(request, room_id):
+    """Devuelve el historial de mensajes de una sala en formato JSON."""
+    try:
+        room = Room.objects.get(id=room_id)
+        chat_history = Message.objects.filter(room=room).select_related('user').order_by('created_at')[:50]
+        history = []
+        for msg in chat_history:
+            user_id = msg.user.id if msg.user else 0
+            display_name = f"{msg.user.first_name} {msg.user.last_name}".strip() if msg.user else f"User #{user_id}" if user_id else "Usuario"
+            history.append({
+                'user_id': user_id,
+                'display_name': display_name,
+                'content': msg.content,
+                'timestamp': msg.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            })
+        return JsonResponse({'history': history})
+    except Room.DoesNotExist:
+        return JsonResponse({'error': 'Room not found'}, status=404)
+
+@login_required
+@csrf_exempt
+def room_list_api(request):
+    """Devuelve la lista de salas disponibles en formato JSON."""
+    rooms = Room.objects.all().order_by('name')
+    rooms_data = [
+        {'id': room.id, 'name': room.name}
+        for room in rooms
+    ]
+    return JsonResponse({'rooms': rooms_data})
+
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import StreamingHttpResponse, JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib import messages
+from django.utils import timezone
+from django.core.cache import cache
+from django.core.files.storage import default_storage
+from django.conf import settings
+import asyncio
+import json
+import re
+from .ollama_api import generate_response
+from rooms.models import Room, Message
+from datetime import datetime
+import csv
+
+# Panel flotante para incluir en cualquier página
+@login_required
+@csrf_exempt
+def chat_panel(request):
+    rooms = Room.objects.all().order_by('name')
+    context = {
+        'rooms': rooms,
+        'user_full_name': f"{request.user.first_name} {request.user.last_name}",
+        'user_email': request.user.email,
+        'user_id': request.user.id,
+        'user_date_joined': request.user.date_joined,
+    }
+    return render(request, 'chat/panel.html', context)
 
 # Redirección automática a la sala por defecto
 @login_required
@@ -263,6 +359,7 @@ def chatroom(request, room_name):
     cache_key = f'room_visits_{room_name}'
     cache.set(cache_key, cache.get(cache_key, 0) + 1)
     
+    rooms = Room.objects.all().order_by('name')
     context = {
         "room_name": room_name,
         "pagetitle": f"Chat Room #{room_name}",
@@ -301,7 +398,8 @@ def chatroom(request, room_name):
             "enabled": True,
             "sound_enabled": True,
             "desktop_enabled": True,
-        }
+        },
+        "rooms": rooms
     }
     
     return render(request, "chat/room.html", context)
@@ -357,9 +455,11 @@ def process_commands(message):
 
 @login_required
 def room_list(request):
+    from rooms.models import Room
+    rooms = Room.objects.all().order_by('name')
     context = {
         'pagetitle': 'Chat Rooms',
-        'rooms': range(1, 5),  # Demo rooms 1-4
+        'rooms': rooms,
         'user_full_name': f"{request.user.first_name} {request.user.last_name}",
         'user_email': request.user.email,
         'user_id': request.user.id,
@@ -402,6 +502,8 @@ def room(request, room_name):
             'color': color,
         })
 
+    from rooms.models import Room as RoomModel
+    all_rooms = RoomModel.objects.all().order_by('name')
     context = {
         'pagetitle': f'Chat Room: {room_obj.name}',
         'room_name': room_obj.id,
@@ -412,6 +514,7 @@ def room(request, room_name):
         'user_date_joined': request.user.date_joined,
         'is_moderator': request.user.groups.filter(name='Moderators').exists(),
         'chat_history': history,
+        'rooms': all_rooms,
     }
     return render(request, 'chat/room.html', context)
 

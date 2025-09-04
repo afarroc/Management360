@@ -183,9 +183,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def verify_room_access(self):
-        """Implement your room access verification logic here"""
-        # Example: return Room.objects.filter(id=self.room_name, members=self.user).exists()
-        return True  # Placeholder - implement your actual logic
+        """Verifica si el usuario tiene acceso a la sala (es miembro o administrador)"""
+        from rooms.models import Room, RoomMember
+        try:
+            room = Room.objects.get(id=self.room_name)
+            # El usuario debe ser miembro o administrador de la sala
+            is_member = RoomMember.objects.filter(room=room, user=self.user).exists()
+            is_admin = room.administrators.filter(id=self.user.id).exists()
+            is_owner = room.owner_id == self.user.id
+            # Las salas públicas permiten acceso a cualquier usuario autenticado
+            is_public = room.permissions == 'public'
+            return is_member or is_admin or is_owner or is_public
+        except Room.DoesNotExist:
+            return False
 
     async def process_message(self, raw_message):
         """Process and sanitize incoming messages"""
