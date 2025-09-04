@@ -8,11 +8,7 @@
     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center chat-header" style="border-radius:1em 1em 0 0;cursor:pointer;">
         <span><i class="bi bi-chat-dots"></i> Chat
             <select id="chat-room-selector" class="form-select form-select-sm d-inline-block w-auto ms-2" style="font-size:0.95em;">
-                <option value="global">Global</option>
-                <option value="1">Sala 1</option>
-                <option value="2">Sala 2</option>
-                <option value="3">Sala 3</option>
-                <option value="4">Sala 4</option>
+                <option value="" disabled selected>Selecciona una sala...</option>
             </select>
         </span>
         <div>
@@ -105,7 +101,7 @@
     @media (max-width: 600px) {
         #chat-panel.docked {
             width: 98vw;
-            height: 60px;
+            height: 340px;
             min-height: 60px;
             right: 1vw;
             bottom: 1vw;
@@ -118,7 +114,7 @@
         }
         #chat-panel.docked .chat-panel-body,
         #chat-panel.docked .chat-info-containers {
-            display: none;
+            display: block;
         }
         #chat-panel.docked #toggle-chat-panel,
         #chat-panel.docked #toggle-dock-btn,
@@ -138,6 +134,7 @@
         return window.innerWidth <= 600;
     }
     document.addEventListener('DOMContentLoaded', async function() {
+    const currentUserId = "{{ user_id|default:'' }}";
         const panel = document.getElementById('chat-panel');
         const toggleDockBtn = document.getElementById('toggle-dock-btn');
         const toggleChatPanelBtn = document.getElementById('toggle-chat-panel');
@@ -158,8 +155,11 @@
         } else {
             setPanelMode('docked');
         }
+        // Siempre mostrar funcionalidades completas en modo docked
         if (isMobile() && !isChatMainPage()) {
             setPanelMode('docked');
+            document.querySelector('.chat-panel-body').style.display = 'flex';
+            document.querySelector('.chat-info-containers').style.display = 'flex';
         }
         toggleDockBtn.addEventListener('click', function() {
             if (panel.classList.contains('docked')) {
@@ -185,6 +185,8 @@
         window.addEventListener('resize', function() {
             if (isMobile() && !isChatMainPage()) {
                 setPanelMode('docked');
+                document.querySelector('.chat-panel-body').style.display = 'flex';
+                document.querySelector('.chat-info-containers').style.display = 'flex';
             }
         });
         goChatMainBtn.addEventListener('click', function() {
@@ -203,13 +205,62 @@
             return 'global';
         }
 
-        let roomName = await getLastRoom();
-        roomSelector.value = roomName;
         let chatSocket = null;
         let reconnectTimeout = null;
         let intentionalClose = false;
+    // let lastRoomId = null; // Eliminada declaración duplicada
 
-        function connectSocket() {
+        async function loadRoomsAndSelectLast() {
+            let lastRoom = await getLastRoom();
+            try {
+                const response = await fetch('/chat/api/chat/room-list/', { credentials: 'same-origin' });
+                if (response.ok) {
+                    const data = await response.json();
+                    roomSelector.innerHTML = '<option value="" disabled>Selecciona una sala...</option>';
+                    data.rooms.forEach(room => {
+                        const option = document.createElement('option');
+                        option.value = room.id;
+                        option.textContent = room.name;
+                        roomSelector.appendChild(option);
+                    });
+                    // Selecciona la sala por defecto si existe
+                    roomSelector.value = lastRoom;
+                    lastRoomId = lastRoom;
+                }
+            } catch (e) {}
+        }
+
+        await loadRoomsAndSelectLast();
+
+        async function loadHistory(roomId) {
+            chatLog.innerHTML = '';
+            try {
+                const response = await fetch(`/chat/api/chat/room-history/${roomId}/`, { credentials: 'same-origin' });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data.history)) {
+                        data.history.forEach(msg => {
+                            const isCurrentUser = msg.user_id == currentUserId;
+                            const msgHtml = `<div class="d-flex mb-2 justify-content-${isCurrentUser ? 'end' : 'start'}">
+                                <div class="message-bubble px-3 py-2 ${isCurrentUser ? 'outgoing text-white text-end' : 'incoming text-dark text-start'}" style="max-width: 75%; border-radius: 1.2em; background:${isCurrentUser ? '#007bff' : '#f8f9fa'};">
+                                    <div class="small fw-bold mb-1">${msg.display_name || 'Usuario'}</div>
+                                    <div class="message-content">${msg.content}</div>
+                                    <div class="message-time small mt-1 text-muted">${msg.timestamp ? msg.timestamp.substring(11,19) : ''}</div>
+                                </div>
+                            </div>`;
+                            chatLog.insertAdjacentHTML('beforeend', msgHtml);
+                        });
+                        chatLog.scrollTop = chatLog.scrollHeight;
+                    }
+                }
+            } catch (e) {}
+        }
+
+        let lastRoomId = null;
+        async function connectSocketWithHistory(roomId) {
+            if (roomId === lastRoomId) return; // No recargar si no cambió la sala
+            lastRoomId = roomId;
+            await loadHistory(roomId);
             if (chatSocket) {
                 intentionalClose = true;
                 chatSocket.close();
@@ -219,15 +270,15 @@
                 clearTimeout(reconnectTimeout);
                 reconnectTimeout = null;
             }
-            chatLog.innerHTML = '';
             const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-            const wsPath = `${wsScheme}://${window.location.host}/ws/chat/${roomName}/`;
+            const wsPath = `${wsScheme}://${window.location.host}/ws/chat/${roomId}/`;
             chatSocket = new WebSocket(wsPath);
             chatSocket.onmessage = function(e) {
                 const data = JSON.parse(e.data);
                 if (data.message) {
-                    const msgHtml = `<div class="d-flex mb-2 justify-content-${data.user_id === 'undefined' ? 'end' : 'start'}">
-                        <div class="message-bubble px-3 py-2 ${data.user_id === 'undefined' ? 'outgoing text-white text-end' : 'incoming text-dark text-start'}" style="max-width: 75%; border-radius: 1.2em; background:${data.user_id === 'undefined' ? '#007bff' : '#f8f9fa'};">
+                    const isCurrentUser = data.user_id == currentUserId;
+                    const msgHtml = `<div class="d-flex mb-2 justify-content-${isCurrentUser ? 'end' : 'start'}">
+                        <div class="message-bubble px-3 py-2 ${isCurrentUser ? 'outgoing text-white text-end' : 'incoming text-dark text-start'}" style="max-width: 75%; border-radius: 1.2em; background:${isCurrentUser ? '#007bff' : '#f8f9fa'};">
                             <div class="small fw-bold mb-1">${data.display_name || 'Usuario'}</div>
                             <div class="message-content">${data.message}</div>
                             <div class="message-time small mt-1 text-muted">${data.timestamp ? data.timestamp.substring(11,19) : ''}</div>
@@ -238,16 +289,17 @@
                 }
             };
             chatSocket.onclose = function(e) {
-                if (!intentionalClose) {
-                    reconnectTimeout = setTimeout(connectSocket, 2000);
+                // Solo reconectar si la sala sigue siendo la misma
+                if (!intentionalClose && roomId === lastRoomId) {
+                    reconnectTimeout = setTimeout(() => connectSocketWithHistory(roomId), 2000);
                 }
             };
         }
-        connectSocket();
+        // Conectar al inicio
+        connectSocketWithHistory(roomSelector.value);
 
         roomSelector.addEventListener('change', function() {
-            roomName = roomSelector.value;
-            connectSocket();
+            connectSocketWithHistory(roomSelector.value);
         });
         chatSubmit.addEventListener('click', function() {
             const message = chatInput.value.trim();

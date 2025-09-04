@@ -24,9 +24,9 @@
                         <div class="col">
                             <div class="card h-100">
                                 <div class="card-body">
-                                    <h5 class="card-title">Room #{{ room }}</h5>
-                                    <p class="card-text">General discussion room</p>
-                                    <a href="{% url 'chat:room' room_name=room %}" class="btn btn-primary">
+                                    <h5 class="card-title">{{ room.name }}</h5>
+                                    <p class="card-text">{{ room.description|default:"No description" }}</p>
+                                    <a href="{% url 'chat:room' room_name=room.id %}" class="btn btn-primary">
                                         <i class="bi bi-chat-dots"></i> Join Room
                                     </a>
                                 </div>

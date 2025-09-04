@@ -17,4 +17,14 @@ urlpatterns = [
     path('clear_history/<str:room_name>/', views.clear_history_room, name='clear_history_room'),
     # API para obtener la última sala accedida por el usuario
     path('api/chat/last-room/', views.last_room_api, name='api_last_room'),
+    # API para obtener la lista de salas
+    path('api/chat/room-list/', views.room_list_api, name='api_room_list'),
+    # API para obtener el historial de una sala
+    path('api/chat/room-history/<int:room_id>/', views.room_history_api, name='api_room_history'),
+    # API para marcar mensajes como leídos
+    path('api/chat/mark-read/', views.mark_messages_read_api, name='api_mark_read'),
+    # API para obtener el contador de mensajes no leídos
+    path('api/chat/unread-count/', views.unread_count_api, name='api_unread_count'),
+    # Panel flotante para incluir en cualquier página
+    path('panel/', views.chat_panel, name='chat_panel'),
 ]

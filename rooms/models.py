@@ -315,11 +315,19 @@ class RoomMember(models.Model):
         unique_together = ('room', 'user')
 
 
+
 class Message(models.Model):
     room = models.ForeignKey(Room, related_name='messages', on_delete=models.CASCADE)
     user = models.ForeignKey(User, related_name='messages', on_delete=models.CASCADE, null=True)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+class MessageRead(models.Model):
+    user = models.ForeignKey(User, related_name='read_messages', on_delete=models.CASCADE)
+    message = models.ForeignKey(Message, related_name='reads', on_delete=models.CASCADE)
+    read_at = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        unique_together = ('user', 'message')
 
 
 class Outbox(models.Model):
