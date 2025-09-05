@@ -150,11 +150,27 @@
             return window.location.pathname.startsWith('/chat/room');
         }
 
-        if (isChatMainPage()) {
-            setPanelMode('fullscreen');
-        } else {
-            setPanelMode('docked');
+        // Estado inicial del panel flotante
+        let chatPanelState = localStorage.getItem('chatPanelState') || 'minimized';
+        function applyPanelState(state) {
+            if (isChatMainPage()) {
+                setPanelMode('fullscreen');
+                panel.classList.remove('hidden');
+                restoreBtn.style.display = 'none';
+            } else {
+                setPanelMode('docked');
+                if (state === 'minimized') {
+                    panel.classList.add('hidden');
+                    restoreBtn.style.display = 'flex';
+                    restoreBtn.style.opacity = '1';
+                } else {
+                    panel.classList.remove('hidden');
+                    restoreBtn.style.display = 'none';
+                    restoreBtn.style.opacity = '0';
+                }
+            }
         }
+        applyPanelState(chatPanelState);
         // Siempre mostrar funcionalidades completas en modo docked
         if (isMobile() && !isChatMainPage()) {
             setPanelMode('docked');
@@ -164,14 +180,17 @@
         toggleDockBtn.addEventListener('click', function() {
             if (panel.classList.contains('docked')) {
                 setPanelMode('fullscreen');
+                localStorage.setItem('chatPanelState', 'maximized');
             } else {
                 setPanelMode('docked');
+                localStorage.setItem('chatPanelState', 'docked');
             }
         });
         toggleChatPanelBtn.addEventListener('click', function() {
             panel.classList.add('hidden');
             restoreBtn.style.display = 'flex';
             restoreBtn.style.opacity = '1';
+            localStorage.setItem('chatPanelState', 'minimized');
         });
         restoreBtn.addEventListener('click', function() {
             panel.classList.remove('hidden');
@@ -180,6 +199,10 @@
             // Si está en la página principal de chat, restaurar pantalla completa
             if (isChatMainPage()) {
                 setPanelMode('fullscreen');
+                localStorage.setItem('chatPanelState', 'maximized');
+            } else {
+                setPanelMode('docked');
+                localStorage.setItem('chatPanelState', 'docked');
             }
         });
         window.addEventListener('resize', function() {
