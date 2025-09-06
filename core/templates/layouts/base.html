@@ -47,7 +47,7 @@
     {% block extra_head %}{% endblock %}
 </head>
 
-<body>
+<body {% if user.is_authenticated %}data-user-authenticated="true"{% endif %}>
     {# Header #}
     {% include 'layouts/header.html' %}
 
@@ -77,6 +77,11 @@
             {% if '/chat/room' not in request.path %}
                 {% include 'chat/panel.html' %}
             {% endif %}
+
+            {# Hidden CSRF form for JavaScript #}
+            <form id="csrf-form" style="display: none;">
+                {% csrf_token %}
+            </form>
         </div>
         {% endblock %}
     </main>
@@ -121,8 +126,15 @@
     {# JavaScript Principal #}
     <script src="{% static 'assets/js/main.js' %}" defer></script>
 
+    {# Notification System JavaScript #}
+    {% if user.is_authenticated %}
+    <script src="{% static 'assets/js/notifications.js' %}" defer></script>
+    {% endif %}
+
     {# Bloque para JS adicional #}
     {% block extra_js %}{% endblock %}
+
+
 
     {# JavaScript Inline Optimizado #}
     <script nonce="{{ request.csp_nonce }}">
