@@ -25,6 +25,30 @@ urlpatterns = [
     path('api/chat/mark-read/', views.mark_messages_read_api, name='api_mark_read'),
     # API para obtener el contador de mensajes no leídos
     path('api/chat/unread-count/', views.unread_count_api, name='api_unread_count'),
+    # API para resetear el contador de mensajes no leídos
+    path('api/chat/reset-unread/', views.reset_unread_count_api, name='api_reset_unread'),
+    # API para obtener notificaciones no leídas
+    path('api/notifications/unread/', views.unread_notifications_api, name='api_unread_notifications'),
+    # API para marcar notificaciones como leídas
+    path('api/notifications/mark-read/', views.mark_notifications_read_api, name='api_mark_notifications_read'),
+    # API para crear notificación de prueba
+    path('api/notifications/test-create/', views.test_create_notification, name='api_test_create_notification'),
+    # API para buscar en el historial de mensajes
+    path('api/chat/search/', views.search_history, name='api_search_history'),
+    # API para buscar mensajes con filtros avanzados
+    path('api/chat/search-messages/', views.search_messages, name='api_search_messages'),
+    # API para añadir reacciones a mensajes
+    path('api/chat/reaction/<int:message_id>/', views.add_reaction, name='api_add_reaction'),
+    # API para actualizar presencia del usuario
+    path('api/chat/presence/', views.update_presence, name='api_update_presence'),
+    # API para obtener presencia de usuarios en una sala
+    path('api/chat/presence/status/', views.get_presence, name='api_get_presence'),
+    # API para gestionar miembros de sala
+    path('api/room/<int:room_id>/members/', views.room_members_api, name='api_room_members'),
+    # API para notificaciones de sala
+    path('api/room/<int:room_id>/notifications/', views.room_notifications_api, name='api_room_notifications'),
     # Panel flotante para incluir en cualquier página
     path('panel/', views.chat_panel, name='chat_panel'),
+    # Panel de administración de sala
+    path('room/<int:room_id>/admin/', views.room_admin, name='room_admin'),
 ]

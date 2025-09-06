@@ -25,14 +25,31 @@
             {% if user.is_authenticated %}
             {% include 'layouts/includes/header/credit.html' %}
 
-            <!-- Chat Notification Icon -->
+            <!-- Unified Notifications Icon -->
             <li class="nav-item dropdown">
-                <a class="nav-link nav-icon position-relative" href="#" id="chat-notification-icon" title="Chat">
-                    <i class="bi bi-chat-dots"></i>
-                    <span id="chat-unread-count" class="badge bg-danger badge-number" style="display:none;position:absolute;top:0;right:0;">0</span>
+                <a class="nav-link nav-icon position-relative" href="#" id="header-notifications-btn" data-bs-toggle="dropdown" title="Notifications">
+                    <i class="bi bi-bell"></i>
+                    <span id="header-notification-badge" class="badge bg-danger badge-number" style="display:none;position:absolute;top:-5px;right:-5px;">0</span>
                 </a>
+                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications" style="min-width: 350px;max-height: 500px;overflow-y: auto;">
+                    <li class="dropdown-header d-flex justify-content-between align-items-center">
+                        <span>Notifications</span>
+                        <button id="header-mark-all-read-btn" class="btn btn-sm btn-outline-primary" style="display: none;">Mark All Read</button>
+                    </li>
+
+                    <li id="header-notifications-list">
+                        <div class="text-center p-4">
+                            <i class="bi bi-bell-slash fs-1 text-muted"></i>
+                            <p class="text-muted mt-2">No notifications</p>
+                        </div>
+                    </li>
+
+                    <li class="dropdown-footer">
+                        <a href="{% url 'chat:room_list' %}">View all notifications</a>
+                    </li>
+                </ul>
             </li>
-            <!-- End Chat Notification Icon -->
+            <!-- End Unified Notifications Icon -->
 
             <li class="nav-item dropdown">
                 <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
@@ -96,63 +113,6 @@
                     </li>
                 </ul><!-- End Notification Dropdown Items -->
             </li><!-- End Notification Nav -->
-            <li class="nav-item dropdown">
-                <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
-                    <i class="bi bi-chat-left-text"></i>
-                    <span class="badge bg-success badge-number">3</span>
-                </a><!-- End Messages Icon -->
-                <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow messages">
-                    <li class="dropdown-header">
-                        You have 3 new messages
-                        <a href="#"><span class="badge rounded-pill bg-primary p-2 ms-2">View all</span></a>
-                    </li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li class="message-item">
-                        <a href="#">
-                            <img src="{% static 'assets/img/messages-1.jpg' %}" alt="" class="rounded-circle">
-                            <div>
-                                <h4>Maria Hudson</h4>
-                                <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
-                                <p>4 hrs. ago</p>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li class="message-item">
-                        <a href="#">
-                            <img src="{% static 'assets/img/messages-2.jpg' %}" alt="" class="rounded-circle">
-                            <div>
-                                <h4>Anna Nelson</h4>
-                                <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
-                                <p>6 hrs. ago</p>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li class="message-item">
-                        <a href="#">
-                            <img src="{% static 'assets/img/messages-3.jpg' %}" alt="" class="rounded-circle">
-                            <div>
-                                <h4>David Muldon</h4>
-                                <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
-                                <p>8 hrs. ago</p>
-                            </div>
-                        </a>
-                    </li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li class="dropdown-footer">
-                        <a href="#">Show all messages</a>
-                    </li>
-                </ul><!-- End Messages Dropdown Items -->
-            </li><!-- End Messages Nav -->
             <li class="nav-item dropdown pe-3">
                 <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
                     {% if user.profile.profile_picture %}
