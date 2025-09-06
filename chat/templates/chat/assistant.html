@@ -1,6 +1,7 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
 {% load schedule_filters %}
+<script src="{% static 'js/chat_notifications_simple.js' %}"></script>
 
 {% block content %}
 
@@ -18,6 +19,7 @@
         </ol>
     </nav>
 </div><!-- End Page Title -->
+
 
 <style>
     /* Estilos mejorados para el chat (mantenidos exactamente igual) */
@@ -745,11 +747,11 @@
         
     // Initialize chat
     initializeChat();
-        
+
         // Event listeners
         $("#send-btn").click(sendMessage);
         $("#clear-chat").click(clearChat);
-        
+
         $("#user-input")
             .on('input', adjustTextareaHeight)
             .keypress(function(e) {
@@ -759,7 +761,9 @@
                 }
             })
             .focus();
+
     });
 </script>
+
 
 {% endblock %}

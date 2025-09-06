@@ -190,6 +190,75 @@ class Room(models.Model):
     def __str__(self):
         return self.name
 
+    def add_member(self, user, role='member', added_by=None):
+        """Add a user to the room with specified role"""
+        membership, created = RoomMember.objects.get_or_create(
+            room=self, user=user,
+            defaults={'role': role}
+        )
+        if created:
+            # Create notification for new member
+            Notification.objects.create(
+                user=user,
+                title=f"Welcome to {self.name}",
+                message=f"You have been added to the room {self.name}",
+                notification_type='room_invite',
+                related_room=self,
+                action_url=f'/chat/room/{self.id}/'
+            )
+            # Create room notification
+            RoomNotification.objects.create(
+                room=self,
+                user=user,
+                title='New Member',
+                message=f'{user.get_full_name()} joined the room',
+                notification_type='member_join',
+                created_by=added_by
+            )
+        return membership
+
+    def remove_member(self, user, removed_by=None):
+        """Remove a user from the room"""
+        try:
+            membership = RoomMember.objects.get(room=self, user=user)
+            membership.delete()
+
+            # Create room notification
+            RoomNotification.objects.create(
+                room=self,
+                user=user,
+                title='Member Left',
+                message=f'{user.get_full_name()} left the room',
+                notification_type='member_leave',
+                created_by=removed_by
+            )
+            return True
+        except RoomMember.DoesNotExist:
+            return False
+
+    def get_active_members(self):
+        """Get all active members of the room"""
+        return self.members.filter(is_active=True).select_related('user')
+
+    def get_online_members(self):
+        """Get members who were active in the last 5 minutes"""
+        from django.utils import timezone
+        five_minutes_ago = timezone.now() - timezone.timedelta(minutes=5)
+        return self.members.filter(
+            is_active=True,
+            last_seen__gte=five_minutes_ago
+        ).select_related('user')
+
+    def can_user_manage(self, user):
+        """Check if user can manage this room"""
+        if user == self.owner:
+            return True
+        return self.members.filter(
+            user=user,
+            role__in=['admin', 'moderator'],
+            is_active=True
+        ).exists()
+
 class RoomConnection(models.Model):
     from_room = models.ForeignKey(Room, related_name='from_connections', on_delete=models.CASCADE)
     to_room = models.ForeignKey(Room, related_name='to_connections', on_delete=models.CASCADE)
@@ -310,9 +379,27 @@ class RoomMember(models.Model):
     room = models.ForeignKey(Room, related_name='members', on_delete=models.CASCADE)
     user = models.ForeignKey(User, related_name='room_memberships', on_delete=models.CASCADE)
     joined_at = models.DateTimeField(auto_now_add=True)
+    role = models.CharField(max_length=20, choices=[
+        ('member', 'Member'),
+        ('moderator', 'Moderator'),
+        ('admin', 'Admin')
+    ], default='member')
+    is_active = models.BooleanField(default=True)
+    last_seen = models.DateTimeField(auto_now=True)
+    notification_preferences = models.JSONField(default=dict)  # Store user notification prefs
 
     class Meta:
         unique_together = ('room', 'user')
+        ordering = ['-joined_at']
+
+    def __str__(self):
+        return f"{self.user.username} in {self.room.name} ({self.role})"
+
+    def can_manage_room(self):
+        return self.role in ['admin', 'moderator'] or self.room.owner == self.user
+
+    def can_delete_messages(self):
+        return self.role == 'admin' or self.room.owner == self.user
 
 
 
@@ -321,6 +408,31 @@ class Message(models.Model):
     user = models.ForeignKey(User, related_name='messages', on_delete=models.CASCADE, null=True)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    edited_at = models.DateTimeField(null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)
+    reply_to = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='replies')
+    message_type = models.CharField(max_length=20, choices=[
+        ('text', 'Text'),
+        ('system', 'System'),
+        ('file', 'File'),
+        ('image', 'Image')
+    ], default='text')
+
+    class Meta:
+        ordering = ['created_at']
+        indexes = [
+            models.Index(fields=['room', 'created_at']),
+            models.Index(fields=['user', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username if self.user else 'System'}: {self.content[:50]}"
+
+    def get_replies(self):
+        return self.replies.filter(is_deleted=False)
+
+    def mark_as_read_for_user(self, user):
+        MessageRead.objects.get_or_create(user=user, message=self)
 
 class MessageRead(models.Model):
     user = models.ForeignKey(User, related_name='read_messages', on_delete=models.CASCADE)
@@ -328,6 +440,72 @@ class MessageRead(models.Model):
     read_at = models.DateTimeField(auto_now_add=True)
     class Meta:
         unique_together = ('user', 'message')
+
+
+class Notification(models.Model):
+    user = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    notification_type = models.CharField(max_length=50, choices=[
+        ('chat', 'Chat Message'),
+        ('system', 'System'),
+        ('alert', 'Alert'),
+        ('info', 'Information'),
+        ('room_invite', 'Room Invitation'),
+        ('room_join', 'Room Join'),
+        ('room_leave', 'Room Leave'),
+        ('admin_action', 'Admin Action')
+    ], default='info')
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    related_room = models.ForeignKey(Room, on_delete=models.CASCADE, null=True, blank=True)
+    related_message = models.ForeignKey(Message, on_delete=models.CASCADE, null=True, blank=True)
+    action_url = models.CharField(max_length=500, blank=True)  # URL to redirect on click
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read', 'created_at']),
+            models.Index(fields=['user', 'notification_type']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username}: {self.title}"
+
+    def mark_as_read(self):
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save()
+
+
+class RoomNotification(models.Model):
+    room = models.ForeignKey(Room, related_name='room_notifications', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, related_name='room_notifications', on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    notification_type = models.CharField(max_length=50, choices=[
+        ('member_join', 'Member Joined'),
+        ('member_leave', 'Member Left'),
+        ('room_update', 'Room Updated'),
+        ('admin_change', 'Admin Changed'),
+        ('message_pinned', 'Message Pinned'),
+        ('room_settings', 'Settings Changed')
+    ], default='member_join')
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, related_name='created_room_notifications', on_delete=models.SET_NULL, null=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['room', 'created_at']),
+            models.Index(fields=['user', 'is_read']),
+        ]
+
+    def __str__(self):
+        return f"{self.room.name}: {self.title}"
 
 
 class Outbox(models.Model):

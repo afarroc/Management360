@@ -1,6 +1,7 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
 {% load schedule_filters %}
+<script src="{% static 'js/chat_notifications_simple.js' %}"></script>
 
 {% block content %}
 
@@ -20,6 +21,7 @@
         </ol>
     </nav>
 </div><!-- End Page Title -->
+
 
 <section class="section dashboard">
     <div class="row">
@@ -159,6 +161,8 @@
 
     // Botón de actualización manual
     document.getElementById('refresh-stats')?.addEventListener('click', updateStats);
+
 </script>
+
 
 {% endblock %}

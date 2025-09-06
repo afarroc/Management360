@@ -1,5 +1,3 @@
-from rooms.models import Room, Message
-from rooms.models import MessageRead
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
@@ -10,11 +8,12 @@ from django.utils import timezone
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.conf import settings
+from django.contrib.auth.models import User
 import asyncio
 import json
 import re
 from .ollama_api import generate_response
-from rooms.models import Room, Message
+from rooms.models import Room, Message, MessageRead
 from datetime import datetime
 import csv
 
@@ -40,12 +39,105 @@ def unread_count_api(request):
     """Devuelve el número de mensajes no leídos por sala para el usuario actual."""
     user = request.user
     room_id = request.GET.get('room_id')
-    if not room_id:
-        return JsonResponse({'error': 'room_id requerido'}, status=400)
-    total_msgs = Message.objects.filter(room_id=room_id).count()
-    read_msgs = MessageRead.objects.filter(user=user, message__room_id=room_id).count()
-    unread = max(total_msgs - read_msgs, 0)
-    return JsonResponse({'unread_count': unread})
+    if room_id:
+        total_msgs = Message.objects.filter(room_id=room_id).count()
+        read_msgs = MessageRead.objects.filter(user=user, message__room_id=room_id).count()
+        unread = max(total_msgs - read_msgs, 0)
+        return JsonResponse({'unread_count': unread})
+    else:
+        # Total unread across all rooms
+        total_unread = 0
+        rooms = Room.objects.all()
+        for room in rooms:
+            total_msgs = Message.objects.filter(room=room).count()
+            read_msgs = MessageRead.objects.filter(user=user, message__room=room).count()
+            total_unread += max(total_msgs - read_msgs, 0)
+        return JsonResponse({'unread_count': total_unread})
+
+
+@login_required
+@csrf_exempt
+def reset_unread_count_api(request):
+    """Resetea el contador de mensajes no leídos para una sala específica o todas las salas."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        user = request.user
+        data = json.loads(request.body)
+        room_id = data.get('room_id')
+
+        if room_id:
+            # Reset for specific room
+            unread_messages = Message.objects.filter(
+                room_id=room_id
+            ).exclude(
+                id__in=MessageRead.objects.filter(
+                    user=user,
+                    message__room_id=room_id
+                ).values_list('message_id', flat=True)
+            )
+        else:
+            # Reset for all rooms
+            unread_messages = Message.objects.filter(
+                room__members__user=user,
+                room__members__is_active=True
+            ).exclude(
+                id__in=MessageRead.objects.filter(
+                    user=user
+                ).values_list('message_id', flat=True)
+            ).distinct()
+
+        # Mark all unread messages as read
+        message_reads = []
+        for message in unread_messages:
+            message_reads.append(MessageRead(user=user, message=message))
+
+        if message_reads:
+            MessageRead.objects.bulk_create(message_reads)
+
+        return JsonResponse({
+            'success': True,
+            'marked_read': len(message_reads),
+            'message': f'Marked {len(message_reads)} messages as read'
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@csrf_exempt
+def mark_notifications_read_api(request):
+    """API to mark specific notifications as read"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        from .models import HardcodedNotificationManager
+
+        data = json.loads(request.body)
+        notification_ids = data.get('notification_ids', [])
+
+        # If notification_ids is empty, mark all notifications as read
+        if not notification_ids:
+            count = HardcodedNotificationManager.mark_notifications_read(request.user, None)
+        else:
+            count = HardcodedNotificationManager.mark_notifications_read(request.user, notification_ids)
+
+        return JsonResponse({
+            'success': True,
+            'marked_read': count,
+            'message': f'Marked {count} notifications as read'
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        logger.error(f"Error in mark_notifications_read_api for user {request.user.username}: {str(e)}")
+        return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
 @login_required
@@ -80,23 +172,7 @@ def room_list_api(request):
     ]
     return JsonResponse({'rooms': rooms_data})
 
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import StreamingHttpResponse, JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib import messages
-from django.utils import timezone
-from django.core.cache import cache
-from django.core.files.storage import default_storage
-from django.conf import settings
-import asyncio
-import json
-import re
-from .ollama_api import generate_response
-from rooms.models import Room, Message
-from datetime import datetime
-import csv
+# All imports are at the top of the file
 
 # Panel flotante para incluir en cualquier página
 @login_required
@@ -130,13 +206,10 @@ def last_room_api(request):
         return JsonResponse({'room_name': str(last_message.room.id)})
     # Si no hay historial, usar 'global'
     return JsonResponse({'room_name': 'global'})
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
 # Borra el historial de mensajes de una sala
 @login_required
 @require_POST
 def clear_history_room(request, room_name):
-    from rooms.models import Room, Message
     try:
         room = Room.objects.get(id=room_name)
         Message.objects.filter(room=room).delete()
@@ -159,25 +232,6 @@ def clear_history_room(request, room_name):
 class AIResponseError(Exception):
     """Excepción personalizada para errores en la respuesta de la IA."""
     pass
-# chat/views.py
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import StreamingHttpResponse, JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.utils import timezone
-from django.core.cache import cache
-from django.core.files.storage import default_storage
-from django.conf import settings
-import asyncio
-import json
-import re
-from .ollama_api import generate_response
-from rooms.models import Room, Message
-from datetime import datetime
-
-import csv
-from rooms.models import Room, Message
 
 
 # Rate limiting function
@@ -409,14 +463,62 @@ def chatroom(request, room_name):
 @csrf_exempt
 def search_history(request):
     query = request.GET.get('q', '').strip()
-    chat_history = cache.get(f'chat_history_{request.user.id}', [])
-    
-    results = [
-        msg for msg in chat_history 
-        if query.lower() in msg.get('content', '').lower()
-    ]
-    
-    return JsonResponse({"results": results})
+    room_id = request.GET.get('room_id')
+    user_filter = request.GET.get('user')
+    date_filter = request.GET.get('date')
+
+    if not query:
+        return JsonResponse({"results": [], "total": 0})
+
+    # Build queryset
+    from rooms.models import Message
+    messages = Message.objects.select_related('user').order_by('-created_at')
+
+    if room_id:
+        messages = messages.filter(room_id=room_id)
+
+    # Apply user filter
+    if user_filter:
+        messages = messages.filter(user__username__icontains=user_filter)
+
+    # Apply date filter
+    if date_filter:
+        from datetime import datetime, timedelta
+        now = datetime.now()
+
+        if date_filter == 'today':
+            start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        elif date_filter == 'week':
+            start_date = now - timedelta(days=7)
+        elif date_filter == 'month':
+            start_date = now - timedelta(days=30)
+        else:
+            start_date = None
+
+        if start_date:
+            messages = messages.filter(created_at__gte=start_date)
+
+    # Apply content search
+    messages = messages.filter(content__icontains=query)[:50]  # Limit results
+
+    # Format results
+    results = []
+    for msg in messages:
+        results.append({
+            'id': msg.id,
+            'content': msg.content,
+            'user': msg.user.username if msg.user else 'Unknown',
+            'display_name': f"{msg.user.first_name} {msg.user.last_name}".strip() if msg.user else 'Unknown',
+            'timestamp': msg.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'room_id': msg.room.id if msg.room else None,
+            'room_name': msg.room.name if msg.room else 'Unknown'
+        })
+
+    return JsonResponse({
+        "results": results,
+        "total": len(results),
+        "query": query
+    })
 
 
 @login_required
@@ -538,3 +640,581 @@ def clear_history(request):
         # Add chat clearing logic here
         messages.success(request, 'Chat history cleared successfully')
     return redirect('chat:room_list')
+
+@login_required
+@csrf_exempt
+def add_reaction(request, message_id):
+    """Add or remove a reaction to a message"""
+    if request.method == 'POST':
+        try:
+            from rooms.models import Message
+            from .models import MessageReaction
+
+            data = json.loads(request.body)
+            emoji = data.get('emoji')
+
+            if not emoji:
+                return JsonResponse({'error': 'Emoji is required'}, status=400)
+
+            try:
+                message = Message.objects.get(id=message_id)
+            except Message.DoesNotExist:
+                return JsonResponse({'error': 'Message not found'}, status=404)
+
+            # Check if reaction already exists
+            reaction, created = MessageReaction.objects.get_or_create(
+                message=message,
+                user=request.user,
+                emoji=emoji
+            )
+
+            if not created:
+                # Remove reaction if it already exists
+                reaction.delete()
+                action = 'removed'
+            else:
+                action = 'added'
+
+            return JsonResponse({
+                'success': True,
+                'action': action,
+                'emoji': emoji,
+                'message_id': message_id
+            })
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    @login_required
+    def unread_notifications_api(request):
+        """API endpoint for unread notifications"""
+        if request.method == 'GET':
+            from .models import HardcodedNotificationManager
+            notification_manager = HardcodedNotificationManager()
+            data = notification_manager.get_notifications_data(request.user)
+            return JsonResponse(data)
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    @login_required
+    def room_members_api(request, room_id):
+        """API endpoint for room members"""
+        try:
+            from rooms.models import RoomMember, Room
+            room = Room.objects.get(id=room_id)
+    
+            # Check if user has access to this room
+            if not RoomMember.objects.filter(room=room, user=request.user).exists():
+                return JsonResponse({'error': 'Access denied'}, status=403)
+    
+            members = RoomMember.objects.filter(room=room).select_related('user')
+            members_data = []
+    
+            for member in members:
+                members_data.append({
+                    'id': member.user.id,
+                    'username': member.user.username,
+                    'display_name': f"{member.user.first_name} {member.user.last_name}".strip() or member.user.username,
+                    'email': member.user.email,
+                    'is_online': True,  # You can implement presence logic here
+                    'joined_at': member.joined_at.isoformat() if member.joined_at else None
+                })
+    
+            return JsonResponse({
+                'members': members_data,
+                'total': len(members_data)
+            })
+    
+        except Room.DoesNotExist:
+            return JsonResponse({'error': 'Room not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    @login_required
+    def room_notifications_api(request, room_id):
+        """API endpoint for room notifications"""
+        try:
+            from rooms.models import Room
+            from .models import HardcodedNotificationManager
+    
+            room = Room.objects.get(id=room_id)
+    
+            # Check if user has access to this room
+            from rooms.models import RoomMember
+            if not RoomMember.objects.filter(room=room, user=request.user).exists():
+                return JsonResponse({'error': 'Access denied'}, status=403)
+    
+            # Get notifications for this room
+            notification_manager = HardcodedNotificationManager()
+            all_notifications = notification_manager.get_all_notifications(request.user, include_read=True)
+    
+            room_notifications = [
+                n for n in all_notifications
+                if n.get('room_id') == str(room_id)
+            ]
+    
+            return JsonResponse({
+                'notifications': room_notifications,
+                'total': len(room_notifications)
+            })
+    
+        except Room.DoesNotExist:
+            return JsonResponse({'error': 'Room not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    @login_required
+    def room_admin(request, room_id):
+        """Room administration panel"""
+        try:
+            from rooms.models import Room, RoomMember
+            room = Room.objects.get(id=room_id)
+    
+            # Check if user is admin or owner
+            if not (room.administrators.filter(id=request.user.id).exists() or room.owner_id == request.user.id):
+                messages.error(request, 'Access denied')
+                return redirect('chat:room_list')
+    
+            members = RoomMember.objects.filter(room=room).select_related('user')
+    
+            context = {
+                'room': room,
+                'members': members,
+                'pagetitle': f'Admin - {room.name}'
+            }
+    
+            return render(request, 'chat/room_admin.html', context)
+    
+        except Room.DoesNotExist:
+            messages.error(request, 'Room not found')
+            return redirect('chat:room_list')
+    
+    @login_required
+    @csrf_exempt
+    def reset_unread_count_api(request):
+        """API endpoint to reset unread message count for a room"""
+        if request.method == 'POST':
+            try:
+                import json
+                from rooms.models import MessageRead, Message
+    
+                data = json.loads(request.body)
+                room_id = data.get('room_id')
+    
+                if not room_id:
+                    return JsonResponse({'error': 'room_id is required'}, status=400)
+    
+                # Mark all unread messages in this room as read for the current user
+                unread_messages = Message.objects.filter(
+                    room_id=room_id
+                ).exclude(
+                    messageread__user=request.user
+                )
+    
+                marked_count = 0
+                for message in unread_messages:
+                    MessageRead.objects.get_or_create(
+                        user=request.user,
+                        message=message
+                    )
+                    marked_count += 1
+    
+                return JsonResponse({
+                    'success': True,
+                    'marked_read': marked_count
+                })
+    
+            except json.JSONDecodeError:
+                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+    
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+    @login_required
+    @csrf_exempt
+    def mark_notifications_read_api(request):
+        """API endpoint to mark notifications as read"""
+        if request.method == 'POST':
+            try:
+                from .models import HardcodedNotificationManager
+                import json
+    
+                data = json.loads(request.body)
+                notification_ids = data.get('notification_ids', [])
+    
+                notification_manager = HardcodedNotificationManager()
+                marked_count = notification_manager.mark_notifications_read(request.user, notification_ids)
+    
+                return JsonResponse({
+                    'success': True,
+                    'marked_count': marked_count
+                })
+    
+            except json.JSONDecodeError:
+                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=500)
+    
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@login_required
+@csrf_exempt
+def search_messages(request):
+    """Search messages with filters"""
+    if request.method == 'GET':
+        query = request.GET.get('q', '').strip()
+        user_filter = request.GET.get('user', '').strip()
+        date_filter = request.GET.get('date', '').strip()
+        room_id = request.GET.get('room_id', '').strip()
+
+        from rooms.models import Message, Room
+        from django.db.models import Q
+
+        # Base queryset
+        messages = Message.objects.select_related('user', 'room').order_by('-created_at')
+
+        # Apply filters
+        if query:
+            messages = messages.filter(
+                Q(content__icontains=query)
+            )
+
+        if user_filter:
+            messages = messages.filter(user__username__icontains=user_filter)
+
+        if date_filter:
+            from datetime import datetime, timedelta
+            now = timezone.now()
+            if date_filter == 'today':
+                start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                messages = messages.filter(created_at__gte=start_date)
+            elif date_filter == 'week':
+                start_date = now - timedelta(days=7)
+                messages = messages.filter(created_at__gte=start_date)
+            elif date_filter == 'month':
+                start_date = now - timedelta(days=30)
+                messages = messages.filter(created_at__gte=start_date)
+
+        if room_id:
+            messages = messages.filter(room_id=room_id)
+
+        # Limit results
+        messages = messages[:50]
+
+        # Format results
+        results = []
+        for msg in messages:
+            results.append({
+                'id': msg.id,
+                'content': msg.content,
+                'user': msg.user.username,
+                'display_name': f"{msg.user.first_name} {msg.user.last_name}".strip() or msg.user.username,
+                'room_name': msg.room.name,
+                'room_id': msg.room.id,
+                'timestamp': msg.created_at.isoformat(),
+                'time_display': msg.created_at.strftime('%H:%M %d/%m/%Y')
+            })
+
+        return JsonResponse({
+            'results': results,
+            'total': len(results),
+            'query': query
+        })
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@login_required
+@csrf_exempt
+def update_presence(request):
+    """Update user presence status"""
+    if request.method == 'POST':
+        try:
+            from .models import UserPresence
+            from rooms.models import Room
+
+            data = json.loads(request.body)
+            status = data.get('status', 'online')
+            room_id = data.get('room_id')
+
+            presence, created = UserPresence.objects.get_or_create(
+                user=request.user,
+                defaults={'status': status}
+            )
+
+            room = None
+            if room_id:
+                try:
+                    room = Room.objects.get(id=room_id)
+                except Room.DoesNotExist:
+                    pass
+
+            presence.update_presence(status, room)
+
+            return JsonResponse({
+                'success': True,
+                'status': status,
+                'room_id': room_id
+            })
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@login_required
+def get_presence(request):
+    """Get presence status for users in a room"""
+    room_id = request.GET.get('room_id')
+    if not room_id:
+        return JsonResponse({'error': 'room_id is required'}, status=400)
+
+    from .models import UserPresence
+    from rooms.models import RoomMember
+
+    try:
+        # Get room members
+        members = RoomMember.objects.filter(room_id=room_id).select_related('user')
+
+        presence_data = []
+        for member in members:
+            try:
+                presence = UserPresence.objects.get(user=member.user)
+                if presence.is_online:
+                    presence_data.append({
+                        'user_id': member.user.id,
+                        'username': member.user.username,
+                        'display_name': f"{member.user.first_name} {member.user.last_name}".strip() or member.user.username,
+                        'status': presence.status,
+                        'last_seen': presence.last_seen.isoformat()
+                    })
+            except UserPresence.DoesNotExist:
+                # User has no presence record, consider offline
+                pass
+
+        return JsonResponse({
+            'presence': presence_data,
+            'room_id': room_id
+        })
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@csrf_exempt
+def room_members_api(request, room_id):
+    """API for managing room members"""
+    try:
+        room = Room.objects.get(id=room_id)
+
+        # Check if user can manage this room
+        if not room.can_user_manage(request.user):
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+
+        if request.method == 'GET':
+            members = room.get_active_members().select_related('user')
+            members_data = []
+            for member in members:
+                members_data.append({
+                    'id': member.user.id,
+                    'username': member.user.username,
+                    'full_name': f"{member.user.first_name} {member.user.last_name}".strip(),
+                    'role': member.role,
+                    'joined_at': member.joined_at.isoformat(),
+                    'last_seen': member.last_seen.isoformat(),
+                    'is_online': room.get_online_members().filter(user=member.user).exists()
+                })
+            return JsonResponse({'members': members_data})
+
+        elif request.method == 'POST':
+            data = json.loads(request.body)
+            action = data.get('action')
+            user_id = data.get('user_id')
+
+            if action == 'add_member':
+                try:
+                    user = User.objects.get(id=user_id)
+                    role = data.get('role', 'member')
+                    room.add_member(user, role, request.user)
+                    return JsonResponse({'success': True, 'message': f'User {user.username} added to room'})
+                except User.DoesNotExist:
+                    return JsonResponse({'error': 'User not found'}, status=404)
+
+            elif action == 'remove_member':
+                try:
+                    user = User.objects.get(id=user_id)
+                    if room.remove_member(user, request.user):
+                        return JsonResponse({'success': True, 'message': f'User {user.username} removed from room'})
+                    else:
+                        return JsonResponse({'error': 'User is not a member'}, status=400)
+                except User.DoesNotExist:
+                    return JsonResponse({'error': 'User not found'}, status=404)
+
+            elif action == 'change_role':
+                try:
+                    user = User.objects.get(id=user_id)
+                    new_role = data.get('role')
+                    if new_role in ['member', 'moderator', 'admin']:
+                        membership = RoomMember.objects.get(room=room, user=user)
+                        membership.role = new_role
+                        membership.save()
+                        return JsonResponse({'success': True, 'message': f'Role updated for {user.username}'})
+                    else:
+                        return JsonResponse({'error': 'Invalid role'}, status=400)
+                except (User.DoesNotExist, RoomMember.DoesNotExist):
+                    return JsonResponse({'error': 'User not found in room'}, status=404)
+
+    except Room.DoesNotExist:
+        return JsonResponse({'error': 'Room not found'}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@login_required
+@csrf_exempt
+def unread_notifications_api(request):
+    """API to get all unread notifications for the current user with robust caching"""
+    try:
+        from .models import HardcodedNotificationManager
+
+        # Use the robust hardcoded notification manager
+        result = HardcodedNotificationManager.get_notifications_data(request.user, limit=20)
+
+        # Add cache headers for better performance
+        response = JsonResponse(result)
+        response['Cache-Control'] = 'private, max-age=30'  # Cache for 30 seconds
+        return response
+
+    except Exception as e:
+        logger.error(f"Error in unread_notifications_api for user {request.user.username}: {str(e)}")
+        return JsonResponse({'error': 'Internal server error', 'notifications': []}, status=500)
+
+@login_required
+@csrf_exempt
+def test_create_notification(request):
+    """Test endpoint to create a notification manually"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        from .models import HardcodedNotificationManager
+        from rooms.models import Room
+
+        data = json.loads(request.body)
+        message = data.get('message', 'Test notification')
+        room_id = data.get('room_id', 1)
+
+        # Get room
+        try:
+            room = Room.objects.get(id=room_id)
+        except Room.DoesNotExist:
+            return JsonResponse({'error': 'Room not found'}, status=404)
+
+        # Create test notification
+        notification = HardcodedNotificationManager.create_chat_notification(
+            user=request.user,
+            room=room,
+            message=message,
+            sender=request.user  # Self-notification for testing
+        )
+
+        if notification:
+            return JsonResponse({
+                'success': True,
+                'notification': notification,
+                'message': 'Test notification created'
+            })
+        else:
+            return JsonResponse({'error': 'Failed to create notification'}, status=500)
+
+    except Exception as e:
+        logger.error(f"Error in test_create_notification: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@csrf_exempt
+def room_notifications_api(request, room_id):
+    """API for room notifications"""
+    try:
+        room = Room.objects.get(id=room_id)
+
+        if request.method == 'GET':
+            # Get room notifications for the current user
+            notifications = RoomNotification.objects.filter(
+                room=room,
+                user=request.user
+            ).order_by('-created_at')[:20]
+
+            notifications_data = []
+            for notification in notifications:
+                notifications_data.append({
+                    'id': notification.id,
+                    'title': notification.title,
+                    'message': notification.message,
+                    'type': notification.notification_type,
+                    'created_at': notification.created_at.isoformat(),
+                    'is_read': notification.is_read,
+                    'created_by': notification.created_by.username if notification.created_by else None
+                })
+
+            return JsonResponse({'notifications': notifications_data})
+
+        elif request.method == 'POST':
+            data = json.loads(request.body)
+            action = data.get('action')
+
+            if action == 'mark_read':
+                notification_ids = data.get('notification_ids', [])
+                RoomNotification.objects.filter(
+                    id__in=notification_ids,
+                    user=request.user
+                ).update(is_read=True)
+                return JsonResponse({'success': True})
+
+            elif action == 'mark_all_read':
+                RoomNotification.objects.filter(
+                    room=room,
+                    user=request.user,
+                    is_read=False
+                ).update(is_read=True)
+                return JsonResponse({'success': True})
+
+    except Room.DoesNotExist:
+        return JsonResponse({'error': 'Room not found'}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@login_required
+def room_admin(request, room_id):
+    """Room administration panel"""
+    try:
+        room = Room.objects.get(id=room_id)
+
+        # Check if user can manage this room
+        if not room.can_user_manage(request.user):
+            messages.error(request, 'You do not have permission to manage this room.')
+            return redirect('chat:room', room_name=room_id)
+
+        context = {
+            'room': room,
+            'members': room.get_active_members().select_related('user'),
+            'pagetitle': f'Manage {room.name}'
+        }
+
+        return render(request, 'chat/room_admin.html', context)
+
+    except Room.DoesNotExist:
+        messages.error(request, 'Room not found.')
+        return redirect('chat:room_list')

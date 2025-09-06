@@ -98,29 +98,252 @@
     #chat-panel.hidden {
         display: none !important;
     }
-    @media (max-width: 600px) {
+    /* Enhanced mobile responsiveness and touch interactions */
+    @media (max-width: 768px) {
         #chat-panel.docked {
-            width: 98vw;
-            height: 340px;
-            min-height: 60px;
-            right: 1vw;
-            bottom: 1vw;
-            border-radius: 1em;
+            width: 95vw;
+            height: 70px;
+            min-height: 70px;
+            right: 2.5vw;
+            bottom: 20px;
+            border-radius: 1.2em;
             font-size: 0.9rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         #chat-panel.docked .chat-header {
-            font-size: 0.95rem;
-            padding: 0.2em 0.5em;
+            font-size: 1rem;
+            padding: 0.3em 0.8em;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
+
         #chat-panel.docked .chat-panel-body,
         #chat-panel.docked .chat-info-containers {
-            display: block;
+            display: none;
         }
+
         #chat-panel.docked #toggle-chat-panel,
         #chat-panel.docked #toggle-dock-btn,
         #chat-panel.docked #toggle-fullscreen-btn {
+            font-size: 1.2rem;
+            padding: 0.2em 0.4em;
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5em;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            transition: all 0.2s ease;
+        }
+
+        #chat-panel.docked #toggle-chat-panel:active,
+        #chat-panel.docked #toggle-dock-btn:active,
+        #chat-panel.docked #toggle-fullscreen-btn:active {
+            transform: scale(0.95);
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        /* Fullscreen mode for mobile */
+        #chat-panel.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+            z-index: 10000;
+            background: #fff;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #chat-panel.fullscreen .chat-header {
             font-size: 1.1rem;
-            padding: 0.1em 0.2em;
+            padding: 1em 1.2em;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+
+        #chat-panel.fullscreen .chat-panel-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 140px);
+        }
+
+        #chat-panel.fullscreen .chat-info-containers {
+            padding: 1em;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+
+        #chat-panel.fullscreen .input-group {
+            margin-bottom: 0.5em;
+        }
+
+        #chat-panel.fullscreen input,
+        #chat-panel.fullscreen button {
+            font-size: 1rem;
+            padding: 0.8em 1em;
+            min-height: 48px;
+            border-radius: 1em;
+        }
+
+        /* Touch-friendly message bubbles */
+        .message-bubble {
+            min-height: 44px;
+            padding: 0.8em 1em;
+            margin-bottom: 0.5em;
+            border-radius: 1.2em;
+            font-size: 1rem;
+            line-height: 1.4;
+            word-wrap: break-word;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            transition: all 0.2s ease;
+        }
+
+        .message-bubble:active {
+            transform: scale(0.98);
+        }
+
+        .message-bubble.outgoing {
+            margin-left: auto;
+            margin-right: 0.5em;
+            max-width: 80%;
+        }
+
+        .message-bubble.incoming {
+            margin-left: 0.5em;
+            margin-right: auto;
+            max-width: 80%;
+        }
+
+        /* Improved scrolling on mobile */
+        #chat-log {
+            -webkit-overflow-scrolling: touch;
+            scroll-behavior: smooth;
+            overscroll-behavior: contain;
+        }
+
+        /* Better input handling on mobile */
+        #chat-message-input {
+            font-size: 16px; /* Prevents zoom on iOS */
+            padding: 0.8em 1em;
+            min-height: 48px;
+            border-radius: 1em;
+            border: 2px solid #e9ecef;
+            transition: border-color 0.2s ease;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        #chat-message-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+            outline: none;
+        }
+
+        #chat-message-submit {
+            min-width: 48px;
+            min-height: 48px;
+            padding: 0.8em;
+            border-radius: 1em;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            transition: all 0.2s ease;
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            border: none;
+        }
+
+        #chat-message-submit:active {
+            transform: scale(0.95);
+        }
+
+        /* Swipe gestures for mobile */
+        .swipe-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 1em 1.5em;
+            border-radius: 1em;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 10000;
+            text-align: center;
+        }
+
+        .swipe-indicator.show {
+            opacity: 1;
+        }
+
+        /* Virtual keyboard handling */
+        @media (max-height: 500px) {
+            #chat-panel.fullscreen .chat-panel-body {
+                max-height: calc(100vh - 120px);
+            }
+
+            #chat-panel.fullscreen .chat-info-containers {
+                padding: 0.5em;
+            }
+
+            #chat-message-input {
+                font-size: 16px;
+                min-height: 44px;
+            }
+
+            #chat-message-submit {
+                min-width: 44px;
+                min-height: 44px;
+            }
+        }
+
+        /* Haptic feedback simulation */
+        .haptic-feedback {
+            animation: haptic 0.1s ease;
+        }
+
+        @keyframes haptic {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.98); }
+            100% { transform: scale(1); }
+        }
+    }
+
+    /* Extra small screens */
+    @media (max-width: 480px) {
+        #chat-panel.docked {
+            width: 92vw;
+            right: 4vw;
+        }
+
+        #chat-panel.fullscreen .chat-header {
+            padding: 0.8em 1em;
+            font-size: 1rem;
+        }
+
+        .message-bubble {
+            font-size: 0.95rem;
+            padding: 0.7em 0.9em;
+        }
+
+        #chat-message-input,
+        #chat-message-submit {
+            font-size: 16px;
+            min-height: 44px;
         }
     }
 </style>
@@ -204,6 +427,11 @@
                 setPanelMode('docked');
                 localStorage.setItem('chatPanelState', 'docked');
             }
+
+            // Reset unread count when panel is restored
+            if (lastRoomId) {
+                setTimeout(() => resetUnreadCount(lastRoomId), 500);
+            }
         });
         window.addEventListener('resize', function() {
             if (isMobile() && !isChatMainPage()) {
@@ -213,30 +441,56 @@
             }
         });
         goChatMainBtn.addEventListener('click', function() {
-            window.location.href = '/chat/room';
+            const currentRoom = roomSelector.value;
+            if (currentRoom) {
+                window.location.href = `/chat/room/${currentRoom}/`;
+            } else {
+                window.location.href = '/chat/room';
+            }
         });
 
         // --- Obtener sala por defecto según historial de último acceso ---
         async function getLastRoom() {
             try {
-                const response = await fetch('/chat/api/chat/last-room/', { credentials: 'same-origin' });
+                const response = await fetch('/chat/api/chat/last-room/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin'
+                });
                 if (response.ok) {
                     const data = await response.json();
                     return data.room_name || 'global';
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.error('Error fetching last room:', e);
+            }
             return 'global';
         }
 
         let chatSocket = null;
         let reconnectTimeout = null;
         let intentionalClose = false;
+        let typingTimeout = null;
+        let isTyping = false;
+        let isPageVisible = true;
+        let unreadMessageCount = 0;
+        let isWidgetActive = false;
+        let widgetVisibilityObserver = null;
+        let readReceiptTimeout = null;
     // let lastRoomId = null; // Eliminada declaración duplicada
 
         async function loadRoomsAndSelectLast() {
             let lastRoom = await getLastRoom();
             try {
-                const response = await fetch('/chat/api/chat/room-list/', { credentials: 'same-origin' });
+                const response = await fetch('/chat/api/chat/room-list/', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin'
+                });
                 if (response.ok) {
                     const data = await response.json();
                     roomSelector.innerHTML = '<option value="" disabled>Selecciona una sala...</option>';
@@ -246,11 +500,33 @@
                         option.textContent = room.name;
                         roomSelector.appendChild(option);
                     });
+                    // Check localStorage first for panel-specific last room
+                    let selectedRoom = localStorage.getItem('chatPanelLastRoom') || lastRoom;
+
                     // Selecciona la sala por defecto si existe
-                    roomSelector.value = lastRoom;
-                    lastRoomId = lastRoom;
+                    if (selectedRoom && data.rooms.some(room => room.id == selectedRoom)) {
+                        roomSelector.value = selectedRoom;
+                        lastRoomId = selectedRoom;
+                        console.log('Panel: Selected stored/last room:', selectedRoom);
+                    } else if (lastRoom && data.rooms.some(room => room.id == lastRoom)) {
+                        roomSelector.value = lastRoom;
+                        lastRoomId = lastRoom;
+                        localStorage.setItem('chatPanelLastRoom', lastRoom);
+                        console.log('Panel: Selected API last room:', lastRoom);
+                    } else if (data.rooms.length > 0) {
+                        // Fallback to first available room
+                        const firstRoom = data.rooms[0].id;
+                        roomSelector.value = firstRoom;
+                        lastRoomId = firstRoom;
+                        localStorage.setItem('chatPanelLastRoom', firstRoom);
+                        console.log('Panel: Selected first available room:', firstRoom);
+                    }
+                } else {
+                    console.error('Panel: Failed to load rooms:', response.status);
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.error('Panel: Error loading rooms:', e);
+            }
         }
 
         await loadRoomsAndSelectLast();
@@ -258,7 +534,13 @@
         async function loadHistory(roomId) {
             chatLog.innerHTML = '';
             try {
-                const response = await fetch(`/chat/api/chat/room-history/${roomId}/`, { credentials: 'same-origin' });
+                const response = await fetch(`/chat/api/chat/room-history/${roomId}/`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin'
+                });
                 if (response.ok) {
                     const data = await response.json();
                     if (Array.isArray(data.history)) {
@@ -275,15 +557,361 @@
                         });
                         chatLog.scrollTop = chatLog.scrollHeight;
                     }
+                } else {
+                    console.error('Panel: Failed to load history:', response.status);
                 }
-            } catch (e) {}
+            } catch (e) {
+                console.error('Panel: Error loading history:', e);
+            }
         }
+
+        function showTypingIndicator(userId, displayName) {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (!typingIndicator) return;
+            typingIndicator.innerHTML = `<span></span><span></span><span></span> ${displayName} is typing...`;
+            typingIndicator.style.display = 'block';
+        }
+
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.style.display = 'none';
+            }
+        }
+
+        function handleHistoryCleared() {
+            // Clear all messages from the chat log but keep the typing indicator
+            const chatLog = document.getElementById('chat-log');
+            const typingIndicator = document.getElementById('typing-indicator');
+            chatLog.innerHTML = '';
+            if (typingIndicator) {
+                chatLog.appendChild(typingIndicator);
+            }
+            // Show a system message indicating history was cleared
+            const systemMessage = document.createElement('div');
+            systemMessage.className = 'text-center p-2';
+            systemMessage.innerHTML = '<small class="text-muted">Chat history has been cleared</small>';
+            chatLog.appendChild(systemMessage);
+        }
+
+        function resetUnreadCount(roomId) {
+            if (!roomId) return;
+
+            fetch('/chat/api/chat/reset-unread/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''
+                },
+                body: JSON.stringify({
+                    'room_id': roomId
+                }),
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(`Panel: Marked ${data.marked_read} messages as read for room ${roomId}`);
+                    // Update the notification count in the header
+                    if (window.updateNotificationCount) {
+                        window.updateNotificationCount();
+                    }
+                    // Also trigger notification system refresh
+                    if (window.NotificationManager && window.NotificationManager.forceRefresh) {
+                        window.NotificationManager.forceRefresh();
+                    }
+                    // Dispatch custom event for other components
+                    document.dispatchEvent(new CustomEvent('messagesMarkedAsRead', {
+                        detail: { roomId: roomId, count: data.marked_read }
+                    }));
+                    // Update notification count immediately
+                    if (window.updateNotificationFromWidget) {
+                        window.updateNotificationFromWidget();
+                    }
+                    // Reset local unread counter
+                    unreadMessageCount = 0;
+                }
+            })
+            .catch(error => console.error('Panel: Error resetting unread count:', error));
+        }
+
+        function setupWidgetVisibilityObserver() {
+            const panel = document.getElementById('chat-panel');
+            if (!panel) return;
+
+            // Disconnect existing observer
+            if (widgetVisibilityObserver) {
+                widgetVisibilityObserver.disconnect();
+            }
+
+            // Create new observer
+            widgetVisibilityObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    const wasActive = isWidgetActive;
+                    isWidgetActive = entry.isIntersecting && isPageVisible && !panel.classList.contains('hidden');
+
+                    console.log('Panel: Widget visibility changed:', {
+                        isIntersecting: entry.isIntersecting,
+                        isPageVisible,
+                        isHidden: panel.classList.contains('hidden'),
+                        isWidgetActive
+                    });
+
+                    // If widget became active and there are unread messages, mark them as read
+                    if (isWidgetActive && !wasActive && unreadMessageCount > 0 && lastRoomId) {
+                        console.log('Panel: Widget became visible, marking messages as read');
+                        clearTimeout(readReceiptTimeout);
+                        readReceiptTimeout = setTimeout(() => {
+                            resetUnreadCount(lastRoomId);
+                        }, 1000); // Wait 1 second to ensure user is actually reading
+                    }
+                });
+            }, {
+                threshold: 0.1, // Consider visible if at least 10% is visible
+                rootMargin: '0px'
+            });
+
+            widgetVisibilityObserver.observe(panel);
+        }
+
+        function updateWidgetActiveState() {
+            setupWidgetVisibilityObserver();
+        }
+
+        // Handle page visibility changes for smart read receipts
+        document.addEventListener('visibilitychange', function() {
+            isPageVisible = !document.hidden;
+            console.log('Panel: Page visibility changed:', isPageVisible ? 'visible' : 'hidden');
+            updateWidgetActiveState();
+        });
+
+        // Handle window focus/blur for better activity detection
+        window.addEventListener('focus', function() {
+            console.log('Panel: Window focused');
+            isPageVisible = true;
+            updateWidgetActiveState();
+
+            // Mark messages as read when window gains focus and widget is visible
+            if (isWidgetActive && unreadMessageCount > 0 && lastRoomId) {
+                clearTimeout(readReceiptTimeout);
+                readReceiptTimeout = setTimeout(() => {
+                    resetUnreadCount(lastRoomId);
+                }, 200); // Reduced to 200ms for faster response
+            }
+        });
+
+        window.addEventListener('blur', function() {
+            console.log('Panel: Window blurred');
+            isPageVisible = false;
+            updateWidgetActiveState();
+        });
+
+        // Handle widget state changes (minimize/maximize)
+        toggleChatPanelBtn.addEventListener('click', function() {
+            setTimeout(updateWidgetActiveState, 100);
+        });
+
+        toggleDockBtn.addEventListener('click', function() {
+            setTimeout(updateWidgetActiveState, 100);
+        });
+
+        restoreBtn.addEventListener('click', function() {
+            setTimeout(updateWidgetActiveState, 100);
+        });
+
+        // Enhanced mobile touch interactions
+        function initializeMobileInteractions() {
+            const isMobile = window.innerWidth <= 768;
+
+            if (isMobile) {
+                // Add swipe gesture for chat panel
+                let startY = 0;
+                let startX = 0;
+                let isSwiping = false;
+
+                const chatPanel = document.getElementById('chat-panel');
+                const swipeIndicator = document.createElement('div');
+                swipeIndicator.className = 'swipe-indicator';
+                swipeIndicator.textContent = 'Swipe to close';
+                document.body.appendChild(swipeIndicator);
+
+                // Touch start
+                chatPanel.addEventListener('touchstart', function(e) {
+                    if (chatPanel.classList.contains('fullscreen')) {
+                        startY = e.touches[0].clientY;
+                        startX = e.touches[0].clientX;
+                        isSwiping = true;
+                    }
+                }, { passive: true });
+
+                // Touch move
+                chatPanel.addEventListener('touchmove', function(e) {
+                    if (!isSwiping || !chatPanel.classList.contains('fullscreen')) return;
+
+                    const currentY = e.touches[0].clientY;
+                    const currentX = e.touches[0].clientX;
+                    const deltaY = currentY - startY;
+                    const deltaX = Math.abs(currentX - startX);
+
+                    // Only handle vertical swipes
+                    if (deltaX < 50 && deltaY > 50) {
+                        swipeIndicator.classList.add('show');
+                        e.preventDefault(); // Prevent scrolling
+                    } else {
+                        swipeIndicator.classList.remove('show');
+                    }
+                }, { passive: false });
+
+                // Touch end
+                chatPanel.addEventListener('touchend', function(e) {
+                    if (!isSwiping) return;
+
+                    const endY = e.changedTouches[0].clientY;
+                    const deltaY = endY - startY;
+
+                    swipeIndicator.classList.remove('show');
+
+                    // If swiped down more than 100px, close fullscreen
+                    if (deltaY > 100 && chatPanel.classList.contains('fullscreen')) {
+                        setPanelMode('docked');
+                        // Add haptic feedback
+                        if (navigator.vibrate) {
+                            navigator.vibrate(50);
+                        }
+                    }
+
+                    isSwiping = false;
+                });
+
+                // Add haptic feedback to buttons
+                const buttons = document.querySelectorAll('button');
+                buttons.forEach(button => {
+                    button.addEventListener('touchstart', function() {
+                        this.classList.add('haptic-feedback');
+                        if (navigator.vibrate) {
+                            navigator.vibrate(10);
+                        }
+                    });
+
+                    button.addEventListener('touchend', function() {
+                        this.classList.remove('haptic-feedback');
+                    });
+                });
+
+                // Improve scrolling performance on mobile
+                const chatLog = document.getElementById('chat-log');
+                let scrollTimeout;
+
+                chatLog.addEventListener('scroll', function() {
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(function() {
+                        // Hide virtual keyboard when scrolling
+                        document.activeElement.blur();
+                    }, 150);
+                }, { passive: true });
+
+                // Handle orientation changes
+                window.addEventListener('orientationchange', function() {
+                    setTimeout(function() {
+                        chatLog.scrollTop = chatLog.scrollHeight;
+                        // Recalculate panel position
+                        if (chatPanel.classList.contains('docked')) {
+                            chatPanel.style.bottom = '20px';
+                        }
+                    }, 500);
+                });
+
+                // Prevent zoom on double tap
+                let lastTouchEnd = 0;
+                document.addEventListener('touchend', function(event) {
+                    const now = Date.now();
+                    if (now - lastTouchEnd <= 300) {
+                        event.preventDefault();
+                    }
+                    lastTouchEnd = now;
+                }, false);
+
+                // Add pull-to-refresh for chat messages
+                let pullStartY = 0;
+                let isPulling = false;
+
+                chatLog.addEventListener('touchstart', function(e) {
+                    if (chatLog.scrollTop === 0) {
+                        pullStartY = e.touches[0].clientY;
+                        isPulling = true;
+                    }
+                }, { passive: true });
+
+                chatLog.addEventListener('touchmove', function(e) {
+                    if (!isPulling) return;
+
+                    const pullDistance = e.touches[0].clientY - pullStartY;
+                    if (pullDistance > 50) {
+                        // Show refresh indicator
+                        chatLog.style.transform = `translateY(${Math.min(pullDistance - 50, 60)}px)`;
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+
+                chatLog.addEventListener('touchend', function(e) {
+                    if (!isPulling) return;
+
+                    const pullDistance = e.changedTouches[0].clientY - pullStartY;
+                    chatLog.style.transform = '';
+
+                    if (pullDistance > 100) {
+                        // Trigger refresh
+                        console.log('Pull to refresh triggered');
+                        // Could reload messages or show new messages
+                    }
+
+                    isPulling = false;
+                });
+            }
+        }
+
+        // Initialize widget active state
+        updateWidgetActiveState();
+        initializeMobileInteractions();
+
+        // Cleanup function for when widget disconnects
+        function cleanupWidgetResources() {
+            if (widgetVisibilityObserver) {
+                widgetVisibilityObserver.disconnect();
+                widgetVisibilityObserver = null;
+            }
+            if (readReceiptTimeout) {
+                clearTimeout(readReceiptTimeout);
+                readReceiptTimeout = null;
+            }
+        }
+
+        // Global function to update notification count from widget
+        window.updateNotificationFromWidget = function() {
+            console.log('Widget: Updating notification count from widget');
+            if (window.NotificationManager && window.NotificationManager.forceRefresh) {
+                window.NotificationManager.forceRefresh();
+            }
+        };
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', cleanupWidgetResources);
 
         let lastRoomId = null;
         async function connectSocketWithHistory(roomId) {
             if (roomId === lastRoomId) return; // No recargar si no cambió la sala
+
+            // Validate room ID
+            if (!roomId || roomId.trim() === '') {
+                console.error('Cannot connect: Invalid room ID');
+                return;
+            }
+
             lastRoomId = roomId;
             await loadHistory(roomId);
+            // Reset unread count when loading history
+            setTimeout(() => resetUnreadCount(roomId), 500);
+
             if (chatSocket) {
                 intentionalClose = true;
                 chatSocket.close();
@@ -295,11 +923,43 @@
             }
             const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
             const wsPath = `${wsScheme}://${window.location.host}/ws/chat/${roomId}/`;
+            console.log('Panel connecting to WebSocket:', wsPath);
             chatSocket = new WebSocket(wsPath);
             chatSocket.onmessage = function(e) {
                 const data = JSON.parse(e.data);
+                if (data.type === 'typing_start') {
+                    if (data.user_id != currentUserId) {
+                        showTypingIndicator(data.user_id, data.display_name);
+                    }
+                    return;
+                }
+                if (data.type === 'typing_stop') {
+                    hideTypingIndicator();
+                    return;
+                }
+                if (data.type === 'history_cleared') {
+                    // Clear the chat history for all users in the room
+                    handleHistoryCleared();
+                    return;
+                }
                 if (data.message) {
                     const isCurrentUser = data.user_id == currentUserId;
+
+                    // Track unread messages only if widget is not active
+                    if (!isCurrentUser && !isWidgetActive) {
+                        unreadMessageCount++;
+                        console.log('Panel: Unread message count:', unreadMessageCount);
+                    } else if (!isCurrentUser && isWidgetActive) {
+                        // Widget is active, mark this message as read after a short delay
+                        console.log('Panel: Widget active, will mark message as read');
+                        clearTimeout(readReceiptTimeout);
+                        readReceiptTimeout = setTimeout(() => {
+                            if (lastRoomId && isWidgetActive) {
+                                resetUnreadCount(lastRoomId);
+                            }
+                        }, 500); // Reduced to 0.5 seconds for faster confirmation
+                    }
+
                     const msgHtml = `<div class="d-flex mb-2 justify-content-${isCurrentUser ? 'end' : 'start'}">
                         <div class="message-bubble px-3 py-2 ${isCurrentUser ? 'outgoing text-white text-end' : 'incoming text-dark text-start'}" style="max-width: 75%; border-radius: 1.2em; background:${isCurrentUser ? '#007bff' : '#f8f9fa'};">
                             <div class="small fw-bold mb-1">${data.display_name || 'Usuario'}</div>
@@ -317,12 +977,34 @@
                     reconnectTimeout = setTimeout(() => connectSocketWithHistory(roomId), 2000);
                 }
             };
+
+            chatSocket.onopen = function() {
+                console.log('Panel: WebSocket connected, setting up visibility observer');
+                // Setup visibility observer when WebSocket connects
+                setTimeout(updateWidgetActiveState, 100);
+            };
         }
-        // Conectar al inicio
-        connectSocketWithHistory(roomSelector.value);
+        // Conectar al inicio después de cargar las salas
+        setTimeout(() => {
+            if (roomSelector.value && roomSelector.value !== '') {
+                console.log('Panel: Connecting to initial room:', roomSelector.value);
+                connectSocketWithHistory(roomSelector.value);
+            } else {
+                console.log('Panel: No room selected, waiting for user selection');
+            }
+        }, 1000); // Give time for room loading to complete
 
         roomSelector.addEventListener('change', function() {
-            connectSocketWithHistory(roomSelector.value);
+            const newRoomId = roomSelector.value;
+            if (newRoomId) {
+                // Save to localStorage for persistence
+                localStorage.setItem('chatPanelLastRoom', newRoomId);
+                console.log('Panel: Saved room to localStorage:', newRoomId);
+
+                connectSocketWithHistory(newRoomId);
+                // Reset unread count when switching rooms
+                setTimeout(() => resetUnreadCount(newRoomId), 1000);
+            }
         });
         chatSubmit.addEventListener('click', function() {
             const message = chatInput.value.trim();
@@ -334,6 +1016,24 @@
         chatInput.addEventListener('keyup', function(e) {
             if (e.key === 'Enter') {
                 chatSubmit.click();
+            }
+        });
+
+        chatInput.addEventListener('input', function(e) {
+            if (chatSocket && chatSocket.readyState === WebSocket.OPEN) {
+                if (!isTyping) {
+                    isTyping = true;
+                    chatSocket.send(JSON.stringify({
+                        'type': 'typing_start'
+                    }));
+                }
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(function() {
+                    isTyping = false;
+                    chatSocket.send(JSON.stringify({
+                        'type': 'typing_stop'
+                    }));
+                }, 1000);
             }
         });
     });
