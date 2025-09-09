@@ -3,6 +3,8 @@
 
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from . import views
 from .views import RedisTestView
 
@@ -15,7 +17,9 @@ urlpatterns = [
     
     # Apps
     path('accounts/', include('accounts.urls')),
+    path('campaigns/', include('campaigns.urls')),
     path('chat/', include('chat.urls', namespace='chat')),
+    path('courses/', include('courses.urls')),
     path('cv/', include('cv.urls')),
     path('events/', include('events.urls')),
     path('kpis/', include('kpis.urls')),
@@ -23,7 +27,6 @@ urlpatterns = [
     path('passgen/', include('passgen.urls')),
     path('rooms/', include('rooms.urls')),
     path('tools/', include('tools.urls')),
-    path('courses/', include('courses.urls')),
     
     # API Endpoints (alphabetical order)
     path('api/csrf/', views.get_csrf, name='api-csrf'),
@@ -39,3 +42,8 @@ urlpatterns = [
     # Redis Test
     path('redis-test/', RedisTestView.as_view(), name='redis_test'),
 ]
+
+# Serve media files during development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

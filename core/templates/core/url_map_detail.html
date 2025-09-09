@@ -1,0 +1,439 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}🔍 URLs de {{ app_name|title }} - Management360{% endblock %}
+
+{% block content %}
+<div class="pagetitle">
+  <h1><i class="bi bi-search text-primary"></i> Explorador de URLs</h1>
+  <nav>
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/"><i class="bi bi-house-door"></i> Inicio</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'url_map' %}"><i class="bi bi-map"></i> Mapa de URLs</a></li>
+      <li class="breadcrumb-item active"><i class="bi bi-app-indicator"></i> {{ app_name|title }}</li>
+    </ol>
+  </nav>
+</div>
+
+<section class="section">
+  <div class="row">
+    <div class="col-lg-12">
+      {% if error %}
+      <!-- Error Card -->
+      <div class="card border-danger">
+        <div class="card-body text-center py-5">
+          <i class="bi bi-exclamation-triangle text-danger fs-1 mb-3"></i>
+          <h4 class="card-title text-danger">Aplicación No Encontrada</h4>
+          <p class="card-text">{{ error }}</p>
+          <a href="{% url 'url_map' %}" class="btn btn-primary">
+            <i class="bi bi-arrow-left"></i> Volver al Mapa
+          </a>
+        </div>
+      </div>
+      {% else %}
+
+      <!-- App Header Card -->
+      <div class="card mb-4" style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white;">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-md-8">
+              <div class="d-flex align-items-center mb-3">
+                {% if app_name == 'accounts' %}
+                  <i class="bi bi-person-circle fs-2 me-3"></i>
+                {% elif app_name == 'chat' %}
+                  <i class="bi bi-chat-dots fs-2 me-3"></i>
+                {% elif app_name == 'courses' %}
+                  <i class="bi bi-book fs-2 me-3"></i>
+                {% elif app_name == 'events' %}
+                  <i class="bi bi-calendar-event fs-2 me-3"></i>
+                {% elif app_name == 'core' %}
+                  <i class="bi bi-house-heart fs-2 me-3"></i>
+                {% else %}
+                  <i class="bi bi-gear fs-2 me-3"></i>
+                {% endif %}
+                <div>
+                  <h2 class="card-title mb-1">{{ app_name|title }}</h2>
+                  <p class="mb-0 opacity-75">
+                    {% if app_name == 'accounts' %}Sistema de autenticación y gestión de usuarios{% endif %}
+                    {% if app_name == 'chat' %}Plataforma de mensajería en tiempo real{% endif %}
+                    {% if app_name == 'courses' %}Sistema de aprendizaje electrónico{% endif %}
+                    {% if app_name == 'events' %}Gestión de eventos y proyectos{% endif %}
+                    {% if app_name == 'core' %}Funcionalidades principales del sistema{% endif %}
+                    {% if app_name == 'campaigns' %}Administración de campañas de marketing{% endif %}
+                    {% if app_name == 'cv' %}Sistema de currículums vitae{% endif %}
+                    {% if app_name == 'kpis' %}Dashboard de métricas y KPIs{% endif %}
+                    {% if app_name == 'tools' %}Herramientas y utilidades del sistema{% endif %}
+                    {% if app_name == 'rooms' %}Gestión de salas y espacios colaborativos{% endif %}
+                    {% if app_name == 'memento' %}Sistema de recordatorios y mementos{% endif %}
+                    {% if app_name == 'passgen' %}Generador seguro de contraseñas{% endif %}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 text-end">
+              <div class="stats">
+                <h3 class="display-4 fw-bold mb-0">{{ app_urls.urls|length }}</h3>
+                <p class="mb-0 opacity-75">URLs Configuradas</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="row mb-4">
+        <div class="col-md-6">
+          <a href="{% url 'url_map' %}" class="btn btn-outline-secondary w-100">
+            <i class="bi bi-arrow-left"></i> Volver al Mapa Principal
+          </a>
+        </div>
+        <div class="col-md-6">
+          <a href="/{{ app_name }}/" target="_blank" class="btn btn-primary w-100">
+            <i class="bi bi-box-arrow-up-right"></i> Visitar Aplicación
+          </a>
+        </div>
+      </div>
+
+      <!-- App Statistics -->
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="card text-center h-100">
+            <div class="card-body">
+              <i class="bi bi-file-earmark-code text-primary fs-1 mb-3"></i>
+              <h6 class="card-title">Archivo Fuente</h6>
+              <code class="text-muted small">{{ app_urls.urls_file }}</code>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card text-center h-100">
+            <div class="card-body">
+              <i class="bi bi-hash text-success fs-1 mb-3"></i>
+              <h6 class="card-title">Total de URLs</h6>
+              <span class="badge bg-success fs-5 px-3 py-2">{{ app_urls.urls|length }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card text-center h-100">
+            <div class="card-body">
+              <i class="bi bi-diagram-3 text-info fs-1 mb-3"></i>
+              <h6 class="card-title">Tipos de URL</h6>
+              <div class="d-flex justify-content-center gap-2">
+                {% for url in app_urls.urls %}
+                  {% if url.type == 'path' %}
+                    <span class="badge bg-success">PATH</span>
+                  {% elif url.type == 're_path' %}
+                    <span class="badge bg-warning">REGEX</span>
+                  {% endif %}
+                {% empty %}
+                  <span class="badge bg-secondary">NINGUNO</span>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- URLs Table -->
+      <div class="card">
+        <div class="card-header bg-light">
+          <div class="d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+              <i class="bi bi-list-ul text-primary"></i> Lista Completa de URLs
+            </h5>
+            <div class="input-group" style="width: 300px;">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input type="text" class="form-control" id="searchUrls" placeholder="Buscar URLs...">
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" id="urlsTable">
+              <thead class="table-dark">
+                <tr>
+                  <th scope="col" class="text-center">#</th>
+                  <th scope="col">Tipo</th>
+                  <th scope="col">Patrón de URL</th>
+                  <th scope="col">Vista Asociada</th>
+                  <th scope="col">URL Completa</th>
+                  <th scope="col" class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for url in app_urls.urls %}
+                <tr class="url-row">
+                  <td class="text-center fw-bold">{{ forloop.counter }}</td>
+                  <td>
+                    {% if url.type == 'path' %}
+                      <span class="badge bg-success px-2 py-1">
+                        <i class="bi bi-link-45deg"></i> PATH
+                      </span>
+                    {% elif url.type == 're_path' %}
+                      <span class="badge bg-warning px-2 py-1">
+                        <i class="bi bi-regex"></i> REGEX
+                      </span>
+                    {% else %}
+                      <span class="badge bg-secondary px-2 py-1">{{ url.type|upper }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <code class="text-primary me-2">{{ url.pattern }}</code>
+                      <button class="btn btn-sm btn-outline-info" onclick="copyToClipboard('{{ url.pattern }}')" title="Copiar patrón">
+                        <i class="bi bi-clipboard"></i>
+                      </button>
+                    </div>
+                  </td>
+                  <td>
+                    <div class="font-monospace small text-muted" style="max-width: 300px;">
+                      {{ url.view|truncatechars:60 }}
+                      {% if url.view|length > 60 %}
+                      <span class="text-primary" style="cursor: pointer;" onclick="showFullView('{{ url.view }}')" title="Ver completo">...</span>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <code class="text-success me-2" style="font-size: 0.85em;">{{ url.full_pattern }}</code>
+                      <button class="btn btn-sm btn-outline-success" onclick="copyToClipboard('{{ url.full_pattern }}')" title="Copiar URL completa">
+                        <i class="bi bi-clipboard-check"></i>
+                      </button>
+                    </div>
+                  </td>
+                  <td class="text-center">
+                    <div class="btn-group" role="group">
+                      <a href="{{ url.full_pattern }}" target="_blank" class="btn btn-sm btn-outline-primary" title="Visitar URL">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                      </a>
+                      <button class="btn btn-sm btn-outline-info" onclick="showUrlDetails('{{ url.pattern }}', '{{ url.view }}', '{{ url.full_pattern }}')" title="Ver detalles">
+                        <i class="bi bi-info-circle"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                {% empty %}
+                <tr>
+                  <td colspan="6" class="text-center py-5">
+                    <i class="bi bi-info-circle text-muted fs-1 mb-3"></i>
+                    <h5 class="text-muted">No se encontraron URLs configuradas</h5>
+                    <p class="text-muted">Esta aplicación no tiene rutas URL definidas en su archivo urls.py</p>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Technical Information -->
+      <div class="row mt-4">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h6 class="card-title mb-0">
+                <i class="bi bi-code-slash text-primary"></i> Información Técnica
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="mb-3">
+                <strong>Archivo de URLs:</strong><br>
+                <code class="text-muted">{{ app_urls.urls_file }}</code>
+              </div>
+              <div class="mb-3">
+                <strong>Framework:</strong><br>
+                <span class="badge bg-primary">Django {{ django_version }}</span>
+              </div>
+              <div>
+                <strong>Última modificación:</strong><br>
+                <small class="text-muted">Información en tiempo real</small>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h6 class="card-title mb-0">
+                <i class="bi bi-api text-success"></i> API Endpoints
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="alert alert-info">
+                <strong>JSON API:</strong><br>
+                <code>/url-map/api/?app_name={{ app_name }}</code>
+              </div>
+              <div class="alert alert-success">
+                <strong>Respuesta:</strong><br>
+                <small>Retorna todas las URLs de {{ app_name|title }} en formato JSON para integración programática</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- Modal for URL Details -->
+<div class="modal fade" id="urlDetailsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-info-circle"></i> Detalles de URL</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6>Patrón de URL</h6>
+            <code id="modalPattern" class="d-block mb-3 p-2 bg-light"></code>
+          </div>
+          <div class="col-md-6">
+            <h6>URL Completa</h6>
+            <code id="modalFullUrl" class="d-block mb-3 p-2 bg-success text-white"></code>
+          </div>
+        </div>
+        <div>
+          <h6>Vista Asociada</h6>
+          <code id="modalView" class="d-block p-2 bg-info text-white"></code>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary" onclick="visitUrl()">Visitar URL</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.stats h3 {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.table th {
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table td {
+  vertical-align: middle;
+  padding: 0.75rem;
+}
+
+.url-row:hover {
+  background-color: #f8f9fa;
+}
+
+.font-monospace {
+  font-family: 'SFMono-Regular', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+}
+
+.badge {
+  font-size: 0.7em;
+  font-weight: 500;
+}
+
+.card-header.bg-light {
+  border-bottom: 2px solid #e9ecef;
+}
+
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.85rem;
+  }
+
+  .btn-group {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .stats h3 {
+    font-size: 2.5rem;
+  }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('searchUrls').addEventListener('input', function() {
+  const searchTerm = this.value.toLowerCase();
+  const urlRows = document.querySelectorAll('.url-row');
+
+  urlRows.forEach(row => {
+    const pattern = row.cells[2].textContent.toLowerCase();
+    const view = row.cells[3].textContent.toLowerCase();
+    const fullUrl = row.cells[4].textContent.toLowerCase();
+
+    if (pattern.includes(searchTerm) || view.includes(searchTerm) || fullUrl.includes(searchTerm)) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+});
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    // Show success feedback
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+      <i class="bi bi-check-circle"></i> ¡Copiado al portapapeles!
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
+  });
+}
+
+function showUrlDetails(pattern, view, fullUrl) {
+  document.getElementById('modalPattern').textContent = pattern;
+  document.getElementById('modalView').textContent = view;
+  document.getElementById('modalFullUrl').textContent = fullUrl;
+
+  const modal = new bootstrap.Modal(document.getElementById('urlDetailsModal'));
+  modal.show();
+
+  // Store URL for visit button
+  window.currentUrl = fullUrl;
+}
+
+function visitUrl() {
+  if (window.currentUrl) {
+    window.open(window.currentUrl, '_blank');
+  }
+}
+
+function showFullView(fullView) {
+  alert('Vista completa:\n\n' + fullView);
+}
+
+// Add smooth scrolling and animations
+document.querySelectorAll('.url-row').forEach(row => {
+  row.addEventListener('mouseenter', function() {
+    this.style.transform = 'scale(1.01)';
+    this.style.transition = 'transform 0.2s ease';
+  });
+
+  row.addEventListener('mouseleave', function() {
+    this.style.transform = 'scale(1)';
+  });
+});
+</script>
+{% endblock %}

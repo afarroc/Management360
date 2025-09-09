@@ -1,0 +1,296 @@
+{% extends "courses/base.html" %}
+{% load static %}
+
+{% block title %}Vista General de Módulos{% endblock %}
+
+{% block extra_head %}
+<style>
+.modules-overview {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.overview-header {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    border-left: 4px solid #667eea;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #718096;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.courses-grid {
+    display: grid;
+    gap: 2rem;
+}
+
+.course-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+}
+
+.course-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.course-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+}
+
+.course-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.course-meta {
+    font-size: 0.875rem;
+    opacity: 0.9;
+    margin-top: 0.5rem;
+}
+
+.modules-list {
+    padding: 1.5rem;
+}
+
+.module-item {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.module-item:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+}
+
+.module-info h6 {
+    margin: 0;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.module-stats {
+    font-size: 0.875rem;
+    color: #718096;
+    margin: 0.25rem 0 0 0;
+}
+
+.module-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-module-action {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 6px;
+}
+
+.recent-modules {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+}
+
+.recent-module-item {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.recent-module-item:last-child {
+    border-bottom: none;
+}
+
+@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .module-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .module-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+</style>
+{% endblock %}
+
+{% block course_content %}
+<div class="modules-overview">
+    <div class="container">
+        <!-- Header -->
+        <div class="overview-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-1"><i class="bi bi-folder-fill me-2"></i>Vista General de Módulos</h1>
+                    <p class="text-muted mb-0">Gestiona todos tus módulos desde un solo lugar</p>
+                </div>
+                <a href="{% url 'courses:manage_courses' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left me-1"></i>Volver a Cursos
+                </a>
+            </div>
+        </div>
+
+        <!-- Estadísticas Generales -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_courses }}</div>
+                <div class="stat-label">Cursos Totales</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ total_modules }}</div>
+                <div class="stat-label">Módulos Totales</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ total_lessons }}</div>
+                <div class="stat-label">Lecciones Totales</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ recent_modules|length }}</div>
+                <div class="stat-label">Módulos Recientes</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Lista de Cursos con Módulos -->
+            <div class="col-lg-8">
+                <div class="courses-grid">
+                    {% for course in courses %}
+                    <div class="course-card">
+                        <div class="course-header">
+                            <h3 class="course-title">{{ course.title }}</h3>
+                            <div class="course-meta">
+                                <span>{{ course.modules.count }} módulos</span> •
+                                <span>{{ course.students_count }} estudiantes</span>
+                            </div>
+                        </div>
+
+                        <div class="modules-list">
+                            {% if course.modules.exists %}
+                                {% for module in course.modules.all %}
+                                <div class="module-item">
+                                    <div class="module-info">
+                                        <h6>{{ module.title }}</h6>
+                                        <p class="module-stats">
+                                            {{ module.lessons.count }} lecciones •
+                                            Orden: {{ module.order }}
+                                        </p>
+                                    </div>
+                                    <div class="module-actions">
+                                        <a href="{% url 'courses:manage_content' course.slug %}" class="btn btn-outline-primary btn-module-action">
+                                            <i class="bi bi-eye me-1"></i>Ver
+                                        </a>
+                                        <a href="{% url 'courses:edit_module' course.slug module.id %}" class="btn btn-outline-secondary btn-module-action">
+                                            <i class="bi bi-pencil me-1"></i>Editar
+                                        </a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-folder-x text-muted fs-1 mb-2"></i>
+                                    <p class="text-muted mb-2">Este curso aún no tiene módulos</p>
+                                    <a href="{% url 'courses:create_module' course.slug %}" class="btn btn-outline-primary">
+                                        <i class="bi bi-plus-circle me-1"></i>Crear Primer Módulo
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Panel Lateral -->
+            <div class="col-lg-4">
+                <!-- Módulos Recientes -->
+                <div class="recent-modules">
+                    <h4 class="mb-3"><i class="bi bi-clock-history me-2"></i>Módulos Recientes</h4>
+                    {% if recent_modules %}
+                        {% for module in recent_modules %}
+                        <div class="recent-module-item">
+                            <div>
+                                <h6 class="mb-1">{{ module.title }}</h6>
+                                <small class="text-muted">{{ module.course.title }}</small>
+                            </div>
+                            <a href="{% url 'courses:manage_content' module.course.slug %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-folder text-muted fs-1 mb-2"></i>
+                            <p class="text-muted mb-0">No hay módulos recientes</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Acciones Rápidas -->
+                <div class="recent-modules mt-3">
+                    <h4 class="mb-3"><i class="bi bi-lightning me-2"></i>Acciones Rápidas</h4>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'courses:create_course' %}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-1"></i>Crear Nuevo Curso
+                        </a>
+                        <a href="{% url 'courses:manage_categories' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-tags me-1"></i>Gestionar Categorías
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

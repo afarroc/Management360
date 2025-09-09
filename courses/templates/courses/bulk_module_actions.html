@@ -1,0 +1,338 @@
+{% extends "courses/base.html" %}
+{% load static %}
+
+{% block title %}Acciones Masivas - {{ course.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.bulk-actions-container {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.bulk-actions-header {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+}
+
+.actions-form {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+}
+
+.modules-selection {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+}
+
+.selection-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+}
+
+.selection-header h4 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.modules-list {
+    padding: 0;
+}
+
+.module-checkbox-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.module-checkbox-item:hover {
+    background: #f8f9fa;
+}
+
+.module-checkbox-item:last-child {
+    border-bottom: none;
+}
+
+.module-checkbox {
+    margin-right: 1rem;
+    transform: scale(1.2);
+}
+
+.module-info h6 {
+    margin: 0;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.module-details {
+    font-size: 0.875rem;
+    color: #718096;
+    margin: 0.25rem 0 0 0;
+}
+
+.select-all-container {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    border: 2px dashed #667eea;
+}
+
+.select-all-checkbox {
+    margin-right: 0.75rem;
+    transform: scale(1.1);
+}
+
+.action-buttons {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+}
+
+.btn-action {
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    margin: 0.5rem;
+}
+
+.btn-delete-all {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border: none;
+    color: white;
+}
+
+.btn-delete-all:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+    color: white;
+}
+
+.btn-duplicate-all {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    border: none;
+    color: white;
+}
+
+.btn-duplicate-all:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+    color: white;
+}
+
+.warning-message {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.warning-message h5 {
+    color: #d97706;
+    margin-bottom: 0.5rem;
+}
+
+.warning-message p {
+    color: #d97706;
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .module-checkbox-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .action-buttons .btn {
+        width: 100%;
+        margin: 0.25rem 0;
+    }
+}
+</style>
+{% endblock %}
+
+{% block course_content %}
+<div class="bulk-actions-container">
+    <div class="container">
+        <!-- Header -->
+        <div class="bulk-actions-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-1"><i class="bi bi-check-square me-2"></i>Acciones Masivas</h1>
+                    <p class="text-muted mb-0">Curso: <strong>{{ course.title }}</strong></p>
+                </div>
+                <a href="{% url 'courses:manage_content' course.slug %}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left me-1"></i>Volver
+                </a>
+            </div>
+        </div>
+
+        <!-- Formulario de Acciones -->
+        <form method="post" id="bulk-actions-form">
+            {% csrf_token %}
+
+            <!-- Selección de Acción -->
+            <div class="actions-form">
+                <h4 class="mb-3"><i class="bi bi-gear me-2"></i>Seleccionar Acción</h4>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="action" id="delete_selected" value="delete_selected" checked>
+                            <label class="form-check-label" for="delete_selected">
+                                <strong>Eliminar Módulos Seleccionados</strong>
+                                <br><small class="text-muted">Eliminará permanentemente los módulos y todas sus lecciones</small>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="action" id="duplicate_selected" value="duplicate_selected">
+                            <label class="form-check-label" for="duplicate_selected">
+                                <strong>Duplicar Módulos Seleccionados</strong>
+                                <br><small class="text-muted">Creará copias de los módulos con todas sus lecciones</small>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="warning-message">
+                            <h5><i class="bi bi-exclamation-triangle me-2"></i>Advertencia</h5>
+                            <p>Las acciones masivas no se pueden deshacer. Asegúrate de seleccionar los módulos correctos antes de proceder.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selección de Módulos -->
+            <div class="modules-selection">
+                <div class="selection-header">
+                    <h4><i class="bi bi-list-check me-2"></i>Seleccionar Módulos</h4>
+                </div>
+
+                <div class="select-all-container">
+                    <label class="form-check-label d-flex align-items-center">
+                        <input class="form-check-input select-all-checkbox" type="checkbox" id="select-all">
+                        <strong>Seleccionar Todos los Módulos</strong>
+                    </label>
+                </div>
+
+                <div class="modules-list">
+                    {% for module in modules %}
+                    <div class="module-checkbox-item">
+                        <input class="form-check-input module-checkbox" type="checkbox" name="module_ids" value="{{ module.id }}" id="module_{{ module.id }}">
+                        <label class="form-check-label flex-grow-1" for="module_{{ module.id }}">
+                            <div class="module-info">
+                                <h6>{{ module.title }}</h6>
+                                <p class="module-details">
+                                    {{ module.lessons.count }} lecciones • Orden: {{ module.order }}
+                                    {% if module.description %}
+                                        • {{ module.description|truncatechars:50 }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-folder-x text-muted fs-1 mb-3"></i>
+                        <h5 class="text-muted mb-2">No hay módulos disponibles</h5>
+                        <p class="text-muted mb-0">Este curso no tiene módulos para gestionar</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            {% if modules %}
+            <div class="action-buttons">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{% url 'courses:manage_content' course.slug %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Cancelar
+                    </a>
+                    <div>
+                        <button type="submit" class="btn btn-delete-all" id="delete-btn" style="display: none;">
+                            <i class="bi bi-trash me-1"></i>Eliminar Seleccionados
+                        </button>
+                        <button type="submit" class="btn btn-duplicate-all" id="duplicate-btn" style="display: none;">
+                            <i class="bi bi-files me-1"></i>Duplicar Seleccionados
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('select-all');
+    const moduleCheckboxes = document.querySelectorAll('.module-checkbox');
+    const deleteBtn = document.getElementById('delete-btn');
+    const duplicateBtn = document.getElementById('duplicate-btn');
+    const actionRadios = document.querySelectorAll('input[name="action"]');
+
+    // Función para actualizar botones según selección
+    function updateButtons() {
+        const checkedBoxes = document.querySelectorAll('.module-checkbox:checked');
+        const selectedAction = document.querySelector('input[name="action"]:checked').value;
+
+        if (checkedBoxes.length > 0) {
+            if (selectedAction === 'delete_selected') {
+                deleteBtn.style.display = 'inline-block';
+                duplicateBtn.style.display = 'none';
+            } else if (selectedAction === 'duplicate_selected') {
+                deleteBtn.style.display = 'none';
+                duplicateBtn.style.display = 'inline-block';
+            }
+        } else {
+            deleteBtn.style.display = 'none';
+            duplicateBtn.style.display = 'none';
+        }
+    }
+
+    // Event listener para "Seleccionar Todos"
+    selectAllCheckbox.addEventListener('change', function() {
+        moduleCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateButtons();
+    });
+
+    // Event listeners para checkboxes individuales
+    moduleCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const allChecked = Array.from(moduleCheckboxes).every(cb => cb.checked);
+            const someChecked = Array.from(moduleCheckboxes).some(cb => cb.checked);
+
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = someChecked && !allChecked;
+
+            updateButtons();
+        });
+    });
+
+    // Event listeners para radios de acción
+    actionRadios.forEach(radio => {
+        radio.addEventListener('change', updateButtons);
+    });
+
+    // Inicializar botones
+    updateButtons();
+});
+</script>
+{% endblock %}

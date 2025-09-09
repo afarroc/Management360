@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course, Module, Lesson, Review
+from .models import Course, Module, Lesson, Review, CourseCategory
 
 class CourseForm(forms.ModelForm):
     class Meta:
@@ -40,4 +40,12 @@ class ReviewForm(forms.ModelForm):
         fields = ['rating', 'comment']
         widgets = {
             'comment': forms.Textarea(attrs={'rows': 4}),
+        }
+
+class CategoryForm(forms.ModelForm):
+    class Meta:
+        model = CourseCategory
+        fields = ['name', 'description']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
         }

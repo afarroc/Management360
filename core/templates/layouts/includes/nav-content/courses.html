@@ -8,14 +8,16 @@
                 <i class="bi bi-circle"></i><span>Todos los cursos</span>
             </a>
         </li>
+        {% if user.is_authenticated %}
         <li>
             <a href="{% url 'courses:dashboard' %}">
-                <i class="bi bi-circle"></i><span>Panel Cursos</span>
+                <i class="bi bi-circle"></i><span>Mi Dashboard</span>
             </a>
         </li>
+        {% if user.cv %}
         <li>
             <a href="{% url 'courses:manage_courses' %}">
-                <i class="bi bi-circle"></i><span>Gestionar Cursos</span>
+                <i class="bi bi-circle"></i><span>Mis Cursos</span>
             </a>
         </li>
         <li>
@@ -23,5 +25,29 @@
                 <i class="bi bi-circle"></i><span>Crear Curso</span>
             </a>
         </li>
+        <li>
+            <a href="{% url 'courses:modules_overview' %}">
+                <i class="bi bi-circle"></i><span>Módulos</span>
+            </a>
+        </li>
+        {% endif %}
+        {% if user.is_staff %}
+        <li>
+            <a href="{% url 'courses:admin_dashboard' %}">
+                <i class="bi bi-circle"></i><span>Panel Admin</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'courses:admin_users' %}">
+                <i class="bi bi-circle"></i><span>Usuarios</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'courses:manage_categories' %}">
+                <i class="bi bi-circle"></i><span>Categorías</span>
+            </a>
+        </li>
+        {% endif %}
+        {% endif %}
     </ul>
 </li><!-- End courses Nav -->
