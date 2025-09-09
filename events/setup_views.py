@@ -31,17 +31,40 @@ class SetupView(View):
 
         completed_steps = []
 
-        if User.objects.filter(username='su').exists():
-            completed_steps.append('1')
+        # Check if superuser exists (handle missing table)
+        try:
+            if User.objects.filter(username='su').exists():
+                completed_steps.append('1')
+        except Exception as e:
+            # Table might not exist yet, skip this check
+            pass
 
-        if request.user.is_authenticated and Profile.objects.filter(user=request.user).exists():
-            completed_steps.append('2')
+        # Check if user profile exists
+        try:
+            if request.user.is_authenticated and Profile.objects.filter(user=request.user).exists():
+                completed_steps.append('2')
+        except Exception as e:
+            # Table might not exist yet, skip this check
+            pass
 
-        all_groups = Group.objects.all()
-        all_users = User.objects.all()
+        # Get all groups and users (handle missing tables)
+        try:
+            all_groups = Group.objects.all()
+        except Exception as e:
+            all_groups = []
 
-        if Status.objects.exists() and ProjectStatus.objects.exists() and TaskStatus.objects.exists():
-            completed_steps.append('3')
+        try:
+            all_users = User.objects.all()
+        except Exception as e:
+            all_users = []
+
+        # Check if statuses exist
+        try:
+            if Status.objects.exists() and ProjectStatus.objects.exists() and TaskStatus.objects.exists():
+                completed_steps.append('3')
+        except Exception as e:
+            # Tables might not exist yet, skip this check
+            pass
 
         return render(request, self.template_name, {
             'page_title': 'Setup',
@@ -53,22 +76,26 @@ class SetupView(View):
 
     def post(self, request):
         if 'create_su' in request.POST:
-            if not User.objects.filter(username='su').exists():
-                username = 'su'
-                first_name = 'Superusuario'
-                email = f'{username}@{DOMAIN_BASE}'
-                password = generate_random_password()
-                superuser = User.objects.create_superuser(username, email, password, first_name=first_name)
-                superuser.save()
-                messages.success(request, f'Superusuario creado: su, contraseña: {password}')
-                user = authenticate(username='su', password=password)
-                if user is not None:
-                    login(request, user)
-                    request.session.setdefault('first_session', True)
-                    return redirect(reverse('setup') + '?step=2')
-            else:
-                messages.info(request, 'El superusuario ya existe. Por favor, inicie sesión.')
-                return redirect(reverse('setup') + '?step=login')
+            try:
+                if not User.objects.filter(username='su').exists():
+                    username = 'su'
+                    first_name = 'Superusuario'
+                    email = f'{username}@{DOMAIN_BASE}'
+                    password = generate_random_password()
+                    superuser = User.objects.create_superuser(username, email, password, first_name=first_name)
+                    superuser.save()
+                    messages.success(request, f'Superusuario creado: su, contraseña: {password}')
+                    user = authenticate(username='su', password=password)
+                    if user is not None:
+                        login(request, user)
+                        request.session.setdefault('first_session', True)
+                        return redirect(reverse('setup') + '?step=2')
+                else:
+                    messages.info(request, 'El superusuario ya existe. Por favor, inicie sesión.')
+                    return redirect(reverse('setup') + '?step=login')
+            except Exception as e:
+                messages.error(request, f'Error al crear superusuario: {str(e)}. Las migraciones pueden no haberse ejecutado aún.')
+                return redirect(reverse('setup'))
 
         elif 'login_su' in request.POST:
             username = request.POST['username']
@@ -93,98 +120,109 @@ class SetupView(View):
                         'role': request.POST.get('role', 'US'),
                     }
                 )
-                
+
                 if not created:
                     profile.full_name = request.POST.get('full_name', '')
                     profile.profession = request.POST.get('profession', '')
                     profile.role = request.POST.get('role', 'US')
-                
+
                 # Handle profile picture if provided
                 if 'profile_picture' in request.FILES:
                     profile.profile_picture = request.FILES['profile_picture']
-                
+
                 profile.save()
                 messages.success(request, 'Profile created successfully!')
                 return redirect(reverse('setup') + '?step=3')
-                
+
             except User.DoesNotExist:
                 messages.error(request, 'Superuser does not exist. Please create one first.')
             except Exception as e:
-                messages.error(request, f'Error creating profile: {str(e)}')
+                messages.error(request, f'Error creating profile: {str(e)}. Las tablas pueden no existir aún.')
             return redirect(reverse('setup') + '?step=2')
 
         elif 'create_random_users' in request.POST:
-            domain = request.POST['domain']
-            num_users = int(request.POST['num_users'])
-            group_name = request.POST.get('new_group_name')  # Nombre del nuevo grupo (si se proporciona)
-            group_id = request.POST.get('group_id')  # Grupo seleccionado para asignar usuarios
-            user_data = []
+            try:
+                domain = request.POST['domain']
+                num_users = int(request.POST['num_users'])
+                group_name = request.POST.get('new_group_name')  # Nombre del nuevo grupo (si se proporciona)
+                group_id = request.POST.get('group_id')  # Grupo seleccionado para asignar usuarios
+                user_data = []
 
-            if group_name:
-                group, created = Group.objects.get_or_create(name=group_name)
-            elif group_id:
-                group = Group.objects.get(id=group_id)
-            else:
-                group = None
+                if group_name:
+                    group, created = Group.objects.get_or_create(name=group_name)
+                elif group_id:
+                    group = Group.objects.get(id=group_id)
+                else:
+                    group = None
 
-            for _ in range(num_users):
-                username = generate_random_username()
-                first_name = generate_random_name('spanish', format='first_last').split()[0]
-                last_name = generate_random_name('spanish', format='first_last').split()[1]
-                email = f'{username}@{domain}'
-                password = generate_random_password()
+                for _ in range(num_users):
+                    username = generate_random_username()
+                    first_name = generate_random_name('spanish', format='first_last').split()[0]
+                    last_name = generate_random_name('spanish', format='first_last').split()[1]
+                    email = f'{username}@{domain}'
+                    password = generate_random_password()
 
-                if not User.objects.filter(username=username).exists():
-                    user = User.objects.create_user(username, email, password)
-                    user.first_name = first_name
-                    user.last_name = last_name
-                    user.save()
-                    user_data.append({
-                        'username': username,
-                        'first_name': first_name,
-                        'last_name': last_name,
-                        'email': email,
-                        'password': password,
-                    })
+                    if not User.objects.filter(username=username).exists():
+                        user = User.objects.create_user(username, email, password)
+                        user.first_name = first_name
+                        user.last_name = last_name
+                        user.save()
+                        user_data.append({
+                            'username': username,
+                            'first_name': first_name,
+                            'last_name': last_name,
+                            'email': email,
+                            'password': password,
+                        })
 
-                    # Asignar el usuario al grupo si se seleccionó uno
-                    if group:
-                        user.groups.add(group)
+                        # Asignar el usuario al grupo si se seleccionó uno
+                        if group:
+                            user.groups.add(group)
 
-            messages.success(request, 'Usuarios creados con éxito.')
-            completed_steps = ['1', '2', '3']
-            all_groups = Group.objects.all()
-            all_users = User.objects.all()
-            return render(request, self.template_name, {
-                'page_title': 'Crear Usuarios Aleatorios',
-                'user_data': user_data,
-                'step': '4',
-                'completed_steps': completed_steps,
-                'all_groups': all_groups,
-                'all_users': all_users,
-            })
+                messages.success(request, 'Usuarios creados con éxito.')
+                completed_steps = ['1', '2', '3']
+                all_groups = Group.objects.all()
+                all_users = User.objects.all()
+                return render(request, self.template_name, {
+                    'page_title': 'Crear Usuarios Aleatorios',
+                    'user_data': user_data,
+                    'step': '4',
+                    'completed_steps': completed_steps,
+                    'all_groups': all_groups,
+                    'all_users': all_users,
+                })
+            except Exception as e:
+                messages.error(request, f'Error al crear usuarios: {str(e)}. Las tablas pueden no existir aún.')
+                return redirect(reverse('setup'))
 
         elif 'create_group' in request.POST:
-            group_name = request.POST['group_name']
-            usernames = request.POST.getlist('usernames')
-            group, created = Group.objects.get_or_create(name=group_name)
-            for username in usernames:
-                user = User.objects.get(username=username)
-                user.groups.add(group)
-            messages.success(request, f'Grupo {group_name} creado y usuarios asignados.')
-            completed_steps = ['1', '2', '3', '4']
-            return redirect(reverse('setup') + '?step=5')
+            try:
+                group_name = request.POST['group_name']
+                usernames = request.POST.getlist('usernames')
+                group, created = Group.objects.get_or_create(name=group_name)
+                for username in usernames:
+                    user = User.objects.get(username=username)
+                    user.groups.add(group)
+                messages.success(request, f'Grupo {group_name} creado y usuarios asignados.')
+                completed_steps = ['1', '2', '3', '4']
+                return redirect(reverse('setup') + '?step=5')
+            except Exception as e:
+                messages.error(request, f'Error al crear grupo: {str(e)}. Las tablas pueden no existir aún.')
+                return redirect(reverse('setup'))
 
         elif 'create_another_su' in request.POST:
-            su_username = request.POST['su_username']
-            su_email = request.POST['su_email']
-            su_password = generate_random_password()
-            if not User.objects.filter(username=su_username).exists():
-                superuser = User.objects.create_superuser(su_username, su_email, su_password)
-                superuser.save()
-                messages.success(request, f'Superusuario creado: {su_username}, contraseña: {su_password}')
-            else:
-                messages.error(request, 'El nombre de usuario ya existe.')
+            try:
+                su_username = request.POST['su_username']
+                su_email = request.POST['su_email']
+                su_password = generate_random_password()
+                if not User.objects.filter(username=su_username).exists():
+                    superuser = User.objects.create_superuser(su_username, su_email, su_password)
+                    superuser.save()
+                    messages.success(request, f'Superusuario creado: {su_username}, contraseña: {su_password}')
+                else:
+                    messages.error(request, 'El nombre de usuario ya existe.')
+            except Exception as e:
+                messages.error(request, f'Error al crear superusuario: {str(e)}. Las tablas pueden no existir aún.')
 
         elif 'create_initial_statuses' in request.POST:
             created_statuses = create_initial_statuses()
