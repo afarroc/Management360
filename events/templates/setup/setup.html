@@ -15,13 +15,23 @@
     </nav>
 </div><!-- End Page Title -->
 
+<!-- Progress Bar -->
+<div class="mb-4">
+    <h5 class="text-center mb-3">Progreso de Configuración</h5>
+    <div class="progress" style="height: 25px;">
+        <div class="progress-bar bg-success" role="progressbar" style="width: {% widthratio completed_steps|length 5 100 %}%;" aria-valuenow="{% widthratio completed_steps|length 5 100 %}" aria-valuemin="0" aria-valuemax="100">
+            {{ completed_steps|length }}/5 Pasos Completados
+        </div>
+    </div>
+</div>
+
 <section class="section dashboard">
     <div class="row">
         <!-- Card 1: Create Superuser -->
         <div class="col-xxl-4 col-md-6">
-            <div class="card info-card revenue-card">
+            <div class="card info-card revenue-card shadow-sm hover-shadow">
                 <div class="card-body">
-                    <h5 class="card-title">Create Superuser</h5>
+                    <h5 class="card-title"><i class="bi bi-shield-lock me-2"></i>Create Superuser</h5>
                     {% if '1' in completed_steps %}
                     <div class="d-flex align-items-center">
                         <div class="ps-3">
@@ -39,11 +49,10 @@
         </div>
 
         <!-- Card 2: Create Superuser Profile -->
-        <!-- Card 2: Create Superuser Profile -->
         <div class="col-xxl-4 col-md-6">
-            <div class="card info-card revenue-card">
+            <div class="card info-card revenue-card shadow-sm hover-shadow">
                 <div class="card-body">
-                    <h5 class="card-title">Create Superuser Profile</h5>
+                    <h5 class="card-title"><i class="bi bi-person-badge me-2"></i>Create Superuser Profile</h5>
                     {% if '1' not in completed_steps %}
                     <div class="d-flex align-items-center">
                         <div class="ps-3">
@@ -61,11 +70,11 @@
                         {% csrf_token %}
                         <div class="mb-3">
                             <label for="full_name" class="form-label">Full Name</label>
-                            <input type="text" class="form-control" id="full_name" name="full_name" required>
+                            <input type="text" class="form-control" id="full_name" name="full_name" placeholder="Ingrese su nombre completo" required>
                         </div>
                         <div class="mb-3">
                             <label for="profession" class="form-label">Profession</label>
-                            <input type="text" class="form-control" id="profession" name="profession" required>
+                            <input type="text" class="form-control" id="profession" name="profession" placeholder="Ingrese su profesión" required>
                         </div>
                         <div class="mb-3">
                             <label for="role" class="form-label">Role</label>
@@ -88,9 +97,9 @@
         </div>
         <!-- NEW CARD: Create Initial Statuses -->
         <div class="col-xxl-4 col-md-6">
-            <div class="card info-card revenue-card">
+            <div class="card info-card revenue-card shadow-sm hover-shadow">
                 <div class="card-body">
-                    <h5 class="card-title">Create Initial Statuses</h5>
+                    <h5 class="card-title"><i class="bi bi-list-check me-2"></i>Create Initial Statuses</h5>
                     {% if '2' not in completed_steps %}
                     <div class="d-flex align-items-center">
                         <div class="ps-3">
@@ -108,7 +117,7 @@
                         {% csrf_token %}
                         <div class="mb-3">
                             <p>This will create default statuses for Events, Projects and Tasks.</p>
-                            <div class="row">
+                            <div class="row g-4">
                                 <div class="col-md-4">
                                     <h6>Event Statuses</h6>
                                     <ul class="list-group">
@@ -150,9 +159,9 @@
 
         <!-- Card 3: Create Random Users -->
         <div class="col-xxl-4 col-md-6">
-            <div class="card info-card revenue-card">
+            <div class="card info-card revenue-card shadow-sm hover-shadow">
                 <div class="card-body">
-                    <h5 class="card-title">Create Random Users</h5>
+                    <h5 class="card-title"><i class="bi bi-people me-2"></i>Create Random Users</h5>
                     {% if '3' not in completed_steps %}
                     <div class="d-flex align-items-center">
                         <div class="ps-3">
@@ -163,13 +172,13 @@
                     <!-- ... existing random users form ... -->
                     <form method="post">
                         {% csrf_token %}
-                        <div>
-                            <label for="domain">Dominio:</label>
-                            <input type="text" id="domain" name="domain" required>
+                        <div class="mb-3">
+                            <label for="domain" class="form-label">Dominio:</label>
+                            <input type="text" class="form-control" id="domain" name="domain" placeholder="ejemplo.com" required>
                         </div>
-                        <div>
-                            <label for="num_users">Número de Usuarios:</label>
-                            <input type="number" id="num_users" name="num_users" min="1" max="100" required>
+                        <div class="mb-3">
+                            <label for="num_users" class="form-label">Número de Usuarios:</label>
+                            <input type="number" class="form-control" id="num_users" name="num_users" min="1" max="100" placeholder="10" required>
                         </div>
                         <div>
                             <label for="group_id">Asignar al Grupo:</label>
@@ -193,9 +202,9 @@
 
         <!-- Card 4: Create User Groups -->
         <div class="col-xxl-4 col-md-6">
-            <div class="card info-card revenue-card">
+            <div class="card info-card revenue-card shadow-sm hover-shadow">
                 <div class="card-body">
-                    <h5 class="card-title">Create User Groups</h5>
+                    <h5 class="card-title"><i class="bi bi-person-plus me-2"></i>Create User Groups</h5>
                     {% if '3' not in completed_steps %}
                     <div class="d-flex align-items-center">
                         <div class="ps-3">
@@ -206,9 +215,9 @@
                     <!-- ... existing groups form ... -->
                     <form method="post">
                         {% csrf_token %}
-                        <div>
-                            <label for="group_name">Nombre del Grupo:</label>
-                            <input type="text" id="group_name" name="group_name" required>
+                        <div class="mb-3">
+                            <label for="group_name" class="form-label">Nombre del Grupo:</label>
+                            <input type="text" class="form-control" id="group_name" name="group_name" placeholder="Administradores" required>
                         </div>
                         <div>
                             <label for="usernames">Usuarios:</label>
@@ -230,19 +239,19 @@
         <!-- Card 5: Create Another Superuser -->
         {% if request.user.is_authenticated and request.user.is_superuser %}
         <div class="col-xxl-4 col-md-6">
-            <div class="card info-card revenue-card">
+            <div class="card info-card revenue-card shadow-sm hover-shadow">
                 <div class="card-body">
-                    <h5 class="card-title">Create Another Superuser</h5>
+                    <h5 class="card-title"><i class="bi bi-person-plus-fill me-2"></i>Create Another Superuser</h5>
                     <!-- ... existing another superuser form ... -->
                     <form method="post">
                         {% csrf_token %}
-                        <div>
-                            <label for="su_username">Username:</label>
-                            <input type="text" id="su_username" name="su_username" required>
+                        <div class="mb-3">
+                            <label for="su_username" class="form-label">Username:</label>
+                            <input type="text" class="form-control" id="su_username" name="su_username" placeholder="nuevo_admin" required>
                         </div>
-                        <div>
-                            <label for="su_email">Email:</label>
-                            <input type="email" id="su_email" name="su_email" required>
+                        <div class="mb-3">
+                            <label for="su_email" class="form-label">Email:</label>
+                            <input type="email" class="form-control" id="su_email" name="su_email" placeholder="admin@ejemplo.com" required>
                         </div>
                         <button type="submit" name="create_another_su" class="btn btn-primary">Crear Superusuario</button>
                     </form>
@@ -254,6 +263,20 @@
     </div>
 </section>
 
+<style>
+.hover-shadow:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+.card {
+    transition: all 0.3s ease;
+}
+.progress {
+    border-radius: 10px;
+}
+</style>
+
 <script>
 function copyToClipboard(elementId) {
     var copyText = document.getElementById(elementId).textContent;
@@ -263,6 +286,14 @@ function copyToClipboard(elementId) {
         console.error('Error copying to clipboard: ', err);
     });
 }
+
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
 </script>
 
 {% endblock %}
