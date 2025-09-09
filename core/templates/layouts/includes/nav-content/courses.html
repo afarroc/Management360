@@ -1,10 +1,10 @@
 <li class="nav-item">
-    <a class="nav-link collapsed" data-bs-target="#courses-nav" data-bs-toggle="collapse" href="{% url 'courses:course_list' %}">
+    <a class="nav-link collapsed" data-bs-target="#courses-nav" data-bs-toggle="collapse" href="{% url 'courses:index' %}">
         <i class="bi bi-journal-bookmark"></i><span>Cursos</span><i class="bi bi-chevron-down ms-auto"></i>
     </a>
     <ul id="courses-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
         <li>
-            <a href="{% url 'courses:course_list' %}">
+            <a href="{% url 'courses:courses_list' %}">
                 <i class="bi bi-circle"></i><span>Todos los cursos</span>
             </a>
         </li>

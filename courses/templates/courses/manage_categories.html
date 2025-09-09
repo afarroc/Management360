@@ -11,9 +11,14 @@
                 <h1 class="h2 mb-1"><i class="bi bi-tags me-2"></i>Gestionar Categorías</h1>
                 <p class="text-muted mb-0">Administra las categorías disponibles para los cursos</p>
             </div>
-            <a href="{% url 'courses:create_category' %}" class="btn btn-courses-primary">
-                <i class="bi bi-plus-circle me-1"></i>Nueva Categoría
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{% url 'courses:quick_create_category' %}" class="btn btn-warning">
+                    <i class="bi bi-bolt me-1"></i>Categorías Rápidas
+                </a>
+                <a href="{% url 'courses:create_category' %}" class="btn btn-courses-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Nueva Categoría
+                </a>
+            </div>
         </div>
 
         <!-- Lista de categorías -->

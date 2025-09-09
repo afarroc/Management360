@@ -4,40 +4,80 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-md-3">
-            {% block sidebar %}
-            <div class="card">
-                <div class="card-header">
-                    <h5>Categorías</h5>
+    <!-- Barra de navegación superior responsiva -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light rounded shadow-sm">
+                <div class="container-fluid">
+                    <!-- Botón para móviles -->
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#coursesNavbar" aria-controls="coursesNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+
+                    <!-- Contenido del navbar -->
+                    <div class="collapse navbar-collapse" id="coursesNavbar">
+                        <!-- Categorías -->
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="categoriesDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-tags me-1"></i>Categorías
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="categoriesDropdown">
+                                    <li><a class="dropdown-item" href="{% url 'courses:courses_list' %}">
+                                        <i class="fas fa-list me-2"></i>Todos los cursos
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    {% for category in categories %}
+                                    <li><a class="dropdown-item" href="{% url 'courses:course_list_by_category' category.slug %}">
+                                        <i class="fas fa-tag me-2"></i>{{ category.name }}
+                                    </a></li>
+                                    {% endfor %}
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <!-- Mi Aprendizaje (solo para usuarios autenticados) -->
+                        {% if user.is_authenticated %}
+                        <ul class="navbar-nav mb-2 mb-lg-0">
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="learningDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-graduation-cap me-1"></i>Mi Aprendizaje
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="learningDropdown">
+                                    <li><a class="dropdown-item" href="{% url 'courses:dashboard' %}">
+                                        <i class="fas fa-tachometer-alt me-2"></i>Mi Dashboard
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'courses:manage_courses' %}">
+                                        <i class="fas fa-chalkboard-teacher me-2"></i>Mis Cursos (Tutor)
+                                    </a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                        {% endif %}
+
+                        <!-- Acciones rápidas -->
+                        <ul class="navbar-nav mb-2 mb-lg-0">
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'courses:courses_list' %}">
+                                    <i class="fas fa-search me-1"></i>Explorar
+                                </a>
+                            </li>
+                            {% if user.is_authenticated %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'courses:create_course_wizard' %}">
+                                    <i class="fas fa-plus me-1"></i>Crear Curso
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <ul class="list-unstyled">
-                        <li><a href="{% url 'courses:course_list' %}">Todos los cursos</a></li>
-                        {% for category in categories %}
-                        <li><a href="{% url 'courses:course_list_by_category' category.slug %}">{{ category.name }}</a></li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-            
-            {% if user.is_authenticated %}
-            <div class="card mt-3">
-                <div class="card-header">
-                    <h5>Mi Aprendizaje</h5>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled">
-                        <li><a href="{% url 'courses:dashboard' %}">Mi Dashboard</a></li>
-                        <li><a href="{% url 'courses:manage_courses' %}">Mis Cursos (Tutor)</a></li>
-                    </ul>
-                </div>
-            </div>
-            {% endif %}
-            {% endblock %}
+            </nav>
         </div>
-        
-        <div class="col-md-9">
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
             {% block messages %}
             {% if messages %}
             <div class="messages">
@@ -50,10 +90,72 @@
             </div>
             {% endif %}
             {% endblock %}
-            
+
             {% block course_content %}
             {% endblock %}
         </div>
     </div>
 </div>
+
+<style>
+/* Estilos para la barra de navegación superior */
+.navbar {
+    border: 1px solid #dee2e6;
+}
+
+.navbar-nav .nav-link {
+    color: #495057 !important;
+    font-weight: 500;
+    padding: 0.75rem 1rem;
+    transition: color 0.15s ease-in-out;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #0d6efd !important;
+}
+
+.navbar-nav .nav-link i {
+    width: 16px;
+    text-align: center;
+}
+
+.dropdown-menu {
+    border: 1px solid #dee2e6;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.dropdown-item {
+    padding: 0.5rem 1.5rem;
+    transition: background-color 0.15s ease-in-out;
+}
+
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-item i {
+    width: 16px;
+    text-align: center;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+    .navbar-collapse {
+        background-color: #f8f9fa;
+        border-radius: 0.375rem;
+        margin-top: 0.5rem;
+        padding: 0.5rem 0;
+    }
+
+    .navbar-nav .nav-link {
+        padding: 0.5rem 1rem;
+    }
+}
+
+/* Active state for current page */
+.navbar-nav .nav-link.active {
+    color: #0d6efd !important;
+    font-weight: 600;
+}
+</style>
 {% endblock %}

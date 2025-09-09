@@ -2,6 +2,26 @@ from django import forms
 from .models import Course, Module, Lesson, Review, CourseCategory
 
 class CourseForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+    def clean_price(self):
+        price = self.cleaned_data.get('price')
+        if price is not None and price < 0:
+            raise forms.ValidationError("El precio no puede ser negativo.")
+        return price
+
+    def clean(self):
+        cleaned_data = super().clean()
+        user = self.user
+
+        # Validar que el usuario tenga un perfil de CV si está creando un curso
+        if user and not hasattr(user, 'cv'):
+            raise forms.ValidationError("Debes tener un perfil de tutor (CV) para crear cursos.")
+
+        return cleaned_data
+
     class Meta:
         model = Course
         fields = [

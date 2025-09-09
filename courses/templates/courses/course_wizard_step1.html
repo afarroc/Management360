@@ -1,0 +1,171 @@
+{% extends "courses/base.html" %}
+
+{% block course_content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-magic me-2"></i>
+                        {{ title }}
+                    </h3>
+                </div>
+
+                <div class="card-body">
+                    <!-- Indicador de progreso -->
+                    <div class="mb-4">
+                        <div class="progress">
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: 50%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">
+                                Paso 1 de 2
+                            </div>
+                        </div>
+                        <small class="text-muted mt-1">Información básica del curso</small>
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="{{ form.title.id_for_label }}" class="form-label">
+                                        <i class="fas fa-heading me-1"></i>Título del Curso *
+                                    </label>
+                                    {{ form.title }}
+                                    {% if form.title.errors %}
+                                        <div class="text-danger small">{{ form.title.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="{{ form.level.id_for_label }}" class="form-label">
+                                        <i class="fas fa-chart-line me-1"></i>Nivel *
+                                    </label>
+                                    {{ form.level }}
+                                    {% if form.level.errors %}
+                                        <div class="text-danger small">{{ form.level.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">
+                                <i class="fas fa-tags me-1"></i>Categoría *
+                            </label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                                <div class="text-danger small">{{ form.category.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.price.id_for_label }}" class="form-label">
+                                        <i class="fas fa-dollar-sign me-1"></i>Precio (USD) *
+                                    </label>
+                                    {{ form.price }}
+                                    {% if form.price.errors %}
+                                        <div class="text-danger small">{{ form.price.errors.0 }}</div>
+                                    {% endif %}
+                                    <small class="text-muted">0 = Gratuito</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.duration_hours.id_for_label }}" class="form-label">
+                                        <i class="fas fa-clock me-1"></i>Duración (horas) *
+                                    </label>
+                                    {{ form.duration_hours }}
+                                    {% if form.duration_hours.errors %}
+                                        <div class="text-danger small">{{ form.duration_hours.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.short_description.id_for_label }}" class="form-label">
+                                <i class="fas fa-file-alt me-1"></i>Descripción Corta *
+                            </label>
+                            {{ form.short_description }}
+                            {% if form.short_description.errors %}
+                                <div class="text-danger small">{{ form.short_description.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">Máximo 300 caracteres</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">
+                                <i class="fas fa-align-left me-1"></i>Descripción Completa *
+                            </label>
+                            {{ form.description }}
+                            {% if form.description.errors %}
+                                <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.thumbnail.id_for_label }}" class="form-label">
+                                <i class="fas fa-image me-1"></i>Imagen del Curso
+                            </label>
+                            {{ form.thumbnail }}
+                            {% if form.thumbnail.errors %}
+                                <div class="text-danger small">{{ form.thumbnail.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">Formatos: JPG, PNG. Tamaño recomendado: 1280x720px</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    {{ form.is_published }}
+                                    <label for="{{ form.is_published.id_for_label }}" class="form-check-label">
+                                        <i class="fas fa-eye me-1"></i>Publicar inmediatamente
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    {{ form.is_featured }}
+                                    <label for="{{ form.is_featured.id_for_label }}" class="form-check-label">
+                                        <i class="fas fa-star me-1"></i>Destacar curso
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'courses:dashboard' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                Siguiente Paso
+                                <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Consejos -->
+            <div class="card mt-3 border-info">
+                <div class="card-body">
+                    <h6 class="card-title text-info">
+                        <i class="fas fa-lightbulb me-2"></i>Consejos para un buen curso
+                    </h6>
+                    <ul class="mb-0 small">
+                        <li>Elige un título claro y descriptivo</li>
+                        <li>La descripción corta debe captar la atención</li>
+                        <li>Una buena imagen aumenta las inscripciones</li>
+                        <li>Considera el nivel adecuado para tu audiencia</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

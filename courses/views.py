@@ -6,7 +6,6 @@ from django.http import JsonResponse
 from django.db.models import Q, Avg, Count, Prefetch
 from django.utils import timezone
 from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt
 from .models import (
     Course, Module, Lesson, Enrollment, 
     Progress, Review, CourseCategory,
@@ -17,6 +16,57 @@ from .forms import CourseForm, ModuleForm, LessonForm, ReviewForm, CategoryForm
 # ======================
 # VISTAS PÚBLICAS
 # ======================
+
+def index(request):
+    """Página principal de la app de cursos - Muestra contenido general, noticias, nuevos cursos, etc."""
+    # Estadísticas generales
+    total_courses = Course.objects.filter(is_published=True).count()
+    total_students = sum(course.students_count for course in Course.objects.filter(is_published=True))
+    total_categories = CourseCategory.objects.count()
+
+    # Cursos destacados (featured)
+    featured_courses = Course.objects.filter(
+        is_published=True,
+        is_featured=True
+    ).select_related('category', 'tutor').order_by('-created_at')[:6]
+
+    # Cursos más recientes
+    recent_courses = Course.objects.filter(
+        is_published=True
+    ).select_related('category', 'tutor').order_by('-created_at')[:8]
+
+    # Categorías populares
+    popular_categories = CourseCategory.objects.annotate(
+        course_count=Count('courses', filter=Q(courses__is_published=True))
+    ).filter(course_count__gt=0).order_by('-course_count')[:6]
+
+    # Estadísticas de usuarios (si hay usuarios autenticados)
+    if request.user.is_authenticated:
+        user_enrollments = Enrollment.objects.filter(
+            student=request.user,
+            status=EnrollmentStatusChoices.ACTIVE
+        ).count()
+        user_completed = Enrollment.objects.filter(
+            student=request.user,
+            status=EnrollmentStatusChoices.COMPLETED
+        ).count()
+    else:
+        user_enrollments = 0
+        user_completed = 0
+
+    context = {
+        'total_courses': total_courses,
+        'total_students': total_students,
+        'total_categories': total_categories,
+        'featured_courses': featured_courses,
+        'recent_courses': recent_courses,
+        'popular_categories': popular_categories,
+        'user_enrollments': user_enrollments,
+        'user_completed': user_completed,
+        'categories': CourseCategory.objects.all(),
+    }
+    return render(request, 'courses/index.html', context)
+
 
 def course_list(request, category_slug=None):
     """Lista todos los cursos disponibles con optimización de consultas"""
@@ -91,6 +141,7 @@ def course_detail(request, slug):
         'course': course,
         'is_enrolled': is_enrolled,
         'reviews': reviews,
+        'categories': CourseCategory.objects.all(),
     }
     return render(request, 'courses/course_detail.html', context)
 
@@ -101,25 +152,30 @@ def course_detail(request, slug):
 @login_required
 def enroll(request, course_id):
     """Inscribir a un usuario en un curso"""
-    course = get_object_or_404(Course, id=course_id, is_published=True)
-    
-    enrollment, created = Enrollment.objects.get_or_create(
-        student=request.user,
-        course=course,
-        defaults={'status': EnrollmentStatusChoices.ACTIVE}
-    )
-    
-    if created:
-        messages.success(request, f'Te has inscrito correctamente en "{course.title}"')
-    else:
-        messages.info(request, f'Ya estás inscrito en el curso "{course.title}"')
-    
+    try:
+        course = get_object_or_404(Course, id=course_id, is_published=True)
+
+        enrollment, created = Enrollment.objects.get_or_create(
+            student=request.user,
+            course=course,
+            defaults={'status': EnrollmentStatusChoices.ACTIVE}
+        )
+
+        if created:
+            messages.success(request, f'Te has inscrito correctamente en "{course.title}"')
+        else:
+            messages.info(request, f'Ya estás inscrito en el curso "{course.title}"')
+
+    except Exception as e:
+        messages.error(request, 'Ha ocurrido un error al procesar tu inscripción. Por favor, intenta nuevamente.')
+        return redirect('courses:courses_list')
+
     return redirect('courses:course_detail', slug=course.slug)
 
 
 @login_required
 def dashboard(request):
-    """Panel de control del usuario optimizado - Solo funciones de cursos"""
+    """Dashboard personal del usuario - Panel de control con cursos inscritos y progreso"""
     # Cursos como estudiante
     user_enrollments = Enrollment.objects.filter(
         student=request.user,
@@ -160,7 +216,7 @@ def dashboard(request):
     course_functions = [
         {
             'name': 'Explorar Cursos',
-            'description': 'Ver todos los cursos disponibles',
+            'description': 'Ver catálogo completo de cursos',
             'icon': 'fas fa-search',
             'url': 'courses_list',
             'color': 'primary'
@@ -178,6 +234,13 @@ def dashboard(request):
             'icon': 'fas fa-plus',
             'url': 'create_course',
             'color': 'info'
+        },
+        {
+            'name': 'Asistente de Cursos',
+            'description': 'Crear curso paso a paso',
+            'icon': 'fas fa-magic',
+            'url': 'create_course_wizard',
+            'color': 'primary'
         },
         {
             'name': 'Gestionar Cursos',
@@ -223,6 +286,7 @@ def dashboard(request):
         'total_available_courses': total_available_courses,
         'user_course_count': user_course_count,
         'completed_courses': completed_courses,
+        'categories': CourseCategory.objects.all(),
     }
     return render(request, 'courses/dashboard.html', context)
 
@@ -429,21 +493,17 @@ def manage_courses(request):
 @login_required
 def create_course(request):
     """Crear un nuevo curso"""
-    if not hasattr(request.user, 'cv'):
-        messages.error(request, 'Necesitas un perfil de tutor')
-        return redirect('cv:detail')
-    
     if request.method == 'POST':
-        form = CourseForm(request.POST, request.FILES)
+        form = CourseForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             course = form.save(commit=False)
             course.tutor = request.user
             course.save()
             messages.success(request, 'Curso creado exitosamente')
-            return redirect('courses:manage_courses')
+            return redirect('courses:manage_content', slug=course.slug)
     else:
-        form = CourseForm()
-    
+        form = CourseForm(user=request.user)
+
     return render(request, 'courses/course_form.html', {
         'form': form,
         'title': 'Crear Nuevo Curso',
@@ -451,19 +511,77 @@ def create_course(request):
 
 
 @login_required
+def create_course_wizard(request):
+    """Asistente paso a paso para crear un curso"""
+    if not hasattr(request.user, 'cv'):
+        messages.error(request, 'Necesitas un perfil de tutor para crear cursos')
+        return redirect('cv:detail')
+
+    step = int(request.GET.get('step', 1))
+
+    if request.method == 'POST':
+        if step == 1:
+            # Paso 1: Información básica del curso
+            form = CourseForm(request.POST, request.FILES, user=request.user)
+            if form.is_valid():
+                course = form.save(commit=False)
+                course.tutor = request.user
+                course.save()
+                return redirect(f'{request.path}?step=2&course_id={course.id}')
+        elif step == 2:
+            # Paso 2: Crear primer módulo
+            course_id = request.POST.get('course_id')
+            course = get_object_or_404(Course, id=course_id, tutor=request.user)
+
+            form = ModuleForm(request.POST)
+            if form.is_valid():
+                module = form.save(commit=False)
+                module.course = course
+                module.save()
+                messages.success(request, f'Curso "{course.title}" creado con el módulo "{module.title}"')
+                return redirect('courses:manage_content', slug=course.slug)
+
+    # Preparar formulario según el paso
+    if step == 1:
+        form = CourseForm(user=request.user)
+        template = 'courses/course_wizard_step1.html'
+        title = 'Crear Curso - Paso 1: Información Básica'
+    elif step == 2:
+        course_id = request.GET.get('course_id')
+        if course_id:
+            course = get_object_or_404(Course, id=course_id, tutor=request.user)
+            form = ModuleForm()
+            template = 'courses/course_wizard_step2.html'
+            title = f'Crear Curso - Paso 2: Primer Módulo para "{course.title}"'
+        else:
+            return redirect('courses:create_course_wizard')
+    else:
+        return redirect('courses:create_course_wizard')
+
+    context = {
+        'form': form,
+        'title': title,
+        'step': step,
+        'course': locals().get('course'),
+    }
+
+    return render(request, template, context)
+
+
+@login_required
 def edit_course(request, slug):
     """Editar un curso existente"""
     course = get_object_or_404(Course, slug=slug, tutor=request.user)
-    
+
     if request.method == 'POST':
-        form = CourseForm(request.POST, request.FILES, instance=course)
+        form = CourseForm(request.POST, request.FILES, instance=course, user=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, 'Curso actualizado exitosamente')
             return redirect('courses:manage_courses')
     else:
-        form = CourseForm(instance=course)
-    
+        form = CourseForm(instance=course, user=request.user)
+
     return render(request, 'courses/course_form.html', {
         'form': form,
         'title': 'Editar Curso',
@@ -532,6 +650,7 @@ def manage_content(request, slug):
         'modules': course.modules.prefetch_related('lessons'),
         'total_modules': total_modules,
         'total_lessons': total_lessons,
+        'categories': CourseCategory.objects.all(),
     }
     return render(request, 'courses/manage_content.html', context)
 
@@ -891,7 +1010,7 @@ def manage_categories(request):
     # Solo administradores pueden gestionar categorías
     if not request.user.is_staff:
         messages.error(request, 'No tienes permisos para acceder a esta página')
-        return redirect('courses:course_list')
+        return redirect('courses:courses_list')
 
     categories = CourseCategory.objects.all()
     return render(request, 'courses/manage_categories.html', {
@@ -903,7 +1022,7 @@ def create_category(request):
     """Crear una nueva categoría"""
     if not request.user.is_staff:
         messages.error(request, 'No tienes permisos para acceder a esta página')
-        return redirect('courses:course_list')
+        return redirect('courses:courses_list')
 
     if request.method == 'POST':
         form = CategoryForm(request.POST)
@@ -919,12 +1038,72 @@ def create_category(request):
         'title': 'Crear Nueva Categoría',
     })
 
+
+@login_required
+def quick_create_category(request):
+    """Crear categorías comunes de manera rápida"""
+    if not request.user.is_staff:
+        messages.error(request, 'No tienes permisos para acceder a esta página')
+        return redirect('courses:courses_list')
+
+    # Categorías predefinidas comunes
+    common_categories = [
+        {'name': 'Programación', 'description': 'Cursos de desarrollo de software y lenguajes de programación'},
+        {'name': 'Diseño Gráfico', 'description': 'Herramientas y técnicas de diseño visual'},
+        {'name': 'Marketing Digital', 'description': 'Estrategias de marketing en línea y redes sociales'},
+        {'name': 'Negocios', 'description': 'Emprendimiento, gestión y administración de empresas'},
+        {'name': 'Idiomas', 'description': 'Aprendizaje de idiomas extranjeros'},
+        {'name': 'Matemáticas', 'description': 'Cursos de matemáticas y lógica'},
+        {'name': 'Ciencias', 'description': 'Biología, química, física y otras ciencias'},
+        {'name': 'Arte y Música', 'description': 'Cursos de arte, música y expresión creativa'},
+        {'name': 'Salud y Bienestar', 'description': 'Nutrición, ejercicio y salud mental'},
+        {'name': 'Tecnología', 'description': 'Innovación, IA, blockchain y nuevas tecnologías'},
+    ]
+
+    if request.method == 'POST':
+        selected_categories = request.POST.getlist('categories')
+        created_count = 0
+
+        for category_name in selected_categories:
+            # Verificar si ya existe
+            if not CourseCategory.objects.filter(name=category_name).exists():
+                # Encontrar la descripción correspondiente
+                description = next(
+                    (cat['description'] for cat in common_categories if cat['name'] == category_name),
+                    f'Cursos relacionados con {category_name.lower()}'
+                )
+
+                CourseCategory.objects.create(
+                    name=category_name,
+                    description=description
+                )
+                created_count += 1
+
+        if created_count > 0:
+            messages.success(request, f'Se crearon {created_count} categorías exitosamente')
+        else:
+            messages.info(request, 'Todas las categorías seleccionadas ya existen')
+
+        return redirect('courses:manage_categories')
+
+    # Filtrar categorías que ya existen
+    existing_categories = CourseCategory.objects.values_list('name', flat=True)
+    available_categories = [
+        cat for cat in common_categories
+        if cat['name'] not in existing_categories
+    ]
+
+    return render(request, 'courses/quick_create_category.html', {
+        'categories': available_categories,
+        'title': 'Crear Categorías Rápidamente',
+    })
+
 @login_required
 def edit_category(request, category_id):
     """Editar una categoría existente"""
     if not request.user.is_staff:
         messages.error(request, 'No tienes permisos para acceder a esta página')
-        return redirect('courses:course_list')
+        return redirect('courses:courses_list')
 
     category = get_object_or_404(CourseCategory, id=category_id)
 
@@ -948,7 +1127,7 @@ def delete_category(request, category_id):
     """Eliminar una categoría"""
     if not request.user.is_staff:
         messages.error(request, 'No tienes permisos para acceder a esta página')
-        return redirect('courses:course_list')
+        return redirect('courses:courses_list')
 
     category = get_object_or_404(CourseCategory, id=category_id)
 
@@ -975,7 +1154,7 @@ def admin_dashboard(request):
     """Panel de administración de cursos"""
     if not request.user.is_staff:
         messages.error(request, 'No tienes permisos para acceder a esta página')
-        return redirect('courses:course_list')
+        return redirect('courses:courses_list')
 
     # Estadísticas generales
     total_courses = Course.objects.count()
@@ -1004,7 +1183,7 @@ def admin_users(request):
     """Vista de administración de usuarios"""
     if not request.user.is_staff:
         messages.error(request, 'No tienes permisos para acceder a esta página')
-        return redirect('courses:course_list')
+        return redirect('courses:courses_list')
 
     search_query = request.GET.get('search', '')
     role_filter = request.GET.get('role', '')
@@ -1043,7 +1222,7 @@ def admin_user_detail(request, user_id):
     """Vista de detalle de un usuario para admin"""
     if not request.user.is_staff:
         messages.error(request, 'No tienes permisos para acceder a esta página')
-        return redirect('courses:course_list')
+        return redirect('courses:courses_list')
 
     user = get_object_or_404(User, id=user_id)
 
@@ -1063,7 +1242,7 @@ def edit_user(request, user_id):
     """Editar información de un usuario (admin)"""
     if not request.user.is_staff:
         messages.error(request, 'No tienes permisos para acceder a esta página')
-        return redirect('courses:course_list')
+        return redirect('courses:courses_list')
 
     user = get_object_or_404(User, id=user_id)
 

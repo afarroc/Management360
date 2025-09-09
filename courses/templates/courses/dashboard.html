@@ -7,8 +7,8 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h1 class="h2 mb-0">Dashboard de Cursos</h1>
-                    <p class="text-muted">Bienvenido a tu panel de control de cursos, {{ user.get_full_name|default:user.username }}</p>
+                    <h1 class="h2 mb-0">Mi Dashboard de Cursos</h1>
+                    <p class="text-muted">Tu panel personal de aprendizaje - {{ user.get_full_name|default:user.username }}</p>
                 </div>
                 <div class="text-end">
                     <small class="text-muted">Última actualización: {{ "now"|date:"d/m/Y H:i" }}</small>
@@ -274,7 +274,7 @@
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
                 Aún no estás inscrito en ningún curso.
-                <a href="{% url 'courses:course_list' %}">Explora nuestros cursos disponibles</a>.
+                <a href="{% url 'courses:courses_list' %}">Explora nuestros cursos disponibles</a>.
             </div>
         </div>
     </div>
@@ -336,7 +336,7 @@
                     <div class="row">
                         <div class="col-md-3 mb-2">
                             <a href="{% url 'courses:courses_list' %}" class="btn btn-outline-primary w-100">
-                                <i class="fas fa-search me-2"></i>Explorar Cursos
+                                <i class="fas fa-search me-2"></i>Buscar Más Cursos
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
