@@ -18,16 +18,20 @@ python manage.py migrate auth --no-input || echo "Warning: auth migration failed
 python manage.py migrate sessions --no-input || echo "Warning: sessions migration failed"
 python manage.py migrate admin --no-input || echo "Warning: admin migration failed"
 
-# Step 2: Apply all remaining migrations
-echo "Step 2: Applying all remaining migrations..."
+# Step 2: Apply events migration specifically (CRITICAL for signup)
+echo "Step 2: Applying events migration (includes creditaccount table)..."
+python manage.py migrate events --no-input || echo "Warning: events migration failed"
+
+# Step 3: Apply all remaining migrations
+echo "Step 3: Applying all remaining migrations..."
 python manage.py migrate --no-input || echo "Warning: general migration failed"
 
-# Step 3: Force sync if needed
-echo "Step 3: Ensuring all tables exist..."
+# Step 4: Force sync if needed
+echo "Step 4: Ensuring all tables exist..."
 python manage.py migrate --run-syncdb --no-input || echo "Warning: syncdb failed"
 
-# Step 4: Verify critical tables exist
-echo "Step 4: Testing critical database tables..."
+# Step 5: Verify critical tables exist
+echo "Step 5: Testing critical database tables..."
 python -c "
 import os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'panel.settings')
@@ -36,13 +40,13 @@ django.setup()
 try:
     from django.contrib.auth.models import User
     count = User.objects.count()
-    print(f'✅ auth_user table OK - {count} users')
+    print(f'[OK] auth_user table OK - {count} users')
 except Exception as e:
-    print(f'❌ auth_user table ERROR: {e}')
-" 2>/dev/null || echo "❌ Database connection failed"
+    print(f'[ERROR] auth_user table ERROR: {e}')
+" 2>/dev/null || echo "[ERROR] Database connection failed"
 
-# Step 5: Show migration status
-echo "Step 5: Migration status summary..."
-python manage.py showmigrations | grep -E "(auth|contenttypes|admin|sessions)" || echo "Could not check migration status"
+# Step 6: Show migration status
+echo "Step 6: Migration status summary..."
+python manage.py showmigrations | findstr "auth contenttypes admin sessions events" || echo "Could not check migration status"
 
 echo "=== MIGRATION PROCESS COMPLETE ==="
