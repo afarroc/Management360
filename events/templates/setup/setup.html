@@ -35,13 +35,13 @@
                     {% if '1' in completed_steps %}
                     <div class="d-flex align-items-center">
                         <div class="ps-3">
-                            <h6>Completed</h6>
+                            <h6><i class="bi bi-check-circle-fill text-success me-2"></i>Completed</h6>
                         </div>
                     </div>
                     {% else %}
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
-                        <button type="submit" name="create_su" class="btn btn-primary">Create Superuser</button>
+                        <button type="submit" name="create_su" class="btn btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear el primer usuario administrador del sistema">Create Superuser</button>
                     </form>
                     {% endif %}
                 </div>
@@ -56,13 +56,13 @@
                     {% if '1' not in completed_steps %}
                     <div class="d-flex align-items-center">
                         <div class="ps-3">
-                            <h6>Pending</h6>
+                            <h6><i class="bi bi-clock text-warning me-2"></i>Pending</h6>
                         </div>
                     </div>
                     {% elif '2' in completed_steps %}
                     <div class="d-flex align-items-center">
                         <div class="ps-3">
-                            <h6>Completed</h6>
+                            <h6><i class="bi bi-check-circle-fill text-success me-2"></i>Completed</h6>
                         </div>
                     </div>
                     {% else %}
@@ -70,7 +70,7 @@
                         {% csrf_token %}
                         <div class="mb-3">
                             <label for="full_name" class="form-label">Full Name</label>
-                            <input type="text" class="form-control" id="full_name" name="full_name" placeholder="Ingrese su nombre completo" required>
+                            <input type="text" class="form-control" id="full_name" name="full_name" placeholder="Ingrese su nombre completo" required aria-describedby="full_name_help">
                         </div>
                         <div class="mb-3">
                             <label for="profession" class="form-label">Profession</label>
@@ -89,7 +89,7 @@
                             <label for="profile_picture" class="form-label">Profile Picture (Optional)</label>
                             <input type="file" class="form-control" id="profile_picture" name="profile_picture">
                         </div>
-                        <button type="submit" name="create_profile" class="btn btn-primary">Save Profile</button>
+                        <button type="submit" name="create_profile" class="btn btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Guardar la información del perfil del superusuario">Save Profile</button>
                     </form>
                     {% endif %}
                 </div>
@@ -103,13 +103,13 @@
                     {% if '2' not in completed_steps %}
                     <div class="d-flex align-items-center">
                         <div class="ps-3">
-                            <h6>Pending</h6>
+                            <h6><i class="bi bi-clock text-warning me-2"></i>Pending</h6>
                         </div>
                     </div>
                     {% elif '3' in completed_steps %}
                     <div class="d-flex align-items-center">
                         <div class="ps-3">
-                            <h6>Completed</h6>
+                            <h6><i class="bi bi-check-circle-fill text-success me-2"></i>Completed</h6>
                         </div>
                     </div>
                     {% else %}
@@ -150,7 +150,7 @@
                                 </div>
                             </div>
                         </div>
-                        <button type="submit" name="create_initial_statuses" class="btn btn-primary">Create Statuses</button>
+                        <button type="submit" name="create_initial_statuses" class="btn btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear estados predeterminados para eventos, proyectos y tareas">Create Statuses</button>
                     </form>
                     {% endif %}
                 </div>
@@ -165,7 +165,7 @@
                     {% if '3' not in completed_steps %}
                     <div class="d-flex align-items-center">
                         <div class="ps-3">
-                            <h6>Pending</h6>
+                            <h6><i class="bi bi-clock text-warning me-2"></i>Pending</h6>
                         </div>
                     </div>
                     {% else %}
@@ -193,7 +193,7 @@
                             <label for="new_group_name">o Crear Nuevo Grupo:</label>
                             <input type="text" id="new_group_name" name="new_group_name">
                         </div>
-                        <button type="submit" name="create_random_users" class="btn btn-primary">Crear Usuarios</button>
+                        <button type="submit" name="create_random_users" class="btn btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Generar usuarios aleatorios para testing">Crear Usuarios</button>
                     </form>
                     {% endif %}
                 </div>
@@ -208,7 +208,7 @@
                     {% if '3' not in completed_steps %}
                     <div class="d-flex align-items-center">
                         <div class="ps-3">
-                            <h6>Pending</h6>
+                            <h6><i class="bi bi-clock text-warning me-2"></i>Pending</h6>
                         </div>
                     </div>
                     {% else %}
@@ -227,7 +227,7 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <button type="submit" name="create_group" class="btn btn-primary">Crear Grupo</button>
+                        <button type="submit" name="create_group" class="btn btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear un grupo y asignar usuarios seleccionados">Crear Grupo</button>
                     </form>
  
 
@@ -253,13 +253,57 @@
                             <label for="su_email" class="form-label">Email:</label>
                             <input type="email" class="form-control" id="su_email" name="su_email" placeholder="admin@ejemplo.com" required>
                         </div>
-                        <button type="submit" name="create_another_su" class="btn btn-primary">Crear Superusuario</button>
+                        <button type="submit" name="create_another_su" class="btn btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear un usuario administrador adicional">Crear Superusuario</button>
                     </form>
                 </div>
             </div>
         </div>
         {% endif %}
 
+    </div>
+
+    <!-- Setup Summary -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-body">
+                    <h5 class="card-title text-info"><i class="bi bi-info-circle me-2"></i>Resumen de Configuración</h5>
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="p-3">
+                                <i class="bi bi-shield-lock display-4 text-primary"></i>
+                                <p class="mt-2">Superusuario</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3">
+                                <i class="bi bi-person-badge display-4 text-success"></i>
+                                <p class="mt-2">Perfil</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3">
+                                <i class="bi bi-list-check display-4 text-warning"></i>
+                                <p class="mt-2">Estados</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3">
+                                <i class="bi bi-people display-4 text-info"></i>
+                                <p class="mt-2">Usuarios</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-light mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-lightbulb me-1"></i>
+                            Complete todos los pasos de configuración para tener un sistema completamente funcional.
+                            Los pasos marcados como "Completed" ya están configurados correctamente.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -274,6 +318,34 @@
 }
 .progress {
     border-radius: 10px;
+}
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+.card.completed {
+    border-left: 4px solid #198754;
+}
+.card.pending {
+    border-left: 4px solid #ffc107;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.card {
+    animation: fadeIn 0.5s ease-out;
 }
 </style>
 
@@ -292,6 +364,31 @@ document.addEventListener('DOMContentLoaded', function () {
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Add loading state to buttons
+    const buttons = document.querySelectorAll('button[type="submit"]');
+    buttons.forEach(button => {
+        button.addEventListener('click', function() {
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Cargando...';
+            this.disabled = true;
+        });
+    });
+
+    // Add visual feedback for form validation
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        const inputs = form.querySelectorAll('input[required], select[required]');
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                if (this.value.trim() === '') {
+                    this.classList.add('is-invalid');
+                } else {
+                    this.classList.remove('is-invalid');
+                    this.classList.add('is-valid');
+                }
+            });
+        });
     });
 });
 </script>
