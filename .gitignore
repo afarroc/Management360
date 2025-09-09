@@ -43,7 +43,17 @@ db.sqlite3
 # ================================
 */migrations/*
 !*/migrations/__init__.py
+!accounts/migrations/
+!campaigns/migrations/
+!chat/migrations/
 !core/migrations/
+!courses/migrations/
+!cv/migrations/
+!events/migrations/
+!kpis/migrations/
+!memento/migrations/
+!rooms/migrations/
+!tools/migrations/
 
 # ================================
 # Media/Static files
