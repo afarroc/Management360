@@ -1,0 +1,201 @@
+{% extends 'layouts/base.html' %}
+{% load static crispy_forms_tags %}
+
+{% block content %}
+<style>
+    .cv-form .card {
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: box-shadow 0.3s ease;
+    }
+    .cv-form .card:hover {
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .cv-form .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px 10px 0 0;
+        padding: 1rem;
+    }
+    .cv-form .card-header h4 {
+        margin: 0;
+        font-weight: 600;
+    }
+    .cv-form .formset-row {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: background 0.3s ease;
+    }
+    .cv-form .formset-row:hover {
+        background: #ffffff;
+    }
+    .cv-form .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: transform 0.2s ease;
+    }
+    .cv-form .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    .cv-form .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: transform 0.2s ease;
+    }
+    .cv-form .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+    .cv-form .formset-row .btn-outline-danger {
+        opacity: 0.7;
+        transition: opacity 0.3s ease;
+    }
+    .cv-form .formset-row .btn-outline-danger:hover {
+        opacity: 1;
+    }
+    .cv-form .btn-outline-primary {
+        border-radius: 20px;
+        font-weight: 500;
+    }
+</style>
+
+<div class="container mt-5 cv-form">
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="text-center mb-4" style="color: #333; font-weight: 700;">Editar Educación</h2>
+
+            <!-- Progress indicator -->
+            <div class="text-center mb-3">
+                <small class="text-muted">Paso {{ current_step }} de {{ total_steps }}</small>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress mb-4" style="height: 8px;">
+                <div class="progress-bar bg-success" role="progressbar" style="width: {{ progress_percentage }}%"></div>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" class="mt-4">
+                {% csrf_token %}
+                {{ formset.management_form }}
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4><i class="bi bi-mortarboard me-2"></i>Educación</h4>
+                    </div>
+                    <div class="card-body">
+                        {% for form in formset %}
+                            <div class="formset-row mb-3 p-3 border rounded position-relative">
+                                <button type="button" class="btn btn-outline-danger btn-sm position-absolute top-0 end-0 mt-2 me-2" onclick="deleteFormsetRow(this)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {{ form|crispy }}
+                            </div>
+                        {% endfor %}
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="add-education" onclick="addEducationForm()">
+                            <i class="bi bi-plus-circle me-1"></i>Añadir Educación
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <div>
+                        {% if prev_url %}
+                            <a href="{{ prev_url }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Anterior
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <a href="{% url 'cv_detail' %}" class="btn btn-outline-secondary me-2">
+                            <i class="bi bi-house me-1"></i>Ver CV
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle me-1"></i>Guardar y Continuar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function addEducationForm() {
+    const formsetContainer = document.querySelector('.card-body');
+    const forms = formsetContainer.querySelectorAll('.formset-row');
+
+    if (forms.length === 0) return;
+
+    const lastForm = forms[forms.length - 1];
+    const newForm = lastForm.cloneNode(true);
+
+    // Find the TOTAL_FORMS input (try different possible names)
+    let totalForms = document.querySelector('input[name="education-TOTAL_FORMS"]') ||
+                     document.querySelector('input[name*="TOTAL_FORMS"]') ||
+                     document.querySelector('input[id*="TOTAL_FORMS"]');
+
+    let currentTotal = forms.length; // Fallback: use current form count
+
+    if (totalForms) {
+        currentTotal = parseInt(totalForms.value);
+        totalForms.value = currentTotal + 1;
+    }
+
+    const inputs = newForm.querySelectorAll('input, select, textarea');
+    inputs.forEach(input => {
+        if (input.name) {
+            input.name = input.name.replace(/-\d+-/, `-${currentTotal}-`);
+            input.value = '';
+        }
+        if (input.id) {
+            input.id = input.id.replace(/_\d+_/, `_${currentTotal}_`);
+        }
+    });
+
+    const labels = newForm.querySelectorAll('label');
+    labels.forEach(label => {
+        if (label.htmlFor) {
+            label.htmlFor = label.htmlFor.replace(/_\d+_/, `_${currentTotal}_`);
+        }
+    });
+
+    const errors = newForm.querySelectorAll('.invalid-feedback');
+    errors.forEach(error => error.remove());
+
+    inputs.forEach(input => {
+        input.classList.remove('is-invalid', 'is-valid');
+    });
+
+    const addButton = document.getElementById('add-education');
+    formsetContainer.insertBefore(newForm, addButton);
+}
+
+function deleteFormsetRow(button) {
+    const formRow = button.closest('.formset-row');
+    const deleteInput = formRow.querySelector('input[name*="DELETE"]');
+
+    if (deleteInput) {
+        // Mark for deletion (Django formset way)
+        deleteInput.checked = true;
+        // Hide the form row
+        formRow.style.display = 'none';
+    } else {
+        // Fallback: just remove the row from DOM
+        formRow.remove();
+    }
+}
+</script>
+
+{% endblock %}

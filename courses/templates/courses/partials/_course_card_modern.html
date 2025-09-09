@@ -1,0 +1,61 @@
+{% comment %}
+Partial para tarjeta de curso moderna
+Uso: {% include "courses/partials/_course_card_modern.html" with course=course %}
+{% endcomment %}
+
+<div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+    <div class="course-card-modern fade-in-up">
+        <div class="course-image-container">
+            {% if course.thumbnail %}
+            <img src="{{ course.thumbnail.url }}" alt="{{ course.title }}" class="course-image">
+            {% else %}
+            <div class="course-placeholder">
+                <i class="bi bi-journal-bookmark"></i>
+            </div>
+            {% endif %}
+            <div class="course-status-badge bg-{% if course.is_published %}success{% else %}warning{% endif %}">
+                {% if course.is_published %}Publicado{% else %}Borrador{% endif %}
+            </div>
+        </div>
+
+        <div class="course-content">
+            <h3 class="course-title-modern">{{ course.title }}</h3>
+            <p class="course-description-modern">{{ course.short_description }}</p>
+
+            <div class="course-stats-modern">
+                <span><i class="bi bi-clock me-1"></i>{{ course.duration_hours }}h</span>
+                <span><i class="bi bi-people me-1"></i>{{ course.students_count }}</span>
+            </div>
+
+            {% if course.average_rating %}
+            <div class="course-rating">
+                <div class="rating-stars">
+                    {% for i in "12345" %}
+                    {% if forloop.counter <= course.average_rating %}
+                    <i class="bi bi-star-fill"></i>
+                    {% else %}
+                    <i class="bi bi-star"></i>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <span class="rating-score">({{ course.average_rating|floatformat:1 }})</span>
+            </div>
+            {% endif %}
+
+            <div class="course-actions-modern">
+                <a href="{% url 'courses:edit_course' course.slug %}" class="btn-course-action btn-edit" title="Editar curso">
+                    <i class="bi bi-pencil"></i>
+                    <span>Editar</span>
+                </a>
+                <a href="{% url 'courses:course_analytics' course.slug %}" class="btn-course-action btn-analytics" title="Ver analíticas">
+                    <i class="bi bi-graph-up"></i>
+                    <span>Analíticas</span>
+                </a>
+                <a href="{% url 'courses:course_detail' course.slug %}" class="btn-course-action btn-view" title="Ver curso">
+                    <i class="bi bi-eye"></i>
+                    <span>Ver</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

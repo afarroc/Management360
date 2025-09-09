@@ -1,0 +1,178 @@
+{% extends "courses/base.html" %}
+{% load static %}
+
+{% block title %}Eliminar Módulo - {{ course.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.delete-container {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.delete-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+    overflow: hidden;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.delete-header {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+}
+
+.delete-header h2 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.delete-body {
+    padding: 2rem;
+}
+
+.module-info {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border-left: 4px solid #ef4444;
+}
+
+.module-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.module-details {
+    color: #718096;
+    font-size: 0.875rem;
+}
+
+.warning-message {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.warning-message h5 {
+    color: #dc2626;
+    margin-bottom: 0.5rem;
+}
+
+.warning-message p {
+    color: #dc2626;
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.btn-delete {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-delete:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+    color: white;
+}
+
+.btn-cancel {
+    border: 2px solid #e2e8f0;
+    background: white;
+    color: #718096;
+    border-radius: 8px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+    border-color: #cbd5e0;
+    background: #f8f9fa;
+    color: #4a5568;
+    text-decoration: none;
+}
+
+@media (max-width: 768px) {
+    .delete-header {
+        padding: 1.5rem;
+    }
+
+    .delete-body {
+        padding: 1.5rem;
+    }
+
+    .btn-delete,
+    .btn-cancel {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block course_content %}
+<div class="delete-container">
+    <div class="container">
+        <div class="delete-card">
+            <div class="delete-header">
+                <i class="bi bi-exclamation-triangle-fill fs-1 mb-3"></i>
+                <h2>Eliminar Módulo</h2>
+            </div>
+
+            <div class="delete-body">
+                <!-- Información del módulo -->
+                <div class="module-info">
+                    <div class="module-title">{{ module.title }}</div>
+                    <div class="module-details">
+                        <strong>Curso:</strong> {{ course.title }}<br>
+                        <strong>Lecciones:</strong> {{ module.lessons.count }}<br>
+                        <strong>Orden:</strong> {{ module.order }}
+                    </div>
+                </div>
+
+                <!-- Mensaje de advertencia -->
+                <div class="warning-message">
+                    <h5><i class="bi bi-exclamation-triangle me-2"></i>Advertencia</h5>
+                    <p>Esta acción no se puede deshacer. Al eliminar este módulo:</p>
+                    <ul class="mb-0 mt-2">
+                        <li>Se eliminarán todas las lecciones contenidas en este módulo</li>
+                        <li>Se perderá todo el progreso de los estudiantes en estas lecciones</li>
+                        <li>Los estudiantes ya no podrán acceder a este contenido</li>
+                    </ul>
+                </div>
+
+                <!-- Formulario de confirmación -->
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'courses:manage_content' course.slug %}" class="btn-cancel">
+                            <i class="bi bi-arrow-left me-1"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn-delete">
+                            <i class="bi bi-trash me-1"></i>Eliminar Módulo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

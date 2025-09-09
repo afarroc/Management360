@@ -1,0 +1,332 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}🗺️ Mapa de URLs - Management360{% endblock %}
+
+{% block content %}
+<div class="pagetitle">
+  <h1><i class="bi bi-diagram-3-fill text-primary"></i> Mapa Interactivo de URLs</h1>
+  <nav>
+    <ol class="breadcrumb">
+      <li class="breadcrumb-item"><a href="/"><i class="bi bi-house-door"></i> Inicio</a></li>
+      <li class="breadcrumb-item active"><i class="bi bi-map"></i> Mapa de URLs</li>
+    </ol>
+  </nav>
+</div>
+
+<section class="section">
+  <div class="row">
+    <div class="col-lg-12">
+      <!-- Hero Section -->
+      <div class="card border-0 shadow-lg mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+        <div class="card-body text-center py-5">
+          <h2 class="card-title mb-3">
+            <i class="bi bi-compass-fill fs-1"></i><br>
+            Explorador de Rutas del Proyecto
+          </h2>
+          <p class="card-text lead mb-4">
+            Navega por todas las URLs de tu aplicación Django de manera visual e interactiva
+          </p>
+          <div class="row text-center">
+            <div class="col-md-3">
+              <div class="stat-item">
+                <h3 class="display-4 fw-bold">{{ apps_data|length }}</h3>
+                <p class="mb-0">Aplicaciones</p>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="stat-item">
+                <h3 class="display-4 fw-bold">150+</h3>
+                <p class="mb-0">URLs Totales</p>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="stat-item">
+                <h3 class="display-4 fw-bold">30+</h3>
+                <p class="mb-0">APIs REST</p>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="stat-item">
+                <h3 class="display-4 fw-bold">2</h3>
+                <p class="mb-0">WebSockets</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search and Filter Section -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <h5 class="card-title mb-0">
+                <i class="bi bi-search text-primary"></i> Explorar Aplicaciones
+              </h5>
+            </div>
+            <div class="col-md-6">
+              <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-funnel"></i></span>
+                <input type="text" class="form-control" id="searchApps" placeholder="Buscar aplicación...">
+                <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Apps Grid -->
+      <div class="row" id="appsGrid">
+        {% for app in apps_data %}
+        <div class="col-xl-3 col-lg-4 col-md-6 mb-4 app-card" data-app-name="{{ app.name }}">
+          <div class="card h-100 shadow-sm hover-card">
+            <div class="card-header bg-gradient-primary text-white">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0">
+                  <i class="bi bi-app-indicator"></i>
+                  <span class="fw-bold">{{ app.name|title }}</span>
+                </h6>
+                <span class="badge bg-light text-primary">{{ app.url_count }} rutas</span>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <div class="app-icon mb-3">
+                {% if app.name == 'accounts' %}
+                  <i class="bi bi-person-circle fs-1 text-primary"></i>
+                {% elif app.name == 'chat' %}
+                  <i class="bi bi-chat-dots fs-1 text-success"></i>
+                {% elif app.name == 'courses' %}
+                  <i class="bi bi-book fs-1 text-warning"></i>
+                {% elif app.name == 'events' %}
+                  <i class="bi bi-calendar-event fs-1 text-danger"></i>
+                {% elif app.name == 'core' %}
+                  <i class="bi bi-house-heart fs-1 text-info"></i>
+                {% else %}
+                  <i class="bi bi-gear fs-1 text-secondary"></i>
+                {% endif %}
+              </div>
+
+              <p class="text-muted small mb-3">
+                <i class="bi bi-info-circle"></i>
+                {% if app.name == 'accounts' %}Gestión de usuarios y autenticación{% endif %}
+                {% if app.name == 'chat' %}Sistema de mensajería en tiempo real{% endif %}
+                {% if app.name == 'courses' %}Plataforma de aprendizaje online{% endif %}
+                {% if app.name == 'events' %}Administración de eventos y proyectos{% endif %}
+                {% if app.name == 'core' %}Funcionalidades principales del sistema{% endif %}
+                {% if app.name == 'campaigns' %}Gestión de campañas de marketing{% endif %}
+                {% if app.name == 'cv' %}Sistema de currículums vitae{% endif %}
+                {% if app.name == 'kpis' %}Dashboard de métricas y KPIs{% endif %}
+                {% if app.name == 'tools' %}Herramientas y utilidades{% endif %}
+                {% if app.name == 'rooms' %}Gestión de salas y espacios{% endif %}
+                {% if app.name == 'memento' %}Sistema de recordatorios{% endif %}
+                {% if app.name == 'passgen' %}Generador de contraseñas{% endif %}
+              </p>
+
+              {% if app.urls.urls %}
+              <div class="url-preview">
+                <small class="text-muted fw-bold">URLs principales:</small>
+                <div class="mt-2">
+                  {% for url in app.urls.urls|slice:":3" %}
+                  <div class="url-item mb-1">
+                    <code class="text-primary small">{{ url.pattern|default:"/" }}</code>
+                  </div>
+                  {% endfor %}
+                  {% if app.urls.urls|length > 3 %}
+                  <small class="text-muted">+ {{ app.urls.urls|length|add:"-3" }} más...</small>
+                  {% endif %}
+                </div>
+              </div>
+              {% else %}
+              <div class="alert alert-warning py-2 small">
+                <i class="bi bi-exclamation-triangle"></i> Sin URLs configuradas
+              </div>
+              {% endif %}
+            </div>
+
+            <div class="card-footer bg-light">
+              <div class="d-flex gap-2">
+                <a href="?app_name={{ app.name }}" class="btn btn-primary btn-sm flex-fill">
+                  <i class="bi bi-eye"></i> Explorar
+                </a>
+                <a href="/{{ app.name }}/" target="_blank" class="btn btn-outline-secondary btn-sm">
+                  <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card mt-4">
+        <div class="card-header bg-light">
+          <h6 class="card-title mb-0">
+            <i class="bi bi-lightning-charge text-warning"></i> Acciones Rápidas
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <a href="/admin/" target="_blank" class="btn btn-outline-primary w-100">
+                <i class="bi bi-shield-check"></i><br>
+                <small>Admin Panel</small>
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="/accounts/login/" target="_blank" class="btn btn-outline-success w-100">
+                <i class="bi bi-box-arrow-in-right"></i><br>
+                <small>Iniciar Sesión</small>
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="/chat/" target="_blank" class="btn btn-outline-info w-100">
+                <i class="bi bi-chat-dots"></i><br>
+                <small>Chat</small>
+              </a>
+            </div>
+            <div class="col-md-3">
+              <a href="/courses/" target="_blank" class="btn btn-outline-warning w-100">
+                <i class="bi bi-book"></i><br>
+                <small>Cursos</small>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- API Documentation -->
+      <div class="card mt-4">
+        <div class="card-header">
+          <h6 class="card-title mb-0">
+            <i class="bi bi-code-slash text-primary"></i> Documentación API
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <h6>Endpoint Principal</h6>
+              <div class="bg-light p-3 rounded">
+                <code class="text-primary">GET /url-map/api/</code><br>
+                <small class="text-muted">Retorna todas las aplicaciones y sus URLs en formato JSON</small>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <h6>Endpoint por App</h6>
+              <div class="bg-light p-3 rounded">
+                <code class="text-success">GET /url-map/api/?app_name=core</code><br>
+                <small class="text-muted">Retorna URLs específicas de una aplicación</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.bg-gradient-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-item h3 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.hover-card {
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+}
+
+.hover-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  border-color: #007bff;
+}
+
+.app-icon {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.url-preview {
+  background: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border-left: 3px solid #007bff;
+}
+
+.url-item {
+  background: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  margin-bottom: 0.25rem;
+  border: 1px solid #e9ecef;
+}
+
+.card-header.bg-gradient-primary {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+  border: none;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+@media (max-width: 768px) {
+  .stat-item h3 {
+    font-size: 2rem;
+  }
+
+  .card-title {
+    font-size: 1.1rem;
+  }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('searchApps').addEventListener('input', function() {
+  const searchTerm = this.value.toLowerCase();
+  const appCards = document.querySelectorAll('.app-card');
+
+  appCards.forEach(card => {
+    const appName = card.dataset.appName.toLowerCase();
+    if (appName.includes(searchTerm)) {
+      card.style.display = 'block';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+});
+
+function clearSearch() {
+  document.getElementById('searchApps').value = '';
+  const appCards = document.querySelectorAll('.app-card');
+  appCards.forEach(card => {
+    card.style.display = 'block';
+  });
+}
+
+// Add loading animation
+document.querySelectorAll('.hover-card').forEach(card => {
+  card.addEventListener('mouseenter', function() {
+    this.style.transform = 'translateY(-5px)';
+  });
+
+  card.addEventListener('mouseleave', function() {
+    this.style.transform = 'translateY(0)';
+  });
+});
+</script>
+{% endblock %}

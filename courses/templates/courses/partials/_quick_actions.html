@@ -1,0 +1,41 @@
+{% comment %}
+Partial para acciones rápidas
+Uso: {% include "courses/partials/_quick_actions.html" %}
+{% endcomment %}
+
+<!-- Acciones Rápidas -->
+{% if courses %}
+<div class="quick-actions fade-in-up">
+    <h4 class="mb-3"><i class="bi bi-lightning me-2"></i>Acciones Rápidas</h4>
+    <div class="quick-actions-grid">
+        <a href="{% url 'courses:modules_overview' %}" class="quick-action-item">
+            <div class="quick-action-icon">
+                <i class="bi bi-grid"></i>
+            </div>
+            <div class="quick-action-title">Vista General de Módulos</div>
+            <div class="quick-action-desc">Administra todos tus módulos en un solo lugar</div>
+        </a>
+        <a href="{% url 'courses:manage_categories' %}" class="quick-action-item">
+            <div class="quick-action-icon">
+                <i class="bi bi-tags"></i>
+            </div>
+            <div class="quick-action-title">Gestionar Categorías</div>
+            <div class="quick-action-desc">Organiza tus cursos por categorías</div>
+        </a>
+        <a href="{% url 'courses:course_list' %}" class="quick-action-item">
+            <div class="quick-action-icon">
+                <i class="bi bi-search"></i>
+            </div>
+            <div class="quick-action-title">Ver Todos los Cursos</div>
+            <div class="quick-action-desc">Explora el catálogo completo de cursos</div>
+        </a>
+        <a href="{% url 'courses:create_course' %}" class="quick-action-item">
+            <div class="quick-action-icon">
+                <i class="bi bi-plus-circle"></i>
+            </div>
+            <div class="quick-action-title">Crear Nuevo Curso</div>
+            <div class="quick-action-desc">Inicia un nuevo proyecto educativo</div>
+        </a>
+    </div>
+</div>
+{% endif %}
