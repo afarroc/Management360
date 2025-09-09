@@ -109,6 +109,11 @@ class Course(models.Model):
             self.slug = slugify(self.title)
         if self.is_published and not self.published_at:
             self.published_at = timezone.now()
+
+        # Validar que el tutor tenga un perfil de CV
+        if not hasattr(self.tutor, 'cv') or self.tutor.cv is None:
+            raise ValueError("El tutor debe tener un perfil de CV válido para crear cursos.")
+
         super().save(*args, **kwargs)
     
     def get_tutor_profile(self):
@@ -187,8 +192,7 @@ class Enrollment(models.Model):
     enrolled_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
     
-    # Si no tienes updated_at, añade este campo:
-    updated_at = models.DateTimeField(auto_now=True)  # ← Añade esta línea si no existe
+    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         unique_together = ['student', 'course']
