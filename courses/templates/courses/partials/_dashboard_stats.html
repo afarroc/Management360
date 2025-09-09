@@ -1,0 +1,28 @@
+{% comment %}
+Partial para estadísticas del dashboard
+Uso: {% include "courses/partials/_dashboard_stats.html" with courses=courses total_students=total_students total_duration=total_duration avg_rating=avg_rating %}
+{% endcomment %}
+
+<!-- Estadísticas -->
+{% if courses %}
+<div class="stats-summary fade-in-up">
+    <div class="stats-grid-manage">
+        <div class="stat-item">
+            <div class="stat-number">{{ courses|length }}</div>
+            <div class="stat-label">Cursos Totales</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ total_students }}</div>
+            <div class="stat-label">Estudiantes Totales</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ avg_rating|floatformat:1|default:0 }}</div>
+            <div class="stat-label">Calificación Promedio</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-number">{{ total_duration }}</div>
+            <div class="stat-label">Horas de Contenido</div>
+        </div>
+    </div>
+</div>
+{% endif %}

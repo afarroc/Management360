@@ -1,0 +1,386 @@
+{% extends "courses/base.html" %}
+{% load static %}
+
+{% block title %}Gestión de Usuarios - {{ block.super }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.users-management {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.management-header {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+}
+
+.filters-section {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+}
+
+.users-table-container {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+}
+
+.user-role-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.role-admin {
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+}
+
+.role-tutor {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.role-student {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.user-actions .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.table th {
+    background: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+    font-weight: 600;
+    color: #495057;
+    padding: 1rem;
+}
+
+.table td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.pagination {
+    margin-bottom: 0;
+}
+
+.page-link {
+    color: #667eea;
+    border-color: #667eea;
+}
+
+.page-link:hover {
+    color: #764ba2;
+    background-color: rgba(102, 126, 234, 0.1);
+    border-color: #764ba2;
+}
+
+.page-item.active .page-link {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+@media (max-width: 768px) {
+    .management-header {
+        padding: 1.5rem;
+    }
+
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+
+    .user-actions {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block course_content %}
+<div class="users-management">
+    <div class="container">
+        <!-- Header -->
+        <div class="management-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-1"><i class="bi bi-people-fill me-2"></i>Gestión de Usuarios</h1>
+                    <p class="text-muted mb-0">Administra usuarios, roles y permisos de la plataforma</p>
+                </div>
+                <a href="{% url 'courses:admin_dashboard' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>Volver al Panel
+                </a>
+            </div>
+        </div>
+
+        <!-- Filtros y Búsqueda -->
+        <div class="filters-section">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="search" class="form-label fw-semibold">Buscar Usuario</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="search" name="search"
+                               placeholder="Nombre, email o username..." value="{{ search_query }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="role" class="form-label fw-semibold">Filtrar por Rol</label>
+                    <select class="form-select" id="role" name="role">
+                        <option value="">Todos los roles</option>
+                        <option value="TU" {% if role_filter == 'TU' %}selected{% endif %}>Tutores</option>
+                        <option value="AD" {% if role_filter == 'AD' %}selected{% endif %}>Administradores</option>
+                        <option value="GE" {% if role_filter == 'GE' %}selected{% endif %}>Gestores de Eventos</option>
+                        <option value="SU" {% if role_filter == 'SU' %}selected{% endif %}>Supervisores</option>
+                        <option value="US" {% if role_filter == 'US' %}selected{% endif %}>Usuarios Estándar</option>
+                        <option value="none" {% if role_filter == 'none' %}selected{% endif %}>Sin Rol Asignado</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-funnel me-1"></i>Filtrar
+                    </button>
+                    <a href="{% url 'courses:admin_users' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i>Limpiar
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tabla de Usuarios -->
+        <div class="users-table-container">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Email</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                            <th>Fecha de Registro</th>
+                            <th>Última Actividad</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar me-3">
+                                        {{ user.first_name|first|default:user.username|first|upper }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">{{ user.get_full_name|default:user.username }}</div>
+                                        <small class="text-muted">@{{ user.username }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% if user.cv %}
+                                    {% if user.cv.role == 'TU' %}
+                                        <span class="user-role-badge role-tutor">Tutor</span>
+                                    {% elif user.cv.role == 'AD' %}
+                                        <span class="user-role-badge role-admin">Administrador</span>
+                                    {% elif user.cv.role == 'GE' %}
+                                        <span class="user-role-badge role-admin">Gestor Eventos</span>
+                                    {% elif user.cv.role == 'SU' %}
+                                        <span class="user-role-badge role-admin">Supervisor</span>
+                                    {% else %}
+                                        <span class="user-role-badge role-student">Usuario Estándar</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="user-role-badge role-student">Sin Rol</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_active %}
+                                    <span class="badge bg-success">Activo</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                            <td>{{ user.last_login|date:"M d, Y H:i"|default:"Nunca" }}</td>
+                            <td>
+                                <div class="user-actions d-flex gap-1">
+                                    <a href="{% url 'courses:admin_user_detail' user.id %}"
+                                       class="btn btn-sm btn-outline-primary" title="Ver detalles">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'courses:edit_user' user.id %}"
+                                       class="btn btn-sm btn-outline-secondary" title="Editar usuario">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    {% if user.is_active %}
+                                    <button class="btn btn-sm btn-outline-warning" title="Desactivar usuario">
+                                        <i class="bi bi-person-dash"></i>
+                                    </button>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-outline-success" title="Activar usuario">
+                                        <i class="bi bi-person-check"></i>
+                                    </button>
+                                    {% endif %}
+                                    <button class="btn btn-sm btn-outline-danger" title="Eliminar usuario">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-5">
+                                <i class="bi bi-people text-muted fs-1 mb-3"></i>
+                                <h5 class="text-muted mb-2">No se encontraron usuarios</h5>
+                                <p class="text-muted mb-0">Intenta con otros criterios de búsqueda</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            {% if users.has_other_pages %}
+            <div class="d-flex justify-content-center p-3 border-top">
+                <nav aria-label="Paginación de usuarios">
+                    <ul class="pagination pagination-sm">
+                        {% if users.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if role_filter %}role={{ role_filter }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}page=1">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if role_filter %}role={{ role_filter }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}page={{ users.previous_page_number }}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in users.paginator.page_range %}
+                            {% if users.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                            {% elif num > users.number|add:-3 and num < users.number|add:3 %}
+                            <li class="page-item">
+                                <a class="page-link" href="?{% if role_filter %}role={{ role_filter }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}page={{ num }}">{{ num }}</a>
+                            </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if users.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if role_filter %}role={{ role_filter }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}page={{ users.next_page_number }}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if role_filter %}role={{ role_filter }}&{% endif %}{% if search_query %}search={{ search_query }}&{% endif %}page={{ users.paginator.num_pages }}">
+                                <i class="bi bi-chevron-double-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="row mt-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="fs-1 text-primary mb-2">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                        <div class="fs-4 fw-bold">{{ users.paginator.count }}</div>
+                        <div class="text-muted">Usuarios Totales</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="fs-1 text-success mb-2">
+                            <i class="bi bi-person-badge-fill"></i>
+                        </div>
+                        <div class="fs-4 fw-bold">{{ users|length }}</div>
+                        <div class="text-muted">En esta página</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="fs-1 text-info mb-2">
+                            <i class="bi bi-person-check-fill"></i>
+                        </div>
+                        <div class="fs-4 fw-bold">{{ users.paginator.count }}</div>
+                        <div class="text-muted">Activos</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body text-center">
+                        <div class="fs-1 text-warning mb-2">
+                            <i class="bi bi-person-plus-fill"></i>
+                        </div>
+                        <div class="fs-4 fw-bold">{{ users.paginator.num_pages }}</div>
+                        <div class="text-muted">Páginas</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Funcionalidad para activar/desactivar usuarios
+document.addEventListener('DOMContentLoaded', function() {
+    const actionButtons = document.querySelectorAll('.user-actions button');
+
+    actionButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const action = this.title.includes('Desactivar') ? 'deactivate' : 'activate';
+            const userId = this.closest('tr').dataset.userId;
+
+            if (confirm(`¿Estás seguro de que quieres ${action === 'deactivate' ? 'desactivar' : 'activar'} este usuario?`)) {
+                // Aquí iría la lógica AJAX para activar/desactivar usuario
+                console.log(`${action} user ${userId}`);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

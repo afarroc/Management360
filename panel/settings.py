@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'kpis.apps.KpisConfig',
     'passgen',
     'courses.apps.CoursesConfig',
+    'campaigns.apps.CampaignsConfig',
     
     'django.contrib.humanize',
 ]

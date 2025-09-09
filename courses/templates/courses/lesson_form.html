@@ -1,0 +1,574 @@
+{% extends "courses/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - {{ course.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.form-container {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.form-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.form-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+}
+
+.form-header h2 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.form-body {
+    padding: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.form-control {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #718096;
+    margin-top: 0.25rem;
+}
+
+.btn-submit {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.btn-cancel {
+    border: 2px solid #e2e8f0;
+    background: white;
+    color: #718096;
+    border-radius: 8px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+    border-color: #cbd5e0;
+    background: #f8f9fa;
+    color: #4a5568;
+    text-decoration: none;
+}
+
+.lesson-type-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.lesson-type-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.lesson-type-card.selected {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.lesson-type-card:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+}
+
+.lesson-type-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.lesson-type-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+}
+
+.lesson-type-desc {
+    font-size: 0.875rem;
+    color: #718096;
+}
+
+.content-fields {
+    display: none;
+}
+
+.content-fields.active {
+    display: block;
+}
+
+.quiz-builder {
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.question-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.question-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.question-number {
+    font-weight: 600;
+    color: #667eea;
+}
+
+.btn-remove-question {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.btn-remove-question:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.course-info {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.course-info h5 {
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.course-info p {
+    color: #718096;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .form-header {
+        padding: 1.5rem;
+    }
+
+    .form-body {
+        padding: 1.5rem;
+    }
+
+    .lesson-type-selector {
+        grid-template-columns: 1fr;
+    }
+
+    .btn-submit,
+    .btn-cancel {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block course_content %}
+<div class="form-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <!-- Información del curso -->
+                <div class="course-info">
+                    <h5><i class="bi bi-journal-bookmark me-2"></i>{{ course.title }}</h5>
+                    <p>Módulo: {{ module.title }} • {{ title|lower }}</p>
+                </div>
+
+                <!-- Formulario -->
+                <div class="form-card">
+                    <div class="form-header">
+                        <h2><i class="bi bi-file-earmark-plus me-2"></i>{{ title }}</h2>
+                    </div>
+
+                    <div class="form-body">
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+
+                            <!-- Campo Título -->
+                            <div class="form-group">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">
+                                    <i class="bi bi-tag me-1"></i>Título de la Lección *
+                                </label>
+                                {{ form.title }}
+                                {% if form.title.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.title.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Selector de Tipo de Lección -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="bi bi-diagram-3 me-1"></i>Tipo de Lección *
+                                </label>
+                                <div class="lesson-type-selector">
+                                    <div class="lesson-type-card" data-type="video">
+                                        <i class="bi bi-play-circle-fill lesson-type-icon text-danger"></i>
+                                        <div class="lesson-type-title">Video</div>
+                                        <div class="lesson-type-desc">Lección con video</div>
+                                    </div>
+                                    <div class="lesson-type-card" data-type="text">
+                                        <i class="bi bi-file-text-fill lesson-type-icon text-primary"></i>
+                                        <div class="lesson-type-title">Texto</div>
+                                        <div class="lesson-type-desc">Contenido escrito</div>
+                                    </div>
+                                    <div class="lesson-type-card" data-type="quiz">
+                                        <i class="bi bi-question-circle-fill lesson-type-icon text-warning"></i>
+                                        <div class="lesson-type-title">Quiz</div>
+                                        <div class="lesson-type-desc">Evaluación interactiva</div>
+                                    </div>
+                                    <div class="lesson-type-card" data-type="assignment">
+                                        <i class="bi bi-pencil-square lesson-type-icon text-info"></i>
+                                        <div class="lesson-type-title">Tarea</div>
+                                        <div class="lesson-type-desc">Trabajo práctico</div>
+                                    </div>
+                                </div>
+                                {{ form.lesson_type }}
+                                {% if form.lesson_type.errors %}
+                                    <div class="text-danger mt-1">
+                                        {% for error in form.lesson_type.errors %}
+                                            <small>{{ error }}</small>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Campos comunes -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.duration_minutes.id_for_label }}" class="form-label">
+                                            <i class="bi bi-clock me-1"></i>Duración (minutos) *
+                                        </label>
+                                        {{ form.duration_minutes }}
+                                        {% if form.duration_minutes.errors %}
+                                            <div class="text-danger mt-1">
+                                                {% for error in form.duration_minutes.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="{{ form.order.id_for_label }}" class="form-label">
+                                            <i class="bi bi-sort-numeric-down me-1"></i>Orden
+                                        </label>
+                                        {{ form.order }}
+                                        {% if form.order.errors %}
+                                            <div class="text-danger mt-1">
+                                                {% for error in form.order.errors %}
+                                                    <small>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Checkbox Lección Gratuita -->
+                            <div class="form-group">
+                                <div class="form-check">
+                                    {{ form.is_free }}
+                                    <label class="form-check-label" for="{{ form.is_free.id_for_label }}">
+                                        <i class="bi bi-gift me-1"></i>Lección gratuita (preview)
+                                    </label>
+                                </div>
+                                <div class="form-text">
+                                    Los estudiantes pueden ver esta lección sin estar inscritos en el curso
+                                </div>
+                            </div>
+
+                            <!-- Campos específicos por tipo -->
+                            <div id="video-fields" class="content-fields">
+                                <div class="form-group">
+                                    <label for="{{ form.video_url.id_for_label }}" class="form-label">
+                                        <i class="bi bi-youtube me-1"></i>URL del Video
+                                    </label>
+                                    {{ form.video_url }}
+                                    {% if form.video_url.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.video_url.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        URL de YouTube, Vimeo u otra plataforma de video
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="text-fields" class="content-fields">
+                                <div class="form-group">
+                                    <label for="{{ form.content.id_for_label }}" class="form-label">
+                                        <i class="bi bi-textarea me-1"></i>Contenido de la Lección
+                                    </label>
+                                    {{ form.content }}
+                                    {% if form.content.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.content.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Escribe el contenido completo de la lección
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="quiz-fields" class="content-fields">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-question-circle me-1"></i>Preguntas del Quiz
+                                    </label>
+                                    <div class="quiz-builder">
+                                        <div id="questions-container">
+                                            <!-- Las preguntas se agregarán aquí dinámicamente -->
+                                        </div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" id="add-question">
+                                            <i class="bi bi-plus-circle me-1"></i>Agregar Pregunta
+                                        </button>
+                                    </div>
+                                    {{ form.quiz_questions }}
+                                </div>
+                            </div>
+
+                            <div id="assignment-fields" class="content-fields">
+                                <div class="form-group">
+                                    <label for="{{ form.assignment_instructions.id_for_label }}" class="form-label">
+                                        <i class="bi bi-list-check me-1"></i>Instrucciones de la Tarea
+                                    </label>
+                                    {{ form.assignment_instructions }}
+                                    {% if form.assignment_instructions.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.assignment_instructions.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Describe claramente qué deben hacer los estudiantes
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.assignment_file.id_for_label }}" class="form-label">
+                                        <i class="bi bi-file-earmark me-1"></i>Archivo de Referencia
+                                    </label>
+                                    {{ form.assignment_file }}
+                                    {% if form.assignment_file.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.assignment_file.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Archivo opcional para guiar a los estudiantes (PDF, DOC, etc.)
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.assignment_due_date.id_for_label }}" class="form-label">
+                                        <i class="bi bi-calendar me-1"></i>Fecha Límite
+                                    </label>
+                                    {{ form.assignment_due_date }}
+                                    {% if form.assignment_due_date.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.assignment_due_date.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="d-flex justify-content-between align-items-center mt-4">
+                                <a href="{% url 'courses:manage_content' course.slug %}" class="btn-cancel">
+                                    <i class="bi bi-arrow-left me-1"></i>Cancelar
+                                </a>
+                                <button type="submit" class="btn-submit">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    {% if lesson %}Actualizar Lección{% else %}Crear Lección{% endif %}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const lessonTypeCards = document.querySelectorAll('.lesson-type-card');
+    const lessonTypeInput = document.getElementById('{{ form.lesson_type.id_for_label }}');
+    const contentFields = document.querySelectorAll('.content-fields');
+
+    // Función para mostrar campos según el tipo seleccionado
+    function showFieldsForType(type) {
+        contentFields.forEach(field => {
+            field.classList.remove('active');
+        });
+        const targetField = document.getElementById(type + '-fields');
+        if (targetField) {
+            targetField.classList.add('active');
+        }
+    }
+
+    // Event listeners para las tarjetas de tipo
+    lessonTypeCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const type = this.dataset.type;
+
+            // Remover selección anterior
+            lessonTypeCards.forEach(c => c.classList.remove('selected'));
+            // Agregar selección actual
+            this.classList.add('selected');
+
+            // Actualizar input hidden
+            lessonTypeInput.value = type;
+
+            // Mostrar campos correspondientes
+            showFieldsForType(type);
+        });
+    });
+
+    // Mostrar campos iniciales si hay un valor seleccionado
+    if (lessonTypeInput.value) {
+        showFieldsForType(lessonTypeInput.value);
+        const selectedCard = document.querySelector(`[data-type="${lessonTypeInput.value}"]`);
+        if (selectedCard) {
+            selectedCard.classList.add('selected');
+        }
+    }
+
+    // Sistema de preguntas para quiz
+    let questionCount = 0;
+
+    function addQuestion() {
+        questionCount++;
+        const questionHtml = `
+            <div class="question-item" data-question-id="${questionCount}">
+                <div class="question-header">
+                    <span class="question-number">Pregunta ${questionCount}</span>
+                    <button type="button" class="btn-remove-question" onclick="removeQuestion(${questionCount})">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                <div class="mb-2">
+                    <input type="text" class="form-control" placeholder="Escribe la pregunta" name="question_${questionCount}_text">
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <input type="text" class="form-control mb-2" placeholder="Opción A" name="question_${questionCount}_option_a">
+                        <input type="text" class="form-control mb-2" placeholder="Opción B" name="question_${questionCount}_option_b">
+                    </div>
+                    <div class="col-md-6">
+                        <input type="text" class="form-control mb-2" placeholder="Opción C" name="question_${questionCount}_option_c">
+                        <input type="text" class="form-control mb-2" placeholder="Opción D" name="question_${questionCount}_option_d">
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <select class="form-select" name="question_${questionCount}_correct">
+                        <option value="">Seleccionar respuesta correcta</option>
+                        <option value="A">Opción A</option>
+                        <option value="B">Opción B</option>
+                        <option value="C">Opción C</option>
+                        <option value="D">Opción D</option>
+                    </select>
+                </div>
+            </div>
+        `;
+        document.getElementById('questions-container').insertAdjacentHTML('beforeend', questionHtml);
+    }
+
+    function removeQuestion(questionId) {
+        const questionElement = document.querySelector(`[data-question-id="${questionId}"]`);
+        if (questionElement) {
+            questionElement.remove();
+        }
+    }
+
+    // Event listener para agregar preguntas
+    document.getElementById('add-question').addEventListener('click', addQuestion);
+
+    // Agregar primera pregunta si estamos creando un quiz
+    if (lessonTypeInput.value === 'quiz') {
+        addQuestion();
+    }
+});
+</script>
+{% endblock %}

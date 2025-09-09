@@ -1,0 +1,861 @@
+{% extends "courses/base.html" %}
+{% load static %}
+
+{% block title %}Panel Administrativo - {{ block.super }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.admin-dashboard {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.admin-header {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border: none;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--stat-color, #667eea), transparent);
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+    position: relative;
+    z-index: 1;
+}
+
+.stat-number {
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.stat-label {
+    color: #718096;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.875rem;
+    position: relative;
+    z-index: 1;
+}
+
+.stat-trend {
+    display: flex;
+    align-items: center;
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+.stat-trend.positive {
+    color: #10b981;
+}
+
+.stat-trend.negative {
+    color: #ef4444;
+}
+
+.recent-activity {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.activity-item:last-child {
+    border-bottom: none;
+}
+
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+}
+
+.activity-content h6 {
+    margin: 0;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.activity-content p {
+    margin: 0;
+    color: #718096;
+    font-size: 0.875rem;
+}
+
+.categories-overview {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.category-item {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.category-item:last-child {
+    border-bottom: none;
+}
+
+.category-info h6 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.category-stats {
+    display: flex;
+    gap: 1rem;
+}
+
+.category-stat {
+    font-size: 0.875rem;
+    color: #718096;
+}
+
+.quick-actions {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.action-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.action-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.action-card:hover::before {
+    left: 100%;
+}
+
+.action-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(102, 126, 234, 0.4);
+    text-decoration: none;
+    color: white;
+}
+
+.action-icon {
+    font-size: 2rem;
+    z-index: 1;
+    position: relative;
+}
+
+.action-text h6 {
+    margin: 0;
+    font-weight: 600;
+    z-index: 1;
+    position: relative;
+}
+
+.action-text p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 0.875rem;
+    z-index: 1;
+    position: relative;
+}
+
+.quick-actions {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    margin-bottom: 2rem;
+}
+
+.quick-actions h5 {
+    color: #2d3748;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+/* Indicador de estado */
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+/* Mejoras visuales adicionales */
+.stat-card .stat-icon {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.admin-header h1 {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.alert-success {
+    border-left: 4px solid #10b981;
+}
+
+/* Métricas rápidas */
+.quick-metrics {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.metric-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    border: 1px solid #dee2e6;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.metric-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.metric-info {
+    flex: 1;
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+}
+
+.metric-label {
+    font-size: 0.8rem;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Animaciones de entrada */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.admin-header {
+    animation: slideInUp 0.6s ease-out;
+}
+
+.stat-card {
+    animation: slideInUp 0.6s ease-out;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+.stat-card:nth-child(4) { animation-delay: 0.4s; }
+.stat-card:nth-child(5) { animation-delay: 0.5s; }
+.stat-card:nth-child(6) { animation-delay: 0.6s; }
+
+.recent-activity {
+    animation: slideInLeft 0.6s ease-out 0.7s both;
+}
+
+.quick-actions {
+    animation: slideInRight 0.6s ease-out 0.7s both;
+}
+
+/* Indicador de carga */
+.loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+@media (max-width: 768px) {
+    .admin-header {
+        padding: 1.5rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .action-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-header {
+        animation-duration: 0.4s;
+    }
+
+    .stat-card {
+        animation-duration: 0.4s;
+    }
+
+    .recent-activity,
+    .quick-actions {
+        animation-duration: 0.4s;
+    }
+}
+</style>
+{% endblock %}
+
+{% block course_content %}
+<div class="admin-dashboard">
+    <div class="container">
+        <!-- Header -->
+        <div class="admin-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-1"><i class="bi bi-speedometer2 me-2"></i>Panel Administrativo</h1>
+                    <p class="text-muted mb-0">Gestiona usuarios, cursos y contenido de la plataforma</p>
+                    <small class="text-muted">
+                        <i class="bi bi-clock me-1"></i>Última actualización: <span id="last-update">Ahora</span>
+                    </small>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <div class="d-flex align-items-center me-3">
+                        <div class="status-indicator me-2">
+                            <div class="status-dot bg-success"></div>
+                            <span class="small text-muted">Sistema Online</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'courses:admin_users' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-people me-1"></i>Usuarios
+                    </a>
+                    <a href="{% url 'courses:manage_categories' %}" class="btn btn-outline-success">
+                        <i class="bi bi-tags me-1"></i>Categorías
+                    </a>
+                    <a href="{% url 'courses:modules_overview' %}" class="btn btn-outline-warning">
+                        <i class="bi bi-grid me-1"></i>Módulos
+                    </a>
+                    <a href="/courses/admin/modules/create/" class="btn btn-primary" title="Crear un nuevo módulo (admin)">
+                        <i class="bi bi-folder-plus me-1"></i>Nuevo Módulo
+                    </a>
+                    <a href="{% url 'courses:manage_courses' %}" class="btn btn-success" title="Gestionar cursos">
+                        <i class="bi bi-journal-plus me-1"></i>Gestionar Cursos
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Indicador de Estado del Sistema -->
+        <div class="system-status mb-4">
+            <div class="alert alert-success border-0 rounded-3 shadow-sm" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+                    <div>
+                        <h6 class="mb-1">Sistema Operativo</h6>
+                        <p class="mb-0 text-muted small">Todos los servicios funcionando correctamente</p>
+                    </div>
+                    <div class="ms-auto">
+                        <span class="badge bg-success">Online</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas Principales -->
+        <div class="stats-grid">
+            <div class="stat-card" style="--stat-color: #667eea;">
+                <div class="stat-icon bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_users }}</div>
+                <div class="stat-label">Usuarios Totales</div>
+                <div class="stat-trend positive">
+                    <i class="bi bi-arrow-up me-1"></i>
+                    <span>+12% este mes</span>
+                </div>
+            </div>
+
+            <div class="stat-card" style="--stat-color: #10b981;">
+                <div class="stat-icon bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-journal-bookmark-fill"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_courses }}</div>
+                <div class="stat-label">Cursos Totales</div>
+                <div class="stat-trend positive">
+                    <i class="bi bi-arrow-up me-1"></i>
+                    <span>+8% este mes</span>
+                </div>
+            </div>
+
+            <div class="stat-card" style="--stat-color: #06b6d4;">
+                <div class="stat-icon bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div class="stat-number">{{ stats.published_courses }}</div>
+                <div class="stat-label">Cursos Publicados</div>
+                <div class="stat-trend positive">
+                    <i class="bi bi-arrow-up me-1"></i>
+                    <span>{{ stats.published_courses|floatformat:0 }}/{{ stats.total_courses }}</span>
+                </div>
+            </div>
+
+            <div class="stat-card" style="--stat-color: #f59e0b;">
+                <div class="stat-icon bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-tags-fill"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_categories }}</div>
+                <div class="stat-label">Categorías</div>
+                <div class="stat-trend">
+                    <i class="bi bi-dash me-1"></i>
+                    <span>Estable</span>
+                </div>
+            </div>
+
+            <div class="stat-card" style="--stat-color: #ef4444;">
+                <div class="stat-icon bg-danger bg-opacity-10 text-danger">
+                    <i class="bi bi-person-check-fill"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_students }}</div>
+                <div class="stat-label">Estudiantes Activos</div>
+                <div class="stat-trend positive">
+                    <i class="bi bi-arrow-up me-1"></i>
+                    <span>+15% este mes</span>
+                </div>
+            </div>
+
+            <div class="stat-card" style="--stat-color: #6b7280;">
+                <div class="stat-icon bg-secondary bg-opacity-10 text-secondary">
+                    <i class="bi bi-person-badge-fill"></i>
+                </div>
+                <div class="stat-number">{{ stats.total_tutors }}</div>
+                <div class="stat-label">Tutores Activos</div>
+                <div class="stat-trend positive">
+                    <i class="bi bi-arrow-up me-1"></i>
+                    <span>+5% este mes</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Actividad Reciente -->
+            <div class="col-lg-8">
+                <div class="recent-activity">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="mb-0"><i class="bi bi-activity me-2"></i>Actividad Reciente</h4>
+                        <a href="#" class="btn btn-sm btn-outline-primary">Ver Todo</a>
+                    </div>
+
+                    <!-- Usuarios Recientes -->
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3"><i class="bi bi-person-plus me-1"></i>Usuarios Recientes</h6>
+                        {% for user in recent_users %}
+                        <div class="activity-item">
+                            <div class="activity-icon bg-success bg-opacity-10 text-success">
+                                <i class="bi bi-person-fill"></i>
+                            </div>
+                            <div class="activity-content flex-grow-1">
+                                <h6>{{ user.get_full_name|default:user.username }}</h6>
+                                <p>Se unió el {{ user.date_joined|date:"M d, Y" }}</p>
+                            </div>
+                            <a href="{% url 'courses:admin_user_detail' user.id %}" class="btn btn-sm btn-outline-primary">
+                                Ver
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Cursos Recientes -->
+                    <div>
+                        <h6 class="text-muted mb-3"><i class="bi bi-journal-plus me-1"></i>Cursos Recientes</h6>
+                        {% for course in recent_courses %}
+                        <div class="activity-item">
+                            <div class="activity-icon bg-primary bg-opacity-10 text-primary">
+                                <i class="bi bi-journal-bookmark-fill"></i>
+                            </div>
+                            <div class="activity-content flex-grow-1">
+                                <h6>{{ course.title }}</h6>
+                                <p>Por {{ course.tutor.get_full_name|default:course.tutor.username }} • {{ course.created_at|date:"M d, Y" }}</p>
+                            </div>
+                            <a href="{% url 'courses:course_detail' course.slug %}" class="btn btn-sm btn-outline-primary">
+                                Ver
+                            </a>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones Rápidas y Categorías -->
+            <div class="col-lg-4">
+                <!-- Acciones Rápidas -->
+                <div class="quick-actions mb-4">
+                    <h5 class="mb-3"><i class="bi bi-lightning me-2"></i>Acciones Rápidas</h5>
+                    <div class="action-grid">
+                        <a href="{% url 'courses:admin_users' %}" class="action-card">
+                            <div class="action-icon">
+                                <i class="bi bi-people-fill"></i>
+                            </div>
+                            <div class="action-text">
+                                <h6>Gestionar Usuarios</h6>
+                                <p>Ver y administrar usuarios</p>
+                            </div>
+                        </a>
+
+                        <a href="{% url 'courses:manage_courses' %}" class="action-card">
+                            <div class="action-icon">
+                                <i class="bi bi-journal-bookmark-fill"></i>
+                            </div>
+                            <div class="action-text">
+                                <h6>Gestionar Cursos</h6>
+                                <p>Revisar todos los cursos</p>
+                            </div>
+                        </a>
+
+                        <a href="{% url 'courses:manage_categories' %}" class="action-card">
+                            <div class="action-icon">
+                                <i class="bi bi-tags-fill"></i>
+                            </div>
+                            <div class="action-text">
+                                <h6>Categorías</h6>
+                                <p>Administrar categorías</p>
+                            </div>
+                        </a>
+
+                        <a href="{% url 'courses:modules_overview' %}" class="action-card">
+                            <div class="action-icon">
+                                <i class="bi bi-graph-up"></i>
+                            </div>
+                            <div class="action-text">
+                                <h6>Vista General</h6>
+                                <p>Ver todos los módulos</p>
+                            </div>
+                        </a>
+
+                        <!-- Accesos directos a creación (admin) -->
+                        <a href="/courses/admin/modules/create/" class="action-card" title="Crear un nuevo módulo">
+                            <div class="action-icon">
+                                <i class="bi bi-folder-plus"></i>
+                            </div>
+                            <div class="action-text">
+                                <h6>Crear Módulo</h6>
+                                <p>Agregar un módulo para cualquier curso</p>
+                            </div>
+                        </a>
+
+                        <a href="{% url 'courses:manage_courses' %}" class="action-card" title="Gestionar cursos y contenido">
+                            <div class="action-icon">
+                                <i class="bi bi-journal-plus"></i>
+                            </div>
+                            <div class="action-text">
+                                <h6>Gestionar Contenido</h6>
+                                <p>Administrar cursos y módulos</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Resumen de Categorías -->
+                <div class="categories-overview">
+                    <h5 class="mb-3"><i class="bi bi-tags me-2"></i>Categorías Populares</h5>
+                    {% for category in categories_stats %}
+                    <div class="category-item">
+                        <div class="category-info">
+                            <h6>{{ category.name }}</h6>
+                            <div class="category-stats">
+                                <span class="category-stat">
+                                    <i class="bi bi-journal-bookmark me-1"></i>{{ category.courses_count }} cursos
+                                </span>
+                                <span class="category-stat">
+                                    <i class="bi bi-people me-1"></i>{{ category.students_count }} estudiantes
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Métricas Rápidas -->
+                <div class="quick-metrics mt-4">
+                    <h5 class="mb-3"><i class="bi bi-bar-chart me-2"></i>Métricas Rápidas</h5>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="metric-card">
+                                <div class="metric-icon">
+                                    <i class="bi bi-graph-up-arrow text-success"></i>
+                                </div>
+                                <div class="metric-info">
+                                    <div class="metric-value">+24%</div>
+                                    <div class="metric-label">Crecimiento mensual</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metric-card">
+                                <div class="metric-icon">
+                                    <i class="bi bi-star-fill text-warning"></i>
+                                </div>
+                                <div class="metric-info">
+                                    <div class="metric-value">4.8</div>
+                                    <div class="metric-label">Calificación promedio</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metric-card">
+                                <div class="metric-icon">
+                                    <i class="bi bi-clock text-info"></i>
+                                </div>
+                                <div class="metric-info">
+                                    <div class="metric-value">2.3h</div>
+                                    <div class="metric-label">Tiempo promedio por curso</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="metric-card">
+                                <div class="metric-icon">
+                                    <i class="bi bi-trophy text-danger"></i>
+                                </div>
+                                <div class="metric-info">
+                                    <div class="metric-value">89%</div>
+                                    <div class="metric-label">Tasa de finalización</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Actualizar tiempo en tiempo real
+function updateLastUpdate() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('es-ES', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    });
+    document.getElementById('last-update').textContent = timeString;
+}
+
+// Actualizar cada segundo
+setInterval(updateLastUpdate, 1000);
+updateLastUpdate(); // Inicial
+
+// Agregar efectos hover a las tarjetas de estadísticas
+document.querySelectorAll('.stat-card').forEach(card => {
+    card.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-8px) scale(1.02)';
+    });
+
+    card.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateY(0) scale(1)';
+    });
+});
+
+// Efecto de carga inicial
+document.addEventListener('DOMContentLoaded', function() {
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach((card, index) => {
+        setTimeout(() => {
+            card.classList.add('loaded');
+        }, index * 100);
+    });
+});
+
+// Auto-refresh de estadísticas cada 5 minutos
+setInterval(() => {
+    // Aquí se podría agregar una llamada AJAX para actualizar estadísticas
+    console.log('Actualizando estadísticas...');
+}, 300000);
+</script>
+
+<style>
+.stat-card.loaded {
+    animation: cardLoad 0.5s ease-out;
+}
+
+@keyframes cardLoad {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}

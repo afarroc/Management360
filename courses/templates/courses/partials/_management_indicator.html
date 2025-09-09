@@ -1,0 +1,31 @@
+{% comment %}
+Partial para indicador de gestión
+Uso: {% include "courses/partials/_management_indicator.html" with courses=courses total_students=total_students avg_rating=avg_rating %}
+{% endcomment %}
+
+<!-- Indicador de Gestión -->
+<div class="management-indicator fade-in-up">
+    <div class="management-content">
+        <div class="management-info">
+            <i class="bi bi-gear-fill management-icon"></i>
+            <div class="management-text">
+                <h2 class="management-title">Panel de Gestión</h2>
+                <p class="management-subtitle">Administra tus cursos y contenido educativo</p>
+            </div>
+        </div>
+        <div class="management-metrics">
+            <div class="metric-item">
+                <div class="metric-value">{{ courses|length }}</div>
+                <div class="metric-label">Cursos</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value">{{ total_students }}</div>
+                <div class="metric-label">Estudiantes</div>
+            </div>
+            <div class="metric-item">
+                <div class="metric-value">{{ avg_rating|floatformat:1|default:0 }}</div>
+                <div class="metric-label">Calificación</div>
+            </div>
+        </div>
+    </div>
+</div>

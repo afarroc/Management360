@@ -1,0 +1,255 @@
+{% extends "courses/base.html" %}
+
+{% block title %}Sistema de Notificaciones - {{ block.super }}{% endblock %}
+
+{% block course_content %}
+<div class="courses-main-content fade-in-up">
+    <div class="container">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h2 mb-1"><i class="bi bi-bell me-2"></i>Sistema de Notificaciones</h1>
+                <p class="text-muted mb-0">Gestiona notificaciones del sistema</p>
+            </div>
+            <a href="{% url 'courses:admin_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Volver al Panel
+            </a>
+        </div>
+
+        <!-- Configuración de Notificaciones -->
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-0">
+                        <h4 class="mb-0"><i class="bi bi-gear me-2"></i>Configuración de Notificaciones</h4>
+                    </div>
+                    <div class="card-body">
+                        <form>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Notificaciones por Email</h5>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="email_new_users" checked>
+                                        <label class="form-check-label" for="email_new_users">
+                                            Nuevos usuarios registrados
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="email_new_courses" checked>
+                                        <label class="form-check-label" for="email_new_courses">
+                                            Nuevos cursos creados
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="email_course_reviews">
+                                        <label class="form-check-label" for="email_course_reviews">
+                                            Nuevas reseñas de cursos
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="mb-3">Notificaciones del Sistema</h5>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="system_errors" checked>
+                                        <label class="form-check-label" for="system_errors">
+                                            Errores del sistema
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="system_updates" checked>
+                                        <label class="form-check-label" for="system_updates">
+                                            Actualizaciones del sistema
+                                        </label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="security_alerts" checked>
+                                        <label class="form-check-label" for="security_alerts">
+                                            Alertas de seguridad
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" class="btn btn-courses-primary">
+                                    <i class="bi bi-save me-1"></i>Guardar Configuración
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Historial de Notificaciones -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="bi bi-clock-history me-2"></i>Historial de Notificaciones</h4>
+                        <button class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash me-1"></i>Limpiar Historial
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="notification-item d-flex align-items-start p-3 mb-3 border rounded">
+                            <div class="notification-icon me-3">
+                                <i class="bi bi-person-plus text-success fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Nuevo usuario registrado</h6>
+                                <p class="mb-1 text-muted">El usuario "john_doe" se ha registrado en la plataforma</p>
+                                <small class="text-muted">Hace 2 horas</small>
+                            </div>
+                            <div class="notification-actions">
+                                <button class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="notification-item d-flex align-items-start p-3 mb-3 border rounded">
+                            <div class="notification-icon me-3">
+                                <i class="bi bi-journal-plus text-primary fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Nuevo curso creado</h6>
+                                <p class="mb-1 text-muted">Se ha creado el curso "Introducción a Python" por Maria García</p>
+                                <small class="text-muted">Hace 5 horas</small>
+                            </div>
+                            <div class="notification-actions">
+                                <button class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="notification-item d-flex align-items-start p-3 mb-0 border rounded">
+                            <div class="notification-icon me-3">
+                                <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">Alerta de sistema</h6>
+                                <p class="mb-1 text-muted">Se detectó un intento de acceso no autorizado</p>
+                                <small class="text-muted">Hace 1 día</small>
+                            </div>
+                            <div class="notification-actions">
+                                <button class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Lateral -->
+            <div class="col-lg-4">
+                <!-- Resumen de Notificaciones -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Resumen</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span>Total de notificaciones</span>
+                            <span class="badge bg-primary">24</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span>No leídas</span>
+                            <span class="badge bg-danger">3</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span>Esta semana</span>
+                            <span class="badge bg-success">12</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>Hoy</span>
+                            <span class="badge bg-info">5</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Plantillas de Notificación -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0"><i class="bi bi-file-text me-2"></i>Plantillas</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-envelope me-1"></i>Bienvenida
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-trophy me-1"></i>Certificación
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-calendar-event me-1"></i>Recordatorios
+                            </button>
+                            <button class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-shield me-1"></i>Seguridad
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuración Avanzada -->
+                <div class="card border-0 shadow-sm mt-4">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="mb-0"><i class="bi bi-sliders me-2"></i>Avanzado</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="real_time">
+                            <label class="form-check-label" for="real_time">
+                                Notificaciones en tiempo real
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="push_notifications">
+                            <label class="form-check-label" for="push_notifications">
+                                Notificaciones push
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="sms_alerts">
+                            <label class="form-check-label" for="sms_alerts">
+                                Alertas SMS
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.notification-item {
+    transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+    background: rgba(102, 126, 234, 0.05);
+    border-color: #667eea !important;
+}
+
+.notification-icon {
+    flex-shrink: 0;
+}
+
+.notification-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.notification-item:hover .notification-actions {
+    opacity: 1;
+}
+
+.btn-courses-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+}
+
+.btn-courses-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+</style>
+{% endblock %}

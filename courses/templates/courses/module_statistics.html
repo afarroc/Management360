@@ -1,0 +1,278 @@
+{% extends "courses/base.html" %}
+{% load static %}
+
+{% block title %}Estadísticas del Módulo - {{ module.title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+.stats-container {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.stats-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.stats-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+}
+
+.stats-header h2 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.stats-body {
+    padding: 2rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-align: center;
+    border-left: 4px solid #667eea;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #718096;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.lessons-stats {
+    margin-top: 2rem;
+}
+
+.lesson-stat-item {
+    background: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.lesson-stat-item:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.lesson-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.progress-bar {
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.completion-text {
+    font-size: 0.875rem;
+    color: #718096;
+}
+
+.btn-back {
+    border: 2px solid #e2e8f0;
+    background: white;
+    color: #718096;
+    border-radius: 8px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-back:hover {
+    border-color: #667eea;
+    background: #667eea;
+    color: white;
+    text-decoration: none;
+}
+
+@media (max-width: 768px) {
+    .stats-header {
+        padding: 1.5rem;
+    }
+
+    .stats-body {
+        padding: 1.5rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stat-card {
+        padding: 1rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block course_content %}
+<div class="stats-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <!-- Header -->
+                <div class="stats-card">
+                    <div class="stats-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h2><i class="bi bi-bar-chart-line me-2"></i>Estadísticas del Módulo</h2>
+                                <p class="mb-0 mt-2">{{ module.title }}</p>
+                            </div>
+                            <a href="{% url 'courses:manage_content' course.slug %}" class="btn-back">
+                                <i class="bi bi-arrow-left me-1"></i>Volver
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="stats-body">
+                        <!-- Estadísticas generales -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value">{{ total_lessons }}</div>
+                                <div class="stat-label">Total de Lecciones</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ total_students }}</div>
+                                <div class="stat-label">Estudiantes Inscritos</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">{{ lesson_stats|length }}</div>
+                                <div class="stat-label">Lecciones con Datos</div>
+                            </div>
+                        </div>
+
+                        <!-- Información del módulo -->
+                        <div class="module-info mb-4">
+                            <h4 class="mb-3"><i class="bi bi-info-circle me-2"></i>Información del Módulo</h4>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Curso:</strong> {{ course.title }}</p>
+                                    <p><strong>Módulo:</strong> {{ module.title }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Orden:</strong> {{ module.order }}</p>
+                                    <p><strong>Lecciones:</strong> {{ module.lessons.count }}</p>
+                                </div>
+                            </div>
+                            {% if module.description %}
+                            <div class="mt-3">
+                                <strong>Descripción:</strong>
+                                <p class="text-muted mb-0">{{ module.description }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Estadísticas por lección -->
+                        <div class="lessons-stats">
+                            <h4 class="mb-3"><i class="bi bi-graph-up me-2"></i>Progreso por Lección</h4>
+
+                            {% if lesson_stats %}
+                                {% for stat in lesson_stats %}
+                                <div class="lesson-stat-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h5 class="lesson-title">{{ stat.lesson.title }}</h5>
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" data-width="{{ stat.completion_rate|floatformat:1 }}"></div>
+                                            </div>
+                                            <div class="completion-text">
+                                                {{ stat.completed_count }} de {{ total_students }} estudiantes completaron
+                                                ({{ stat.completion_rate|floatformat:1 }}%)
+                                            </div>
+                                        </div>
+                                        <div class="ms-3">
+                                            <span class="badge bg-primary">{{ stat.lesson.get_lesson_type_display }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="bi bi-bar-chart text-muted fs-1 mb-3"></i>
+                                    <h5 class="text-muted mb-2">No hay datos de progreso disponibles</h5>
+                                    <p class="text-muted mb-0">Los estudiantes aún no han completado lecciones de este módulo</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.module-info {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    border-left: 4px solid #667eea;
+}
+
+.module-info h4 {
+    color: #2d3748;
+    margin-bottom: 1rem;
+}
+
+.module-info p {
+    margin-bottom: 0.5rem;
+    color: #4a5568;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Aplicar el ancho dinámico a las barras de progreso
+    const progressFills = document.querySelectorAll('.progress-fill');
+    progressFills.forEach(fill => {
+        const width = fill.getAttribute('data-width');
+        if (width) {
+            fill.style.width = width + '%';
+        }
+    });
+});
+</script>
+{% endblock %}
