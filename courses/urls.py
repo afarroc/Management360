@@ -4,14 +4,15 @@ from . import views
 app_name = 'courses'
 
 urlpatterns = [
-    path('', views.dashboard, name='course_list'),  # Dashboard como página principal
+    path('', views.index, name='index'),  # Página principal con contenido general
     path('category/<slug:category_slug>/', views.course_list, name='course_list_by_category'),
-    path('dashboard/', views.dashboard, name='dashboard'),
-    path('courses/', views.course_list, name='courses_list'),  # Lista de cursos en ruta separada
+    path('dashboard/', views.dashboard, name='dashboard'),  # Dashboard para usuarios autenticados
+    path('courses/', views.course_list, name='courses_list'),  # Lista de cursos disponibles
     path('<int:course_id>/enroll/', views.enroll, name='enroll'),
     # URLs para tutores (deben ir antes de <slug:slug>/)
     path('manage/', views.manage_courses, name='manage_courses'),
     path('manage/create/', views.create_course, name='create_course'),
+    path('manage/create/wizard/', views.create_course_wizard, name='create_course_wizard'),
     path('manage/<slug:slug>/edit/', views.edit_course, name='edit_course'),
     path('manage/<slug:slug>/analytics/', views.course_analytics, name='course_analytics'),
 
@@ -33,6 +34,7 @@ urlpatterns = [
     # URLs para gestión de categorías
     path('manage/categories/', views.manage_categories, name='manage_categories'),
     path('manage/categories/create/', views.create_category, name='create_category'),
+    path('manage/categories/quick-create/', views.quick_create_category, name='quick_create_category'),
     path('manage/categories/<int:category_id>/edit/', views.edit_category, name='edit_category'),
     path('manage/categories/<int:category_id>/delete/', views.delete_category, name='delete_category'),
 
