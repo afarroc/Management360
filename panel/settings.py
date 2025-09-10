@@ -124,7 +124,17 @@ if not DEBUG:
     CSRF_TRUSTED_ORIGINS = [f"https://{RENDER_EXTERNAL_HOSTNAME}"] if RENDER_EXTERNAL_HOSTNAME else []
 
 # Configuración de la base de datos
-if DEBUG:
+TEST_MODE = config('TEST_MODE', default=False, cast=bool)
+if TEST_MODE:
+    # Configuración para producción (PostgreSQL)
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=config('DATABASE_URL'),  # Lee de variable de entorno
+            conn_max_age=600,
+            ssl_require=True
+        )
+    }
+else:
     # Configuración para desarrollo (MySQL local)
     DATABASES = {
         'default': {
@@ -136,15 +146,6 @@ if DEBUG:
             'PORT': config('DATABASE_PORT', default='3306'),
             'OPTIONS': {'charset': 'utf8mb4'},
         }
-    }
-else:
-    # Configuración para producción (PostgreSQL en Render)
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=config('DATABASE_URL'),  # Lee de variable de entorno
-            conn_max_age=600,
-            ssl_require=True
-        )
     }
 
 # Authentication
