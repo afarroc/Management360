@@ -9,7 +9,7 @@ from pathlib import Path
 
 # Configurar Django con settings de producción
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'panel.settings')
-os.environ.setdefault('DATABASE_URL', 'postgresql://admin:S6JxbChtQ5AaMxnRERyVBROxNW33KOdb@dpg-d30a9ler433s73813g9g-a.oregon-postgres.render.com/projects_364w')
+os.environ.setdefault('DATABASE_URL', 'postgresql://admin:RCLZrNA78PwYGLh9qCVjITlUZ41EngRA@dpg-d30c9qd6ubrc73bmqam0-a.oregon-postgres.render.com/projects_cgzh')
 os.environ.setdefault('SECRET_KEY', 'django-insecure-test-key-for-production-debug')
 os.environ.setdefault('DEBUG', 'False')
 os.environ.setdefault('ALLOWED_HOSTS', 'localhost,127.0.0.1')

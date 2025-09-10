@@ -26,6 +26,7 @@ panel/secrets.py
 # Scripts de diagnóstico con credenciales de producción
 test_production_db.py
 check_db.py
+deploy_migrations.py
 
 # ================================
 # Sistema/Editores
@@ -58,6 +59,9 @@ db.sqlite3
 !memento/migrations/
 !rooms/migrations/
 !tools/migrations/
+
+# Scripts de automatización (no contienen credenciales)
+deploy_migrations.py
 
 # ================================
 # Media/Static files
