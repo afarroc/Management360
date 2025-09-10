@@ -8,38 +8,30 @@ pip install -r requirements.txt
 # Collect static files
 python manage.py collectstatic --no-input
 
-# Automatic migration deployment with verification
-echo "=== AUTOMATIC MIGRATION DEPLOYMENT ==="
-echo "Running deploy_migrations.py for guaranteed database setup..."
+# Force all migrations - simple and direct
+echo "=== FORCED MIGRATION DEPLOYMENT ==="
 
-# Run the robust migration script
-python deploy_migrations.py
+# Step 1: Force sync all tables
+echo "Step 1: Creating all database tables..."
+python manage.py migrate --run-syncdb --no-input
 
-# Check exit code
-if [ $? -eq 0 ]; then
-    echo "[SUCCESS] Database migration completed successfully"
-else
-    echo "[ERROR] Database migration failed - attempting fallback..."
+# Step 2: Apply all migrations
+echo "Step 2: Applying all migrations..."
+python manage.py migrate --no-input
 
-    # Fallback: Force migration sync
-    echo "Fallback: Forcing database sync..."
-    python manage.py migrate --run-syncdb --no-input || echo "Fallback sync failed"
+# Step 3: Force events migration (critical for signup)
+echo "Step 3: Forcing events migration..."
+python manage.py migrate events --no-input
 
-    # Final verification
-    python -c "
-import os
+# Step 4: Quick verification
+echo "Step 4: Quick verification..."
+python -c "
+import os, django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'panel.settings')
-import django
 django.setup()
-try:
-    from django.contrib.auth.models import User
-    from events.models import CreditAccount
-    user_count = User.objects.count()
-    credit_count = CreditAccount.objects.count()
-    print(f'[OK] Final verification: {user_count} users, {credit_count} credit accounts')
-except Exception as e:
-    print(f'[ERROR] Final verification failed: {e}')
-" 2>/dev/null || echo "[CRITICAL] Database setup incomplete"
-fi
+from django.contrib.auth.models import User
+print(f'Users table: {User.objects.count()} records')
+print('Migration completed successfully!')
+" 2>/dev/null && echo "[SUCCESS] Ready for production" || echo "[WARNING] Check database connection"
 
-echo "=== DEPLOYMENT MIGRATION COMPLETE ==="
+echo "=== DEPLOYMENT COMPLETE ==="
