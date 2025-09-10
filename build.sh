@@ -9,40 +9,20 @@ pip install -r requirements.txt
 python manage.py collectstatic --no-input
 
 #!/bin/bash
-echo "=== SIMPLE MIGRATION BUILD ==="
+echo "=== DJANGO BUILD PROCESS ==="
 
 # Set Django settings
 export DJANGO_SETTINGS_MODULE=panel.settings
 
-# Simple and direct migration approach
-echo "Running Django migrations..."
-python manage.py migrate --no-input --verbosity=1
+# Install Python dependencies
+echo "Installing dependencies..."
+pip install -r requirements.txt
 
-# Verify critical tables exist
-echo "Verifying critical tables..."
-python -c "
-import os, django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'panel.settings')
-django.setup()
+# Collect static files
+echo "Collecting static files..."
+python manage.py collectstatic --no-input --verbosity=1
 
-try:
-    from django.contrib.auth.models import User
-    from django.apps import apps
-
-    # Check if User model can be queried (implies table exists)
-    user_count = User.objects.count()
-    print(f'[SUCCESS] Database ready! Users table accessible. Current users: {user_count}')
-
-except Exception as e:
-    print(f'[ERROR] Database check failed: {e}')
-    exit 1
-" 2>/dev/null
-
-if [ $? -eq 0 ]; then
-    echo "[SUCCESS] Build completed successfully!"
-else
-    echo "[ERROR] Build failed!"
-    exit 1
-fi
-
+# Build process complete - migrations will run in release command
+echo "[SUCCESS] Build completed successfully!"
+echo "Migrations will be applied automatically in the release phase."
 echo "=== BUILD COMPLETE ==="
