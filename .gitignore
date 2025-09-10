@@ -43,10 +43,8 @@ db.sqlite3
 *.dump
 
 # ================================
-# Migraciones (excepciones incluidas)
+# Migraciones (INCLUIDAS en el repositorio)
 # ================================
-*/migrations/*
-!*/migrations/__init__.py
 !accounts/migrations/
 !campaigns/migrations/
 !chat/migrations/
@@ -58,6 +56,7 @@ db.sqlite3
 !memento/migrations/
 !rooms/migrations/
 !tools/migrations/
+*/migrations/*
 
 # ================================
 # Media/Static files
