@@ -125,13 +125,17 @@ if not DEBUG:
 
 # Configuración de la base de datos
 if DEBUG:
-    # Configuración para desarrollo (PostgreSQL local)
+    # Configuración para desarrollo (MySQL local)
     DATABASES = {
-        'default': dj_database_url.config(
-            default=config('DATABASE_URL'),  # Lee de variable de entorno
-            conn_max_age=600,
-            ssl_require=True
-        )
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': config('DATABASE_NAME', default='projects'),
+            'USER': config('DATABASE_USER', default='root'),
+            'PASSWORD': config('DATABASE_PASSWORD', default=''),
+            'HOST': config('DATABASE_HOST', default='localhost'),
+            'PORT': config('DATABASE_PORT', default='3306'),
+            'OPTIONS': {'charset': 'utf8mb4'},
+        }
     }
 else:
     # Configuración para producción (PostgreSQL en Render)
