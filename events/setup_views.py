@@ -75,66 +75,55 @@ class SetupView(View):
         })
 
     def post(self, request):
-        if 'create_su' in request.POST:
+        # Check for superuser creation request
+        create_su_triggered = 'create_su' in request.POST or 'create_su_btn' in request.POST or request.POST.get('create_su') == 'Create Superuser'
+
+        if create_su_triggered:
             try:
-                print("DEBUG: Iniciando creación de superusuario con SQL raw")
+                # Check if superuser already exists
                 if not User.objects.filter(username='su').exists():
-                    print("DEBUG: El superusuario 'su' no existe, procediendo a crearlo")
+                    # Prepare user data
                     username = 'su'
                     first_name = 'Superusuario'
+                    last_name = ''  # Empty for PostgreSQL compatibility
                     email = f'{username}@{DOMAIN_BASE}'
                     password = generate_random_password()
-                    print(f"DEBUG: Creando superusuario con username: {username}")
 
-                    # Usar SQL raw para evitar completamente las señales de Django
-                    print("DEBUG: Usando SQL raw para evitar señales problemáticas")
+                    # Hash password and create user with raw SQL
                     from django.db import connection
                     from django.contrib.auth.hashers import make_password
 
                     hashed_password = make_password(password)
+                    sql_params = [username, first_name, last_name, email, hashed_password, True, True, True]
 
                     with connection.cursor() as cursor:
-                        # Insertar directamente en la tabla auth_user
                         cursor.execute("""
                             INSERT INTO auth_user (
-                                username, first_name, email, password,
+                                username, first_name, last_name, email, password,
                                 is_staff, is_active, is_superuser,
                                 date_joined, last_login
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-                        """, [
-                            username, first_name, email, hashed_password,
-                            True, True, True  # is_staff, is_active, is_superuser
-                        ])
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                        """, sql_params)
 
-                    print("DEBUG: Superusuario creado con SQL raw")
-
-                    # Verificar que se creó correctamente
+                    # Verify user was created and authenticate
                     superuser = User.objects.get(username='su')
-                    print(f"DEBUG: Verificación: Usuario existe en BD - {superuser.username}")
-
-                    messages.success(request, f'Superusuario creado: su, contraseña: {password}')
-                    print("DEBUG: Autenticando usuario")
-
                     user = authenticate(username='su', password=password)
+
                     if user is not None:
-                        print("DEBUG: Usuario autenticado correctamente, haciendo login")
                         login(request, user)
-                        print("DEBUG: Login exitoso, configurando sesión")
                         request.session['first_session'] = True
-                        print("DEBUG: Redirigiendo a setup step 2")
+                        messages.success(request, f'Superusuario creado: su, contraseña: {password}')
                         return redirect(reverse('setup') + '?step=2')
                     else:
-                        print("DEBUG: ERROR - No se pudo autenticar el usuario")
                         messages.error(request, 'Error al autenticar el superusuario creado.')
+
                 else:
-                    print("DEBUG: El superusuario 'su' ya existe")
                     messages.info(request, 'El superusuario ya existe. Por favor, inicie sesión.')
                     return redirect(reverse('setup') + '?step=login')
+
             except Exception as e:
-                print(f"DEBUG: ERROR en creación de superusuario: {str(e)}")
-                import traceback
-                traceback.print_exc()
-                messages.error(request, f'Error al crear superusuario: {str(e)}. Las migraciones pueden no haberse ejecutado aún.')
+                error_message = f'Error al crear superusuario: {str(e)}. Las migraciones pueden no haberse ejecutado aún.'
+                messages.error(request, error_message)
                 return redirect(reverse('setup'))
 
         elif 'login_su' in request.POST:
