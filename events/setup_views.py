@@ -77,23 +77,41 @@ class SetupView(View):
     def post(self, request):
         if 'create_su' in request.POST:
             try:
+                print("DEBUG: Iniciando creación de superusuario")
                 if not User.objects.filter(username='su').exists():
+                    print("DEBUG: El superusuario 'su' no existe, procediendo a crearlo")
                     username = 'su'
                     first_name = 'Superusuario'
                     email = f'{username}@{DOMAIN_BASE}'
                     password = generate_random_password()
+                    print(f"DEBUG: Creando superusuario con username: {username}")
+
                     superuser = User.objects.create_superuser(username, email, password, first_name=first_name)
-                    superuser.save()
+                    print(f"DEBUG: Superusuario creado: {superuser.username}")
+
+                    # No llamar save() nuevamente, create_superuser ya lo hace
                     messages.success(request, f'Superusuario creado: su, contraseña: {password}')
+                    print("DEBUG: Autenticando usuario")
+
                     user = authenticate(username='su', password=password)
                     if user is not None:
+                        print("DEBUG: Usuario autenticado correctamente, haciendo login")
                         login(request, user)
-                        request.session.setdefault('first_session', True)
+                        print("DEBUG: Login exitoso, configurando sesión")
+                        request.session['first_session'] = True
+                        print("DEBUG: Redirigiendo a setup step 2")
                         return redirect(reverse('setup') + '?step=2')
+                    else:
+                        print("DEBUG: ERROR - No se pudo autenticar el usuario")
+                        messages.error(request, 'Error al autenticar el superusuario creado.')
                 else:
+                    print("DEBUG: El superusuario 'su' ya existe")
                     messages.info(request, 'El superusuario ya existe. Por favor, inicie sesión.')
                     return redirect(reverse('setup') + '?step=login')
             except Exception as e:
+                print(f"DEBUG: ERROR en creación de superusuario: {str(e)}")
+                import traceback
+                traceback.print_exc()
                 messages.error(request, f'Error al crear superusuario: {str(e)}. Las migraciones pueden no haberse ejecutado aún.')
                 return redirect(reverse('setup'))
 
