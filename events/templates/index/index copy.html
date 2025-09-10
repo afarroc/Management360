@@ -30,7 +30,7 @@
 
                 <!-- Sales Card -->
                 <div class="col-xxl-4 col-md-6">
-                    <div class="card info-card sales-card">
+                    <div class="card info-card sales-card shadow-sm hover-lift">
 
                         <div class="filter">
                             <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
@@ -67,7 +67,7 @@
 
                 <!-- Revenue Card -->
                 <div class="col-xxl-4 col-md-6">
-                    <div class="card info-card revenue-card">
+                    <div class="card info-card revenue-card shadow-sm hover-lift">
 
                         <div class="filter">
                             <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
@@ -105,7 +105,7 @@
                 <!-- Customers Card -->
                 <div class="col-xxl-4 col-xl-12">
 
-                    <div class="card info-card customers-card">
+                    <div class="card info-card customers-card shadow-sm hover-lift">
 
                         <div class="filter">
                             <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
@@ -243,7 +243,7 @@
                         <div class="card-body">
                             <h5 class="card-title">Recent Sales <span>| Today</span></h5>
 
-                            <table class="table table-borderless datatable">
+                            <table class="table table-borderless datatable table-hover" role="table" aria-label="Recent Sales">
                                 <thead>
                                     <tr>
                                         <th scope="col">#</th>
@@ -318,7 +318,7 @@
                         <div class="card-body pb-0">
                             <h5 class="card-title">Top Selling <span>| Today</span></h5>
 
-                            <table class="table table-borderless">
+                            <table class="table table-borderless table-hover" role="table" aria-label="Top Selling Products">
                                 <thead>
                                     <tr>
                                         <th scope="col">Preview</th>
@@ -391,15 +391,15 @@
             <!-- Recent Activity -->
             <div class="card">
                 <div class="filter">
-                    <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
+                    <a class="icon" href="#" data-bs-toggle="dropdown" data-bs-toggle="tooltip" data-bs-placement="top" title="Filtrar datos por período"><i class="bi bi-three-dots"></i></a>
                     <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                         <li class="dropdown-header text-start">
                             <h6>Filter</h6>
                         </li>
 
-                        <li><a class="dropdown-item" href="#">Today</a></li>
-                        <li><a class="dropdown-item" href="#">This Month</a></li>
-                        <li><a class="dropdown-item" href="#">This Year</a></li>
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="tooltip" data-bs-placement="right" title="Ver datos de hoy">Today</a></li>
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="tooltip" data-bs-placement="right" title="Ver datos del mes actual">This Month</a></li>
+                        <li><a class="dropdown-item" href="#" data-bs-toggle="tooltip" data-bs-placement="right" title="Ver datos del año actual">This Year</a></li>
                     </ul>
                 </div>
 
@@ -408,7 +408,7 @@
 
                     <div class="activity">
 
-                        <div class="activity-item d-flex">
+                        <div class="activity-item d-flex" data-bs-toggle="tooltip" data-bs-placement="left" title="Actividad reciente - 32 minutos atrás">
                             <div class="activite-label">32 min</div>
                             <i class='bi bi-circle-fill activity-badge text-success align-self-start'></i>
                             <div class="activity-content">
@@ -673,5 +673,124 @@
 
     </div>
 </section>
+
+<style>
+.hover-lift {
+    transition: all 0.3s ease;
+}
+.hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+.card {
+    transition: all 0.3s ease;
+}
+.card-icon {
+    transition: all 0.3s ease;
+}
+.card:hover .card-icon {
+    transform: scale(1.1);
+}
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+.activity-item {
+    transition: all 0.2s ease;
+}
+.activity-item:hover {
+    background-color: rgba(0,0,0,0.05);
+    padding-left: 10px;
+}
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.card {
+    animation: fadeInUp 0.6s ease-out;
+}
+.card:nth-child(1) { animation-delay: 0.1s; }
+.card:nth-child(2) { animation-delay: 0.2s; }
+.card:nth-child(3) { animation-delay: 0.3s; }
+.card:nth-child(4) { animation-delay: 0.4s; }
+.card:nth-child(5) { animation-delay: 0.5s; }
+
+/* Loading states */
+.chart-loading {
+    position: relative;
+}
+.chart-loading::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 10;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+
+<script>
+// Initialize tooltips
+document.addEventListener('DOMContentLoaded', function () {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Add loading states to charts
+    const chartContainers = document.querySelectorAll('.echart, #reportsChart');
+    chartContainers.forEach(container => {
+        container.classList.add('chart-loading');
+    });
+
+    // Remove loading state after charts are rendered
+    setTimeout(() => {
+        chartContainers.forEach(container => {
+            container.classList.remove('chart-loading');
+        });
+    }, 1000);
+
+    // Add smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+
+    // Add click animations to interactive elements
+    document.querySelectorAll('.dropdown-item, .activity-item').forEach(item => {
+        item.addEventListener('click', function() {
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+        });
+    });
+});
+</script>
 
 {% endblock %}
