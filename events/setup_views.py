@@ -86,10 +86,15 @@ class SetupView(View):
                     password = generate_random_password()
                     print(f"DEBUG: Creando superusuario con username: {username}")
 
-                    superuser = User.objects.create_superuser(username, email, password, first_name=first_name)
+                    # Usar create_user() + configuración manual para evitar señales problemáticas
+                    print("DEBUG: Usando create_user() en lugar de create_superuser()")
+                    superuser = User.objects.create_user(username, email, password)
+                    superuser.first_name = first_name
+                    superuser.is_staff = True
+                    superuser.is_superuser = True
+                    superuser.save()
                     print(f"DEBUG: Superusuario creado: {superuser.username}")
 
-                    # No llamar save() nuevamente, create_superuser ya lo hace
                     messages.success(request, f'Superusuario creado: su, contraseña: {password}')
                     print("DEBUG: Autenticando usuario")
 
