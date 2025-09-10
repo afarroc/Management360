@@ -408,42 +408,18 @@ document.addEventListener('DOMContentLoaded', function () {
     // SPECIFIC TRACKING FOR CREATE SUPERUSER BUTTON
     const createSuperuserBtn = document.getElementById('create-superuser-btn');
     if (createSuperuserBtn) {
-        console.log('DEBUG TEMPLATE: Botón Create Superuser encontrado en DOM');
-
-        // Track mouse events
-        createSuperuserBtn.addEventListener('mouseenter', function() {
-            console.log('DEBUG TEMPLATE: Mouse entered create superuser button');
-        });
-
-        createSuperuserBtn.addEventListener('mouseleave', function() {
-            console.log('DEBUG TEMPLATE: Mouse left create superuser button');
-        });
-
-        // Track focus events
-        createSuperuserBtn.addEventListener('focus', function() {
-            console.log('DEBUG TEMPLATE: Create superuser button focused');
-        });
-
-        createSuperuserBtn.addEventListener('blur', function() {
-            console.log('DEBUG TEMPLATE: Create superuser button lost focus');
-        });
 
         // Track click and set hidden input value BEFORE form submission
         createSuperuserBtn.addEventListener('click', function(e) {
-            console.log('DEBUG TEMPLATE: Create Superuser button clicked');
-
             // Set hidden input value to indicate button was clicked
             const hiddenInput = document.getElementById('create-su-hidden');
             if (hiddenInput) {
                 hiddenInput.value = 'Create Superuser';
-                console.log('DEBUG TEMPLATE: Hidden input value set to "Create Superuser"');
-            } else {
-                console.log('DEBUG TEMPLATE: ERROR - Hidden input not found');
             }
 
             // Small delay to ensure value is set before form submission
             setTimeout(() => {
-                console.log('DEBUG TEMPLATE: Timeout completed, form should submit now');
+                // Ensure form submits
             }, 10);
         });
 
@@ -451,16 +427,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const createSuperuserForm = document.getElementById('create-superuser-form');
         if (createSuperuserForm) {
             createSuperuserForm.addEventListener('submit', function(e) {
-                console.log('DEBUG TEMPLATE: Form submit event triggered');
-
                 // Verify hidden input has correct value before submission
                 const hiddenInput = document.getElementById('create-su-hidden');
-                if (hiddenInput) {
-                    console.log('DEBUG TEMPLATE: Hidden input value before submit:', hiddenInput.value);
-                    if (!hiddenInput.value) {
-                        console.log('DEBUG TEMPLATE: Setting hidden input value before submit');
-                        hiddenInput.value = 'Create Superuser';
-                    }
+                if (hiddenInput && !hiddenInput.value) {
+                    hiddenInput.value = 'Create Superuser';
                 }
 
                 // Ensure form can still be submitted even if JavaScript fails
