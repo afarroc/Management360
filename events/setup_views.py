@@ -22,6 +22,12 @@ class SetupView(View):
     template_name = 'setup/setup.html'
 
     def get(self, request):
+        print("=== GET REQUEST RECIBIDO EN SetupView ===")
+        print(f"Request method: {request.method}")
+        print(f"Request path: {request.path}")
+        print(f"GET params: {dict(request.GET)}")
+        print(f"User: {request.user} (authenticated: {request.user.is_authenticated})")
+
         if not request.user.is_authenticated:
             step = request.GET.get('step', '1')
         elif request.user.is_superuser:
@@ -75,6 +81,13 @@ class SetupView(View):
         })
 
     def post(self, request):
+        print("=== POST REQUEST RECIBIDO EN SetupView ===")
+        print(f"Request method: {request.method}")
+        print(f"Request path: {request.path}")
+        print(f"POST data keys: {list(request.POST.keys())}")
+        print(f"FILES data keys: {list(request.FILES.keys()) if request.FILES else None}")
+        print(f"User: {request.user} (authenticated: {request.user.is_authenticated})")
+
         # Check for superuser creation request - multiple detection methods for robustness
         create_su_triggered = (
             'create_su' in request.POST or
@@ -84,22 +97,43 @@ class SetupView(View):
         )
 
         if create_su_triggered:
+            print("=== INICIO PROCESO CREACIÓN SUPERUSUARIO ===")
+            print("PASO 1: Verificando POST data - 'create_su' en request.POST:", 'create_su' in request.POST)
+            print("PASO 1: Valor de 'create_su':", repr(request.POST.get('create_su', 'NOT FOUND')))
+            print("PASO 1: Verificando 'create_su_btn' en request.POST:", 'create_su_btn' in request.POST)
+            print("PASO 1: Valor de 'create_su_btn':", repr(request.POST.get('create_su_btn', 'NOT FOUND')))
+            print("PASO 1: ¿Se activó creación de superusuario?:", create_su_triggered)
+            print("PASO 1: ✓ Botón 'create_su' detectado en POST request")
             try:
-                # Check if superuser already exists
-                if not User.objects.filter(username='su').exists():
-                    # Prepare user data
+                print("PASO 2: Verificando existencia del superusuario 'su'")
+                superuser_exists = User.objects.filter(username='su').exists()
+                print(f"PASO 2: Superusuario 'su' existe: {superuser_exists}")
+
+                if not superuser_exists:
+                    print("PASO 2: ✓ Superusuario no existe, procediendo con creación")
+
+                    print("PASO 3: Datos preparados - Username: su, Email: su@localhost")
                     username = 'su'
                     first_name = 'Superusuario'
                     last_name = ''  # Empty last name for PostgreSQL compatibility
                     email = f'{username}@{DOMAIN_BASE}'
-                    password = generate_random_password()
 
-                    # Hash password and create user with raw SQL
+                    print("PASO 4: Generando contraseña aleatoria")
+                    password = generate_random_password()
+                    print(f"PASO 4: ✓ Contraseña generada (longitud: {len(password)})")
+
+                    print("PASO 5: Importando módulos para SQL raw")
                     from django.db import connection
                     from django.contrib.auth.hashers import make_password
+                    print("PASO 5: ✓ Módulos importados correctamente")
 
+                    print("PASO 6: Hasheando contraseña")
                     hashed_password = make_password(password)
+                    print(f"PASO 6: ✓ Contraseña hasheada (tipo: {type(hashed_password)})")
+
+                    print("PASO 7: Ejecutando SQL raw para insertar usuario")
                     sql_params = [username, first_name, last_name, email, hashed_password, True, True, True]
+                    print(f"PASO 7: Parámetros SQL: {sql_params}")
 
                     with connection.cursor() as cursor:
                         cursor.execute("""
@@ -110,19 +144,42 @@ class SetupView(View):
                             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
                         """, sql_params)
 
-                    # Verify user was created and authenticate
+                    print("PASO 7: ✓ SQL ejecutado exitosamente")
+
+                    print("PASO 8: Verificando creación del usuario en base de datos")
                     superuser = User.objects.get(username='su')
+                    print(f"PASO 8: ✓ Usuario encontrado en BD - Username: {superuser.username}")
+                    print(f"PASO 8:   - Is superuser: {superuser.is_superuser}")
+                    print(f"PASO 8:   - Is staff: {superuser.is_staff}")
+                    print(f"PASO 8:   - Is active: {superuser.is_active}")
+
+                    print("PASO 9: ✓ Mensaje de éxito enviado: Superusuario creado: su, contraseña: [REDACTED]")
+                    messages.success(request, f'Superusuario creado: su, contraseña: {password}')
+
+                    print("PASO 10: Autenticando usuario con credenciales")
                     user = authenticate(username='su', password=password)
+                    print(f"PASO 10: Resultado autenticación: {user is not None}")
 
                     if user is not None:
+                        print("PASO 10: ✓ Autenticación exitosa")
+
+                        print("PASO 11: Ejecutando login del usuario")
                         login(request, user)
+                        print("PASO 11: ✓ Login completado")
+
+                        print("PASO 12: Configurando variable de sesión")
                         request.session['first_session'] = True
-                        messages.success(request, f'Superusuario creado: su, contraseña: {password}')
+                        print("PASO 12: ✓ Sesión configurada")
+
+                        print("PASO 13: Redirigiendo a: /events/setup/?step=2")
+                        print("=== PROCESO CREACIÓN SUPERUSUARIO COMPLETADO EXITOSAMENTE ===")
                         return redirect(reverse('setup') + '?step=2')
                     else:
+                        print("PASO 10: ❌ Error en autenticación")
                         messages.error(request, 'Error al autenticar el superusuario creado.')
 
                 else:
+                    print("PASO 2: ✓ Superusuario ya existe")
                     messages.info(request, 'El superusuario ya existe. Por favor, inicie sesión.')
                     return redirect(reverse('setup') + '?step=login')
 
