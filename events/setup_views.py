@@ -75,8 +75,13 @@ class SetupView(View):
         })
 
     def post(self, request):
-        # Check for superuser creation request
-        create_su_triggered = 'create_su' in request.POST or 'create_su_btn' in request.POST or request.POST.get('create_su') == 'Create Superuser'
+        # Check for superuser creation request - multiple detection methods for robustness
+        create_su_triggered = (
+            'create_su' in request.POST or
+            'create_su_btn' in request.POST or
+            request.POST.get('create_su') == 'Create Superuser' or
+            request.POST.get('create_su_btn') == 'Create Superuser'
+        )
 
         if create_su_triggered:
             try:
@@ -122,9 +127,26 @@ class SetupView(View):
                     return redirect(reverse('setup') + '?step=login')
 
             except Exception as e:
+                print(f"ERROR: Exception in superuser creation: {type(e).__name__}: {str(e)}")
+                import traceback
+                traceback.print_exc()
+
                 error_message = f'Error al crear superusuario: {str(e)}. Las migraciones pueden no haberse ejecutado aún.'
-                messages.error(request, error_message)
-                return redirect(reverse('setup'))
+
+                # Try to add error message, but don't fail if messages middleware is not available
+                try:
+                    messages.error(request, error_message)
+                except Exception as msg_error:
+                    print(f"WARNING: Could not add error message: {msg_error}")
+
+                # Always return a redirect to prevent button from getting stuck
+                try:
+                    return redirect(reverse('setup'))
+                except Exception as redirect_error:
+                    print(f"ERROR: Could not redirect: {redirect_error}")
+                    # Fallback: return a basic HttpResponse
+                    from django.http import HttpResponse
+                    return HttpResponse("Error occurred. Please refresh the page.", status=500)
 
         elif 'login_su' in request.POST:
             username = request.POST['username']
@@ -262,4 +284,7 @@ class SetupView(View):
             else:
                 messages.info(request, 'All initial statuses already exist.')
             return redirect(reverse('setup') + '?step=4')
+
+        # Fallback: if no specific action was handled, redirect back to setup
+        print("DEBUG: No specific POST action handled, redirecting to setup")
         return redirect(reverse('setup'))
