@@ -77,7 +77,7 @@ class SetupView(View):
     def post(self, request):
         if 'create_su' in request.POST:
             try:
-                print("DEBUG: Iniciando creación de superusuario")
+                print("DEBUG: Iniciando creación de superusuario con SQL raw")
                 if not User.objects.filter(username='su').exists():
                     print("DEBUG: El superusuario 'su' no existe, procediendo a crearlo")
                     username = 'su'
@@ -86,14 +86,31 @@ class SetupView(View):
                     password = generate_random_password()
                     print(f"DEBUG: Creando superusuario con username: {username}")
 
-                    # Usar create_user() + configuración manual para evitar señales problemáticas
-                    print("DEBUG: Usando create_user() en lugar de create_superuser()")
-                    superuser = User.objects.create_user(username, email, password)
-                    superuser.first_name = first_name
-                    superuser.is_staff = True
-                    superuser.is_superuser = True
-                    superuser.save()
-                    print(f"DEBUG: Superusuario creado: {superuser.username}")
+                    # Usar SQL raw para evitar completamente las señales de Django
+                    print("DEBUG: Usando SQL raw para evitar señales problemáticas")
+                    from django.db import connection
+                    from django.contrib.auth.hashers import make_password
+
+                    hashed_password = make_password(password)
+
+                    with connection.cursor() as cursor:
+                        # Insertar directamente en la tabla auth_user
+                        cursor.execute("""
+                            INSERT INTO auth_user (
+                                username, first_name, email, password,
+                                is_staff, is_active, is_superuser,
+                                date_joined, last_login
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                        """, [
+                            username, first_name, email, hashed_password,
+                            True, True, True  # is_staff, is_active, is_superuser
+                        ])
+
+                    print("DEBUG: Superusuario creado con SQL raw")
+
+                    # Verificar que se creó correctamente
+                    superuser = User.objects.get(username='su')
+                    print(f"DEBUG: Verificación: Usuario existe en BD - {superuser.username}")
 
                     messages.success(request, f'Superusuario creado: su, contraseña: {password}')
                     print("DEBUG: Autenticando usuario")
