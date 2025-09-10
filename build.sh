@@ -18,11 +18,15 @@ export DJANGO_SETTINGS_MODULE=panel.settings
 echo "Installing dependencies..."
 pip install -r requirements.txt
 
+# Apply database migrations
+echo "Applying database migrations..."
+python manage.py migrate --no-input --verbosity=1
+
 # Collect static files
 echo "Collecting static files..."
 python manage.py collectstatic --no-input --verbosity=1
 
-# Build process complete - migrations will run in release command
+# Build process complete
 echo "[SUCCESS] Build completed successfully!"
-echo "Migrations will be applied automatically in the release phase."
+echo "Database migrations applied and static files collected."
 echo "=== BUILD COMPLETE ==="
