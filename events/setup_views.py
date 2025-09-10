@@ -85,6 +85,7 @@ class SetupView(View):
                     # Prepare user data
                     username = 'su'
                     first_name = 'Superusuario'
+                    last_name = ''  # Empty last name for PostgreSQL compatibility
                     email = f'{username}@{DOMAIN_BASE}'
                     password = generate_random_password()
 
@@ -93,15 +94,15 @@ class SetupView(View):
                     from django.contrib.auth.hashers import make_password
 
                     hashed_password = make_password(password)
-                    sql_params = [username, first_name, email, hashed_password, True, True, True]
+                    sql_params = [username, first_name, last_name, email, hashed_password, True, True, True]
 
                     with connection.cursor() as cursor:
                         cursor.execute("""
                             INSERT INTO auth_user (
-                                username, first_name, email, password,
+                                username, first_name, last_name, email, password,
                                 is_staff, is_active, is_superuser,
                                 date_joined, last_login
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
                         """, sql_params)
 
                     # Verify user was created and authenticate
