@@ -23,6 +23,10 @@ panel/secrets.py
 *.key
 *.cert
 
+# Scripts de diagnóstico con credenciales de producción
+test_production_db.py
+check_db.py
+
 # ================================
 # Sistema/Editores
 # ================================
