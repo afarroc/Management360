@@ -136,10 +136,104 @@ class Module(models.Model):
     def __str__(self):
         return f"{self.course.title} - {self.title}"
 
+class LessonAttachment(models.Model):
+    """Modelo para archivos adjuntos de lecciones - permite múltiples archivos por lección"""
+    lesson = models.ForeignKey(
+        'Lesson',
+        on_delete=models.CASCADE,
+        related_name='attachments'
+    )
+    title = models.CharField(max_length=200, help_text="Título descriptivo del archivo")
+    file = models.FileField(
+        upload_to='courses/lesson_attachments/',
+        validators=[FileExtensionValidator([
+            'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
+            'txt', 'zip', 'rar', 'jpg', 'jpeg', 'png', 'gif',
+            'mp4', 'avi', 'mov', 'mp3', 'wav'
+        ])]
+    )
+    file_type = models.CharField(max_length=50, blank=True, help_text="Tipo de archivo detectado automáticamente")
+    file_size = models.PositiveIntegerField(default=0, help_text="Tamaño del archivo en bytes")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    order = models.PositiveIntegerField(default=0, help_text="Orden de visualización")
+
+    class Meta:
+        ordering = ['order', 'uploaded_at']
+        verbose_name = 'Archivo Adjunto de Lección'
+        verbose_name_plural = 'Archivos Adjuntos de Lección'
+
+    def __str__(self):
+        return f"{self.lesson.title} - {self.title}"
+
+    def save(self, *args, **kwargs):
+        # Detectar tipo de archivo automáticamente si no está establecido
+        if not self.file_type and self.file:
+            self.file_type = self.get_file_type()
+
+        # Obtener tamaño del archivo
+        if self.file and hasattr(self.file, 'size'):
+            self.file_size = self.file.size
+
+        super().save(*args, **kwargs)
+
+    def get_file_type(self):
+        """Determina el tipo de archivo basado en la extensión"""
+        if not self.file:
+            return 'Desconocido'
+
+        file_name = str(self.file.name).lower()
+
+        file_types = {
+            # Documentos
+            '.pdf': 'PDF Documento',
+            '.doc': 'Documento Word',
+            '.docx': 'Documento Word',
+            '.xls': 'Hoja de Cálculo Excel',
+            '.xlsx': 'Hoja de Cálculo Excel',
+            '.ppt': 'Presentación PowerPoint',
+            '.pptx': 'Presentación PowerPoint',
+            '.txt': 'Archivo de Texto',
+
+            # Imágenes
+            '.jpg': 'Imagen JPEG',
+            '.jpeg': 'Imagen JPEG',
+            '.png': 'Imagen PNG',
+            '.gif': 'Imagen GIF',
+
+            # Videos
+            '.mp4': 'Video MP4',
+            '.avi': 'Video AVI',
+            '.mov': 'Video MOV',
+
+            # Audio
+            '.mp3': 'Audio MP3',
+            '.wav': 'Audio WAV',
+
+            # Archivos comprimidos
+            '.zip': 'Archivo Comprimido',
+            '.rar': 'Archivo Comprimido',
+        }
+
+        for ext, file_type in file_types.items():
+            if file_name.endswith(ext):
+                return file_type
+
+        return 'Archivo'
+
+    def get_file_size_display(self):
+        """Retorna el tamaño del archivo en formato legible"""
+        size = self.file_size
+        for unit in ['B', 'KB', 'MB', 'GB']:
+            if size < 1024.0:
+                return ".1f"
+            size /= 1024.0
+        return ".1f"
+
+
 class Lesson(models.Model):
     module = models.ForeignKey(
-        Module, 
-        on_delete=models.CASCADE, 
+        Module,
+        on_delete=models.CASCADE,
         related_name='lessons'
     )
     title = models.CharField(max_length=200)
@@ -154,10 +248,10 @@ class Lesson(models.Model):
     duration_minutes = models.PositiveIntegerField(default=0)
     order = models.PositiveIntegerField(default=0)
     is_free = models.BooleanField(default=False)  # Lección gratuita para preview
-    
+
     # Para quizzes
     quiz_questions = models.JSONField(default=list, blank=True)  # Almacena preguntas y respuestas
-    
+
     # Para assignments
     assignment_instructions = models.TextField(blank=True)
     assignment_file = models.FileField(
@@ -167,10 +261,10 @@ class Lesson(models.Model):
         validators=[FileExtensionValidator(['pdf', 'docx', 'txt'])]
     )
     assignment_due_date = models.DateTimeField(null=True, blank=True)
-    
+
     class Meta:
         ordering = ['order']
-    
+
     def __str__(self):
         return f"{self.module.title} - {self.title}"
 

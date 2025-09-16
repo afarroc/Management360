@@ -25,7 +25,7 @@
                         <ul class="list-unstyled mt-2 ms-3">
                             {% for lesson in module.lessons.all %}
                             <li class="mb-1">
-                                <a href="{% url 'courses:course_learningP_lesson' course.slug lesson.id %}" 
+                                <a href="{% url 'courses:course_learning_lesson' course.slug lesson.id %}"
                                    class="text-decoration-none lesson-link {% if lesson.id == current_lesson.id %}active fw-bold text-primary{% endif %}">
                                     <i class="fas fa-{% if lesson.lesson_type == 'video' %}play-circle{% elif lesson.lesson_type == 'quiz' %}question-circle{% else %}file-alt{% endif %} me-1"></i>
                                     {{ lesson.title }}
@@ -607,6 +607,39 @@
     .lesson-subheading {
         font-size: 1.1rem;
     }
+
+    .lesson-heading-main .bi-hash {
+        font-size: 1rem;
+    }
+
+    .lesson-heading-subtitle {
+        margin-left: 1.2rem;
+    }
+
+    .lesson-list-title .bi-list-check {
+        font-size: 1rem;
+    }
+
+    .lesson-subheading .bi-textarea {
+        font-size: 1rem;
+    }
+
+    .lesson-content {
+        margin-left: 1.2rem;
+    }
+
+    .lesson-list-item {
+        font-size: 0.95rem;
+    }
+
+    .list-bullet {
+        font-size: 1.1rem;
+    }
+
+    .file-extension,
+    .file-external {
+        text-align: center;
+    }
 }
 
 /* Estilos para archivos adjuntos mejorados */
@@ -735,6 +768,7 @@
     border-left: 4px solid #667eea;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
 }
 
 .lesson-heading-container::before {
@@ -756,6 +790,13 @@
     margin: 0 0 0.5rem 0;
     position: relative;
     z-index: 1;
+    display: flex;
+    align-items: center;
+}
+
+.lesson-heading-main .bi-hash {
+    opacity: 0.7;
+    font-size: 1.2rem;
 }
 
 .lesson-heading-subtitle {
@@ -766,15 +807,17 @@
     position: relative;
     z-index: 1;
     line-height: 1.5;
+    margin-left: 1.5rem;
 }
 
 /* Estilos para listas mejoradas */
 .lesson-list-container {
     margin: 1.5rem 0;
     padding: 1rem;
-    background: #f8f9fa;
+    background: linear-gradient(135deg, #fff8e1 0%, #fff3c4 100%);
     border-radius: 8px;
-    border: 1px solid #e9ecef;
+    border: 1px solid #ffe082;
+    box-shadow: 0 1px 3px rgba(255, 193, 7, 0.1);
 }
 
 .lesson-list-title {
@@ -783,12 +826,24 @@
     font-weight: 600;
     margin: 0 0 1rem 0;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid #667eea;
+    border-bottom: 2px solid #ffc107;
+    display: flex;
+    align-items: center;
+}
+
+.lesson-list-title .bi-list-check {
+    opacity: 0.7;
+    font-size: 1.1rem;
 }
 
 .lesson-list {
     margin: 0;
     padding-left: 1.5rem;
+    background: white;
+    border-radius: 6px;
+    padding: 1rem;
+    border: 1px solid #ffe082;
+    box-shadow: 0 1px 2px rgba(255, 193, 7, 0.1);
 }
 
 .lesson-list-item {
@@ -798,12 +853,22 @@
     margin-bottom: 0.5rem;
     padding: 0.25rem 0;
     position: relative;
+    padding-left: 1rem;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.lesson-list-item:hover {
+    border-left-color: #ffc107;
+    background-color: rgba(255, 193, 7, 0.1);
+    padding-left: 1.5rem;
 }
 
 .list-bullet {
-    color: #667eea;
+    color: #ffc107;
     font-weight: bold;
     margin-right: 0.5rem;
+    font-size: 1.2rem;
 }
 
 /* Estilos para texto mejorado */
@@ -813,6 +878,7 @@
     background: white;
     border-radius: 8px;
     border: 1px solid #e9ecef;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .lesson-subheading {
@@ -821,7 +887,14 @@
     font-weight: 600;
     margin: 0 0 1rem 0;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid #667eea;
+    border-bottom: 2px solid #28a745;
+    display: flex;
+    align-items: center;
+}
+
+.lesson-subheading .bi-textarea {
+    opacity: 0.7;
+    font-size: 1.1rem;
 }
 
 .lesson-content {
@@ -829,6 +902,7 @@
     font-size: 1rem;
     line-height: 1.7;
     margin: 0;
+    margin-left: 1.5rem;
 }
 
 /* Estilos responsivos para archivos */
