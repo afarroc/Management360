@@ -28,9 +28,11 @@
                                     </a></li>
                                     <li><hr class="dropdown-divider"></li>
                                     {% for category in categories %}
+                                    {% if category.slug %}
                                     <li><a class="dropdown-item" href="{% url 'courses:course_list_by_category' category.slug %}">
                                         <i class="fas fa-tag me-2"></i>{{ category.name }}
                                     </a></li>
+                                    {% endif %}
                                     {% endfor %}
                                 </ul>
                             </li>

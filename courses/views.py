@@ -645,9 +645,15 @@ def manage_content(request, slug):
     total_modules = course.modules.count()
     total_lessons = Lesson.objects.filter(module__course=course).count()
 
+    # Obtener módulos con estadísticas calculadas
+    modules = course.modules.prefetch_related('lessons').annotate(
+        lessons_count=Count('lessons'),
+        total_duration=Count('lessons') * 30  # Asumiendo 30 min por lección
+    )
+
     context = {
         'course': course,
-        'modules': course.modules.prefetch_related('lessons'),
+        'modules': modules,
         'total_modules': total_modules,
         'total_lessons': total_lessons,
         'categories': CourseCategory.objects.all(),
@@ -935,7 +941,7 @@ def bulk_module_actions(request, slug):
 
 @login_required
 def create_lesson(request, slug, module_id):
-    """Crear una nueva lección para un módulo"""
+    """Crear una nueva lección para un módulo con soporte para contenido estructurado"""
     course = get_object_or_404(Course, slug=slug, tutor=request.user)
     module = get_object_or_404(Module, id=module_id, course=course)
 
@@ -946,21 +952,47 @@ def create_lesson(request, slug, module_id):
             lesson.module = module
             lesson.save()
             messages.success(request, 'Lección creada exitosamente')
+
+            # Si es una petición AJAX, devolver JSON
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Lección creada exitosamente',
+                    'lesson': {
+                        'id': lesson.id,
+                        'title': lesson.title,
+                        'lesson_type': lesson.lesson_type,
+                        'has_structured_content': bool(lesson.structured_content),
+                        'structured_content_count': len(lesson.structured_content) if lesson.structured_content else 0
+                    }
+                })
+
             return redirect('courses:manage_content', slug=course.slug)
+        else:
+            # Si es AJAX y hay errores, devolver errores
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'errors': form.errors
+                })
     else:
         form = LessonForm()
 
-    return render(request, 'courses/lesson_form.html', {
+    # Información adicional para el template
+    context = {
         'form': form,
         'course': course,
         'module': module,
         'title': 'Crear Nueva Lección',
         'lesson': None,
-    })
+        'lesson_types': LessonTypeChoices.choices,
+    }
+
+    return render(request, 'courses/lesson_form.html', context)
 
 @login_required
 def edit_lesson(request, slug, module_id, lesson_id):
-    """Editar una lección existente"""
+    """Editar una lección existente con soporte para contenido estructurado"""
     course = get_object_or_404(Course, slug=slug, tutor=request.user)
     module = get_object_or_404(Module, id=module_id, course=course)
     lesson = get_object_or_404(Lesson, id=lesson_id, module=module)
@@ -968,19 +1000,48 @@ def edit_lesson(request, slug, module_id, lesson_id):
     if request.method == 'POST':
         form = LessonForm(request.POST, request.FILES, instance=lesson)
         if form.is_valid():
+            # El formulario maneja automáticamente el contenido estructurado
             form.save()
             messages.success(request, 'Lección actualizada exitosamente')
+
+            # Si es una petición AJAX, devolver JSON
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Lección actualizada exitosamente',
+                    'lesson': {
+                        'id': lesson.id,
+                        'title': lesson.title,
+                        'lesson_type': lesson.lesson_type,
+                        'has_structured_content': bool(lesson.structured_content),
+                        'structured_content_count': len(lesson.structured_content) if lesson.structured_content else 0
+                    }
+                })
+
             return redirect('courses:manage_content', slug=course.slug)
+        else:
+            # Si es AJAX y hay errores, devolver errores
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'errors': form.errors
+                })
     else:
         form = LessonForm(instance=lesson)
 
-    return render(request, 'courses/lesson_form.html', {
+    # Información adicional para el template
+    context = {
         'form': form,
         'course': course,
         'module': module,
         'title': 'Editar Lección',
         'lesson': lesson,
-    })
+        'has_structured_content': bool(lesson.structured_content),
+        'structured_content_count': len(lesson.structured_content) if lesson.structured_content else 0,
+        'lesson_types': LessonTypeChoices.choices,
+    }
+
+    return render(request, 'courses/lesson_form.html', context)
 
 @login_required
 def delete_lesson(request, slug, module_id, lesson_id):
@@ -1006,13 +1067,17 @@ def delete_lesson(request, slug, module_id, lesson_id):
 
 @login_required
 def manage_categories(request):
-    """Vista para gestionar categorías de cursos"""
+    """Vista para gestionar categorías de cursos con optimización de consultas"""
     # Solo administradores pueden gestionar categorías
     if not request.user.is_staff:
         messages.error(request, 'No tienes permisos para acceder a esta página')
         return redirect('courses:courses_list')
 
-    categories = CourseCategory.objects.all()
+    # Optimizar consulta con prefetch_related para evitar N+1 queries
+    categories = CourseCategory.objects.prefetch_related(
+        'courses'  # Precargar cursos relacionados para contarlos eficientemente
+    ).order_by('name')  # Ordenar alfabéticamente
+
     return render(request, 'courses/manage_categories.html', {
         'categories': categories,
     })
@@ -1027,9 +1092,31 @@ def create_category(request):
     if request.method == 'POST':
         form = CategoryForm(request.POST)
         if form.is_valid():
-            form.save()
+            category = form.save()
             messages.success(request, 'Categoría creada exitosamente')
+
+            # Si es una petición AJAX, devolver JSON
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Categoría creada exitosamente',
+                    'category': {
+                        'id': category.id,
+                        'name': category.name,
+                        'description': category.description,
+                        'slug': category.slug,
+                        'courses_count': category.courses.count()
+                    }
+                })
+
             return redirect('courses:manage_categories')
+        else:
+            # Si es AJAX y hay errores, devolver errores
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'errors': form.errors
+                })
     else:
         form = CategoryForm()
 

@@ -148,7 +148,8 @@ class Lesson(models.Model):
         choices=LessonTypeChoices.choices,
         default=LessonTypeChoices.VIDEO
     )
-    content = models.TextField(blank=True)  # Para lecciones de texto
+    content = models.TextField(blank=True)  # Para lecciones de texto simples
+    structured_content = models.JSONField(default=list, blank=True)  # Para contenido estructurado con elementos
     video_url = models.URLField(blank=True)  # Para lecciones de video
     duration_minutes = models.PositiveIntegerField(default=0)
     order = models.PositiveIntegerField(default=0)
@@ -199,24 +200,27 @@ class Enrollment(models.Model):
 
 class Progress(models.Model):
     enrollment = models.ForeignKey(
-        Enrollment, 
-        on_delete=models.CASCADE, 
+        Enrollment,
+        on_delete=models.CASCADE,
         related_name='progress'
     )
     lesson = models.ForeignKey(
-        Lesson, 
-        on_delete=models.CASCADE, 
+        Lesson,
+        on_delete=models.CASCADE,
         related_name='progress'
     )
     completed = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
     score = models.DecimalField(
-        max_digits=5, 
-        decimal_places=2, 
-        null=True, 
+        max_digits=5,
+        decimal_places=2,
+        null=True,
         blank=True,
         validators=[MinValueValidator(0), MaxValueValidator(100)]
     )
+    attempts = models.PositiveIntegerField(default=0)  # Número de intentos realizados
+    max_attempts = models.PositiveIntegerField(default=3)  # Máximo número de intentos permitidos
+    retries_left = models.PositiveIntegerField(default=3)  # Intentos restantes
     
     class Meta:
         unique_together = ['enrollment', 'lesson']
