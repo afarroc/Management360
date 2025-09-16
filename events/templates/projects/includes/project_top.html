@@ -1,55 +1,288 @@
-<!-- Top Selling -->
+<!-- Projects Data Table -->
 <div class="col-12">
-    <div class="card top-selling overflow-auto">
+    <div class="card recent-sales overflow-auto">
 
         <div class="filter">
             <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                 <li class="dropdown-header text-start">
-                    <h6>Filter</h6>
+                    <h6>Options</h6>
                 </li>
-
-                <li><a class="dropdown-item" href="#">--</a></li>
-                <li><a class="dropdown-item" href="#">-</a></li>
-                <li><a class="dropdown-item" href="#">--</a></li>
+                <li><a class="dropdown-item" href="#" onclick="toggleView('table')">Table View</a></li>
+                <li><a class="dropdown-item" href="#" onclick="toggleView('cards')">Card View</a></li>
+                <li><a class="dropdown-item" href="#" onclick="exportProjects()">Export Data</a></li>
             </ul>
         </div>
 
-        <div class="card-body pb-0">
-            <h5 class="card-title">Projects <span>| Today</span></h5>
+        <div class="card-body">
+            <h5 class="card-title">Projects Management <span>| Overview</span></h5>
 
-            <table class="table datatable table-striped" style="width:100%">
-                <thead>
-                    <tr>
-                        <th scope="col">Title</th>
-                        <th scope="col">Event</th>
-                        <th scope="col">Status</th>
-                        <th scope="col">Tasks</th>
-                    </tr>
-                </thead>
+            <!-- Navigation Tabs -->
+            <ul class="nav nav-tabs nav-tabs-bordered d-flex" id="projectTabs" role="tablist">
+                <li class="nav-item flex-fill" role="presentation">
+                    <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all-projects" type="button" role="tab" aria-controls="all-projects" aria-selected="true">
+                        <i class="bi bi-grid me-1"></i>All Projects
+                    </button>
+                </li>
+                <li class="nav-item flex-fill" role="presentation">
+                    <button class="nav-link" id="active-tab" data-bs-toggle="tab" data-bs-target="#active-projects" type="button" role="tab" aria-controls="active-projects" aria-selected="false">
+                        <i class="bi bi-play-circle me-1"></i>Active
+                    </button>
+                </li>
+                <li class="nav-item flex-fill" role="presentation">
+                    <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed-projects" type="button" role="tab" aria-controls="completed-projects" aria-selected="false">
+                        <i class="bi bi-check-circle me-1"></i>Completed
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content pt-3" id="projectTabsContent">
+                <!-- All Projects Tab -->
+                <div class="tab-pane fade show active" id="all-projects" role="tabpanel" aria-labelledby="all-tab">
+                    <table class="table table-borderless datatable">
+                        <thead>
+                            <tr>
+                                <th scope="col">
+                                    <input type="checkbox" id="selectAll" onclick="toggleSelectAll()" class="form-check-input">
+                                </th>
+                                <th scope="col"><i class="bi bi-tag me-1"></i>Title</th>
+                                <th scope="col"><i class="bi bi-calendar-event me-1"></i>Event</th>
+                                <th scope="col"><i class="bi bi-flag me-1"></i>Status</th>
+                                <th scope="col"><i class="bi bi-list-check me-1"></i>Tasks</th>
+                                <th scope="col"><i class="bi bi-gear me-1"></i>Actions</th>
+                            </tr>
+                        </thead>
                 <tbody>
                     {% for project_info in projects %}
-                    <tr>
+                    <tr data-status-id="{{ project_info.project.project_status.id }}">
+                        <td>
+                            <input type="checkbox" name="selected_projects" value="{{ project_info.project.id }}">
+                        </td>
                         <td><a href="{% url 'project_panel' project_info.project.id %}" class="text-primary">{{project_info.project.title}}</a></td>
-                        {% if project_info.project.event.id %}
+                        {% if project_info.project.event %}
                         <td><a href="{% url 'event_panel' project_info.project.event.id %}" class="text-primary">{{project_info.project.event.title}}</a></td>
                         {% else %}
-                        <td><a href="#" class="text-primary">None</a></td>
-
+                        <td><span class="text-muted">None</span></td>
                         {% endif %}
 
-                        <td><span style="background-color: {{ project_info.project.project_status.color }}" class="badge">
-                            {{project_info.project.project_status.icon}} 
-                            {{project_info.project.project_status.status_name}}</span></td>
-                        <td><a href="{% url 'task_panel'%}"  class="text-primary">{{project_info.count_tasks}}</a></td>
-
+                        <td>
+                            <span style="background-color: {{ project_info.project.project_status.color }}" class="badge">
+                                {% if project_info.project.project_status.icon %}
+                                    <i class="{{ project_info.project.project_status.icon }}"></i>
+                                {% endif %}
+                                {{ project_info.project.project_status.status_name }}
+                            </span>
+                        </td>
+                        <td><a href="{% url 'tasks' project_info.project.id %}" class="text-primary">{{project_info.count_tasks}}</a></td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="{% url 'project_panel' project_info.project.id %}">
+                                        <i class="bi bi-eye me-2"></i>View Details</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'project_edit' project_info.project.id %}">
+                                        <i class="bi bi-pencil me-2"></i>Edit Project</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="#" onclick="changeProjectStatus({{ project_info.project.id }})">
+                                        <i class="bi bi-arrow-repeat me-2"></i>Change Status</a></li>
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="confirmDelete({{ project_info.project.id }}, '{{ project_info.project.title }}')">
+                                        <i class="bi bi-trash me-2"></i>Delete</a></li>
+                                </ul>
+                            </div>
+                        </td>
                     </tr>
                     {% endfor%}
+                    </tbody>
+                </table>
+                </div>
 
-                </tbody>
-            </table>
+                <!-- Active Projects Tab -->
+                <div class="tab-pane fade" id="active-projects" role="tabpanel" aria-labelledby="active-tab">
+                    <div class="row">
+                        {% for project_info in projects %}
+                        {% if project_info.project.project_status.status_name == 'In Progress' %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">{{ project_info.project.title }}</h6>
+                                        <span class="badge bg-warning">{{ project_info.project.project_status.status_name }}</span>
+                                    </div>
+                                    {% if project_info.project.event %}
+                                    <p class="text-muted small mb-2"><i class="bi bi-calendar-event me-1"></i>{{ project_info.project.event.title }}</p>
+                                    {% endif %}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">{{ project_info.count_tasks }} tasks</small>
+                                        <a href="{% url 'project_panel' project_info.project.id %}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
 
+                <!-- Completed Projects Tab -->
+                <div class="tab-pane fade" id="completed-projects" role="tabpanel" aria-labelledby="completed-tab">
+                    <div class="row">
+                        {% for project_info in projects %}
+                        {% if project_info.project.project_status.status_name == 'Completed' %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 border-success">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">{{ project_info.project.title }}</h6>
+                                        <span class="badge bg-success">{{ project_info.project.project_status.status_name }}</span>
+                                    </div>
+                                    {% if project_info.project.event %}
+                                    <p class="text-muted small mb-2"><i class="bi bi-calendar-event me-1"></i>{{ project_info.project.event.title }}</p>
+                                    {% endif %}
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small class="text-muted">{{ project_info.count_tasks }} tasks completed</small>
+                                        <a href="{% url 'project_panel' project_info.project.id %}" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
         </div>
 
     </div>
 </div><!-- End Top Selling -->
+
+<!-- Modal de Confirmación de Eliminación -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                ¿Está seguro de que desea eliminar el proyecto "<span id="projectTitle"></span>"?
+                <br><small class="text-muted">Esta acción no se puede deshacer.</small>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Cambio de Estado -->
+<div class="modal fade" id="statusChangeModal" tabindex="-1" aria-labelledby="statusChangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statusChangeModalLabel">Cambiar Estado del Proyecto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="statusChangeForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="newStatus" class="form-label">Nuevo Estado:</label>
+                        <select class="form-select" id="newStatus" name="new_status_id" required>
+                            {% for status in project_statuses %}
+                            <option value="{{ status.id }}">{{ status.status_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="submitStatusChange()">Cambiar Estado</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Función para confirmar eliminación
+function confirmDelete(projectId, projectTitle) {
+    document.getElementById('projectTitle').textContent = projectTitle;
+    document.getElementById('deleteForm').action = "{% url 'project_delete' 0 %}".replace('0', projectId);
+
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    modal.show();
+}
+
+// Función para cambiar estado del proyecto
+function changeProjectStatus(projectId) {
+    document.getElementById('statusChangeForm').action = "{% url 'change_project_status' 0 %}".replace('0', projectId);
+
+    const modal = new bootstrap.Modal(document.getElementById('statusChangeModal'));
+    modal.show();
+}
+
+// Función para enviar el cambio de estado
+function submitStatusChange() {
+    const form = document.getElementById('statusChangeForm');
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Error al cambiar el estado del proyecto');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al cambiar el estado del proyecto');
+    });
+}
+
+// Función de búsqueda en la tabla
+function searchProjects() {
+    const input = document.getElementById('searchInput');
+    const filter = input.value.toUpperCase();
+    const table = document.querySelector('.datatable');
+    const rows = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < rows.length; i++) {
+        const cells = rows[i].getElementsByTagName('td');
+        let found = false;
+
+        for (let j = 0; j < cells.length - 1; j++) { // -1 para excluir la columna de acciones
+            const cell = cells[j];
+            if (cell) {
+                const textValue = cell.textContent || cell.innerText;
+                if (textValue.toUpperCase().indexOf(filter) > -1) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+
+        if (found) {
+            rows[i].style.display = '';
+        } else {
+            rows[i].style.display = 'none';
+        }
+    }
+}
+</script>

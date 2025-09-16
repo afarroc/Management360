@@ -43,7 +43,10 @@
                         <td>{{project.ticket_price}}</td>
                         <td>
                             <span style="background-color: {{ project.project_status.color }};" class="badge">
-                            {{project.project_status.icon}} {{project.project_status.status_name}}
+                                {% if project.project_status.icon %}
+                                    <i class="{{ project.project_status.icon }}"></i>
+                                {% endif %}
+                                {{ project.project_status.status_name }}
                             </span>
                         </td>
                     </tr>

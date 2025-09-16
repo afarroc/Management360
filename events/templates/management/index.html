@@ -1,0 +1,234 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+<!-- Load global panel styles -->
+<link rel="stylesheet" href="{% static 'assets/css/panel-styles.css' %}">
+
+{% block content %}
+
+<!-- Page Title -->
+<div class="pagetitle">
+    <h1><i class="bi bi-gear-fill me-2"></i>Management Dashboard</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}"><i class="bi bi-house-door"></i></a></li>
+            <li class="breadcrumb-item active">Management</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section dashboard">
+    <div class="row">
+
+        <!-- Statistics Cards -->
+        <div class="col-12">
+            <div class="row">
+                <!-- Total Events -->
+                <div class="col-xxl-4 col-md-6">
+                    <div class="card info-card sales-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Total <span>| Events</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-calendar-event-fill"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>{{ event_count }}</h6>
+                                    <span class="text-success small pt-1 fw-bold">Active Events</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Projects -->
+                <div class="col-xxl-4 col-md-6">
+                    <div class="card info-card revenue-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Total <span>| Projects</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-folder-fill"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>{{ project_count }}</h6>
+                                    <span class="text-warning small pt-1 fw-bold">Active Projects</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Tasks -->
+                <div class="col-xxl-4 col-md-6">
+                    <div class="card info-card customers-card">
+                        <div class="card-body">
+                            <h5 class="card-title">Total <span>| Tasks</span></h5>
+                            <div class="d-flex align-items-center">
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                    <i class="bi bi-list-check"></i>
+                                </div>
+                                <div class="ps-3">
+                                    <h6>{{ task_count }}</h6>
+                                    <span class="text-success small pt-1 fw-bold">Active Tasks</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Management Actions -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-gear-fill me-2"></i>Management Actions</h5>
+                    <div class="row">
+                        <!-- Events Management -->
+                        <div class="col-md-4">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-calendar-event-fill text-primary" style="font-size: 3rem;"></i>
+                                    <h5 class="card-title mt-3">Events</h5>
+                                    <p class="card-text">Manage events, create new events, and track event progress.</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'events' %}" class="btn btn-primary btn-sm">
+                                            <i class="bi bi-eye me-1"></i> View Events
+                                        </a>
+                                        <a href="{% url 'event_create' %}" class="btn btn-success btn-sm">
+                                            <i class="bi bi-plus-circle me-1"></i> Create Event
+                                        </a>
+                                        <a href="{% url 'event_panel' %}" class="btn btn-info btn-sm">
+                                            <i class="bi bi-gear me-1"></i> Manage Events
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Projects Management -->
+                        <div class="col-md-4">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-folder-fill text-warning" style="font-size: 3rem;"></i>
+                                    <h5 class="card-title mt-3">Projects</h5>
+                                    <p class="card-text">Organize and manage projects, assign tasks, and track progress.</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'projects' %}" class="btn btn-warning btn-sm">
+                                            <i class="bi bi-eye me-1"></i> View Projects
+                                        </a>
+                                        <a href="{% url 'project_create' %}" class="btn btn-success btn-sm">
+                                            <i class="bi bi-plus-circle me-1"></i> Create Project
+                                        </a>
+                                        <a href="{% url 'project_panel' %}" class="btn btn-info btn-sm">
+                                            <i class="bi bi-gear me-1"></i> Manage Projects
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tasks Management -->
+                        <div class="col-md-4">
+                            <div class="card border-success">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-list-check text-success" style="font-size: 3rem;"></i>
+                                    <h5 class="card-title mt-3">Tasks</h5>
+                                    <p class="card-text">Create and manage tasks, assign to projects, and track completion.</p>
+                                    <div class="d-grid gap-2">
+                                        <a href="{% url 'tasks' %}" class="btn btn-success btn-sm">
+                                            <i class="bi bi-eye me-1"></i> View Tasks
+                                        </a>
+                                        <a href="{% url 'task_create' %}" class="btn btn-success btn-sm">
+                                            <i class="bi bi-plus-circle me-1"></i> Create Task
+                                        </a>
+                                        <a href="{% url 'task_panel' %}" class="btn btn-info btn-sm">
+                                            <i class="bi bi-gear me-1"></i> Manage Tasks
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        {% if recent_activities %}
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-activity me-2"></i>Recent Activity</h5>
+                    <div class="activity">
+                        {% for activity in recent_activities %}
+                        <div class="activity-item d-flex">
+                            <div class="activite-label">
+                                <i class="bi bi-circle-fill activity-badge text-primary"></i>
+                            </div>
+                            <div class="activity-content">
+                                <span class="text-muted small">{{ activity.timestamp|date:"M d, Y H:i" }}</span>
+                                <p class="mb-0">
+                                    <strong>{{ activity.user.get_full_name|default:activity.user.username }}</strong>
+                                    {{ activity.action|lower }} <strong>{{ activity.content_type.name }}</strong>:
+                                    <em>{{ activity.object_repr }}</em>
+                                </p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-lightning me-2"></i>Quick Actions</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Configuration</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <a href="{% url 'status' %}" class="text-decoration-none">
+                                        <i class="bi bi-tag me-2"></i> Manage Statuses
+                                    </a>
+                                </li>
+                                <li class="mb-2">
+                                    <a href="{% url 'classification_list' %}" class="text-decoration-none">
+                                        <i class="bi bi-tags me-2"></i> Manage Classifications
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Reports & Analytics</h6>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <a href="{% url 'events' %}" class="text-decoration-none">
+                                        <i class="bi bi-bar-chart me-2"></i> View All Events
+                                    </a>
+                                </li>
+                                <li class="mb-2">
+                                    <a href="{% url 'tasks' %}" class="text-decoration-none">
+                                        <i class="bi bi-calendar-week me-2"></i> Task Planning
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+// Load global panel scripts
+<script src="{% static 'assets/js/panel-scripts.js' %}"></script>
+<script src="{% static 'assets/js/management-dashboard.js' %}"></script>
+
+{% endblock %}

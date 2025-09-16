@@ -1,58 +1,570 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
+
+<!-- Load global panel styles -->
+<link rel="stylesheet" href="{% static 'assets/css/panel-styles.css' %}">
+<link rel="stylesheet" href="{% static 'assets/css/alerts-styles.css' %}">
+
 {% block content %}
+
+<!-- Enhanced Page Header -->
+<div class="pagetitle">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-list-check me-2"></i>{{ title }}</h1>
+            <nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'index' %}"><i class="bi bi-house-door"></i></a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'tasks' %}">Tasks</a></li>
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary btn-sm" id="toggleViewBtn">
+                <i class="bi bi-grid"></i> <span>Board View</span>
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="exportBtn">
+                <i class="bi bi-download"></i> Export
+            </button>
+        </div>
+    </div>
+</div><!-- End Enhanced Page Title -->
+
 
 <section class="section dashboard">
     <div class="row">
 
-        <!-- Left side columns -->
-        <div class="col-lg-8">
+        <!-- Main Content Area -->
+        <div class="col-lg-9">
             <div class="row">
-            
-            {% if tasks_data %}
-            {% include 'tasks/control/control.html' %}
-            {% include 'tasks/includes/task_top.html' %}
-                
-            {% elif task_data %}
-            {% include 'tasks/includes/task_card.html' %}
-            {% include 'projects/includes/project_card.html' %}
-            {% include 'events/includes/event_card.html' %}
-            
-            {% elif task %}
-            {% include 'tasks/includes/task_card.html' %}
-            {% include 'projects/includes/project_card.html' %}
-            {% include 'events/includes/event_card.html' %}
-            {% else %}
-            
-            {% endif %}
 
+                {% if tasks_data %}
+                <!-- Advanced Filters & Search -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                        <input type="text" class="form-control" id="searchInput" placeholder="Search tasks...">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-select" id="statusFilter">
+                                        <option value="">All Status</option>
+                                        <option value="To Do">To Do</option>
+                                        <option value="In Progress">In Progress</option>
+                                        <option value="Completed">Completed</option>
+                                        <option value="Blocked">Blocked</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <select class="form-select" id="projectFilter">
+                                        <option value="">All Projects</option>
+                                        {% for project in projects %}
+                                        <option value="{{ project.id }}">{{ project.title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <button type="button" class="btn btn-outline-secondary w-100" id="clearFilters">
+                                        <i class="bi bi-x-circle"></i> Clear
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-            {% if event %}
-            {% include 'events/includes/event_card.html' %}
-            {% endif %}
-    
+                <!-- Enhanced Statistics Cards -->
+                <div class="col-12 mb-4">
+                    <div class="row">
+                        <!-- Total Tasks -->
+                        <div class="col-xxl-3 col-md-6">
+                            <div class="card info-card sales-card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Tasks <span>| Overview</span></h5>
+                                    <div class="d-flex align-items-center">
+                                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-list-check"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6>{{ tasks_data|length }}</h6>
+                                            <span class="text-success small pt-1 fw-bold">Active Tasks</span>
+                                            <div class="progress mt-2" style="height: 4px;">
+                                                <div class="progress-bar bg-success" style="width: 100%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-            {% if project_info %}
-            {% include 'projects/includes/project_card.html' %}
-            {% endif %}
-            
+                        <!-- In Progress -->
+                        <div class="col-xxl-3 col-md-6">
+                            <div class="card info-card revenue-card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">In Progress <span>| Active</span></h5>
+                                    <div class="d-flex align-items-center">
+                                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-arrow-repeat"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6>{{ in_progress_count }}</h6>
+                                            <span class="text-warning small pt-1 fw-bold">Working On</span>
+                                            <div class="progress mt-2" style="height: 4px;">
+                                                <div class="progress-bar bg-warning" style="width: {% widthratio in_progress_count tasks_data|length 100 %}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Completed -->
+                        <div class="col-xxl-3 col-md-6">
+                            <div class="card info-card customers-card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">Completed <span>| Done</span></h5>
+                                    <div class="d-flex align-items-center">
+                                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6>{{ completed_count }}</h6>
+                                            <span class="text-success small pt-1 fw-bold">Finished</span>
+                                            <div class="progress mt-2" style="height: 4px;">
+                                                <div class="progress-bar bg-success" style="width: {% widthratio completed_count tasks_data|length 100 %}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Pending -->
+                        <div class="col-xxl-3 col-md-6">
+                            <div class="card info-card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">Pending <span>| To Do</span></h5>
+                                    <div class="d-flex align-items-center">
+                                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-warning-light">
+                                            <i class="bi bi-clock text-warning"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6>{{ pending_count }}</h6>
+                                            <span class="text-warning small pt-1 fw-bold">Waiting</span>
+                                            <div class="progress mt-2" style="height: 4px;">
+                                                <div class="progress-bar bg-warning" style="width: {% widthratio pending_count tasks_data|length 100 %}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions Panel -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="bi bi-gear-fill me-2"></i>Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <a href="{% url 'task_create' %}" class="btn btn-success w-100">
+                                        <i class="bi bi-plus-circle me-1"></i>
+                                        <span class="d-block">Create Task</span>
+                                    </a>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-primary w-100" id="bulkEditBtn">
+                                        <i class="bi bi-pencil me-1"></i>
+                                        <span class="d-block">Bulk Edit</span>
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-info w-100" id="exportTasksBtn">
+                                        <i class="bi bi-download me-1"></i>
+                                        <span class="d-block">Export</span>
+                                    </button>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-warning w-100" id="filterTasksBtn">
+                                        <i class="bi bi-funnel me-1"></i>
+                                        <span class="d-block">Advanced Filter</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tasks Display Area -->
+                <div class="col-12">
+                    <!-- Table View (Default) -->
+                    <div id="tableView" class="view-container">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0"><i class="bi bi-table me-2"></i>Tasks List</h5>
+                                <div class="d-flex gap-2">
+                                    <span class="badge bg-secondary" id="selectedCount">0 selected</span>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" id="bulkDeleteBtn" style="display: none;">
+                                        <i class="bi bi-trash"></i> Delete Selected
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                {% include 'tasks/includes/task_top.html' %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Board View (Kanban) -->
+                    <div id="boardView" class="view-container" style="display: none;">
+                        <div class="row">
+                            <!-- To Do Column -->
+                            <div class="col-md-3">
+                                <div class="card">
+                                    <div class="card-header bg-light">
+                                        <h6 class="card-title mb-0">
+                                            <i class="bi bi-list-task text-secondary me-2"></i>
+                                            To Do ({{ pending_count }})
+                                        </h6>
+                                    </div>
+                                    <div class="card-body p-2" id="todoColumn">
+                                        {% for data in tasks_data %}
+                                            {% if data.task.task_status.status_name == 'To Do' %}
+                                                {% include 'tasks/includes/task_kanban_card.html' with task=data.task %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- In Progress Column -->
+                            <div class="col-md-3">
+                                <div class="card">
+                                    <div class="card-header bg-warning">
+                                        <h6 class="card-title mb-0 text-white">
+                                            <i class="bi bi-arrow-repeat me-2"></i>
+                                            In Progress ({{ in_progress_count }})
+                                        </h6>
+                                    </div>
+                                    <div class="card-body p-2" id="inProgressColumn">
+                                        {% for data in tasks_data %}
+                                            {% if data.task.task_status.status_name == 'In Progress' %}
+                                                {% include 'tasks/includes/task_kanban_card.html' with task=data.task %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Completed Column -->
+                            <div class="col-md-3">
+                                <div class="card">
+                                    <div class="card-header bg-success">
+                                        <h6 class="card-title mb-0 text-white">
+                                            <i class="bi bi-check-circle me-2"></i>
+                                            Completed ({{ completed_count }})
+                                        </h6>
+                                    </div>
+                                    <div class="card-body p-2" id="completedColumn">
+                                        {% for data in tasks_data %}
+                                            {% if data.task.task_status.status_name == 'Completed' %}
+                                                {% include 'tasks/includes/task_kanban_card.html' with task=data.task %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Blocked Column -->
+                            <div class="col-md-3">
+                                <div class="card">
+                                    <div class="card-header bg-danger">
+                                        <h6 class="card-title mb-0 text-white">
+                                            <i class="bi bi-exclamation-triangle me-2"></i>
+                                            Blocked (0)
+                                        </h6>
+                                    </div>
+                                    <div class="card-body p-2" id="blockedColumn">
+                                        {% for data in tasks_data %}
+                                            {% if data.task.task_status.status_name == 'Blocked' %}
+                                                {% include 'tasks/includes/task_kanban_card.html' with task=data.task %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% elif task_data %}
+                    <!-- Single Task Detail View -->
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0"><i class="bi bi-eye me-2"></i>Task Details</h5>
+                            </div>
+                            <div class="card-body">
+                                {% include 'tasks/includes/task_card.html' %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Related Objects -->
+                    {% if task_data.task.project %}
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0"><i class="bi bi-diagram-3 me-2"></i>Related Project</h5>
+                            </div>
+                            <div class="card-body">
+                                {% include 'projects/includes/project_card.html' %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if task_data.task.event %}
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0"><i class="bi bi-calendar-event me-2"></i>Related Event</h5>
+                            </div>
+                            <div class="card-body">
+                                {% include 'events/includes/event_card.html' %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                {% elif task %}
+                    <!-- Legacy Single Task View -->
+                    {% include 'tasks/includes/task_card.html' %}
+                    {% include 'projects/includes/project_card.html' %}
+                    {% include 'events/includes/event_card.html' %}
+
+                {% else %}
+                    <!-- Empty State -->
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body text-center py-5">
+                                <i class="bi bi-list-check display-1 text-muted mb-3"></i>
+                                <h4 class="text-muted">No Tasks Found</h4>
+                                <p class="text-muted mb-4">Get started by creating your first task or adjusting your filters.</p>
+                                <a href="{% url 'task_create' %}" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle me-1"></i> Create First Task
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
 
             </div>
-        </div><!-- End Left side columns -->
+        </div><!-- End Main Content Area -->
 
-        <!-- Right side columns -->
-        <div class="col-lg-4">
+        <!-- Enhanced Sidebar -->
+        <div class="col-lg-3">
 
-            {% if instructions %}
-            {% include 'layouts/includes/information/info_links_card.html' %}
+            <!-- Quick Stats Sidebar -->
+            {% if tasks_data %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0"><i class="bi bi-bar-chart me-2"></i>Quick Stats</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="small">Completion Rate</span>
+                            <span class="small fw-bold">{% widthratio completed_count tasks_data|length 100 %}%</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-success" style="width: {% widthratio completed_count tasks_data|length 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="small">Active Rate</span>
+                            <span class="small fw-bold">{% widthratio in_progress_count tasks_data|length 100 %}%</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-warning" style="width: {% widthratio in_progress_count tasks_data|length 100 %}%"></div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="small">Pending Rate</span>
+                            <span class="small fw-bold">{% widthratio pending_count tasks_data|length 100 %}%</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-secondary" style="width: {% widthratio pending_count tasks_data|length 100 %}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             {% endif %}
 
-            {% include 'layouts/includes/information/info_acordeon.html' %}
+            <!-- Recent Activity -->
             {% include 'tasks/includes/task_recent_activity.html' %}
 
-        </div><!-- End Right side columns -->
+            <!-- Help & Resources -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0"><i class="bi bi-question-circle me-2"></i>Help & Resources</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="#" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-book me-1"></i> Task Management Guide
+                        </a>
+                        <a href="#" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-play-circle me-1"></i> Video Tutorials
+                        </a>
+                        <a href="#" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-chat-dots me-1"></i> Support Chat
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- End Enhanced Sidebar -->
 
     </div>
 </section>
+
+<!-- Enhanced Scripts -->
+<script src="{% static 'assets/js/panel-scripts.js' %}"></script>
+<script src="{% static 'assets/js/task-panel.js' %}"></script>
+
+<!-- Task Panel Specific Enhancements -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // View Toggle Functionality
+    const toggleViewBtn = document.getElementById('toggleViewBtn');
+    const tableView = document.getElementById('tableView');
+    const boardView = document.getElementById('boardView');
+    const toggleIcon = toggleViewBtn.querySelector('i');
+    const toggleText = toggleViewBtn.querySelector('span');
+
+    toggleViewBtn.addEventListener('click', function() {
+        if (tableView.style.display === 'none') {
+            tableView.style.display = 'block';
+            boardView.style.display = 'none';
+            toggleIcon.className = 'bi bi-grid';
+            toggleText.textContent = 'Board View';
+        } else {
+            tableView.style.display = 'none';
+            boardView.style.display = 'block';
+            toggleIcon.className = 'bi bi-table';
+            toggleText.textContent = 'Table View';
+        }
+    });
+
+    // Enhanced Search with Debounce
+    const searchInput = document.getElementById('searchInput');
+    let searchTimeout;
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const query = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#taskTableBody tr');
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }, 300);
+    });
+
+    // Status Filter
+    const statusFilter = document.getElementById('statusFilter');
+    statusFilter.addEventListener('change', function() {
+        const selectedStatus = this.value;
+        const rows = document.querySelectorAll('#taskTableBody tr');
+
+        rows.forEach(row => {
+            const statusBadge = row.querySelector('.badge');
+            if (!selectedStatus || statusBadge.textContent.trim() === selectedStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    });
+
+    // Export Functionality
+    document.getElementById('exportBtn').addEventListener('click', function() {
+        // Trigger CSV export
+        window.location.href = '{% url "task_export" %}';
+    });
+
+    // Bulk Actions
+    const bulkEditBtn = document.getElementById('bulkEditBtn');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const selectedCount = document.getElementById('selectedCount');
+
+    // Update selected count
+    function updateSelectedCount() {
+        const checkedBoxes = document.querySelectorAll('#taskTableBody input[type="checkbox"]:checked');
+        const count = checkedBoxes.length;
+        selectedCount.textContent = count + ' selected';
+
+        if (count > 0) {
+            bulkDeleteBtn.style.display = 'inline-block';
+        } else {
+            bulkDeleteBtn.style.display = 'none';
+        }
+    }
+
+    // Attach event listeners to checkboxes
+    document.addEventListener('change', function(e) {
+        if (e.target.matches('#taskTableBody input[type="checkbox"]')) {
+            updateSelectedCount();
+        }
+    });
+
+    // Bulk Delete
+    bulkDeleteBtn.addEventListener('click', function() {
+        const checkedBoxes = document.querySelectorAll('#taskTableBody input[type="checkbox"]:checked');
+        if (checkedBoxes.length === 0) return;
+
+        if (confirm(`Are you sure you want to delete ${checkedBoxes.length} task(s)?`)) {
+            const ids = Array.from(checkedBoxes).map(cb => cb.value);
+            // Implement bulk delete logic here
+            console.log('Bulk delete IDs:', ids);
+        }
+    });
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + F for search focus
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+
+        // Ctrl/Cmd + B for board view toggle
+        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+            e.preventDefault();
+            toggleViewBtn.click();
+        }
+    });
+
+    // Auto-refresh for real-time updates (optional)
+    setInterval(function() {
+        // Check for updates every 30 seconds
+        console.log('Checking for task updates...');
+    }, 30000);
+});
+</script>
 
 {% endblock %}

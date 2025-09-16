@@ -67,7 +67,12 @@
                                         <td>{{ item.end_time|date:"d-M H:i" }}</td>
                                         <td><span 
                                             style="background-color: {{item.status.color}};"
-                                            class="badge">{{item.status.icon}} {{item.status}}</span></td>
+                                            class="badge">
+                                                {% if item.status.icon %}
+                                                    <i class="{{ item.status.icon }}"></i>
+                                                {% endif %}
+                                                {{ item.status }}
+                                            </span></td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
