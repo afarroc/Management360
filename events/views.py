@@ -2,6 +2,7 @@
 from datetime import timedelta
 from decimal import Decimal
 import datetime
+import csv
 from collections import defaultdict
 
 # Django Imports
@@ -318,6 +319,80 @@ def project_delete(request, project_id):
         messages.error(request, 'Método no permitido.')
     return redirect(reverse('project_panel'))
 
+@login_required
+def project_export(request):
+    """
+    Vista para exportar proyectos a CSV o Excel
+    """
+    if request.method == 'POST':
+        selected_projects = request.POST.getlist('selected_projects')
+        if selected_projects:
+            projects = Project.objects.filter(id__in=selected_projects)
+        else:
+            projects = Project.objects.all()
+    else:
+        projects = Project.objects.all()
+
+    # Crear respuesta CSV
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="projects_export.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['ID', 'Title', 'Description', 'Status', 'Event', 'Host', 'Created At', 'Updated At'])
+
+    for project in projects:
+        writer.writerow([
+            project.id,
+            project.title,
+            project.description or '',
+            project.project_status.status_name,
+            project.event.title if project.event else 'None',
+            project.host.username,
+            project.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            project.updated_at.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+
+    return response
+
+@login_required
+def project_bulk_action(request):
+    """
+    Vista para acciones masivas en proyectos
+    """
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        selected_projects = request.POST.getlist('selected_projects')
+
+        if not selected_projects:
+            messages.error(request, 'No se seleccionaron proyectos.')
+            return redirect('project_panel')
+
+        projects = Project.objects.filter(id__in=selected_projects)
+
+        if action == 'delete':
+            if request.user.profile.role != 'SU':
+                messages.error(request, 'No tienes permiso para eliminar proyectos.')
+                return redirect('project_panel')
+
+            count = projects.count()
+            projects.delete()
+            messages.success(request, f'Se eliminaron {count} proyecto(s) exitosamente.')
+
+        elif action == 'activate':
+            active_status = ProjectStatus.objects.get(status_name='In Progress')
+            count = projects.update(project_status=active_status)
+            messages.success(request, f'Se activaron {count} proyecto(s) exitosamente.')
+
+        elif action == 'complete':
+            completed_status = ProjectStatus.objects.get(status_name='Completed')
+            count = projects.update(project_status=completed_status)
+            messages.success(request, f'Se completaron {count} proyecto(s) exitosamente.')
+
+        else:
+            messages.error(request, 'Acción no válida.')
+
+    return redirect('project_panel')
+
 def change_project_status(request, project_id):
     print("Inicio de vista change_project_status")
     try:
@@ -412,6 +487,446 @@ def project_edit(request, project_id=None):
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
         return redirect('index')
 
+def generate_project_alerts(project_data, user):
+    """
+    Generate contextual alerts for a specific project
+    """
+    alerts = []
+    project = project_data['project']
+    tasks = project_data.get('tasks', [])
+
+    # Alert: Project overdue
+    if project.updated_at and (timezone.now() - project.updated_at).days > 7:
+        alerts.append({
+            'type': 'warning',
+            'icon': 'bi-exclamation-triangle',
+            'title': 'Proyecto inactivo',
+            'message': f'El proyecto "{project.title}" no ha sido actualizado en {(timezone.now() - project.updated_at).days} días.',
+            'action_url': f'/events/projects/edit/{project.id}',
+            'action_text': 'Actualizar proyecto'
+        })
+
+    # Alert: Tasks completion status
+    completed_tasks = sum(1 for task in tasks if task.task_status.status_name == 'Completed')
+    total_tasks = len(tasks)
+    if total_tasks > 0:
+        completion_rate = (completed_tasks / total_tasks) * 100
+        if completion_rate < 30:
+            alerts.append({
+                'type': 'danger',
+                'icon': 'bi-graph-down',
+                'title': 'Bajo progreso',
+                'message': f'Solo {completion_rate:.1f}% de las tareas completadas ({completed_tasks}/{total_tasks}).',
+                'action_url': f'/events/tasks/?project_id={project.id}',
+                'action_text': 'Ver tareas'
+            })
+        elif completion_rate > 90 and project.project_status.status_name != 'Completed':
+            alerts.append({
+                'type': 'success',
+                'icon': 'bi-check-circle',
+                'title': '¡Casi listo!',
+                'message': f'{completion_rate:.1f}% de las tareas completadas. ¿Listo para finalizar?',
+                'action_url': f'/events/projects/edit/{project.id}',
+                'action_text': 'Marcar como completado'
+            })
+
+    # Alert: Multiple assignees
+    if project.attendees.count() > 3:
+        alerts.append({
+            'type': 'info',
+            'icon': 'bi-people',
+            'title': 'Proyecto colaborativo',
+            'message': f'{project.attendees.count()} personas trabajando en este proyecto.',
+            'action_url': f'/events/projects/detail/{project.id}',
+            'action_text': 'Ver detalles'
+        })
+
+    # Alert: High priority tasks
+    high_priority_tasks = [task for task in tasks if task.important and task.task_status.status_name != 'Completed']
+    if high_priority_tasks:
+        alerts.append({
+            'type': 'warning',
+            'icon': 'bi-star-fill',
+            'title': 'Tareas prioritarias',
+            'message': f'{len(high_priority_tasks)} tarea(s) de alta prioridad pendiente(s).',
+            'action_url': f'/events/tasks/?project_id={project.id}',
+            'action_text': 'Revisar prioridades'
+        })
+
+    return alerts
+
+def generate_projects_overview_alerts(projects, user):
+    """
+    Generate overview alerts for all projects
+    """
+    alerts = []
+
+    if not projects:
+        alerts.append({
+            'type': 'info',
+            'icon': 'bi-info-circle',
+            'title': '¡Bienvenido!',
+            'message': 'No tienes proyectos activos. ¿Quieres crear uno nuevo?',
+            'action_url': '/events/projects/create/',
+            'action_text': 'Crear proyecto'
+        })
+        return alerts
+
+    # Alert: Overall completion rate
+    total_tasks = sum(p['count_tasks'] for p in projects)
+    completed_tasks = 0
+    for p in projects:
+        project_tasks = p.get('tasks', [])
+        completed_tasks += sum(1 for task in project_tasks if task.task_status.status_name == 'Completed')
+
+    if total_tasks > 0:
+        overall_completion = (completed_tasks / total_tasks) * 100
+        if overall_completion < 50:
+            alerts.append({
+                'type': 'warning',
+                'icon': 'bi-bar-chart',
+                'title': 'Progreso general bajo',
+                'message': f'Solo {overall_completion:.1f}% de todas las tareas completadas.',
+                'action_url': '/events/projects/',
+                'action_text': 'Ver todos los proyectos'
+            })
+
+    # Alert: Projects without recent activity
+    inactive_projects = []
+    for p in projects:
+        if p['project'].updated_at and (timezone.now() - p['project'].updated_at).days > 14:
+            inactive_projects.append(p['project'])
+
+    if inactive_projects:
+        alerts.append({
+            'type': 'danger',
+            'icon': 'bi-clock',
+            'title': 'Proyectos inactivos',
+            'message': f'{len(inactive_projects)} proyecto(s) sin actividad reciente.',
+            'action_url': '/events/projects/',
+            'action_text': 'Revisar proyectos'
+        })
+
+    # Alert: High number of in-progress projects
+    in_progress_projects = sum(1 for p in projects if p['project'].project_status.status_name == 'In Progress')
+    if in_progress_projects > 5:
+        alerts.append({
+            'type': 'warning',
+            'icon': 'bi-exclamation-circle',
+            'title': 'Demasiados proyectos activos',
+            'message': f'Tienes {in_progress_projects} proyectos en progreso. Considera priorizar.',
+            'action_url': '/events/projects/',
+            'action_text': 'Gestionar prioridades'
+        })
+
+    # Alert: Projects nearing completion
+    nearly_complete = []
+    for p in projects:
+        if p['count_tasks'] > 0:
+            project_tasks = p.get('tasks', [])
+            completed = sum(1 for task in project_tasks if task.task_status.status_name == 'Completed')
+            if completed / p['count_tasks'] > 0.8 and p['project'].project_status.status_name != 'Completed':
+                nearly_complete.append(p['project'])
+
+    if nearly_complete:
+        alerts.append({
+            'type': 'success',
+            'icon': 'bi-trophy',
+            'title': '¡Proyectos casi listos!',
+            'message': f'{len(nearly_complete)} proyecto(s) están cerca de completarse.',
+            'action_url': '/events/projects/',
+            'action_text': 'Finalizar proyectos'
+        })
+
+    return alerts
+
+def generate_performance_alerts(projects, user):
+    """
+    Generate performance-based alerts for projects
+    """
+    alerts = []
+
+    # Calculate performance metrics
+    total_projects = len(projects)
+    if total_projects == 0:
+        return alerts
+
+    # Completion rate analysis
+    completion_rates = []
+    for p in projects:
+        if p['count_tasks'] > 0:
+            project_tasks = p.get('tasks', [])
+            completed = sum(1 for task in project_tasks if task.task_status.status_name == 'Completed')
+            rate = (completed / p['count_tasks']) * 100
+            completion_rates.append(rate)
+
+    if completion_rates:
+        avg_completion = sum(completion_rates) / len(completion_rates)
+
+        if avg_completion < 25:
+            alerts.append({
+                'type': 'danger',
+                'icon': 'bi-graph-down',
+                'title': 'Rendimiento bajo',
+                'message': f'El promedio de completación de proyectos es solo {avg_completion:.1f}%.',
+                'action_url': '/events/projects/',
+                'action_text': 'Mejorar rendimiento'
+            })
+        elif avg_completion > 75:
+            alerts.append({
+                'type': 'success',
+                'icon': 'bi-graph-up',
+                'title': '¡Excelente rendimiento!',
+                'message': f'Promedio de completación del {avg_completion:.1f}%. ¡Sigue así!',
+                'action_url': '/events/projects/',
+                'action_text': 'Ver estadísticas'
+            })
+
+    # Task distribution analysis
+    total_tasks = sum(p['count_tasks'] for p in projects)
+    if total_tasks > 0:
+        avg_tasks_per_project = total_tasks / total_projects
+
+        if avg_tasks_per_project > 10:
+            alerts.append({
+                'type': 'warning',
+                'icon': 'bi-list-check',
+                'title': 'Proyectos complejos',
+                'message': f'Promedio de {avg_tasks_per_project:.1f} tareas por proyecto. Considera dividir en proyectos más pequeños.',
+                'action_url': '/events/projects/create/',
+                'action_text': 'Crear subproyectos'
+            })
+
+    # Time-based analysis
+    recent_projects = [p for p in projects if p['project'].created_at > timezone.now() - timezone.timedelta(days=7)]
+    if recent_projects:
+        alerts.append({
+            'type': 'info',
+            'icon': 'bi-calendar-plus',
+            'title': 'Actividad reciente',
+            'message': f'{len(recent_projects)} proyecto(s) creado(s) en la última semana.',
+            'action_url': '/events/projects/',
+            'action_text': 'Ver proyectos nuevos'
+        })
+
+    return alerts
+
+def generate_task_alerts(task_data, user):
+    """
+    Generate contextual alerts for a specific task
+    """
+    alerts = []
+    task = task_data['task']
+
+    # Alert: Task overdue
+    if task.updated_at and (timezone.now() - task.updated_at).days > 3:
+        alerts.append({
+            'type': 'warning',
+            'icon': 'bi-exclamation-triangle',
+            'title': 'Tarea inactiva',
+            'message': f'La tarea "{task.title}" no ha sido actualizada en {(timezone.now() - task.updated_at).days} días.',
+            'action_url': f'/events/tasks/edit/{task.id}',
+            'action_text': 'Actualizar tarea'
+        })
+
+    # Alert: High priority task
+    if task.important and task.task_status.status_name != 'Completed':
+        alerts.append({
+            'type': 'danger',
+            'icon': 'bi-star-fill',
+            'title': '¡Prioridad alta!',
+            'message': f'La tarea "{task.title}" es de alta prioridad y requiere atención inmediata.',
+            'action_url': f'/events/tasks/edit/{task.id}',
+            'action_text': 'Revisar prioridad'
+        })
+
+    # Alert: Task blocked
+    if task.task_status.status_name == 'Blocked':
+        alerts.append({
+            'type': 'warning',
+            'icon': 'bi-slash-circle',
+            'title': 'Tarea bloqueada',
+            'message': f'La tarea "{task.title}" está bloqueada. Revisa las dependencias.',
+            'action_url': f'/events/tasks/edit/{task.id}',
+            'action_text': 'Resolver bloqueo'
+        })
+
+    # Alert: Task nearing deadline (if due date exists)
+    # This would require adding a due_date field to Task model
+    # For now, we'll skip this alert
+
+    return alerts
+
+def generate_tasks_overview_alerts(tasks_data, user):
+    """
+    Generate overview alerts for all tasks
+    """
+    alerts = []
+
+    if not tasks_data:
+        alerts.append({
+            'type': 'info',
+            'icon': 'bi-info-circle',
+            'title': '¡Bienvenido!',
+            'message': 'No tienes tareas activas. ¿Quieres crear una nueva?',
+            'action_url': '/events/tasks/create/',
+            'action_text': 'Crear tarea'
+        })
+        return alerts
+
+    # Alert: Overall completion rate
+    total_tasks = len(tasks_data)
+    completed_tasks = sum(1 for task in tasks_data if task['task'].task_status.status_name == 'Completed')
+    in_progress_tasks = sum(1 for task in tasks_data if task['task'].task_status.status_name == 'In Progress')
+    pending_tasks = sum(1 for task in tasks_data if task['task'].task_status.status_name == 'To Do')
+
+    if total_tasks > 0:
+        completion_rate = (completed_tasks / total_tasks) * 100
+        if completion_rate < 30:
+            alerts.append({
+                'type': 'danger',
+                'icon': 'bi-graph-down',
+                'title': 'Bajo progreso general',
+                'message': f'Solo {completion_rate:.1f}% de las tareas completadas ({completed_tasks}/{total_tasks}).',
+                'action_url': '/events/tasks/',
+                'action_text': 'Ver todas las tareas'
+            })
+        elif completion_rate > 80:
+            alerts.append({
+                'type': 'success',
+                'icon': 'bi-trophy',
+                'title': '¡Excelente progreso!',
+                'message': f'{completion_rate:.1f}% de las tareas completadas. ¡Sigue así!',
+                'action_url': '/events/tasks/',
+                'action_text': 'Ver estadísticas'
+            })
+
+    # Alert: Too many tasks in progress
+    if in_progress_tasks > 5:
+        alerts.append({
+            'type': 'warning',
+            'icon': 'bi-exclamation-circle',
+            'title': 'Demasiadas tareas activas',
+            'message': f'Tienes {in_progress_tasks} tareas en progreso. Considera priorizar.',
+            'action_url': '/events/tasks/',
+            'action_text': 'Gestionar prioridades'
+        })
+
+    # Alert: High priority tasks pending
+    high_priority_tasks = [task for task in tasks_data if task['task'].important and task['task'].task_status.status_name != 'Completed']
+    if high_priority_tasks:
+        alerts.append({
+            'type': 'danger',
+            'icon': 'bi-star-fill',
+            'title': 'Tareas prioritarias pendientes',
+            'message': f'{len(high_priority_tasks)} tarea(s) de alta prioridad requieren atención.',
+            'action_url': '/events/tasks/',
+            'action_text': 'Revisar prioridades'
+        })
+
+    # Alert: Blocked tasks
+    blocked_tasks = [task for task in tasks_data if task['task'].task_status.status_name == 'Blocked']
+    if blocked_tasks:
+        alerts.append({
+            'type': 'warning',
+            'icon': 'bi-slash-circle',
+            'title': 'Tareas bloqueadas',
+            'message': f'{len(blocked_tasks)} tarea(s) están bloqueadas y necesitan resolución.',
+            'action_url': '/events/tasks/',
+            'action_text': 'Resolver bloqueos'
+        })
+
+    # Alert: Recent activity
+    recent_tasks = [task for task in tasks_data if task['task'].created_at > timezone.now() - timezone.timedelta(days=3)]
+    if recent_tasks:
+        alerts.append({
+            'type': 'info',
+            'icon': 'bi-calendar-plus',
+            'title': 'Actividad reciente',
+            'message': f'{len(recent_tasks)} tarea(s) creada(s) en los últimos 3 días.',
+            'action_url': '/events/tasks/',
+            'action_text': 'Ver tareas nuevas'
+        })
+
+    return alerts
+
+def generate_task_performance_alerts(tasks_data, user):
+    """
+    Generate performance-based alerts for tasks
+    """
+    alerts = []
+
+    if not tasks_data:
+        return alerts
+
+    # Calculate task completion velocity
+    completed_tasks = [task for task in tasks_data if task['task'].task_status.status_name == 'Completed']
+    if completed_tasks:
+        # Calculate average completion time (this would require tracking start/end times)
+        # For now, we'll use a simple heuristic
+        recent_completed = [task for task in completed_tasks if task['task'].updated_at > timezone.now() - timezone.timedelta(days=7)]
+        if recent_completed:
+            alerts.append({
+                'type': 'success',
+                'icon': 'bi-speedometer2',
+                'title': 'Buena velocidad de trabajo',
+                'message': f'Has completado {len(recent_completed)} tarea(s) en la última semana.',
+                'action_url': '/events/tasks/',
+                'action_text': 'Ver progreso'
+            })
+
+    # Task distribution by project
+    project_task_counts = {}
+    for task_data in tasks_data:
+        project_id = task_data['task'].project.id if task_data['task'].project else 'no_project'
+        project_name = task_data['task'].project.title if task_data['task'].project else 'Sin proyecto'
+        if project_id not in project_task_counts:
+            project_task_counts[project_id] = {'name': project_name, 'count': 0}
+        project_task_counts[project_id]['count'] += 1
+
+    # Alert for projects with too many tasks
+    for project_info in project_task_counts.values():
+        if project_info['count'] > 15:
+            alerts.append({
+                'type': 'warning',
+                'icon': 'bi-list-check',
+                'title': 'Proyecto sobrecargado',
+                'message': f'El proyecto "{project_info["name"]}" tiene {project_info["count"]} tareas. Considera dividir el trabajo.',
+                'action_url': '/events/projects/',
+                'action_text': 'Revisar proyecto'
+            })
+
+    return alerts
+
+def get_project_alerts_ajax(request):
+    """
+    AJAX endpoint to get project alerts
+    """
+    if request.method == 'GET' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        try:
+            project_manager = ProjectManager(request.user)
+            projects, _ = project_manager.get_all_projects()
+
+            alerts = generate_projects_overview_alerts(projects, request.user)
+            performance_alerts = generate_performance_alerts(projects, request.user)
+            alerts.extend(performance_alerts)
+
+            return JsonResponse({
+                'success': True,
+                'alerts': alerts,
+                'count': len(alerts)
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            })
+
+    return JsonResponse({
+        'success': False,
+        'error': 'Invalid request'
+    })
+
 def project_panel(request, project_id=None):
     # Title of the page
     title = "Project Panel"
@@ -425,14 +940,18 @@ def project_panel(request, project_id=None):
         if project_id:
             # If a specific project_id is provided, handle it here
             project_data = project_manager.get_project_data(project_id)
-            
+
             if project_data:
+                # Generate alerts for specific project
+                alerts = generate_project_alerts(project_data, request.user)
+
                 context = {
                     'title': title,
                     'project_data': project_data,
                     'event_statuses': statuses[0],
                     'project_statuses': statuses[1],
                     'task_statuses': statuses[2],
+                    'alerts': alerts,
                 }
                 return render(request, 'projects/project_panel.html', context)
             else:
@@ -440,6 +959,15 @@ def project_panel(request, project_id=None):
                 return redirect('index')
         else:
             projects, active_projects = project_manager.get_all_projects()
+
+            # Calculate statistics
+            total_projects = len(projects)
+            in_progress_count = sum(1 for p in projects if p['project'].project_status.status_name == 'In Progress')
+            completed_count = sum(1 for p in projects if p['project'].project_status.status_name == 'Completed')
+            total_tasks = sum(p['count_tasks'] for p in projects)
+
+            # Generate comprehensive alerts for all projects
+            alerts = generate_projects_overview_alerts(projects, request.user)
 
             # If no specific project_id is provided
             if request.method == 'POST':
@@ -454,7 +982,12 @@ def project_panel(request, project_id=None):
                     'project_statuses': statuses[1],
                     'task_statuses': statuses[2],
                     'projects': projects,
-                    'active_projects': active_projects
+                    'active_projects': active_projects,
+                    'total_projects': total_projects,
+                    'in_progress_count': in_progress_count,
+                    'completed_count': completed_count,
+                    'total_tasks': total_tasks,
+                    'alerts': alerts,
                 }
                 return render(request, 'projects/project_panel.html', context)
 
@@ -500,7 +1033,7 @@ def tasks(request, task_id=None, project_id=None):
     title='Tasks'
     urls=[
         {'url':'task_create','name':'Task Create'},
-        {'url':'task_edit','name':'Task Edit'},        
+        {'url':'task_edit','name':'Task Edit'},
     ]
 
     other_urls = [
@@ -515,28 +1048,44 @@ def tasks(request, task_id=None, project_id=None):
 
     if task_id:
         task= get_object_or_404(Task, id=task_id)
-        
+
+        # Generate alerts for specific task
+        task_data = {'task': task}
+        alerts = generate_task_alerts(task_data, request.user)
+
         return render(request, "tasks/tasks.html",{
-            
+
             'instructions':instructions,
             'title':title,
             'urls':urls,
             'other_urls':other_urls,
             'task':task,
             'task_statuses':task_statuses,
-            
+            'alerts': alerts,
+
         })
 
-    else:  
-        
+    else:
+
         if not project_id:
             tasks = Task.objects.all()
         else:
             tasks = Task.objects.filter(project_id=project_id)
 
+        # Convert to tasks_data format for alert generation
+        tasks_data = [{'task': task} for task in tasks]
+
+        # Generate overview alerts
+        alerts = generate_tasks_overview_alerts(tasks_data, request.user)
+
+        # Add performance alerts
+        performance_alerts = generate_task_performance_alerts(tasks_data, request.user)
+        alerts.extend(performance_alerts)
+
         return render(request, "tasks/tasks.html",{
             'title':title,
-            'tasks':tasks
+            'tasks':tasks,
+            'alerts': alerts,
         })
             
 @login_required
@@ -687,7 +1236,7 @@ def task_panel(request, task_id=None):
     task_manager = TaskManager(request.user)
     project_manager = ProjectManager(request.user)
     event_manager = EventManager(request.user)
-    
+
     if task_id:
         task_data = task_manager.get_task_data(task_id)
         try:
@@ -705,6 +1254,10 @@ def task_panel(request, task_id=None):
             if not event_data:
                 messages.error(request, 'El evento no existe. Verifica el ID del evento.')
                 return redirect('events')
+
+            # Generate alerts for specific task
+            alerts = generate_task_alerts(task_data, request.user)
+
             context={
                 'event_statuses': statuses[0],
                 'project_statuses': statuses[1],
@@ -713,6 +1266,7 @@ def task_panel(request, task_id=None):
                 'task_data': task_data,
                 'project_data': project_data,
                 'event_data': event_data,
+                'alerts': alerts,
             }
             for key, value in task_data.items():
                 print(f"{key}: {value}")
@@ -723,14 +1277,39 @@ def task_panel(request, task_id=None):
             return redirect('task_panel')
     else:
         tasks_data, active_tasks = task_manager.get_all_tasks()
+
+        # Calculate statistics for the template
+        total_tasks = len(tasks_data)
+        in_progress_count = sum(1 for task in tasks_data if task['task'].task_status.status_name == 'In Progress')
+        completed_count = sum(1 for task in tasks_data if task['task'].task_status.status_name == 'Completed')
+        pending_count = sum(1 for task in tasks_data if task['task'].task_status.status_name == 'To Do')
+
+        # Get unique projects for filter dropdown
+        projects = Project.objects.filter(
+            Q(host=request.user) | Q(attendees=request.user)
+        ).distinct().order_by('title')
+
+        # Generate comprehensive alerts for all tasks
+        alerts = generate_tasks_overview_alerts(tasks_data, request.user)
+
+        # Add performance alerts
+        performance_alerts = generate_task_performance_alerts(tasks_data, request.user)
+        alerts.extend(performance_alerts)
+
         context = {
-            'title': f' {title} (User taks)',
+            'title': f' {title} (User tasks)',
             'event_statuses': statuses[0],
             'task_statuses': statuses[2],
             'project_statuses': statuses[1],
             'tasks_data': tasks_data,
             'active_tasks': active_tasks,
             'tasks_states': tasks_states,
+            'total_tasks': total_tasks,
+            'in_progress_count': in_progress_count,
+            'completed_count': completed_count,
+            'pending_count': pending_count,
+            'projects': projects,  # Add projects for filter dropdown
+            'alerts': alerts,
         }
         return render(request, 'tasks/task_panel.html', context)
 
@@ -773,6 +1352,90 @@ def update_status(obj, field_name, new_status, editor):
         new_value=str(new_value),
     )
     obj.save()
+
+def task_export(request):
+    """Export tasks data"""
+    # Simple CSV export for now
+    import csv
+    from django.http import HttpResponse
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="tasks_export.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['ID', 'Title', 'Description', 'Status', 'Project', 'Assigned To', 'Created At'])
+
+    tasks = Task.objects.all().select_related('task_status', 'project', 'assigned_to')
+    for task in tasks:
+        writer.writerow([
+            task.id,
+            task.title,
+            task.description or '',
+            task.task_status.status_name if task.task_status else '',
+            task.project.title if task.project else '',
+            task.assigned_to.username if task.assigned_to else '',
+            task.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+
+    return response
+
+def task_bulk_action(request):
+    """Handle bulk actions for tasks"""
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        selected_tasks = request.POST.getlist('selected_items')
+
+        if not selected_tasks:
+            messages.error(request, 'No tasks selected.')
+            return redirect('task_panel')
+
+        tasks = Task.objects.filter(id__in=selected_tasks)
+
+        if action == 'delete':
+            count = tasks.count()
+            tasks.delete()
+            messages.success(request, f'Successfully deleted {count} task(s).')
+        elif action == 'activate':
+            count = tasks.update(task_status=TaskStatus.objects.get(status_name='In Progress'))
+            messages.success(request, f'Successfully activated {count} task(s).')
+        elif action == 'complete':
+            count = tasks.update(task_status=TaskStatus.objects.get(status_name='Completed'))
+            messages.success(request, f'Successfully completed {count} task(s).')
+
+    return redirect('task_panel')
+
+@login_required
+def task_change_status_ajax(request):
+    """AJAX endpoint to change task status (for Kanban drag & drop)"""
+    if request.method == 'POST':
+        try:
+            task_id = request.POST.get('task_id')
+            new_status_name = request.POST.get('new_status_name')
+
+            task = get_object_or_404(Task, id=task_id)
+
+            # Check permissions
+            if task.host != request.user and request.user not in task.attendees.all():
+                return JsonResponse({'success': False, 'error': 'Permission denied'})
+
+            # Get the new status
+            new_status = get_object_or_404(TaskStatus, status_name=new_status_name)
+
+            # Record the change
+            old_status = task.task_status
+            task.record_edit(
+                editor=request.user,
+                field_name='task_status',
+                old_value=str(old_status),
+                new_value=str(new_status)
+            )
+
+            return JsonResponse({'success': True, 'message': f'Task status updated to {new_status_name}'})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
 def task_activate(request, task_id=None):
     switch = 'In Progress'
@@ -1271,6 +1934,13 @@ def event_panel(request, event_id=None):
             return render(request, '404.html', status=404)
     else:
         events, active_events = event_manager.get_all_events()
+
+        # Calculate statistics for the template
+        total_events = len(events)
+        in_progress_count = sum(1 for event in events if event['event'].event_status.status_name == 'In Progress')
+        completed_count = sum(1 for event in events if event['event'].event_status.status_name == 'Completed')
+        created_count = sum(1 for event in events if event['event'].event_status.status_name == 'Created')
+
         event_details = {}
         for event_data in events:
             event_details[event_data['event'].id] = {
@@ -1285,7 +1955,61 @@ def event_panel(request, event_id=None):
             'event_statuses': event_statuses,
             'events_states': events_states,
             'active_events': active_events,
+            'total_events': total_events,
+            'in_progress_count': in_progress_count,
+            'completed_count': completed_count,
+            'created_count': created_count,
         })
+
+def event_export(request):
+    """Export events data"""
+    import csv
+    from django.http import HttpResponse
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="events_export.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['ID', 'Title', 'Description', 'Status', 'Venue', 'Host', 'Created At'])
+
+    events = Event.objects.all().select_related('event_status', 'host')
+    for event in events:
+        writer.writerow([
+            event.id,
+            event.title,
+            event.description or '',
+            event.event_status.status_name if event.event_status else '',
+            event.venue or '',
+            event.host.username if event.host else '',
+            event.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+
+    return response
+
+def event_bulk_action(request):
+    """Handle bulk actions for events"""
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        selected_events = request.POST.getlist('selected_items')
+
+        if not selected_events:
+            messages.error(request, 'No events selected.')
+            return redirect('event_panel')
+
+        events = Event.objects.filter(id__in=selected_events)
+
+        if action == 'delete':
+            count = events.count()
+            events.delete()
+            messages.success(request, f'Successfully deleted {count} event(s).')
+        elif action == 'activate':
+            count = events.update(event_status=Status.objects.get(status_name='In Progress'))
+            messages.success(request, f'Successfully activated {count} event(s).')
+        elif action == 'complete':
+            count = events.update(event_status=Status.objects.get(status_name='Completed'))
+            messages.success(request, f'Successfully completed {count} event(s).')
+
+    return redirect('event_panel')
 
 def event_history(request, event_id=None):
     title = 'Event History'
@@ -1572,34 +2296,52 @@ def Classification_list(request):
 
 # GTR
 
-def management(request):
-    # Obtén los eventos asignados al usuario logueado
-    eventos_asignados = Event.objects.filter(assigned_to=request.user).order_by('-created_at')
-    classifications = Classification.objects.all()
+def management_index(request):
+    """
+    Vista índice para la gestión de eventos, proyectos y tareas.
+    Muestra estadísticas y enlaces a las diferentes secciones de gestión.
+    """
+    # Obtener conteos
+    event_count = Event.objects.count()
+    project_count = Project.objects.count()
+    task_count = Task.objects.count()
 
-    if request.method == 'POST':
-        # Obtén el evento y la clasificación del formulario
-        evento_id = request.POST.get('evento')
-        classification_id = request.POST.get('classification')
-        comentario = request.POST.get('comentario')
+    # Obtener actividad reciente (últimas 10 modificaciones)
+    from django.contrib.contenttypes.models import ContentType
+    from django.contrib.admin.models import LogEntry
 
-        # Encuentra el evento y la clasificación en la base de datos
-        evento = Event.objects.get(id=evento_id)
-        classification = Classification.objects.get(id=classification_id)
+    event_ct = ContentType.objects.get_for_model(Event)
+    project_ct = ContentType.objects.get_for_model(Project)
+    task_ct = ContentType.objects.get_for_model(Task)
 
-        # Actualiza el evento
-        evento.classification = classification
-        evento.comentario = comentario
-        evento.estado = 'Completed'
-        evento.save()
+    recent_activities = LogEntry.objects.filter(
+        content_type__in=[event_ct, project_ct, task_ct]
+    ).select_related('user', 'content_type').order_by('-action_time')[:10]
 
-        messages.success(request, 'Evento actualizado con éxito.')
-        return redirect(reverse('manager'))
-
-    return render(request, 'management/manager.html', {
-        'eventos_asignados': eventos_asignados,
-        'classifications': classifications
+    # Preparar actividades para el template
+    activities = []
+    for activity in recent_activities:
+        action_map = {
+            1: 'Añadido',
+            2: 'Modificado',
+            3: 'Eliminado'
+        }
+        activities.append({
+            'content_type': activity.content_type,
+            'action': action_map.get(activity.action_flag, 'Desconocido'),
+            'user': activity.user,
+            'timestamp': activity.action_time,
+            'object_repr': activity.object_repr
         })
+
+    context = {
+        'event_count': event_count,
+        'project_count': project_count,
+        'task_count': task_count,
+        'recent_activities': activities,
+    }
+
+    return render(request, 'management/index.html', context)
 
 # Añade esta función a tu vista 
 def update_event(request):

@@ -42,6 +42,7 @@
 
     {# CSS Principal #}
     <link rel="stylesheet" href="{% static 'assets/css/style.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/css/alerts-styles.css' %}">
 
     {# Bloque para head adicional #}
     {% block extra_head %}{% endblock %}
@@ -56,15 +57,35 @@
     
     {# Contenido principal #}
     <main id="main" class="main">
-        {# Mensajes flash #}
-        {% if messages %}
-        <div class="message-container">
+        {# Sistema de Alertas Inteligente - Único sistema centralizado #}
+        {% if messages or alerts %}
+        <div class="alerts-container" id="alertsContainer">
+            {# Alertas personalizadas del sistema #}
+            {% if alerts %}
+            {% for alert in alerts %}
+            <div class="alert alert-{{ alert.type }} alert-dismissible fade show d-flex align-items-center" role="alert">
+                <i class="bi {{ alert.icon }} me-2 fs-5"></i>
+                <div class="flex-grow-1">
+                    <strong>{{ alert.title }}</strong>
+                    <div class="alert-message">{{ alert.message }}</div>
+                </div>
+                {% if alert.action_url %}
+                <a href="{{ alert.action_url }}" class="btn btn-sm btn-outline-{{ alert.type }} ms-2">{{ alert.action_text }}</a>
+                {% endif %}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {# Mensajes flash de Django #}
+            {% if messages %}
             {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
             {% endfor %}
+            {% endif %}
         </div>
         {% endif %}
 
