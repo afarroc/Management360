@@ -23,7 +23,7 @@ def render_structured_content(structured_content):
         if element_type == 'heading':
             html.append('<div class="lesson-heading-container">')
             if title:
-                html.append(f'<h2 class="lesson-heading-main">{title}</h2>')
+                html.append(f'<h2 class="lesson-heading-main"><i class="bi bi-hash me-2 text-primary"></i>{title}</h2>')
             if content:
                 html.append(f'<p class="lesson-heading-subtitle">{content}</p>')
             html.append('</div>')
@@ -31,19 +31,19 @@ def render_structured_content(structured_content):
         elif element_type == 'text':
             html.append('<div class="lesson-text-container">')
             if title:
-                html.append(f'<h4 class="lesson-subheading">{title}</h4>')
+                html.append(f'<h4 class="lesson-subheading"><i class="bi bi-textarea me-2 text-success"></i>{title}</h4>')
             if content:
-                html.append(f'<p class="lesson-content">{content}</p>')
+                html.append(f'<p class="lesson-content">{content.replace(chr(10), "<br>")}</p>')
             html.append('</div>')
 
         elif element_type == 'list':
             html.append('<div class="lesson-list-container">')
             if title:
-                html.append(f'<h4 class="lesson-list-title">{title}</h4>')
+                html.append(f'<h4 class="lesson-list-title"><i class="bi bi-list-check me-2 text-warning"></i>{title}</h4>')
             if items:
                 html.append('<ul class="lesson-list">')
                 for item in items:
-                    html.append(f'<li class="lesson-list-item"><span class="list-bullet">•</span> {item}</li>')
+                    html.append(f'<li class="lesson-list-item"><span class="list-bullet">✓</span> {item}</li>')
                 html.append('</ul>')
             html.append('</div>')
 
@@ -53,31 +53,14 @@ def render_structured_content(structured_content):
                 html.append('<div class="lesson-image-container">')
                 html.append(f'<img src="{content}" alt="{alt_text}" class="lesson-image">')
                 if title:
-                    html.append(f'<p class="lesson-image-caption">{title}</p>')
+                    html.append(f'<p class="lesson-image-caption"><i class="bi bi-image me-1 text-muted"></i>{title}</p>')
                 html.append('</div>')
 
         elif element_type == 'file':
             if content and title:
                 html.append('<div class="lesson-file">')
                 html.append(f'<a href="{content}" target="_blank" class="lesson-file-link">')
-                html.append(f'<i class="bi bi-file-earmark"></i> {title}')
-                html.append('</a>')
-                html.append('</div>')
-
-        elif element_type == 'image':
-            if content:
-                alt_text = title or 'Imagen de la lección'
-                html.append(f'<div class="lesson-image-container">')
-                html.append(f'<img src="{content}" alt="{alt_text}" class="lesson-image">')
-                if title:
-                    html.append(f'<p class="lesson-image-caption">{title}</p>')
-                html.append('</div>')
-
-        elif element_type == 'file':
-            if content and title:
-                html.append(f'<div class="lesson-file">')
-                html.append(f'<a href="{content}" target="_blank" class="lesson-file-link">')
-                html.append(f'<i class="bi bi-file-earmark"></i> {title}')
+                html.append(f'<i class="bi bi-file-earmark me-2"></i> {title}')
                 html.append('</a>')
                 html.append('</div>')
 
@@ -119,7 +102,27 @@ def get_attached_files(lesson):
                 }
                 files.append(file_info)
 
-    # Archivo de tarea
+    # Archivos adjuntos de la lección (múltiples)
+    for attachment in lesson.attachments.all():
+        attachment_info = {
+            'id': f'attachment_{attachment.id}',
+            'type': 'lesson_attachment',
+            'title': attachment.title,
+            'url': attachment.file.url,
+            'description': f'Archivo adjunto: {attachment.file_type}',
+            'file_type': attachment.file_type,
+            'file_size': attachment.file_size,
+            'downloadable': True,
+            'category': 'Archivos Adjuntos',
+            'order': attachment.order,
+            'file_extension': get_file_extension(str(attachment.file)),
+            'is_external': False,
+            'last_modified': attachment.uploaded_at.strftime('%d/%m/%Y %H:%M'),
+            'author': lesson.module.course.tutor.username
+        }
+        files.append(attachment_info)
+
+    # Archivo de tarea (legacy - mantener compatibilidad)
     if lesson.assignment_file:
         task_file_info = {
             'id': 'assignment_file',
@@ -131,7 +134,11 @@ def get_attached_files(lesson):
             'file_size': get_file_size(lesson.assignment_file),
             'downloadable': True,
             'category': 'Recursos de Tarea',
-            'order': 999  # Aparece al final
+            'order': 999,  # Aparece al final
+            'file_extension': get_file_extension(str(lesson.assignment_file)),
+            'is_external': False,
+            'last_modified': 'Desconocido',
+            'author': lesson.module.course.tutor.username
         }
         files.append(task_file_info)
 

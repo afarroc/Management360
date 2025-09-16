@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CourseCategory, Course, Module, Lesson, Enrollment, Progress, Review
+from .models import CourseCategory, Course, Module, Lesson, Enrollment, Progress, Review, LessonAttachment
 
 @admin.register(CourseCategory)
 class CourseCategoryAdmin(admin.ModelAdmin):
@@ -37,6 +37,13 @@ class CourseAdmin(admin.ModelAdmin):
         }),
     )
 
+class LessonAttachmentInline(admin.TabularInline):
+    model = LessonAttachment
+    extra = 0
+    fields = ['title', 'file', 'order']
+    readonly_fields = ['file_type', 'file_size', 'uploaded_at']
+    ordering = ['order', 'uploaded_at']
+
 class LessonInline(admin.StackedInline):
     model = Lesson
     extra = 1
@@ -51,10 +58,11 @@ class ModuleAdmin(admin.ModelAdmin):
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ['title', 'module', 'lesson_type', 'order', 'is_free', 'duration_minutes', 'has_structured_content']
+    list_display = ['title', 'module', 'lesson_type', 'order', 'is_free', 'duration_minutes', 'has_structured_content', 'attachments_count']
     list_filter = ['lesson_type', 'is_free', 'module__course']
     search_fields = ['title', 'module__title', 'content']
     readonly_fields = ['structured_content_count']
+    inlines = [LessonAttachmentInline]
 
     fieldsets = (
         ('Información Básica', {
@@ -92,6 +100,11 @@ class LessonAdmin(admin.ModelAdmin):
         return 0
     structured_content_count.short_description = 'Elementos Estructurados'
 
+    def attachments_count(self, obj):
+        """Muestra el número de archivos adjuntos"""
+        return obj.attachments.count()
+    attachments_count.short_description = 'Archivos Adjuntos'
+
     def get_queryset(self, request):
         """Optimizar consultas incluyendo contenido estructurado"""
         return super().get_queryset(request).select_related('module__course')
@@ -116,3 +129,25 @@ class ReviewAdmin(admin.ModelAdmin):
     list_filter = ['rating', 'created_at', 'course']
     search_fields = ['student__username', 'course__title']
     readonly_fields = ['created_at', 'updated_at']
+
+@admin.register(LessonAttachment)
+class LessonAttachmentAdmin(admin.ModelAdmin):
+    list_display = ['title', 'lesson', 'file_type', 'get_file_size_display', 'uploaded_at', 'order']
+    list_filter = ['file_type', 'uploaded_at', 'lesson__module__course']
+    search_fields = ['title', 'lesson__title', 'lesson__module__course__title']
+    readonly_fields = ['file_type', 'file_size', 'uploaded_at']
+    ordering = ['-uploaded_at']
+
+    fieldsets = (
+        ('Información del Archivo', {
+            'fields': ('lesson', 'title', 'file', 'order')
+        }),
+        ('Metadatos', {
+            'fields': ('file_type', 'file_size', 'uploaded_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def get_file_size_display(self, obj):
+        return obj.get_file_size_display()
+    get_file_size_display.short_description = 'Tamaño del Archivo'
