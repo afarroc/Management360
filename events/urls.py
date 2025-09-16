@@ -14,18 +14,13 @@ from .setup_views import SetupView
 urlpatterns = [
 
     path('setup/', SetupView.as_view(), name='setup'),
-    path('test/', views.test_board, name="test"),
-    path('test/<int:event_id>/', views.test_board, name="test"),
     path('credits/', views.add_credits, name='add_credits'),
-    path('credits/add_credits/', views.add_credits, name='add_credits'),
-    path('planning/task/', views.planning_task, name="planning_task"),
-    path('projects/check/<int:project_id>/', views.project_tasks_status_check, name="project_check"),
 
     # Eventos
     path('events/', views.events, name="events"),
     path('events/detail/<int:event_id>/', views.event_detail, name="event_detail"),
     path('events/create/', views.event_create, name="event_create"),
-    path('events/delete/<int:event_id>/', views.event_delete, name='event_delete'),    
+    path('events/delete/<int:event_id>/', views.event_delete, name='event_delete'),
     path('events/edit/', views.event_edit, name="event_edit"),
     path('events/edit/<int:event_id>/', views.event_edit, name="event_edit"),
     path('events/panel/', views.event_panel, name="event_panel"),
@@ -35,6 +30,8 @@ urlpatterns = [
     path('events/assign/<int:event_id>', views.event_assign, name="event_assign"),
     path('events/history/', views.event_history, name="event_history"),
     path('events/history/<int:event_id>', views.event_history, name="event_history"),
+    path('events/export/', views.event_export, name='event_export'),
+    path('events/bulk-action/', views.event_bulk_action, name='event_bulk_action'),
 
     # Proyectos
     path('projects/', views.projects, name="projects"),
@@ -48,6 +45,9 @@ urlpatterns = [
     path('projects/edit/<int:project_id>', views.project_edit, name="project_edit"),
     path('projects/activate/',views.project_activate, name='project_activate'),
     path('projects/activate/<int:project_id>',views.project_activate, name='project_activate'),
+    path('projects/export/', views.project_export, name='project_export'),
+    path('projects/bulk-action/', views.project_bulk_action, name='project_bulk_action'),
+    path('projects/alerts/ajax/', views.get_project_alerts_ajax, name='project_alerts_ajax'),
 
     # Tareas
     path('tasks/', views.tasks, name="tasks"),
@@ -62,18 +62,21 @@ urlpatterns = [
     path('tasks/panel/<int:task_id>', views.task_panel, name="task_panel"),
     path('tasks/activate/',views.task_activate, name='task_activate'),
     path('tasks/activate/<int:task_id>',views.task_activate, name='task_activate'),
+    path('tasks/export/', views.task_export, name='task_export'),
+    path('tasks/bulk-action/', views.task_bulk_action, name='task_bulk_action'),
 
 
     # Cambio de estado y eliminación de eventos
     path('change_project_status/<int:project_id>/', views.change_project_status, name='change_project_status'),
     path('change_task_status/<int:task_id>/', views.change_task_status, name='change_task_status'),
+    path('task_change_status_ajax/', views.task_change_status_ajax, name='task_change_status_ajax'),
 
     # Panel
     path('panel/', views.panel, name='panel'),
 
     # Configuración
     path('configuration/status/', views.status, name='status'),
-    path('configuration/status/delete/<int:model_id>/', views.status_delete, name='status_delete'),
+    path('configuration/status/delete/<int:model_id>/', views.status_delete, name='status_delete_model'),
     path('configuration/status/delete/<int:model_id>/<int:status_id>/', views.status_delete, name='status_delete'),
     path('configuration/status/create/', views.status_create, name='status_create'),
     path('configuration/status/create/<int:model_id>/', views.status_create, name='status_create'),
@@ -82,9 +85,10 @@ urlpatterns = [
     path('configuration/status/edit/<int:model_id>/<int:status_id>', views.status_edit, name='status_edit'),
     
     # management
-    path('management/manager/', views.management, name='manager'),
-    path('management/manager/', views.management, name='management'),
-    path('update_event/', views.update_event, name='update_event'),
+    path('management/', views.management_index, name='management'),
+    path('management/events/', views.events, name='management_events'),
+    path('management/projects/', views.projects, name='management_projects'),
+    path('management/tasks/', views.tasks, name='management_tasks'),
 
     path('configuration/create_classification/', views.create_Classification, name='create_classification'),
     path('configuration/edit_classification/<int:Classification_id>/', views.edit_Classification, name='edit_classification'),

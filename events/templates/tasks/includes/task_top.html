@@ -50,8 +50,13 @@
                             {% endif %}
                         </td>
                         <td>
-                            <span style="background-color: {{ data.task.task_status.color }};" class="badge "> <a href="{% url 'task_activate' data.task.id %}"  class="text-primary">{{data.task.task_status.icon}} </a>{{data.task.task_status.status_name}}</span>
-                            </td>
+                            <span style="background-color: {{ data.task.task_status.color }};" class="badge">
+                                {% if data.task.task_status.icon %}
+                                    <i class="{{ data.task.task_status.icon }}"></i>
+                                {% endif %}
+                                <a href="{% url 'task_activate' data.task.id %}" class="text-primary">{{ data.task.task_status.status_name }}</a>
+                            </span>
+                        </td>
                             <td><a href="{% url 'task_activate' data.task.id %}"  class="text-primary">${{data.task.ticket_price}}</a></td>
                         </tr>
                     {% endfor%}

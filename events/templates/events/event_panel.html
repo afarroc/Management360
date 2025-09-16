@@ -1,19 +1,28 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
+
+<!-- Load global panel styles -->
+<link rel="stylesheet" href="{% static 'assets/css/panel-styles.css' %}">
+
 {% block content %}
+
+<!-- Messages -->
 {% if messages %}
-<div class="alert alert-info" role="alert">
+<div class="alert alert-info alert-dismissible fade show" role="alert">
     {% for message in messages %}
-    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
-        {% endfor %}
+    <div{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</div>
+    {% endfor %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
 </div>
 {% endif %}
+
+<!-- Page Title -->
 <div class="pagetitle">
-    <h1>{{title}}</h1>
+    <h1><i class="bi bi-calendar-event me-2"></i>{{title}}</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'event_panel' %}">Events</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'index' %}"><i class="bi bi-house-door"></i></a></li>
+            <li class="breadcrumb-item"><a href="{% url 'events' %}">Events</a></li>
             <li class="breadcrumb-item active">{{title}}</li>
         </ol>
     </nav>
@@ -25,9 +34,106 @@
         <!-- Left side columns -->
         <div class="col-lg-8">
             <div class="row">
-            
+
             {% if page == 'event_panel' %}
-            
+
+            <!-- Statistics Cards -->
+            <div class="col-12">
+                <div class="row">
+                    <!-- Total Events -->
+                    <div class="col-xxl-3 col-md-6">
+                        <div class="card info-card sales-card">
+                            <div class="card-body">
+                                <h5 class="card-title">Total <span>| Events</span></h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                        <i class="bi bi-calendar-event-fill"></i>
+                                    </div>
+                                    <div class="ps-3">
+                                        <h6>{{ events|length }}</h6>
+                                        <span class="text-success small pt-1 fw-bold">Active Events</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- In Progress -->
+                    <div class="col-xxl-3 col-md-6">
+                        <div class="card info-card revenue-card">
+                            <div class="card-body">
+                                <h5 class="card-title">In Progress <span>| Active</span></h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                        <i class="bi bi-play-circle-fill"></i>
+                                    </div>
+                                    <div class="ps-3">
+                                        <h6>{{ in_progress_count }}</h6>
+                                        <span class="text-warning small pt-1 fw-bold">Running</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Completed -->
+                    <div class="col-xxl-3 col-md-6">
+                        <div class="card info-card customers-card">
+                            <div class="card-body">
+                                <h5 class="card-title">Completed <span>| Done</span></h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                    </div>
+                                    <div class="ps-3">
+                                        <h6>{{ completed_count }}</h6>
+                                        <span class="text-success small pt-1 fw-bold">Finished</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Created -->
+                    <div class="col-xxl-3 col-md-6">
+                        <div class="card info-card">
+                            <div class="card-body">
+                                <h5 class="card-title">Created <span>| New</span></h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-info-light">
+                                        <i class="bi bi-plus-circle-fill text-info"></i>
+                                    </div>
+                                    <div class="ps-3">
+                                        <h6>{{ created_count }}</h6>
+                                        <span class="text-info small pt-1 fw-bold">Draft</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CRUD Actions Panel -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-gear-fill me-2"></i>Event Management</h5>
+                        <div class="d-flex flex-column gap-2">
+                            <a href="{% url 'event_create' %}" class="btn btn-success btn-sm">
+                                <i class="bi bi-plus-circle me-1"></i> Create Event
+                            </a>
+                            <a href="{% url 'event_edit' %}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-pencil me-1"></i> Edit Events
+                            </a>
+                            <a href="{% url 'events' %}" class="btn btn-info btn-sm">
+                                <i class="bi bi-eye me-1"></i> View Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {% include 'events/control/control.html' %}
             {% include 'events/includes/event_top.html' %}
 
@@ -68,6 +174,10 @@
 
     </div>
 </section>
+
+// Load global panel scripts
+<script src="{% static 'assets/js/panel-scripts.js' %}"></script>
+<script src="{% static 'assets/js/event-panel.js' %}"></script>
 
 {% endblock %}
 
