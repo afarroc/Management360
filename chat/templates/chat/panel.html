@@ -1,352 +1,55 @@
 {% load static %}
 <!-- Panel flotante de chat para incluir en base.html -->
 <!-- Botón flotante para restaurar chat -->
-<button id="chat-restore-btn" style="display:none;position:fixed;bottom:20px;right:20px;z-index:10001;background:#007bff;color:#fff;border:none;border-radius:50%;width:48px;height:48px;box-shadow:0 2px 8px rgba(0,0,0,0.2);font-size:1.7rem;align-items:center;justify-content:center;cursor:pointer;">
+<button id="chat-restore-btn" class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center" style="display:none;">
     <i class="bi bi-chat-dots"></i>
 </button>
-<div id="chat-panel" class="docked" style="z-index:10000;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.2);overflow:hidden;display:flex;flex-direction:column;">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center chat-header" style="border-radius:1em 1em 0 0;cursor:pointer;">
-        <span><i class="bi bi-chat-dots"></i> Chat
-            <select id="chat-room-selector" class="form-select form-select-sm d-inline-block w-auto ms-2" style="font-size:0.95em;">
+
+<div id="chat-panel" class="docked card">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center chat-header">
+        <span>
+            <i class="bi bi-chat-dots me-2"></i>Chat
+            <select id="chat-room-selector" class="form-select form-select-sm d-inline-block w-auto ms-2">
                 <option value="" disabled selected>Selecciona una sala...</option>
             </select>
         </span>
-        <div>
-            <button id="go-chat-main-btn" class="btn btn-light btn-sm" title="Ir al chat principal" style="margin-right:5px;"><i class="bi bi-box-arrow-up-right"></i></button>
-            <button id="toggle-dock-btn" class="btn btn-light btn-sm" title="Acoplar/desacoplar"><i class="bi bi-layout-sidebar-inset"></i></button>
-            <button id="toggle-chat-panel" style="background:none;border:none;color:#fff;font-size:1.5rem;cursor:pointer;">&#8211;</button>
+        <div class="d-flex gap-1">
+            <button id="go-chat-main-btn" class="btn btn-light btn-sm" title="Ir al chat principal">
+                <i class="bi bi-box-arrow-up-right"></i>
+            </button>
+            <button id="toggle-dock-btn" class="btn btn-light btn-sm" title="Acoplar/desacoplar">
+                <i class="bi bi-layout-sidebar-inset"></i>
+            </button>
+            <button id="toggle-chat-panel" class="btn btn-link text-white p-0" style="font-size:1.5rem; line-height:1;">
+                &#8211;
+            </button>
         </div>
     </div>
-    <div id="chat-panel-body" class="chat-panel-body" style="flex:1;display:flex;flex-direction:column;min-height:0;height:100%;">
-        <div id="chat-log" class="p-3" style="flex:1;min-height:0;height:100%;overflow-y:auto;background:#f8f9fa;">
+
+    <div id="chat-panel-body" class="chat-panel-body">
+        <div id="chat-log">
             <div class="d-flex mb-2 justify-content-end">
-                <div class="message-bubble px-3 py-2 outgoing text-white text-end" style="max-width: 75%; border-radius: 1.2em; background:#007bff;">
+                <div class="message-bubble outgoing">
                     <div class="small fw-bold mb-1">You</div>
                     <div class="message-content">¡Bienvenido al chat!</div>
                     <div class="message-time small mt-1 text-muted">Ahora</div>
                 </div>
             </div>
-            <div id="typing-indicator" class="typing-indicator" style="display:none;">
-                <span></span><span></span><span></span>
+            <div id="typing-indicator" class="typing-indicator">
+                <span></span><span></span><span></span> escribiendo...
             </div>
         </div>
     </div>
-    <div class="p-3 border-top bg-white d-flex flex-column gap-2 chat-info-containers" style="border-radius:0 0 1em 1em;">
-        <div class="input-group flex-grow-1">
-            <input id="chat-message-input" type="text" class="form-control" placeholder="Type your message..." autocomplete="off">
-            <button id="chat-message-submit" class="btn btn-primary"><i class="bi bi-send"></i></button>
+
+    <div class="chat-info-containers d-flex flex-column">
+        <div class="input-group">
+            <input id="chat-message-input" type="text" class="form-control" placeholder="Escribe tu mensaje..." autocomplete="off">
+            <button id="chat-message-submit" class="btn btn-primary">
+                <i class="bi bi-send"></i>
+            </button>
         </div>
     </div>
 </div>
-<style>
-    #chat-restore-btn {
-        transition: opacity 0.2s;
-    }
-    #chat-panel.docked {
-        position: fixed;
-        bottom: 0;
-        right: 0;
-        width: 320px;
-        height: 340px;
-        border-radius: 1em 1em 0 0;
-        font-size: 0.92rem;
-        max-width: 100vw;
-        transition: all 0.3s;
-    }
-    #chat-panel.docked .chat-header {
-        padding: 0.4em 0.7em;
-        font-size: 1rem;
-    }
-    #chat-panel.docked .chat-panel-body {
-        padding: 0.5em 0.3em;
-        font-size: 0.98rem;
-    }
-    #chat-panel.docked .chat-info-containers {
-        padding: 0.3em 0.2em;
-        gap: 0.3em;
-        font-size: 0.85rem;
-    }
-    #chat-panel.docked #chat-log {
-        font-size: 1.05rem;
-        padding: 0.5em 0.2em;
-    }
-    #chat-panel.fullscreen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        border-radius: 0;
-        max-width: 100vw;
-        z-index: 10000;
-        font-size: 1.1rem;
-        transition: all 0.3s;
-    }
-    #chat-panel.fullscreen .chat-header {
-        font-size: 1.2rem;
-        padding: 1em 1.5em;
-    }
-    #chat-panel.fullscreen .chat-info-containers {
-        display: block;
-        font-size: 1rem;
-        padding: 1em;
-    }
-    #chat-panel.fullscreen #chat-log {
-        font-size: 1.1rem;
-        padding: 1em;
-    }
-    #chat-panel.hidden {
-        display: none !important;
-    }
-    /* Enhanced mobile responsiveness and touch interactions */
-    @media (max-width: 768px) {
-        #chat-panel.docked {
-            width: 95vw;
-            height: 70px;
-            min-height: 70px;
-            right: 2.5vw;
-            bottom: 20px;
-            border-radius: 1.2em;
-            font-size: 0.9rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        #chat-panel.docked .chat-header {
-            font-size: 1rem;
-            padding: 0.3em 0.8em;
-            cursor: pointer;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-        }
-
-        #chat-panel.docked .chat-panel-body,
-        #chat-panel.docked .chat-info-containers {
-            display: none;
-        }
-
-        #chat-panel.docked #toggle-chat-panel,
-        #chat-panel.docked #toggle-dock-btn,
-        #chat-panel.docked #toggle-fullscreen-btn {
-            font-size: 1.2rem;
-            padding: 0.2em 0.4em;
-            min-width: 44px;
-            min-height: 44px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 0.5em;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            transition: all 0.2s ease;
-        }
-
-        #chat-panel.docked #toggle-chat-panel:active,
-        #chat-panel.docked #toggle-dock-btn:active,
-        #chat-panel.docked #toggle-fullscreen-btn:active {
-            transform: scale(0.95);
-            background-color: rgba(255,255,255,0.2);
-        }
-
-        /* Fullscreen mode for mobile */
-        #chat-panel.fullscreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            border-radius: 0;
-            z-index: 10000;
-            background: #fff;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        #chat-panel.fullscreen .chat-header {
-            font-size: 1.1rem;
-            padding: 1em 1.2em;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-backdrop-filter: blur(10px);
-            backdrop-filter: blur(10px);
-        }
-
-        #chat-panel.fullscreen .chat-panel-body {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            max-height: calc(100vh - 140px);
-        }
-
-        #chat-panel.fullscreen .chat-info-containers {
-            padding: 1em;
-            background: #f8f9fa;
-            border-top: 1px solid #e9ecef;
-            -webkit-backdrop-filter: blur(10px);
-            backdrop-filter: blur(10px);
-        }
-
-        #chat-panel.fullscreen .input-group {
-            margin-bottom: 0.5em;
-        }
-
-        #chat-panel.fullscreen input,
-        #chat-panel.fullscreen button {
-            font-size: 1rem;
-            padding: 0.8em 1em;
-            min-height: 48px;
-            border-radius: 1em;
-        }
-
-        /* Touch-friendly message bubbles */
-        .message-bubble {
-            min-height: 44px;
-            padding: 0.8em 1em;
-            margin-bottom: 0.5em;
-            border-radius: 1.2em;
-            font-size: 1rem;
-            line-height: 1.4;
-            word-wrap: break-word;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            transition: all 0.2s ease;
-        }
-
-        .message-bubble:active {
-            transform: scale(0.98);
-        }
-
-        .message-bubble.outgoing {
-            margin-left: auto;
-            margin-right: 0.5em;
-            max-width: 80%;
-        }
-
-        .message-bubble.incoming {
-            margin-left: 0.5em;
-            margin-right: auto;
-            max-width: 80%;
-        }
-
-        /* Improved scrolling on mobile */
-        #chat-log {
-            -webkit-overflow-scrolling: touch;
-            scroll-behavior: smooth;
-            overscroll-behavior: contain;
-        }
-
-        /* Better input handling on mobile */
-        #chat-message-input {
-            font-size: 16px; /* Prevents zoom on iOS */
-            padding: 0.8em 1em;
-            min-height: 48px;
-            border-radius: 1em;
-            border: 2px solid #e9ecef;
-            transition: border-color 0.2s ease;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        #chat-message-input:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
-            outline: none;
-        }
-
-        #chat-message-submit {
-            min-width: 48px;
-            min-height: 48px;
-            padding: 0.8em;
-            border-radius: 1em;
-            -webkit-tap-highlight-color: transparent;
-            touch-action: manipulation;
-            transition: all 0.2s ease;
-            background: linear-gradient(135deg, #007bff, #0056b3);
-            border: none;
-        }
-
-        #chat-message-submit:active {
-            transform: scale(0.95);
-        }
-
-        /* Swipe gestures for mobile */
-        .swipe-indicator {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 1em 1.5em;
-            border-radius: 1em;
-            font-size: 0.9rem;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-            z-index: 10000;
-            text-align: center;
-        }
-
-        .swipe-indicator.show {
-            opacity: 1;
-        }
-
-        /* Virtual keyboard handling */
-        @media (max-height: 500px) {
-            #chat-panel.fullscreen .chat-panel-body {
-                max-height: calc(100vh - 120px);
-            }
-
-            #chat-panel.fullscreen .chat-info-containers {
-                padding: 0.5em;
-            }
-
-            #chat-message-input {
-                font-size: 16px;
-                min-height: 44px;
-            }
-
-            #chat-message-submit {
-                min-width: 44px;
-                min-height: 44px;
-            }
-        }
-
-        /* Haptic feedback simulation */
-        .haptic-feedback {
-            animation: haptic 0.1s ease;
-        }
-
-        @keyframes haptic {
-            0% { transform: scale(1); }
-            50% { transform: scale(0.98); }
-            100% { transform: scale(1); }
-        }
-    }
-
-    /* Extra small screens */
-    @media (max-width: 480px) {
-        #chat-panel.docked {
-            width: 92vw;
-            right: 4vw;
-        }
-
-        #chat-panel.fullscreen .chat-header {
-            padding: 0.8em 1em;
-            font-size: 1rem;
-        }
-
-        .message-bubble {
-            font-size: 0.95rem;
-            padding: 0.7em 0.9em;
-        }
-
-        #chat-message-input,
-        #chat-message-submit {
-            font-size: 16px;
-            min-height: 44px;
-        }
-    }
-</style>
 <script>
     function setPanelMode(mode) {
         const panel = document.getElementById('chat-panel');
@@ -397,8 +100,11 @@
         // Siempre mostrar funcionalidades completas en modo docked
         if (isMobile() && !isChatMainPage()) {
             setPanelMode('docked');
-            document.querySelector('.chat-panel-body').style.display = 'flex';
-            document.querySelector('.chat-info-containers').style.display = 'flex';
+            // En móvil, mostrar siempre el contenido completo en docked
+            const panelBody = document.querySelector('.chat-panel-body');
+            const infoContainers = document.querySelector('.chat-info-containers');
+            if (panelBody) panelBody.style.display = 'flex';
+            if (infoContainers) infoContainers.style.display = 'flex';
         }
         toggleDockBtn.addEventListener('click', function() {
             if (panel.classList.contains('docked')) {

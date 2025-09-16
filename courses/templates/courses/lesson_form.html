@@ -96,6 +96,308 @@
     text-decoration: none;
 }
 
+/* Estilos para el campo JSON */
+.form-control[rows] {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+code {
+    background: #f1f3f4;
+    padding: 0.125rem 0.25rem;
+    border-radius: 3px;
+    font-size: 0.8em;
+}
+
+/* Estilos para la vista previa */
+.bg-light {
+    background: #f8f9fa !important;
+}
+
+.border {
+    border: 1px solid #dee2e6 !important;
+}
+
+/* Estilos para el constructor de contenido mejorado */
+.content-builder-toolbar {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.content-builder {
+    min-height: 200px;
+    position: relative;
+}
+
+.elements-container {
+    min-height: 150px;
+}
+
+.element-item {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: grab;
+}
+
+.element-item:hover {
+    border-color: #0d6efd;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.1);
+    transform: translateY(-1px);
+}
+
+.element-item:active {
+    cursor: grabbing;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+    background: #f8f9fa;
+    border: 2px dashed #667eea;
+}
+
+.sortable-chosen {
+    opacity: 0.8;
+    transform: rotate(2deg);
+}
+
+/* Estilos para headings mejorados */
+.lesson-heading-container {
+    margin: 2rem 0 1.5rem 0;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    border-left: 4px solid #667eea;
+    position: relative;
+    overflow: hidden;
+}
+
+.lesson-heading-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(30px, -30px);
+}
+
+.lesson-heading-main {
+    color: #2d3748;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    position: relative;
+    z-index: 1;
+}
+
+.lesson-heading-subtitle {
+    color: #718096;
+    font-size: 1.1rem;
+    font-weight: 400;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+    line-height: 1.5;
+}
+
+/* Estilos para listas mejoradas */
+.lesson-list-container {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.lesson-list-title {
+    color: #2d3748;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #667eea;
+}
+
+.lesson-list {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.lesson-list-item {
+    color: #4a5568;
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 0.5rem;
+    padding: 0.25rem 0;
+    position: relative;
+}
+
+.list-bullet {
+    color: #667eea;
+    font-weight: bold;
+    margin-right: 0.5rem;
+}
+
+/* Estilos para texto mejorado */
+.lesson-text-container {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.lesson-subheading {
+    color: #2d3748;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #667eea;
+}
+
+.lesson-content {
+    color: #4a5568;
+    font-size: 1rem;
+    line-height: 1.7;
+    margin: 0;
+}
+
+.element-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.element-type {
+    font-weight: 600;
+    color: #495057;
+    text-transform: capitalize;
+}
+
+.element-actions {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.btn-element-action {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    border-radius: 4px;
+}
+
+.element-content {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.form-group-sm {
+    margin-bottom: 0.5rem;
+}
+
+.form-group-sm label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.form-group-sm .form-control {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.5rem;
+}
+
+.list-items-container {
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 0.5rem;
+    min-height: 80px;
+}
+
+.list-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.list-item input {
+    flex: 1;
+}
+
+.btn-remove-item {
+    background: none;
+    border: none;
+    color: #dc3545;
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 3px;
+    transition: background-color 0.2s;
+}
+
+.btn-remove-item:hover {
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.add-list-item {
+    color: #0d6efd;
+    cursor: pointer;
+    font-size: 0.875rem;
+    text-decoration: underline;
+    margin-top: 0.5rem;
+}
+
+.add-list-item:hover {
+    color: #0b5ed7;
+}
+
+.content-preview {
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 0.9rem;
+}
+
+.empty-state {
+    text-align: center;
+    color: #6c757d;
+}
+
+.drag-handle {
+    cursor: move;
+    color: #6c757d;
+    margin-right: 0.5rem;
+}
+
+.drag-handle:hover {
+    color: #495057;
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+}
+
+.sortable-chosen {
+    opacity: 0.8;
+}
+
 .lesson-type-selector {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -222,6 +524,83 @@
     .btn-cancel {
         width: 100%;
         margin-bottom: 0.5rem;
+    }
+
+    /* Constructor responsivo */
+    .content-builder-toolbar {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .content-builder-toolbar .btn-group-sm {
+        width: 100%;
+    }
+
+    .content-builder-toolbar .btn-group-sm .btn {
+        flex: 1;
+        font-size: 0.8rem;
+    }
+
+    .element-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .element-actions {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .element-content {
+        grid-template-columns: 1fr;
+    }
+
+    .list-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+
+    .list-item input {
+        flex: none;
+    }
+
+    .btn-element-action {
+        padding: 0.375rem 0.5rem;
+    }
+
+    .content-preview {
+        max-height: 200px;
+    }
+
+    /* Headings responsivos */
+    .lesson-heading-main {
+        font-size: 1.5rem;
+    }
+
+    .lesson-heading-subtitle {
+        font-size: 1rem;
+    }
+
+    .lesson-list-title {
+        font-size: 1.1rem;
+    }
+
+    .lesson-subheading {
+        font-size: 1.1rem;
+    }
+
+    .lesson-heading-container {
+        padding: 1rem;
+    }
+
+    .lesson-list-container {
+        padding: 0.75rem;
+    }
+
+    .lesson-text-container {
+        padding: 0.75rem;
     }
 }
 </style>
@@ -368,9 +747,10 @@
                             </div>
 
                             <div id="text-fields" class="content-fields">
+                                <!-- Contenido Simple -->
                                 <div class="form-group">
                                     <label for="{{ form.content.id_for_label }}" class="form-label">
-                                        <i class="bi bi-textarea me-1"></i>Contenido de la Lección
+                                        <i class="bi bi-textarea me-1"></i>Contenido Simple
                                     </label>
                                     {{ form.content }}
                                     {% if form.content.errors %}
@@ -381,9 +761,116 @@
                                         </div>
                                     {% endif %}
                                     <div class="form-text">
-                                        Escribe el contenido completo de la lección
+                                        Contenido básico de la lección (opcional si usas contenido estructurado)
                                     </div>
                                 </div>
+
+                                <!-- Constructor de Contenido Estructurado -->
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-diagram-3 me-1"></i>Constructor de Contenido Estructurado
+                                        <span id="elements-count" class="badge bg-secondary ms-2">0 elementos</span>
+                                        <button type="button" class="btn btn-sm btn-outline-info ms-2" onclick="showJsonHelp()">
+                                            <i class="bi bi-question-circle me-1"></i>Ayuda
+                                        </button>
+                                    </label>
+
+                                    <!-- Barra de herramientas -->
+                                    <div class="content-builder-toolbar mb-3">
+                                        <div class="btn-group-sm" role="group">
+                                            <button type="button" class="btn btn-outline-primary" onclick="addElement('heading')">
+                                                <i class="bi bi-type-h1 me-1"></i>Encabezado
+                                            </button>
+                                            <button type="button" class="btn btn-outline-success" onclick="addElement('text')">
+                                                <i class="bi bi-textarea me-1"></i>Texto
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info" onclick="addElement('list')">
+                                                <i class="bi bi-list-ul me-1"></i>Lista
+                                            </button>
+                                            <button type="button" class="btn btn-outline-warning" onclick="addElement('image')">
+                                                <i class="bi bi-image me-1"></i>Imagen
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="addElement('file')">
+                                                <i class="bi bi-file-earmark me-1"></i>Archivo
+                                            </button>
+                                        </div>
+                                        <div class="ms-2 d-flex gap-2">
+                                            <div class="dropdown">
+                                                <button type="button" class="btn btn-sm btn-outline-success dropdown-toggle" data-bs-toggle="dropdown">
+                                                    <i class="bi bi-plus-circle me-1"></i>Ejemplos
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item" href="#" onclick="loadExample('basic')">Lección básica</a></li>
+                                                    <li><a class="dropdown-item" href="#" onclick="loadExample('advanced')">Lección avanzada</a></li>
+                                                    <li><a class="dropdown-item" href="#" onclick="loadExample('interactive')">Lección interactiva</a></li>
+                                                </ul>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAllElements()">
+                                                <i class="bi bi-trash me-1"></i>Limpiar todo
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Área de construcción -->
+                                    <div id="content-builder" class="content-builder border rounded p-3 bg-light">
+                                        <div id="elements-container" class="elements-container">
+                                            <!-- Los elementos se agregarán aquí dinámicamente -->
+                                            <div class="empty-state text-center py-4">
+                                                <i class="bi bi-diagram-3 text-muted fs-1 mb-3"></i>
+                                                <p class="text-muted mb-0">Haz clic en los botones arriba para agregar elementos de contenido</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Campo oculto para el JSON -->
+                                    {{ form.structured_content_json }}
+                                    {% if form.structured_content_json.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.structured_content_json.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- Vista previa -->
+                                    <div class="mt-3">
+                                        <label class="form-label">
+                                            <i class="bi bi-eye me-1"></i>Vista Previa
+                                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="togglePreview()">
+                                                <i class="bi bi-eye-slash me-1"></i>Ocultar/Mostrar
+                                            </button>
+                                        </label>
+                                        <div id="content-preview" class="content-preview border rounded p-3 bg-white" style="display: none;">
+                                            <!-- La vista previa se generará aquí -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Modo JSON avanzado -->
+                                    <div class="mt-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="advanced-mode" onchange="toggleAdvancedMode()">
+                                            <label class="form-check-label" for="advanced-mode">
+                                                <small><i class="bi bi-code-slash me-1"></i>Modo JSON avanzado (para usuarios experimentados)</small>
+                                            </label>
+                                        </div>
+                                        <div id="json-editor" class="mt-2" style="display: none;">
+                                            <small class="text-muted">Edita directamente el JSON. Los cambios se sincronizarán con el constructor visual.</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Vista previa del contenido estructurado -->
+                                {% if has_structured_content %}
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-eye me-1"></i>Vista Previa del Contenido Estructurado
+                                    </label>
+                                    <div class="border rounded p-3 bg-light">
+                                        {% load lesson_tags %}
+                                        {{ lesson.structured_content|render_structured_content }}
+                                    </div>
+                                </div>
+                                {% endif %}
                             </div>
 
                             <div id="quiz-fields" class="content-fields">
@@ -569,6 +1056,934 @@ document.addEventListener('DOMContentLoaded', function() {
     if (lessonTypeInput.value === 'quiz') {
         addQuestion();
     }
+
+    // Variables globales para el constructor
+    let elements = [];
+    let elementCounter = 0;
+
+    // Función para agregar un elemento
+    window.addElement = function(type) {
+        elementCounter++;
+        const elementId = `element_${elementCounter}`;
+
+        let elementHtml = '';
+
+        switch(type) {
+            case 'heading':
+                elementHtml = `
+                    <div class="element-item" data-element-id="${elementId}" data-element-type="${type}" draggable="true">
+                        <div class="element-header">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-grip-vertical drag-handle me-2" style="cursor: grab;"></i>
+                                <span class="element-type">
+                                    <i class="bi bi-type-h1 me-1"></i>Encabezado
+                                </span>
+                            </div>
+                            <div class="element-actions">
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-element-action" onclick="moveElement('${elementId}', 'up')">
+                                    <i class="bi bi-chevron-up"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-element-action" onclick="moveElement('${elementId}', 'down')">
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-element-action" onclick="removeElement('${elementId}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="element-content">
+                            <div class="form-group-sm">
+                                <label>Título del encabezado</label>
+                                <input type="text" class="form-control" placeholder="Ej: Introducción a las Matemáticas" onchange="updateElement('${elementId}')">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'text':
+                elementHtml = `
+                    <div class="element-item" data-element-id="${elementId}" data-element-type="${type}" draggable="true">
+                        <div class="element-header">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-grip-vertical drag-handle me-2" style="cursor: grab;"></i>
+                                <span class="element-type">
+                                    <i class="bi bi-textarea me-1"></i>Texto
+                                </span>
+                            </div>
+                            <div class="element-actions">
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-element-action" onclick="moveElement('${elementId}', 'up')">
+                                    <i class="bi bi-chevron-up"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-element-action" onclick="moveElement('${elementId}', 'down')">
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-element-action" onclick="removeElement('${elementId}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="element-content">
+                            <div class="form-group-sm">
+                                <label>Título (opcional)</label>
+                                <input type="text" class="form-control" placeholder="Ej: Definición básica" onchange="updateElement('${elementId}')">
+                            </div>
+                            <div class="form-group-sm">
+                                <label>Contenido</label>
+                                <textarea class="form-control" rows="3" placeholder="Escribe el contenido del texto..." onchange="updateElement('${elementId}')"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'list':
+                elementHtml = `
+                    <div class="element-item" data-element-id="${elementId}" data-element-type="${type}" draggable="true">
+                        <div class="element-header">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-grip-vertical drag-handle me-2" style="cursor: grab;"></i>
+                                <span class="element-type">
+                                    <i class="bi bi-list-ul me-1"></i>Lista
+                                </span>
+                            </div>
+                            <div class="element-actions">
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-element-action" onclick="moveElement('${elementId}', 'up')">
+                                    <i class="bi bi-chevron-up"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-element-action" onclick="moveElement('${elementId}', 'down')">
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-element-action" onclick="removeElement('${elementId}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="element-content">
+                            <div class="form-group-sm">
+                                <label>Título de la lista (opcional)</label>
+                                <input type="text" class="form-control" placeholder="Ej: Pasos a seguir" onchange="updateElement('${elementId}')">
+                            </div>
+                            <div class="form-group-sm">
+                                <label>Elementos de la lista</label>
+                                <div class="list-items-container" id="list-items-${elementId}">
+                                    <div class="list-item">
+                                        <input type="text" class="form-control" placeholder="Primer elemento" onchange="updateElement('${elementId}')">
+                                        <button type="button" class="btn-remove-item" onclick="removeListItem(this)">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="add-list-item" onclick="addListItem('${elementId}')">
+                                    <i class="bi bi-plus-circle me-1"></i>Agregar elemento
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'image':
+                elementHtml = `
+                    <div class="element-item" data-element-id="${elementId}" data-element-type="${type}" draggable="true">
+                        <div class="element-header">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-grip-vertical drag-handle me-2" style="cursor: grab;"></i>
+                                <span class="element-type">
+                                    <i class="bi bi-image me-1"></i>Imagen
+                                </span>
+                            </div>
+                            <div class="element-actions">
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-element-action" onclick="moveElement('${elementId}', 'up')">
+                                    <i class="bi bi-chevron-up"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-element-action" onclick="moveElement('${elementId}', 'down')">
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-element-action" onclick="removeElement('${elementId}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="element-content">
+                            <div class="form-group-sm">
+                                <label>URL de la imagen</label>
+                                <input type="url" class="form-control" placeholder="https://ejemplo.com/imagen.jpg" onchange="updateElement('${elementId}')">
+                            </div>
+                            <div class="form-group-sm">
+                                <label>Descripción/Pie de foto (opcional)</label>
+                                <input type="text" class="form-control" placeholder="Descripción de la imagen" onchange="updateElement('${elementId}')">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'file':
+                elementHtml = `
+                    <div class="element-item" data-element-id="${elementId}" data-element-type="${type}" draggable="true">
+                        <div class="element-header">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-grip-vertical drag-handle me-2" style="cursor: grab;"></i>
+                                <span class="element-type">
+                                    <i class="bi bi-file-earmark me-1"></i>Archivo
+                                </span>
+                            </div>
+                            <div class="element-actions">
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-element-action" onclick="moveElement('${elementId}', 'up')">
+                                    <i class="bi bi-chevron-up"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary btn-element-action" onclick="moveElement('${elementId}', 'down')">
+                                    <i class="bi bi-chevron-down"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger btn-element-action" onclick="removeElement('${elementId}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="element-content">
+                            <div class="form-group-sm">
+                                <label>Nombre del archivo</label>
+                                <input type="text" class="form-control" placeholder="Ej: Guía completa PDF" onchange="updateElement('${elementId}')">
+                            </div>
+                            <div class="form-group-sm">
+                                <label>URL del archivo</label>
+                                <input type="url" class="form-control" placeholder="/media/files/guia.pdf" onchange="updateElement('${elementId}')">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                break;
+        }
+
+        // Agregar el elemento al contenedor
+        const container = document.getElementById('elements-container');
+        const emptyState = container.querySelector('.empty-state');
+
+        if (emptyState) {
+            emptyState.remove();
+        }
+
+        container.insertAdjacentHTML('beforeend', elementHtml);
+
+        // Agregar el elemento al array
+        elements.push({
+            id: elementId,
+            type: type,
+            data: {}
+        });
+
+        updateElementsCount();
+        updateJsonField();
+        updatePreview();
+    };
+
+    // Función para remover un elemento
+    window.removeElement = function(elementId) {
+        const element = document.querySelector(`[data-element-id="${elementId}"]`);
+        if (element) {
+            element.remove();
+        }
+
+        // Remover del array
+        elements = elements.filter(el => el.id !== elementId);
+
+        // Mostrar estado vacío si no hay elementos
+        const container = document.getElementById('elements-container');
+        if (container.children.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state text-center py-4">
+                    <i class="bi bi-diagram-3 text-muted fs-1 mb-3"></i>
+                    <p class="text-muted mb-0">Haz clic en los botones arriba para agregar elementos de contenido</p>
+                </div>
+            `;
+        }
+
+        updateElementsCount();
+        updateJsonField();
+        updatePreview();
+    };
+
+    // Función para mover un elemento
+    window.moveElement = function(elementId, direction) {
+        const element = document.querySelector(`[data-element-id="${elementId}"]`);
+        if (!element) return;
+
+        const container = document.getElementById('elements-container');
+
+        if (direction === 'up') {
+            const previous = element.previousElementSibling;
+            if (previous) {
+                container.insertBefore(element, previous);
+            }
+        } else if (direction === 'down') {
+            const next = element.nextElementSibling;
+            if (next) {
+                container.insertBefore(next, element);
+            }
+        }
+
+        updateJsonField();
+        updatePreview();
+    };
+
+    // Función para actualizar un elemento
+    window.updateElement = function(elementId) {
+        updateJsonField();
+        updatePreview();
+    };
+
+    // Función para agregar elemento a lista
+    window.addListItem = function(elementId) {
+        const listContainer = document.getElementById(`list-items-${elementId}`);
+        const listItemHtml = `
+            <div class="list-item">
+                <input type="text" class="form-control" placeholder="Nuevo elemento" onchange="updateElement('${elementId}')">
+                <button type="button" class="btn-remove-item" onclick="removeListItem(this)">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+        `;
+        listContainer.insertAdjacentHTML('beforeend', listItemHtml);
+    };
+
+    // Función para remover elemento de lista
+    window.removeListItem = function(button) {
+        button.closest('.list-item').remove();
+        updateJsonField();
+        updatePreview();
+    };
+
+    // Función para limpiar todos los elementos
+    window.clearAllElements = function() {
+        if (confirm('¿Estás seguro de que quieres eliminar todos los elementos?')) {
+            elements = [];
+            elementCounter = 0;
+
+            const container = document.getElementById('elements-container');
+            container.innerHTML = `
+                <div class="empty-state text-center py-4">
+                    <i class="bi bi-diagram-3 text-muted fs-1 mb-3"></i>
+                    <p class="text-muted mb-0">Haz clic en los botones arriba para agregar elementos de contenido</p>
+                </div>
+            `;
+
+            updateElementsCount();
+            updateJsonField();
+            updatePreview();
+        }
+    };
+
+    // Función para actualizar el contador de elementos
+    function updateElementsCount() {
+        const count = elements.length;
+        const countElement = document.getElementById('elements-count');
+        countElement.textContent = `${count} elemento${count !== 1 ? 's' : ''}`;
+        countElement.className = `badge ms-2 ${count > 0 ? 'bg-success' : 'bg-secondary'}`;
+    }
+
+    // Función para actualizar el campo JSON oculto
+    function updateJsonField() {
+        const jsonData = [];
+
+        // Recopilar datos de todos los elementos
+        document.querySelectorAll('.element-item').forEach((element, index) => {
+            const elementId = element.dataset.elementId;
+            const elementType = element.dataset.elementType;
+            const elementData = { type: elementType };
+
+            // Recopilar datos según el tipo
+            switch(elementType) {
+                case 'heading':
+                    const headingInput = element.querySelector('input[type="text"]');
+                    if (headingInput && headingInput.value.trim()) {
+                        elementData.title = headingInput.value.trim();
+                    }
+                    break;
+
+                case 'text':
+                    const textInputs = element.querySelectorAll('input[type="text"], textarea');
+                    textInputs.forEach(input => {
+                        if (input.placeholder.includes('Título') && input.value.trim()) {
+                            elementData.title = input.value.trim();
+                        } else if (input.tagName === 'TEXTAREA' && input.value.trim()) {
+                            elementData.content = input.value.trim();
+                        }
+                    });
+                    break;
+
+                case 'list':
+                    const listInputs = element.querySelectorAll('input[type="text"]');
+                    const titleInput = element.querySelector('input[placeholder*="Título"]');
+                    const items = [];
+
+                    listInputs.forEach(input => {
+                        if (input !== titleInput && input.value.trim()) {
+                            items.push(input.value.trim());
+                        }
+                    });
+
+                    if (titleInput && titleInput.value.trim()) {
+                        elementData.title = titleInput.value.trim();
+                    }
+                    if (items.length > 0) {
+                        elementData.items = items;
+                    }
+                    break;
+
+                case 'image':
+                    const imageInputs = element.querySelectorAll('input');
+                    imageInputs.forEach(input => {
+                        if (input.type === 'url' && input.value.trim()) {
+                            elementData.content = input.value.trim();
+                        } else if (input.placeholder.includes('Descripción') && input.value.trim()) {
+                            elementData.title = input.value.trim();
+                        }
+                    });
+                    break;
+
+                case 'file':
+                    const fileInputs = element.querySelectorAll('input');
+                    fileInputs.forEach(input => {
+                        if (input.placeholder.includes('Nombre') && input.value.trim()) {
+                            elementData.title = input.value.trim();
+                        } else if (input.type === 'url' && input.value.trim()) {
+                            elementData.content = input.value.trim();
+                        }
+                    });
+                    break;
+            }
+
+            jsonData.push(elementData);
+        });
+
+        // Actualizar campo oculto
+        const jsonField = document.getElementById('{{ form.structured_content_json.id_for_label }}');
+        jsonField.value = JSON.stringify(jsonData, null, 2);
+    }
+
+    // Función para actualizar la vista previa
+    function updatePreview() {
+        const previewContainer = document.getElementById('content-preview');
+        const jsonField = document.getElementById('{{ form.structured_content_json.id_for_label }}');
+
+        try {
+            const jsonData = JSON.parse(jsonField.value || '[]');
+            let previewHtml = '';
+
+            jsonData.forEach(element => {
+                switch(element.type) {
+                    case 'heading':
+                        previewHtml += '<div class="lesson-heading-container">';
+                        if (element.title) {
+                            previewHtml += `<h2 class="lesson-heading-main">${element.title}</h2>`;
+                        }
+                        if (element.content) {
+                            previewHtml += `<p class="lesson-heading-subtitle">${element.content}</p>`;
+                        }
+                        previewHtml += '</div>';
+                        break;
+                    case 'text':
+                        previewHtml += '<div class="lesson-text-container">';
+                        if (element.title) {
+                            previewHtml += `<h4 class="lesson-subheading">${element.title}</h4>`;
+                        }
+                        if (element.content) {
+                            previewHtml += `<p class="lesson-content">${element.content.replace(/\n/g, '<br>')}</p>`;
+                        }
+                        previewHtml += '</div>';
+                        break;
+                    case 'list':
+                        previewHtml += '<div class="lesson-list-container">';
+                        if (element.title) {
+                            previewHtml += `<h4 class="lesson-list-title">${element.title}</h4>`;
+                        }
+                        if (element.items && element.items.length > 0) {
+                            previewHtml += '<ul class="lesson-list">';
+                            element.items.forEach(item => {
+                                previewHtml += `<li class="lesson-list-item"><span class="list-bullet">•</span> ${item}</li>`;
+                            });
+                            previewHtml += '</ul>';
+                        }
+                        previewHtml += '</div>';
+                        break;
+                    case 'image':
+                        if (element.content) {
+                            previewHtml += '<div class="lesson-image-container">';
+                            previewHtml += `<img src="${element.content}" alt="${element.title || ''}" class="lesson-image">`;
+                            if (element.title) {
+                                previewHtml += `<p class="lesson-image-caption">${element.title}</p>`;
+                            }
+                            previewHtml += '</div>';
+                        }
+                        break;
+                    case 'file':
+                        if (element.content && element.title) {
+                            previewHtml += '<div class="lesson-file">';
+                            previewHtml += `<a href="${element.content}" target="_blank" class="lesson-file-link">`;
+                            previewHtml += `<i class="bi bi-file-earmark"></i> ${element.title}`;
+                            previewHtml += '</a>';
+                            previewHtml += '</div>';
+                        }
+                        break;
+                }
+            });
+
+            previewContainer.innerHTML = previewHtml || '<p class="text-muted text-center">La vista previa aparecerá aquí...</p>';
+        } catch (e) {
+            previewContainer.innerHTML = '<p class="text-danger">Error en el formato JSON</p>';
+        }
+    }
+
+    // Función para alternar la vista previa
+    window.togglePreview = function() {
+        const preview = document.getElementById('content-preview');
+        const button = event.target.closest('button');
+
+        if (preview.style.display === 'none') {
+            preview.style.display = 'block';
+            button.innerHTML = '<i class="bi bi-eye me-1"></i>Ocultar';
+        } else {
+            preview.style.display = 'none';
+            button.innerHTML = '<i class="bi bi-eye-slash me-1"></i>Mostrar';
+        }
+    };
+
+    // Función para alternar modo avanzado
+    window.toggleAdvancedMode = function() {
+        const advancedMode = document.getElementById('advanced-mode').checked;
+        const jsonEditor = document.getElementById('json-editor');
+        const jsonField = document.getElementById('{{ form.structured_content_json.id_for_label }}');
+
+        if (advancedMode) {
+            jsonEditor.style.display = 'block';
+            jsonEditor.innerHTML = `
+                <textarea class="form-control" rows="8" id="json-textarea">${jsonField.value}</textarea>
+                <small class="text-muted mt-1 d-block">
+                    Edita el JSON directamente. Los cambios se sincronizarán con el constructor visual.
+                </small>
+            `;
+
+            // Escuchar cambios en el textarea
+            document.getElementById('json-textarea').addEventListener('input', function() {
+                jsonField.value = this.value;
+                updatePreview();
+            });
+        } else {
+            jsonEditor.style.display = 'none';
+        }
+    };
+
+    // Función para cargar ejemplos predefinidos
+    window.loadExample = function(exampleType) {
+        if (elements.length > 0 && !confirm('¿Quieres reemplazar el contenido actual con el ejemplo?')) {
+            return;
+        }
+
+        // Limpiar elementos actuales
+        clearAllElements();
+
+        let exampleData = [];
+
+        switch(exampleType) {
+            case 'basic':
+                exampleData = [
+                    {
+                        "type": "heading",
+                        "title": "Introducción a la Lección"
+                    },
+                    {
+                        "type": "text",
+                        "title": "Objetivos de aprendizaje",
+                        "content": "Al finalizar esta lección, podrás:\n\n• Comprender los conceptos básicos\n• Aplicar los conocimientos en ejercicios prácticos\n• Resolver problemas relacionados con el tema"
+                    },
+                    {
+                        "type": "list",
+                        "title": "Materiales necesarios",
+                        "items": [
+                            "Cuaderno y lápiz",
+                            "Calculadora (opcional)",
+                            "Acceso a internet para recursos adicionales"
+                        ]
+                    }
+                ];
+                break;
+
+            case 'advanced':
+                exampleData = [
+                    {
+                        "type": "heading",
+                        "title": "Conceptos Avanzados"
+                    },
+                    {
+                        "type": "text",
+                        "content": "En esta sección exploraremos conceptos más complejos que requieren un entendimiento sólido de los fundamentos."
+                    },
+                    {
+                        "type": "image",
+                        "title": "Diagrama conceptual",
+                        "content": "/media/images/diagram.png"
+                    },
+                    {
+                        "type": "list",
+                        "title": "Temas avanzados a cubrir",
+                        "items": [
+                            "Análisis profundo de algoritmos",
+                            "Optimización de procesos",
+                            "Casos de estudio reales",
+                            "Mejores prácticas del sector"
+                        ]
+                    },
+                    {
+                        "type": "file",
+                        "title": "Guía completa en PDF",
+                        "content": "/media/files/advanced-guide.pdf"
+                    }
+                ];
+                break;
+
+            case 'interactive':
+                exampleData = [
+                    {
+                        "type": "heading",
+                        "title": "Lección Interactiva"
+                    },
+                    {
+                        "type": "text",
+                        "title": "¡Bienvenido!",
+                        "content": "Esta lección incluye elementos interactivos para mejorar tu experiencia de aprendizaje."
+                    },
+                    {
+                        "type": "list",
+                        "title": "Actividades disponibles",
+                        "items": [
+                            "Videos explicativos",
+                            "Ejercicios prácticos",
+                            "Quiz de autoevaluación",
+                            "Materiales de descarga"
+                        ]
+                    },
+                    {
+                        "type": "text",
+                        "content": "Recuerda que puedes pausar y reanudar tu progreso en cualquier momento. ¡Disfruta aprendiendo!"
+                    }
+                ];
+                break;
+        }
+
+        // Cargar el ejemplo
+        exampleData.forEach((elementData, index) => {
+            setTimeout(() => {
+                addElement(elementData.type);
+
+                // Llenar los campos después de crear el elemento
+                setTimeout(() => {
+                    const element = document.querySelector(`[data-element-id="element_${index + 1}"]`);
+                    if (element) {
+                        switch(elementData.type) {
+                            case 'heading':
+                                const headingInput = element.querySelector('input[type="text"]');
+                                if (headingInput && elementData.title) {
+                                    headingInput.value = elementData.title;
+                                }
+                                break;
+                            case 'text':
+                                const textInputs = element.querySelectorAll('input[type="text"], textarea');
+                                textInputs.forEach(input => {
+                                    if (input.placeholder.includes('Título') && elementData.title) {
+                                        input.value = elementData.title;
+                                    } else if (input.tagName === 'TEXTAREA' && elementData.content) {
+                                        input.value = elementData.content;
+                                    }
+                                });
+                                break;
+                            case 'list':
+                                if (elementData.title) {
+                                    const titleInput = element.querySelector('input[placeholder*="Título"]');
+                                    if (titleInput) titleInput.value = elementData.title;
+                                }
+                                if (elementData.items) {
+                                    const listContainer = element.querySelector('.list-items-container');
+                                    listContainer.innerHTML = '';
+                                    elementData.items.forEach(item => {
+                                        const itemHtml = `
+                                            <div class="list-item">
+                                                <input type="text" class="form-control" value="${item}" onchange="updateElement('element_${index + 1}')">
+                                                <button type="button" class="btn-remove-item" onclick="removeListItem(this)">
+                                                    <i class="bi bi-x"></i>
+                                                </button>
+                                            </div>
+                                        `;
+                                        listContainer.insertAdjacentHTML('beforeend', itemHtml);
+                                    });
+                                }
+                                break;
+                            case 'image':
+                                const imageInputs = element.querySelectorAll('input');
+                                imageInputs.forEach(input => {
+                                    if (input.type === 'url' && elementData.content) {
+                                        input.value = elementData.content;
+                                    } else if (input.placeholder.includes('Descripción') && elementData.title) {
+                                        input.value = elementData.title;
+                                    }
+                                });
+                                break;
+                            case 'file':
+                                const fileInputs = element.querySelectorAll('input');
+                                fileInputs.forEach(input => {
+                                    if (input.placeholder.includes('Nombre') && elementData.title) {
+                                        input.value = elementData.title;
+                                    } else if (input.type === 'url' && elementData.content) {
+                                        input.value = elementData.content;
+                                    }
+                                });
+                                break;
+                        }
+                    }
+                }, 150);
+            }, index * 200);
+        });
+
+        // Actualizar vista previa después de cargar todos los elementos
+        setTimeout(() => {
+            updateJsonField();
+            updatePreview();
+        }, exampleData.length * 200 + 300);
+    };
+
+    // Función para mostrar ayuda del formato JSON
+    window.showJsonHelp = function() {
+        const helpContent = `
+            <div class="modal fade" id="jsonHelpModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Constructor de Contenido Estructurado</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <h6>Elementos disponibles:</h6>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h7><i class="bi bi-type-h1 text-primary me-1"></i>Encabezado</h7>
+                                    <p class="small">Para títulos y secciones principales</p>
+
+                                    <h7><i class="bi bi-textarea text-success me-1"></i>Texto</h7>
+                                    <p class="small">Contenido escrito con título opcional</p>
+
+                                    <h7><i class="bi bi-list-ul text-info me-1"></i>Lista</h7>
+                                    <p class="small">Listas numeradas o con viñetas</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <h7><i class="bi bi-image text-warning me-1"></i>Imagen</h7>
+                                    <p class="small">Imágenes con pie de foto opcional</p>
+
+                                    <h7><i class="bi bi-file-earmark text-secondary me-1"></i>Archivo</h7>
+                                    <p class="small">Enlaces a documentos y archivos</p>
+                                </div>
+                            </div>
+
+                            <hr>
+                            <h6>Consejos de uso:</h6>
+                            <ul class="small">
+                                <li>Usa encabezados para organizar el contenido en secciones</li>
+                                <li>Combina texto con listas para explicar conceptos complejos</li>
+                                <li>Incluye imágenes para hacer el contenido más visual</li>
+                                <li>Agrega archivos de referencia cuando sea necesario</li>
+                                <li>Arrastra los elementos para reordenarlos</li>
+                            </ul>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Agregar modal al DOM
+        document.body.insertAdjacentHTML('beforeend', helpContent);
+
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('jsonHelpModal'));
+        modal.show();
+
+        // Limpiar modal del DOM cuando se cierre
+        document.getElementById('jsonHelpModal').addEventListener('hidden.bs.modal', function() {
+            this.remove();
+        });
+    };
+
+    // Función para inicializar drag & drop
+    function initializeDragAndDrop() {
+        const container = document.getElementById('elements-container');
+
+        // Usar SortableJS si está disponible, o implementar drag & drop básico
+        if (typeof Sortable !== 'undefined') {
+            new Sortable(container, {
+                handle: '.drag-handle',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                onEnd: function(evt) {
+                    updateJsonField();
+                    updatePreview();
+                }
+            });
+        } else {
+            // Implementación básica de drag & drop
+            let draggedElement = null;
+
+            container.addEventListener('dragstart', function(e) {
+                if (e.target.classList.contains('drag-handle')) {
+                    draggedElement = e.target.closest('.element-item');
+                    draggedElement.classList.add('sortable-chosen');
+                }
+            });
+
+            container.addEventListener('dragend', function(e) {
+                if (draggedElement) {
+                    draggedElement.classList.remove('sortable-chosen');
+                    draggedElement = null;
+                    updateJsonField();
+                    updatePreview();
+                }
+            });
+
+            container.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(container, e.clientY);
+                const draggable = document.querySelector('.sortable-chosen');
+
+                if (afterElement == null) {
+                    container.appendChild(draggable);
+                } else {
+                    container.insertBefore(draggable, afterElement);
+                }
+            });
+
+            // Hacer los elementos arrastrables
+            container.addEventListener('mousedown', function(e) {
+                if (e.target.classList.contains('drag-handle')) {
+                    const element = e.target.closest('.element-item');
+                    element.draggable = true;
+                }
+            });
+
+            container.addEventListener('mouseup', function(e) {
+                const elements = container.querySelectorAll('.element-item');
+                elements.forEach(el => el.draggable = false);
+            });
+        }
+    }
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.element-item:not(.sortable-chosen)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // Inicializar cuando se carga la página
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar drag & drop
+        initializeDragAndDrop();
+
+        // Cargar contenido existente si hay
+        const jsonField = document.getElementById('{{ form.structured_content_json.id_for_label }}');
+        if (jsonField && jsonField.value) {
+            try {
+                const existingData = JSON.parse(jsonField.value);
+                if (existingData && existingData.length > 0) {
+                    // Cargar elementos existentes
+                    existingData.forEach((elementData, index) => {
+                        addElement(elementData.type);
+
+                        // Esperar un poco para que el elemento se cree
+                        setTimeout(() => {
+                            const element = document.querySelector(`[data-element-id="element_${index + 1}"]`);
+                            if (element) {
+                                // Llenar los campos según el tipo
+                                switch(elementData.type) {
+                                    case 'heading':
+                                        const headingInput = element.querySelector('input[type="text"]');
+                                        if (headingInput && elementData.title) {
+                                            headingInput.value = elementData.title;
+                                        }
+                                        break;
+                                    case 'text':
+                                        const textInputs = element.querySelectorAll('input[type="text"], textarea');
+                                        textInputs.forEach(input => {
+                                            if (input.placeholder.includes('Título') && elementData.title) {
+                                                input.value = elementData.title;
+                                            } else if (input.tagName === 'TEXTAREA' && elementData.content) {
+                                                input.value = elementData.content;
+                                            }
+                                        });
+                                        break;
+                                    case 'list':
+                                        if (elementData.title) {
+                                            const titleInput = element.querySelector('input[placeholder*="Título"]');
+                                            if (titleInput) titleInput.value = elementData.title;
+                                        }
+                                        if (elementData.items) {
+                                            const listContainer = element.querySelector('.list-items-container');
+                                            listContainer.innerHTML = '';
+                                            elementData.items.forEach(item => {
+                                                const itemHtml = `
+                                                    <div class="list-item">
+                                                        <input type="text" class="form-control" value="${item}" onchange="updateElement('element_${index + 1}')">
+                                                        <button type="button" class="btn-remove-item" onclick="removeListItem(this)">
+                                                            <i class="bi bi-x"></i>
+                                                        </button>
+                                                    </div>
+                                                `;
+                                                listContainer.insertAdjacentHTML('beforeend', itemHtml);
+                                            });
+                                        }
+                                        break;
+                                    case 'image':
+                                        const imageInputs = element.querySelectorAll('input');
+                                        imageInputs.forEach(input => {
+                                            if (input.type === 'url' && elementData.content) {
+                                                input.value = elementData.content;
+                                            } else if (input.placeholder.includes('Descripción') && elementData.title) {
+                                                input.value = elementData.title;
+                                            }
+                                        });
+                                        break;
+                                    case 'file':
+                                        const fileInputs = element.querySelectorAll('input');
+                                        fileInputs.forEach(input => {
+                                            if (input.placeholder.includes('Nombre') && elementData.title) {
+                                                input.value = elementData.title;
+                                            } else if (input.type === 'url' && elementData.content) {
+                                                input.value = elementData.content;
+                                            }
+                                        });
+                                        break;
+                                }
+                            }
+                        }, 100);
+                    });
+                }
+            } catch (e) {
+                console.error('Error cargando contenido existente:', e);
+            }
+        }
+
+        // Inicializar vista previa
+        updatePreview();
+    });
 });
 </script>
 {% endblock %}

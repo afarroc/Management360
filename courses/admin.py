@@ -51,15 +51,22 @@ class ModuleAdmin(admin.ModelAdmin):
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ['title', 'module', 'lesson_type', 'order', 'is_free', 'duration_minutes']
+    list_display = ['title', 'module', 'lesson_type', 'order', 'is_free', 'duration_minutes', 'has_structured_content']
     list_filter = ['lesson_type', 'is_free', 'module__course']
-    search_fields = ['title', 'module__title']
+    search_fields = ['title', 'module__title', 'content']
+    readonly_fields = ['structured_content_count']
+
     fieldsets = (
         ('Información Básica', {
             'fields': ('module', 'title', 'lesson_type', 'order', 'is_free', 'duration_minutes')
         }),
-        ('Contenido', {
+        ('Contenido Simple', {
             'fields': ('content', 'video_url'),
+            'classes': ('collapse',)
+        }),
+        ('Contenido Estructurado', {
+            'fields': ('structured_content', 'structured_content_count'),
+            'description': 'Contenido estructurado en formato JSON. Ejemplo: [{"type": "heading", "title": "Título"}, {"type": "list", "items": ["Item 1", "Item 2"]}]',
             'classes': ('collapse',)
         }),
         ('Quiz', {
@@ -71,6 +78,23 @@ class LessonAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+    def has_structured_content(self, obj):
+        """Muestra si la lección tiene contenido estructurado"""
+        return bool(obj.structured_content)
+    has_structured_content.boolean = True
+    has_structured_content.short_description = 'Contenido Estructurado'
+
+    def structured_content_count(self, obj):
+        """Muestra el número de elementos en el contenido estructurado"""
+        if obj.structured_content:
+            return len(obj.structured_content)
+        return 0
+    structured_content_count.short_description = 'Elementos Estructurados'
+
+    def get_queryset(self, request):
+        """Optimizar consultas incluyendo contenido estructurado"""
+        return super().get_queryset(request).select_related('module__course')
 
 @admin.register(Enrollment)
 class EnrollmentAdmin(admin.ModelAdmin):
