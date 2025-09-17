@@ -165,12 +165,22 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-if not DEBUG:
-    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media Files
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# WhiteNoise configuration
+if DEBUG:
+    # En desarrollo: usar WhiteNoise pero permitir autorefresh
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    WHITENOISE_USE_FINDERS = True
+    WHITENOISE_AUTOREFRESH = True
+else:
+    # En producción: optimizar con WhiteNoise
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    WHITENOISE_USE_FINDERS = True
+    WHITENOISE_AUTOREFRESH = False
+
+# Media Files - Ahora servidos desde servidor remoto en Termux
+MEDIA_URL = 'http://192.168.18.46:8000/'
+MEDIA_ROOT = BASE_DIR / 'media'  # Mantener para uploads locales si es necesario
 
 # Email Configuration
 if DEBUG:
