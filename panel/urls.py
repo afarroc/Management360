@@ -43,7 +43,11 @@ urlpatterns = [
     path('redis-test/', RedisTestView.as_view(), name='redis_test'),
 ]
 
-# Serve media files during development
+# Static files served locally in development
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Media files are now served from remote Termux server
+# Commenting out local media serving to use remote server
+# if settings.DEBUG:
+#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -95,4 +95,7 @@ urlpatterns = [
     path('configuration/delete_classification/<int:Classification_id>/', views.delete_Classification, name='delete_classification'),
     path('configuration/classification_list/', views.Classification_list, name='classification_list'),
 
-]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Media files are now served from remote Termux server
+# Commenting out local media serving
+# ]+static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
