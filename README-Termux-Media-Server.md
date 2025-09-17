@@ -45,7 +45,37 @@ python --version
 
 ## Copia de Archivos al Dispositivo
 
-### Opción A: Usando ADB (desde PC)
+### Opción A: Sincronización Automática (Recomendado)
+
+**Para Windows:**
+```cmd
+# Ejecutar el script de sincronización
+sync_media_to_termux.bat
+```
+
+**Para Linux/Mac:**
+```bash
+# Ejecutar el script de sincronización
+./sync_media_to_termux.sh
+```
+
+Este script automáticamente:
+- ✅ Verifica archivos locales en `./media/`
+- ✅ Conecta vía SSH a Termux
+- ✅ Sincroniza todos los archivos
+- ✅ Verifica la sincronización
+
+### Opción B: Copia Manual con SCP
+
+```bash
+# Copiar script del servidor
+scp -P 8022 media_server.py u0_a211@192.168.18.46:/data/data/com.termux/files/home/projects/Management360/
+
+# Copiar directorio media completo
+scp -P 8022 -r media/ u0_a211@192.168.18.46:/data/data/com.termux/files/home/projects/Management360/media/
+```
+
+### Opción C: Usando ADB
 
 1. Conecta tu dispositivo Android al PC
 2. Habilita "Depuración USB" en Ajustes > Opciones de desarrollador
@@ -57,7 +87,7 @@ adb push media_server.py /sdcard/
 adb push media/ /sdcard/media/
 ```
 
-### Opción B: Usando almacenamiento compartido
+### Opción D: Usando almacenamiento compartido
 
 1. Copia `media_server.py` y el directorio `media/` a tu almacenamiento interno
 2. En Termux, accede a los archivos:
@@ -67,7 +97,7 @@ cd /sdcard/
 ls -la
 ```
 
-### Opción C: Usando Git (recomendado)
+### Opción E: Usando Git
 
 ```bash
 # Clonar el repositorio completo
@@ -114,6 +144,55 @@ ps aux | grep python
 kill <PID-del-proceso>
 ```
 
+## Verificación de Sincronización
+
+### Verificar archivos copiados en Termux
+
+```bash
+# Verificar que el directorio media existe y tiene contenido
+ls -la /data/data/com.termux/files/home/projects/Management360/media/
+
+# Deberías ver:
+# courses/
+# profile_pics/
+# (y otros archivos si existen)
+```
+
+### Verificar contenido específico
+
+```bash
+# Verificar directorio courses
+ls -la media/courses/
+# Deberías ver: assignments/ lesson_attachments/ thumbnails/
+
+# Verificar directorio profile_pics
+ls -la media/profile_pics/
+# Deberías ver: thumb-1920-29144.jpg
+
+# Contar archivos totales
+find media/ -type f | wc -l
+# Deberías ver: 7 (o el número correcto de archivos)
+```
+
+### Archivos que deben estar presentes:
+
+```
+media/
+├── courses/
+│   ├── assignments/
+│   │   ├── 3004.pdf
+│   │   └── Proceso_reporte_VENTAS_-_FIJA.docx
+│   ├── lesson_attachments/
+│   │   └── 3004.pdf
+│   └── thumbnails/
+│       ├── 20667.jpg
+│       ├── 21262.jpg
+│       ├── Microsoft-Power-BI-Symbol_7FyyVyd.png
+│       └── Microsoft-Power-BI-Symbol.png
+└── profile_pics/
+    └── thumb-1920-29144.jpg
+```
+
 ## Verificación del Funcionamiento
 
 ### 1. Verificar que el servidor está ejecutándose
@@ -132,7 +211,9 @@ Abre un navegador web en otro dispositivo conectado a la misma red y accede a:
 http://192.168.18.46:8000/
 ```
 
-Deberías ver el listado de archivos en el directorio `/media`.
+Deberías ver el listado de archivos en el directorio `/media` con:
+- `courses/`
+- `profile_pics/`
 
 ### 3. Probar archivos específicos
 
@@ -192,6 +273,58 @@ chmod -R 644 media/
 2. **Verificar IP**: Confirma que `192.168.18.46` es la IP correcta de tu dispositivo
 3. **Verificar red**: Asegúrate de que ambos dispositivos estén en la misma subred LAN
 
+### Los archivos no aparecen en el servidor
+
+**Síntoma**: El servidor funciona pero no muestra `courses/` y `profile_pics/`
+
+**Solución**:
+```bash
+# 1. Verificar ubicación del directorio media
+ls -la /data/data/com.termux/files/home/projects/Management360/media/
+
+# 2. Si no existe, crear y sincronizar
+mkdir -p /data/data/com.termux/files/home/projects/Management360/media
+
+# 3. Desde Windows, ejecutar sincronización
+sync_media_to_termux.bat
+
+# 4. Verificar contenido después de sincronización
+ls -la media/
+# Deberías ver: courses/ profile_pics/
+```
+
+### Error de conexión SSH durante sincronización
+
+**Síntoma**: `ssh: connect to host 192.168.18.46 port 8022: Connection refused`
+
+**Solución**:
+```bash
+# 1. Verificar que SSH está ejecutándose en Termux
+ps aux | grep ssh
+
+# 2. Si no está ejecutándose, iniciarlo
+sshd
+
+# 3. Verificar puerto SSH
+netstat -tlnp | grep :8022
+```
+
+### Archivos no se sincronizan correctamente
+
+**Síntoma**: La sincronización parece exitosa pero los archivos no aparecen
+
+**Solución**:
+```bash
+# Verificar permisos en Termux
+ls -la /data/data/com.termux/files/home/projects/Management360/
+
+# Ajustar permisos si es necesario
+chmod -R 755 /data/data/com.termux/files/home/projects/Management360/media/
+
+# Verificar espacio disponible
+df -h /data/data/com.termux/files/home/
+```
+
 ### Logs no aparecen
 
 ```bash
@@ -241,14 +374,69 @@ killall python
 pkill -f media_server.py
 ```
 
+## Comandos de Verificación Completos
+
+### Verificación Final del Servidor
+
+```bash
+# 1. Verificar archivos sincronizados
+echo "=== Verificación de archivos ==="
+ls -la media/
+echo ""
+echo "Contenido de courses:"
+ls -la media/courses/
+echo ""
+echo "Contenido de profile_pics:"
+ls -la media/profile_pics/
+
+# 2. Iniciar servidor
+echo ""
+echo "=== Iniciando servidor ==="
+python media_server.py
+
+# 3. En otra terminal/ventana, verificar servidor
+echo ""
+echo "=== Verificación del servidor ==="
+curl -I http://192.168.18.46:8000/
+echo ""
+echo "Listado de archivos:"
+curl http://192.168.18.46:8000/
+echo ""
+echo "Verificar directorio courses:"
+curl http://192.168.18.46:8000/courses/
+echo ""
+echo "Verificar archivo específico:"
+curl -I http://192.168.18.46:8000/courses/thumbnails/20667.jpg
+```
+
 ## Próximos Pasos
 
 Una vez que el servidor esté funcionando:
 
-1. Prueba el acceso desde diferentes dispositivos en tu red
-2. Verifica que todos los tipos de archivos se sirvan correctamente
-3. Configura el servidor para iniciarse automáticamente si es necesario
-4. Considera agregar autenticación si necesitas restringir el acceso
+1. **Sincronización inicial**:
+   ```bash
+   # En Windows
+   sync_media_to_termux.bat
+
+   # En Termux
+   cd /data/data/com.termux/files/home/projects/Management360
+   python media_server.py
+   ```
+
+2. **Pruebas de acceso**:
+   - Abre `http://192.168.18.46:8000/` en cualquier dispositivo de la LAN
+   - Verifica que se listen `courses/` y `profile_pics/`
+   - Prueba descargar archivos específicos
+
+3. **Configuración avanzada**:
+   - Configura el servidor para iniciarse automáticamente
+   - Considera agregar autenticación si necesitas restringir el acceso
+   - Configura logs persistentes si es necesario
+
+4. **Mantenimiento**:
+   - Ejecuta la sincronización cuando actualices archivos en Windows
+   - Monitorea los logs del servidor para detectar problemas
+   - Verifica el espacio disponible periódicamente
 
 ---
 
