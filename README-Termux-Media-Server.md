@@ -45,46 +45,29 @@ python --version
 
 ## Copia de Archivos al Dispositivo
 
-### Opción A: Sincronización desde Termux (Recomendado)
+### Sincronización de Archivos (Script Único)
 
-**Para Termux (se ejecuta en Android):**
+**Script principal: `sync_media.sh`**
+
 ```bash
 # 1. Copiar el script a Termux
-scp -P 8022 sync_media_from_windows.sh u0_a211@192.168.18.46:/data/data/com.termux/files/home/projects/Management360/
+scp -P 8022 sync_media.sh u0_a211@192.168.18.46:/data/data/com.termux/files/home/projects/Management360/
 
 # 2. Ejecutarlo en Termux
 cd /data/data/com.termux/files/home/projects/Management360
-chmod +x sync_media_from_windows.sh
-./sync_media_from_windows.sh
+chmod +x sync_media.sh
+./sync_media.sh
 ```
 
-**Para Windows (Git Bash - alternativo):**
-```bash
-# Script optimizado que pide contraseña solo una vez
-./sync_media_to_termux_optimized.sh
-```
+Este script único automáticamente:
+- ✅ **Verifica conexión SSH** con Windows
+- ✅ **Verifica archivos disponibles** en Windows
+- ✅ **Pide confirmación** antes de sincronizar
+- ✅ **Copia TODOS los archivos** desde Windows
+- ✅ **Verifica la copia** después de completar
+- ✅ **Muestra resumen final** con estadísticas
 
-**Para Windows (Command Prompt):**
-```cmd
-# Ejecutar el script de sincronización
-sync_media_to_termux.bat
-```
-
-**Para Linux/Mac:**
-```bash
-# Ejecutar el script de sincronización
-./sync_media_to_termux.sh
-```
-
-Este script automáticamente:
-- ✅ **Se ejecuta en Termux** (no en Windows)
-- ✅ **Una sola petición de contraseña SSH**
-- ✅ **Copia TODOS los archivos** desde Windows incluyendo subdirectorios
-- ✅ **Limpia archivos antiguos** antes de sincronizar
-- ✅ **Verifica la sincronización completa**
-- ✅ **Usa rsync cuando está disponible** (más eficiente)
-
-**Nota:** Este enfoque es más robusto porque se ejecuta en el destino final (Termux) y puede verificar correctamente todos los archivos copiados.
+**Nota:** Este es el único script que necesitas. Es más simple, confiable y hace todo lo necesario en una sola ejecución.
 
 ### Opción B: Copia Manual con SCP
 
