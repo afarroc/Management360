@@ -42,11 +42,13 @@ mkdir -p "$TERMUX_MEDIA_PATH"
 
 # Verificar archivos en Windows
 echo "🔍 Verificando archivos en Windows..."
-ssh $WINDOWS_USER@$WINDOWS_IP "if [ -d '$WINDOWS_PROJECT_PATH/media' ]; then find '$WINDOWS_PROJECT_PATH/media' -type f | head -10; else echo 'Directorio no encontrado'; fi"
+ssh $WINDOWS_USER@$WINDOWS_IP "dir /b '$WINDOWS_PROJECT_PATH/media' 2>nul | head -10" 2>/dev/null || echo "Directorio no encontrado o sin archivos"
 
 echo ""
 echo "📊 Información de archivos en Windows:"
-ssh $WINDOWS_USER@$WINDOWS_IP "if [ -d '$WINDOWS_PROJECT_PATH/media' ]; then echo 'Total archivos:' \$(find '$WINDOWS_PROJECT_PATH/media' -type f | wc -l); echo 'Tamaño total:' \$(du -sh '$WINDOWS_PROJECT_PATH/media' | cut -f1); else echo 'Directorio media no encontrado en Windows'; fi"
+TOTAL_FILES=$(ssh $WINDOWS_USER@$WINDOWS_IP "dir /b '$WINDOWS_PROJECT_PATH/media' 2>nul | find /c /v \"\"" 2>/dev/null || echo "0")
+echo "Total archivos aproximado: $TOTAL_FILES"
+echo "Directorio: $WINDOWS_PROJECT_PATH/media"
 
 echo ""
 # Confirmar antes de proceder
