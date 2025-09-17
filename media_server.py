@@ -38,50 +38,38 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_POST(self):
-        """Handle file uploads with simple multipart parser"""
+        """Handle file uploads"""
         try:
-            content_length = int(self.headers['Content-Length'])
-            body = self.rfile.read(content_length)
-
-            # Get boundary from Content-Type
+            # Handle both multipart form data and direct file uploads
             content_type = self.headers.get('Content-Type', '')
-            if 'boundary=' not in content_type:
-                self.send_error(400, "Invalid content type")
-                return
-            boundary = content_type.split('boundary=')[1].strip('"\'')
 
-            # Debug
-            print(f"Boundary: {boundary}")
-            print(f"Body start: {body[:200]}")
+            if 'multipart/form-data' in content_type:
+                # Handle Django's multipart upload
+                filename = self._parse_multipart_form_data()
+            else:
+                # Fallback to Content-Disposition header
+                content_disposition = self.headers.get('Content-Disposition', '')
+                if 'filename=' not in content_disposition:
+                    self.send_error(400, "No filename in Content-Disposition")
+                    return
+                filename = content_disposition.split('filename=')[1].strip('"')
 
-            # Simple multipart parser
-            parts = body.split(b'--' + boundary.encode())
-            filename = None
-            file_content = None
-
-            for part in parts:
-                if b'Content-Disposition' in part and b'filename=' in part:
-                    # Extract filename
-                    lines = part.split(b'\r\n')
-                    for line in lines:
-                        if b'filename=' in line:
-                            filename_part = line.split(b'filename=')[1].strip(b'"')
-                            filename = filename_part.decode()
-                            break
-                    # Extract content (after headers)
-                    content_start = part.find(b'\r\n\r\n', part.find(b'filename=')) + 4
-                    file_content = part[content_start:].rstrip(b'\r\n--')
-                    break
-
-            if not filename or not file_content:
-                self.send_error(400, "No file provided")
+            if not filename:
+                self.send_error(400, "No filename")
                 return
 
-            # Allow subdirectories for proper organization
-            # Sanitize to prevent directory traversal (no ..)
+            # Allow subdirectories
             if '..' in filename or filename.startswith('/'):
                 self.send_error(400, "Invalid filename")
                 return
+
+            # Read body
+            content_length = int(self.headers['Content-Length'])
+            body = self.rfile.read(content_length)
+
+            # If multipart, extract file content from body
+            if 'multipart/form-data' in content_type:
+                body = self._extract_file_content(body, content_type)
 
             # Create directories if needed
             filepath = os.path.join(self.directory, filename)
@@ -89,8 +77,9 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
 
             # Save the file
             with open(filepath, 'wb') as f:
-                f.write(file_content)
+                f.write(body)
 
+            logger.info(f"File uploaded successfully: {filename}")
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
@@ -99,6 +88,37 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         except Exception as e:
             logger.error(f"Upload error: {e}")
             self.send_error(500, f"Upload failed: {str(e)}")
+
+    def _parse_multipart_form_data(self):
+        """Parse multipart form data to extract filename"""
+        content_disposition = self.headers.get('Content-Disposition', '')
+        if 'filename=' in content_disposition:
+            return content_disposition.split('filename=')[1].strip('"')
+        return None
+
+    def _extract_file_content(self, body, content_type):
+        """Extract file content from multipart form data"""
+        try:
+            # Simple multipart parser - find the file content between boundaries
+            body_str = body.decode('latin-1')
+
+            # Find the boundary
+            if 'boundary=' in content_type:
+                boundary = content_type.split('boundary=')[1]
+                parts = body_str.split(f'--{boundary}')
+
+                for part in parts:
+                    if 'filename=' in part and 'Content-Type:' in part:
+                        # Find the actual file content (after headers)
+                        content_start = part.find('\r\n\r\n')
+                        if content_start != -1:
+                            return part[content_start + 4:].encode('latin-1')
+
+            # Fallback: return original body if parsing fails
+            return body
+        except Exception as e:
+            logger.warning(f"Failed to parse multipart data: {e}")
+            return body
 
     def log_message(self, format, *args):
         """Override logging to use our custom logger"""
