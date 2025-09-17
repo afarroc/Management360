@@ -23,7 +23,7 @@
 
         // Override bulk action URL for projects
         window.PanelManager.getBulkActionUrl = function(action) {
-            return "{% url 'project_bulk_action' %}";
+            return '/events/projects/bulk-action/';
         };
 
         // Bind project-specific events
@@ -42,7 +42,7 @@
     };
 
     window.exportProjects = function() {
-        window.PanelManager.exportItems("{% url 'project_export' %}");
+        window.PanelManager.exportItems('/events/projects/export/');
     };
 
     window.toggleSelectAll = function() {

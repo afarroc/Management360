@@ -5,194 +5,153 @@
 <link rel="stylesheet" href="{% static 'assets/css/panel-styles.css' %}">
 
 <style>
-/* Enhanced Alert Styles */
-.alerts-container {
-    margin-bottom: 1.5rem;
-}
+/* Project Panel specific styles - keeping only non-duplicate styles */
 
-.alerts-container .alert {
+/* Enhanced card styles specific to project panel */
+.project-card {
     border: none;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    margin-bottom: 0.75rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.project-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.project-card .card-header {
+    border-radius: 12px 12px 0 0 !important;
+    border: none;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+}
+
+/* Statistics cards enhancement */
+.info-card {
+    background: linear-gradient(135deg, #ffffff, #f8f9fa);
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 0; /* Prevent extra margins */
+}
+
+.info-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+/* Ensure proper spacing between cards */
+.info-card + .info-card {
+    margin-top: 0;
+}
+
+/* Enhanced card body spacing */
+.info-card .card-body {
+    padding: 1.25rem;
+}
+
+/* Progress bar spacing */
+.info-card .progress {
+    margin: 0.5rem 0;
+}
+
+/* Footer spacing */
+.info-card .card-footer {
+    padding: 0.75rem 1.25rem;
+    background-color: rgba(0,0,0,0.02);
+}
+
+.info-card .card-icon {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 12px;
     transition: all 0.3s ease;
 }
 
-.alerts-container .alert:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+.info-card:hover .card-icon {
+    transform: scale(1.1);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
-.alerts-container .alert .alert-message {
-    margin-top: 0.25rem;
-    font-size: 0.9rem;
-    opacity: 0.9;
+/* Enhanced progress bars */
+.progress {
+    border-radius: 10px;
+    background-color: rgba(0,0,0,0.05);
+    overflow: hidden;
 }
 
-.alerts-container .alert .btn-outline-success {
-    border-color: #198754;
-    color: #198754;
-}
-
-.alerts-container .alert .btn-outline-success:hover {
-    background-color: #198754;
-    border-color: #198754;
-}
-
-.alerts-container .alert .btn-outline-warning {
-    border-color: #fd7e14;
-    color: #fd7e14;
-}
-
-.alerts-container .alert .btn-outline-warning:hover {
-    background-color: #fd7e14;
-    border-color: #fd7e14;
-}
-
-.alerts-container .alert .btn-outline-danger {
-    border-color: #dc3545;
-    color: #dc3545;
-}
-
-.alerts-container .alert .btn-outline-danger:hover {
-    background-color: #dc3545;
-    border-color: #dc3545;
-}
-
-.alerts-container .alert .btn-outline-info {
-    border-color: #0dcaf0;
-    color: #0dcaf0;
-}
-
-.alerts-container .alert .btn-outline-info:hover {
-    background-color: #0dcaf0;
-    border-color: #0dcaf0;
-}
-
-/* Alert animation */
-@keyframes slideInFromTop {
-    from {
-        transform: translateY(-20px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-.alerts-container .alert {
-    animation: slideInFromTop 0.5s ease-out;
-}
-
-/* Stagger animation for multiple alerts */
-.alerts-container .alert:nth-child(1) { animation-delay: 0.1s; }
-.alerts-container .alert:nth-child(2) { animation-delay: 0.2s; }
-.alerts-container .alert:nth-child(3) { animation-delay: 0.3s; }
-.alerts-container .alert:nth-child(4) { animation-delay: 0.4s; }
-.alerts-container .alert:nth-child(5) { animation-delay: 0.5s; }
-
-/* Alert counter badge */
-.alert-counter {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    background: #dc3545;
-    color: white;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    font-size: 0.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    border: 2px solid white;
-    z-index: 10;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-}
-
-/* Ensure alerts container has relative positioning for counter */
-.alerts-container {
+.progress-bar {
+    border-radius: 10px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
-    min-height: 40px;
 }
 
-/* Loading spinner animation */
-.spinning {
-    animation: spin 1s linear infinite;
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
 }
 
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }
 
-/* Toast notifications */
-.toast-container {
-    z-index: 9999;
+/* Progress bars */
+.progress {
+    border-radius: 10px;
+    background-color: rgba(0,0,0,0.05);
 }
 
-.toast {
-    min-width: 300px;
+.progress-bar {
+    border-radius: 10px;
+    transition: width 0.6s ease;
 }
 
-/* Alert priority indicators */
-.alert-danger {
-    border-left: 4px solid #dc3545 !important;
+/* Dark mode support for project panel */
+@media (prefers-color-scheme: dark) {
+    .project-card {
+        background-color: #2d3748;
+        color: #e2e8f0;
+    }
+
+    .project-card .card-header {
+        background: linear-gradient(135deg, #4a5568, #2d3748);
+    }
 }
 
-.alert-warning {
-    border-left: 4px solid #fd7e14 !important;
-}
-
-.alert-success {
-    border-left: 4px solid #198754 !important;
-}
-
-.alert-info {
-    border-left: 4px solid #0dcaf0 !important;
-}
-
-/* Alert hover effects */
-.alert:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    transition: all 0.3s ease;
-}
-
-/* Alert action buttons */
-.alert .btn {
-    transition: all 0.2s ease;
-}
-
-.alert .btn:hover {
-    transform: scale(1.05);
-}
-
-/* Responsive alerts */
+/* Responsive spacing adjustments */
 @media (max-width: 768px) {
-    .alerts-container .alert {
-        flex-direction: column;
-        text-align: center;
+    .info-card .card-body {
+        padding: 1rem;
     }
 
-    .alerts-container .alert .btn {
-        margin-top: 0.5rem;
-        width: 100%;
+    .info-card .card-footer {
+        padding: 0.5rem 1rem;
     }
 
-    .alerts-container .alert .btn-close {
-        position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
+    /* Reduce gap on mobile */
+    .row.g-4 {
+        --bs-gutter-x: 1rem;
+        --bs-gutter-y: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .info-card .card-body {
+        padding: 0.75rem;
+    }
+
+    .info-card .card-footer {
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* Stack cards vertically on very small screens */
+    .col-xxl-3.col-md-6 {
+        margin-bottom: 1rem;
     }
 }
 </style>
@@ -212,46 +171,6 @@
 </div><!-- End Page Title -->
 
 <section class="section dashboard">
-    <!-- Alertas del Sistema -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="mb-0"><i class="bi bi-bell me-2"></i>Sistema de Alertas</h5>
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshAlerts()" id="refreshAlertsBtn">
-                        <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleAlerts()">
-                        <i class="bi bi-eye-slash me-1"></i>Ocultar
-                    </button>
-                </div>
-            </div>
-            <div class="alerts-container" id="alertsContainer">
-                {% if alerts %}
-                    {% for alert in alerts %}
-                    <div class="alert alert-{{ alert.type }} alert-dismissible fade show d-flex align-items-center" role="alert" data-alert-id="{{ forloop.counter }}">
-                        <i class="bi {{ alert.icon }} me-2 fs-5"></i>
-                        <div class="flex-grow-1">
-                            <strong>{{ alert.title }}</strong>
-                            <div class="alert-message">{{ alert.message }}</div>
-                        </div>
-                        {% if alert.action_url %}
-                        <a href="{{ alert.action_url }}" class="btn btn-sm btn-outline-{{ alert.type }} ms-2" onclick="markAlertAsRead(this)">
-                            {{ alert.action_text }}
-                        </a>
-                        {% endif %}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" onclick="dismissAlert(this)"></button>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="alert alert-info" role="alert">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <strong>¡Todo en orden!</strong> No hay alertas activas en este momento.
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
 
     <div class="row">
         <!-- Left side columns -->
@@ -259,75 +178,223 @@
             <div class="row">
 
                 {% if projects %}
-        <!-- Statistics Cards -->
-        <div class="col-12">
-            <div class="row">
-                <!-- Total Projects -->
+        <!-- Key Statistics - Enhanced Spacing -->
+        <div class="col-12 mb-4">
+            <div class="row g-4">
+                <!-- Active Projects -->
                 <div class="col-xxl-3 col-md-6">
-                    <div class="card info-card sales-card">
-                        <div class="card-body">
-                            <h5 class="card-title">Total <span>| Projects</span></h5>
-                            <div class="d-flex align-items-center">
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bi bi-folder-fill"></i>
+                    <div class="card info-card sales-card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="card-title mb-1">
+                                        <i class="bi bi-folder-fill text-primary me-2"></i>
+                                        Active Projects
+                                    </h5>
+                                    <span class="badge bg-primary">Total</span>
                                 </div>
-                                <div class="ps-3">
-                                    <h6>{{ total_projects }}</h6>
-                                    <span class="text-success small pt-1 fw-bold">Active Projects</span>
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10">
+                                    <i class="bi bi-folder-fill text-primary fs-4"></i>
+                                </div>
+                            </div>
+
+                            <div class="mt-auto">
+                                <div class="d-flex align-items-baseline mb-2">
+                                    <h3 class="text-primary mb-0 fw-bold">{{ total_projects }}</h3>
+                                    <small class="text-muted ms-2">projects</small>
+                                </div>
+
+                                {% if total_projects %}
+                                <div class="mb-2">
+                                    <small class="text-muted d-block">Active Rate</small>
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar bg-primary" role="progressbar"
+                                             style="width: {% widthratio in_progress_count total_projects 100 %}%"
+                                             aria-valuenow="{% widthratio in_progress_count total_projects 100 %}"
+                                             aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <small class="text-primary fw-bold mt-1 d-block">
+                                        {% widthratio in_progress_count total_projects 100 %}% active
+                                    </small>
+                                </div>
+                                {% else %}
+                                <small class="text-muted">No projects available</small>
+                                {% endif %}
+
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-check-circle me-1"></i>Completed
+                                    </small>
+                                    <span class="badge bg-light text-dark">{{ completed_count }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- In Progress -->
+                <!-- Work in Progress -->
                 <div class="col-xxl-3 col-md-6">
-                    <div class="card info-card revenue-card">
-                        <div class="card-body">
-                            <h5 class="card-title">In Progress <span>| Active</span></h5>
-                            <div class="d-flex align-items-center">
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bi bi-play-circle-fill"></i>
+                    <div class="card info-card revenue-card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="card-title mb-1">
+                                        <i class="bi bi-play-circle-fill text-warning me-2"></i>
+                                        In Progress
+                                    </h5>
+                                    <span class="badge bg-warning text-dark">Active</span>
                                 </div>
-                                <div class="ps-3">
-                                    <h6>{{ in_progress_count }}</h6>
-                                    <span class="text-warning small pt-1 fw-bold">Working On</span>
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-warning bg-opacity-10">
+                                    <i class="bi bi-gear-fill text-warning fs-4"></i>
+                                </div>
+                            </div>
+
+                            <div class="mt-auto">
+                                <div class="d-flex align-items-baseline mb-2">
+                                    <h3 class="text-warning mb-0 fw-bold">{{ in_progress_count }}</h3>
+                                    <small class="text-muted ms-2">projects</small>
+                                </div>
+
+                                {% if total_projects %}
+                                <div class="mb-2">
+                                    <small class="text-muted d-block">Progress Rate</small>
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar bg-warning" role="progressbar"
+                                             style="width: {% widthratio in_progress_count total_projects 100 %}%"
+                                             aria-valuenow="{% widthratio in_progress_count total_projects 100 %}"
+                                             aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <small class="text-warning fw-bold mt-1 d-block">
+                                        {% widthratio in_progress_count total_projects 100 %}% of total
+                                    </small>
+                                </div>
+                                {% else %}
+                                <small class="text-muted">No active projects</small>
+                                {% endif %}
+
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock me-1"></i>Working on
+                                    </small>
+                                    <span class="badge bg-light text-dark">{{ in_progress_count }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Completed -->
+                <!-- Success Rate -->
                 <div class="col-xxl-3 col-md-6">
-                    <div class="card info-card customers-card">
-                        <div class="card-body">
-                            <h5 class="card-title">Completed <span>| Done</span></h5>
-                            <div class="d-flex align-items-center">
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bi bi-check-circle-fill"></i>
+                    <div class="card info-card customers-card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="card-title mb-1">
+                                        <i class="bi bi-trophy-fill text-success me-2"></i>
+                                        Success Rate
+                                    </h5>
+                                    <span class="badge bg-success">Completed</span>
                                 </div>
-                                <div class="ps-3">
-                                    <h6>{{ completed_count }}</h6>
-                                    <span class="text-success small pt-1 fw-bold">Finished</span>
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-success bg-opacity-10">
+                                    <i class="bi bi-trophy-fill text-success fs-4"></i>
+                                </div>
+                            </div>
+
+                            <div class="mt-auto">
+                                <div class="d-flex align-items-baseline mb-2">
+                                    <h3 class="text-success mb-0 fw-bold">
+                                        {% if total_projects %}
+                                            {% widthratio completed_count total_projects 100 %}%
+                                        {% else %}
+                                            0%
+                                        {% endif %}
+                                    </h3>
+                                    <small class="text-muted ms-2">completion</small>
+                                </div>
+
+                                {% if total_projects %}
+                                <div class="mb-2">
+                                    <small class="text-muted d-block">Completion Rate</small>
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar bg-success" role="progressbar"
+                                             style="width: {% widthratio completed_count total_projects 100 %}%"
+                                             aria-valuenow="{% widthratio completed_count total_projects 100 %}"
+                                             aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <small class="text-success fw-bold mt-1 d-block">
+                                        {{ completed_count }} completed
+                                    </small>
+                                </div>
+                                {% else %}
+                                <small class="text-muted">No projects to complete</small>
+                                {% endif %}
+
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-check-circle me-1"></i>Finished
+                                    </small>
+                                    <span class="badge bg-light text-dark">{{ completed_count }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Total Tasks -->
+                <!-- Task Efficiency -->
                 <div class="col-xxl-3 col-md-6">
-                    <div class="card info-card">
-                        <div class="card-body">
-                            <h5 class="card-title">Total Tasks <span>| Assigned</span></h5>
-                            <div class="d-flex align-items-center">
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-info-light">
-                                    <i class="bi bi-list-check text-info"></i>
+                    <div class="card info-card h-100">
+                        <div class="card-body d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="card-title mb-1">
+                                        <i class="bi bi-list-check text-info me-2"></i>
+                                        Task Load
+                                    </h5>
+                                    <span class="badge bg-info">Per Project</span>
                                 </div>
-                                <div class="ps-3">
-                                    <h6>{{ total_tasks }}</h6>
-                                    <span class="text-info small pt-1 fw-bold">Task Items</span>
+                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-info bg-opacity-10">
+                                    <i class="bi bi-list-check text-info fs-4"></i>
+                                </div>
+                            </div>
+
+                            <div class="mt-auto">
+                                <div class="d-flex align-items-baseline mb-2">
+                                    <h3 class="text-info mb-0 fw-bold">
+                                        {% if total_projects %}
+                                            {% widthratio total_tasks total_projects 1 %}
+                                        {% else %}
+                                            0
+                                        {% endif %}
+                                    </h3>
+                                    <small class="text-muted ms-2">avg tasks</small>
+                                </div>
+
+                                {% if total_projects %}
+                                <div class="mb-2">
+                                    <small class="text-muted d-block">Task Distribution</small>
+                                    <div class="progress" style="height: 6px;">
+                                        <div class="progress-bar bg-info" role="progressbar"
+                                             style="width: {% if total_tasks %}50{% else %}0{% endif %}%"
+                                             aria-valuenow="{% if total_tasks %}50{% else %}0{% endif %}"
+                                             aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <small class="text-info fw-bold mt-1 d-block">
+                                        {{ total_tasks }} total tasks
+                                    </small>
+                                </div>
+                                {% else %}
+                                <small class="text-muted">No tasks available</small>
+                                {% endif %}
+
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">
+                                        <i class="bi bi-bar-chart me-1"></i>Distribution
+                                    </small>
+                                    <span class="badge bg-light text-dark">{{ total_tasks }}</span>
                                 </div>
                             </div>
                         </div>
@@ -357,71 +424,47 @@
         <!-- Right side columns -->
         <div class="col-lg-4">
 
-            <!-- CRUD Actions Panel -->
+            <!-- Quick Actions -->
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-gear-fill me-2"></i>Project Management</h5>
-                    <div class="d-flex flex-column gap-2">
-                        <a href="{% url 'project_create' %}" class="btn btn-success btn-sm">
-                            <i class="bi bi-plus-circle me-1"></i> Create Project
+                    <h5 class="card-title"><i class="bi bi-gear-fill me-2"></i>Quick Actions</h5>
+
+                    <!-- Primary Actions -->
+                    <div class="d-grid gap-2 mb-3">
+                        <a href="{% url 'project_create' %}" class="btn btn-success">
+                            <i class="bi bi-plus-circle me-2"></i>Create Project
                         </a>
-                        <a href="{% url 'project_edit' %}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-pencil me-1"></i> Edit Projects
+                        <a href="{% url 'projects' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-eye me-2"></i>View All Projects
                         </a>
-                        <a href="{% url 'projects' %}" class="btn btn-info btn-sm">
-                            <i class="bi bi-eye me-1"></i> View Dashboard
-                        </a>
-                        <button type="button" class="btn btn-warning btn-sm" onclick="exportProjects()">
-                            <i class="bi bi-download me-1"></i> Export
-                        </button>
                     </div>
 
-                    <hr class="my-3">
-
-                    <div class="mb-2">
-                        <label for="searchInput" class="form-label small fw-bold">Search Projects</label>
-                        <div class="input-group input-group-sm">
-                            <input type="text" id="searchInput" class="form-control" placeholder="Search..." onkeyup="searchProjects()">
+                    <!-- Search -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Quick Search</label>
+                        <div class="input-group">
+                            <input type="text" id="searchInput" class="form-control" placeholder="Search projects..." onkeyup="searchProjects()">
                             <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
                                 <i class="bi bi-x"></i>
                             </button>
                         </div>
                     </div>
 
-                    <hr class="my-3">
-
-                    <!-- Quick Actions & Filters -->
+                    <!-- Status Filter -->
                     <div class="mb-3">
-                        <h6 class="mb-2"><i class="bi bi-lightning me-1"></i>Bulk Actions</h6>
-                        <div class="d-flex flex-column gap-1">
-                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="bulkAction('delete')" data-bs-toggle="tooltip" title="Delete selected projects">
-                                <i class="bi bi-trash me-1"></i> Delete Selected
-                            </button>
-                            <button type="button" class="btn btn-outline-warning btn-sm" onclick="bulkAction('activate')" data-bs-toggle="tooltip" title="Activate selected projects">
-                                <i class="bi bi-play-circle me-1"></i> Activate
-                            </button>
-                            <button type="button" class="btn btn-outline-success btn-sm" onclick="bulkAction('complete')" data-bs-toggle="tooltip" title="Mark as completed">
-                                <i class="bi bi-check-circle me-1"></i> Complete
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="small fw-bold">Filter by Status:</span>
-                            <span id="selectedCount" class="badge bg-primary">0 selected</span>
-                        </div>
-                        <select class="form-select form-select-sm" onchange="filterByStatus(this.value)">
-                            <option value="all">All Status</option>
+                        <label class="form-label small fw-bold">Filter by Status</label>
+                        <select class="form-select" onchange="filterByStatus(this.value)">
+                            <option value="all">All Projects</option>
                             {% for status in project_statuses %}
                             <option value="{{ status.id }}">{{ status.status_name }}</option>
                             {% endfor %}
                         </select>
                     </div>
 
-                    <div class="text-center">
-                        <button type="button" class="btn btn-outline-info btn-sm w-100" onclick="refreshData()" data-bs-toggle="tooltip" title="Refresh data">
-                            <i class="bi bi-arrow-clockwise me-1"></i> Refresh Data
+                    <!-- Export -->
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-outline-warning" onclick="exportProjects()">
+                            <i class="bi bi-download me-2"></i>Export Data
                         </button>
                     </div>
                 </div>
@@ -433,50 +476,95 @@
                     <h5 class="card-title"><i class="bi bi-activity me-2"></i>Recent Activity</h5>
                     <div class="activity">
                         {% for project_info in projects|slice:":5" %}
-                        <div class="activity-item d-flex">
-                            <div class="activite-label">
-                                <span class="badge bg-{% if project_info.project.project_status.status_name == 'Completed' %}success{% elif project_info.project.project_status.status_name == 'In Progress' %}warning{% else %}secondary{% endif %}">{{ project_info.project.project_status.status_name|slice:":1" }}</span>
+                        <div class="activity-item d-flex mb-2">
+                            <div class="activity-label me-2">
+                                <span class="badge bg-{% if project_info.project.project_status.status_name == 'Completed' %}success{% elif project_info.project.project_status.status_name == 'In Progress' %}warning{% else %}secondary{% endif %}">
+                                    <i class="bi bi-{% if project_info.project.project_status.status_name == 'Completed' %}check-circle{% elif project_info.project.project_status.status_name == 'In Progress' %}play-circle{% else %}pause-circle{% endif %} me-1"></i>
+                                    {{ project_info.project.project_status.status_name|slice:":1" }}
+                                </span>
                             </div>
-                            <div class="activity-content">
-                                <strong>{{ project_info.project.title }}</strong>
-                                <div class="text-muted small">
-                                    {{ project_info.count_tasks }} tasks • Updated {{ project_info.project.updated_at|timesince }}
+                            <div class="activity-content flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong class="text-truncate" style="max-width: 150px;" title="{{ project_info.project.title }}">
+                                            {{ project_info.project.title|truncatechars:20 }}
+                                        </strong>
+                                        <div class="text-muted small">
+                                            <i class="bi bi-list-check me-1"></i>{{ project_info.count_tasks }} tasks
+                                            {% if project_info.project.event %}
+                                            • <i class="bi bi-calendar-event me-1"></i>{{ project_info.project.event.title|truncatechars:15 }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">{{ project_info.project.updated_at|timesince }}</small>
                                 </div>
                             </div>
                         </div>
+                        {% empty %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-clock-history text-muted mb-2" style="font-size: 2rem;"></i>
+                            <p class="text-muted small mb-0">No recent activity</p>
+                        </div>
                         {% endfor %}
                     </div>
+                    {% if projects|length > 5 %}
+                    <div class="text-center mt-2">
+                        <a href="{% url 'projects' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye me-1"></i>View All Projects
+                        </a>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
         </div><!-- End Right side columns -->
-        <!-- Summary Section -->
+        <!-- Key Metrics Overview -->
         <div class="col-12">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-bar-chart-line me-2"></i>Performance Summary</h5>
+                    <h5 class="card-title"><i class="bi bi-bar-chart-line me-2"></i>Key Metrics</h5>
                     <div class="row text-center">
                         <div class="col-md-3">
                             <div class="border-end">
                                 <h4 class="text-primary mb-1">{{ total_projects }}</h4>
-                                <p class="text-muted small mb-0">Total Projects</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="border-end">
-                                <h4 class="text-warning mb-1">{{ in_progress_count }}</h4>
-                                <p class="text-muted small mb-0">In Progress</p>
+                                <p class="text-muted small mb-0">Active Projects</p>
+                                <small class="text-success">
+                                    <i class="bi bi-arrow-up me-1"></i>{{ in_progress_count }} in progress
+                                </small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="border-end">
                                 <h4 class="text-success mb-1">{{ completed_count }}</h4>
                                 <p class="text-muted small mb-0">Completed</p>
+                                <small class="text-info">
+                                    <i class="bi bi-check-circle me-1"></i>{{ total_tasks }} total tasks
+                                </small>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <h4 class="text-info mb-1">{{ total_tasks }}</h4>
-                            <p class="text-muted small mb-0">Total Tasks</p>
+                            <div class="border-end">
+                                <h4 class="text-warning mb-1">
+                                    {% widthratio in_progress_count total_projects 100 %}%
+                                </h4>
+                                <p class="text-muted small mb-0">Completion Rate</p>
+                                <small class="text-muted">
+                                    <i class="bi bi-graph-up me-1"></i>Active ratio
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-info mb-1">
+                                {% if total_projects %}
+                                    {% widthratio total_tasks total_projects 1 %}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </h4>
+                            <p class="text-muted small mb-0">Avg Tasks/Project</p>
+                            <small class="text-muted">
+                                <i class="bi bi-list-check me-1"></i>Task distribution
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -485,426 +573,7 @@
     </div>
 </section>
 
-// Load global panel scripts
-<script src="{% static 'assets/js/panel-scripts.js' %}"></script>
-<script src="{% static 'assets/js/project-panel.js' %}"></script>
-
-<script>
-// Enhanced Alert System
-document.addEventListener('DOMContentLoaded', function() {
-    // Wait a bit for DOM to be fully ready
-    setTimeout(function() {
-        // Initialize alerts
-        initializeAlerts();
-
-        // Verify alerts are properly displayed
-        verifyAlertsDisplay();
-
-        // Auto-dismiss alerts after 15 seconds for non-critical ones
-        setTimeout(function() {
-            const alerts = document.querySelectorAll('.alert:not(.alert-danger):not(.alert-warning):not(.alert-dismissed)');
-            alerts.forEach(function(alert) {
-                if (!alert.classList.contains('alert-dismissed')) {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
-                }
-            });
-        }, 15000);
-    }, 100);
-});
-
-function verifyAlertsDisplay() {
-    const alertsContainer = document.getElementById('alertsContainer');
-    const alerts = alertsContainer.querySelectorAll('.alert');
-    const counterBadge = alertsContainer.querySelector('.alert-counter');
-
-    console.log(`Verification: Found ${alerts.length} alerts in container`);
-
-    if (alerts.length > 0 && !counterBadge) {
-        // Add counter if missing
-        const newCounter = document.createElement('div');
-        newCounter.className = 'alert-counter';
-        newCounter.textContent = alerts.length > 9 ? '9+' : alerts.length;
-        newCounter.title = `${alerts.length} alerta(s) activa(s)`;
-        alertsContainer.appendChild(newCounter);
-        console.log('Added missing counter badge');
-    } else if (alerts.length === 0 && counterBadge) {
-        // Remove counter if no alerts
-        counterBadge.remove();
-        console.log('Removed unnecessary counter badge');
-    }
-}
-
-function initializeAlerts() {
-    const alertsContainer = document.getElementById('alertsContainer');
-    const alerts = alertsContainer.querySelectorAll('.alert');
-    const alertCount = alerts.length;
-
-    // Remove existing counter if present
-    const existingCounter = alertsContainer.querySelector('.alert-counter');
-    if (existingCounter) {
-        existingCounter.remove();
-    }
-
-    // Add counter badge if there are alerts
-    if (alertCount > 0) {
-        const counterBadge = document.createElement('div');
-        counterBadge.className = 'alert-counter';
-        counterBadge.textContent = alertCount > 9 ? '9+' : alertCount;
-        counterBadge.title = `${alertCount} alerta(s) activa(s)`;
-        alertsContainer.appendChild(counterBadge);
-
-        // Update counter when alerts are dismissed
-        document.addEventListener('alertDismissed', function() {
-            const remainingAlerts = alertsContainer.querySelectorAll('.alert:not(.alert-dismissed)');
-            if (remainingAlerts.length === 0) {
-                counterBadge.remove();
-            } else {
-                counterBadge.textContent = remainingAlerts.length > 9 ? '9+' : remainingAlerts.length;
-                counterBadge.title = `${remainingAlerts.length} alerta(s) activa(s)`;
-            }
-        });
-    }
-
-    // Add priority indicators and ensure proper structure
-    alerts.forEach(function(alert, index) {
-        // Ensure alert has proper structure
-        if (!alert.hasAttribute('role')) {
-            alert.setAttribute('role', 'alert');
-        }
-
-        // Add priority border indicators
-        if (alert.classList.contains('alert-danger')) {
-            alert.style.borderLeft = '4px solid #dc3545';
-        } else if (alert.classList.contains('alert-warning')) {
-            alert.style.borderLeft = '4px solid #fd7e14';
-        } else if (alert.classList.contains('alert-success')) {
-            alert.style.borderLeft = '4px solid #198754';
-        } else if (alert.classList.contains('alert-info')) {
-            alert.style.borderLeft = '4px solid #0dcaf0';
-        }
-
-        // Add data attribute for tracking
-        alert.setAttribute('data-alert-index', index + 1);
-    });
-
-    // Log initialization for debugging
-    console.log(`Initialized ${alertCount} alerts`);
-}
-
-function markAlertAsRead(element) {
-    const alert = element.closest('.alert');
-    alert.classList.add('alert-read');
-
-    // Visual feedback
-    element.innerHTML = '<i class="bi bi-check2 me-1"></i>Marcado como leído';
-    element.classList.remove('btn-outline-success', 'btn-outline-warning', 'btn-outline-danger', 'btn-outline-info');
-    element.classList.add('btn-success');
-
-    // Here you could send an AJAX request to mark the alert as read on the server
-    console.log('Alert marked as read');
-}
-
-function dismissAlert(button) {
-    const alert = button.closest('.alert');
-    const alertsContainer = document.getElementById('alertsContainer');
-
-    // Add dismissed class for animation
-    alert.classList.add('alert-dismissed');
-
-    // Use Bootstrap's alert dismissal
-    const bsAlert = new bootstrap.Alert(alert);
-    bsAlert.close();
-
-    // Dispatch custom event for counter update
-    const event = new CustomEvent('alertDismissed');
-    document.dispatchEvent(event);
-
-    // Update counter immediately
-    setTimeout(() => {
-        const remainingAlerts = alertsContainer.querySelectorAll('.alert:not(.alert-dismissed)');
-        const counterBadge = alertsContainer.querySelector('.alert-counter');
-
-        if (remainingAlerts.length === 0) {
-            if (counterBadge) {
-                counterBadge.remove();
-            }
-            // Show "no alerts" message if all alerts are dismissed
-            if (alertsContainer.children.length === 0) {
-                const noAlertsDiv = document.createElement('div');
-                noAlertsDiv.className = 'alert alert-info';
-                noAlertsDiv.setAttribute('role', 'alert');
-                noAlertsDiv.innerHTML = `
-                    <i class="bi bi-info-circle me-2"></i>
-                    <strong>¡Todo en orden!</strong> No hay alertas activas en este momento.
-                `;
-                alertsContainer.appendChild(noAlertsDiv);
-            }
-        } else if (counterBadge) {
-            counterBadge.textContent = remainingAlerts.length > 9 ? '9+' : remainingAlerts.length;
-            counterBadge.title = `${remainingAlerts.length} alerta(s) activa(s)`;
-        }
-    }, 150); // Wait for Bootstrap animation to complete
-
-    console.log('Alert dismissed');
-}
-
-function toggleAlerts() {
-    const container = document.getElementById('alertsContainer');
-    const button = event.target;
-
-    if (container.style.display === 'none') {
-        container.style.display = 'block';
-        button.innerHTML = '<i class="bi bi-eye-slash me-1"></i>Ocultar';
-    } else {
-        container.style.display = 'none';
-        button.innerHTML = '<i class="bi bi-eye me-1"></i>Mostrar';
-    }
-}
-
-function refreshAlerts() {
-    const refreshBtn = document.getElementById('refreshAlertsBtn');
-    const originalText = refreshBtn.innerHTML;
-
-    // Show loading state
-    refreshBtn.innerHTML = '<i class="bi bi-arrow-clockwise spinning me-1"></i>Actualizando...';
-    refreshBtn.disabled = true;
-
-    // Fetch new alerts via AJAX
-    fetch('{% url "project_alerts_ajax" %}', {
-        method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            updateAlertsDisplay(data.alerts);
-            showToast('Alertas actualizadas', 'success');
-        } else {
-            showToast('Error al actualizar alertas', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error refreshing alerts:', error);
-        showToast('Error de conexión', 'error');
-    })
-    .finally(() => {
-        // Restore original button state
-        refreshBtn.innerHTML = originalText;
-        refreshBtn.disabled = false;
-    });
-}
-
-function updateAlertsDisplay(alerts) {
-    const container = document.getElementById('alertsContainer');
-
-    // Clear existing content
-    container.innerHTML = '';
-
-    if (alerts.length === 0) {
-        const noAlertsDiv = document.createElement('div');
-        noAlertsDiv.className = 'alert alert-info';
-        noAlertsDiv.setAttribute('role', 'alert');
-        noAlertsDiv.innerHTML = `
-            <i class="bi bi-info-circle me-2"></i>
-            <strong>¡Todo en orden!</strong> No hay alertas activas en este momento.
-        `;
-        container.appendChild(noAlertsDiv);
-        return;
-    }
-
-    // Create alert elements
-    alerts.forEach((alertData, index) => {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${alertData.type} alert-dismissible fade show d-flex align-items-center`;
-        alertDiv.setAttribute('role', 'alert');
-        alertDiv.setAttribute('data-alert-id', index + 1);
-
-        alertDiv.innerHTML = `
-            <i class="bi ${alertData.icon} me-2 fs-5"></i>
-            <div class="flex-grow-1">
-                <strong>${alertData.title}</strong>
-                <div class="alert-message">${alertData.message}</div>
-            </div>
-            ${alertData.action_url ? `<a href="${alertData.action_url}" class="btn btn-sm btn-outline-${alertData.type} ms-2" onclick="markAlertAsRead(this)">${alertData.action_text}</a>` : ''}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" onclick="dismissAlert(this)"></button>
-        `;
-
-        container.appendChild(alertDiv);
-    });
-
-    // Re-initialize alerts after update
-    setTimeout(() => {
-        initializeAlerts();
-    }, 100);
-}
-
-function showToast(message, type) {
-    // Create toast notification
-    const toastHtml = `
-        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="bi ${type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle'} me-2"></i>
-                    ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        </div>
-    `;
-
-    // Add to toast container or create one
-    let toastContainer = document.querySelector('.toast-container');
-    if (!toastContainer) {
-        toastContainer = document.createElement('div');
-        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
-        toastContainer.style.zIndex = '9999';
-        document.body.appendChild(toastContainer);
-    }
-
-    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
-
-    // Show and auto-hide toast
-    const toast = toastContainer.lastElementChild;
-    const bsToast = new bootstrap.Toast(toast);
-    bsToast.show();
-
-    // Remove toast after it's hidden
-    toast.addEventListener('hidden.bs.toast', () => {
-        toast.remove();
-    });
-}
-
-// Alert refresh functionality
-function refreshAlerts() {
-    // This could be enhanced to fetch new alerts via AJAX
-    location.reload();
-}
-
-// Auto-refresh alerts every 5 minutes
-setInterval(function() {
-    // Only refresh if page is visible
-    if (!document.hidden) {
-        // Could implement AJAX refresh here instead of full page reload
-        console.log('Checking for new alerts...');
-    }
-}, 300000); // 5 minutes
-
-// Alert sound notification (optional)
-function playAlertSound() {
-    // Create audio context for alert sounds
-    try {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-        oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.1);
-
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
-
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.2);
-    } catch (e) {
-        console.log('Audio notification not supported');
-    }
-}
-
-// Show alert summary in console for debugging
-function logAlertSummary() {
-    const alerts = document.querySelectorAll('.alerts-container .alert');
-    const summary = {
-        total: alerts.length,
-        danger: document.querySelectorAll('.alert-danger').length,
-        warning: document.querySelectorAll('.alert-warning').length,
-        success: document.querySelectorAll('.alert-success').length,
-        info: document.querySelectorAll('.alert-info').length
-    };
-    console.log('Alert Summary:', summary);
-}
-
-// Call on page load
-logAlertSummary();
-
-// Debug function for development (call from browser console)
-window.debugAlerts = function() {
-    const alertsContainer = document.getElementById('alertsContainer');
-    const alerts = alertsContainer.querySelectorAll('.alert');
-    const counterBadge = alertsContainer.querySelector('.alert-counter');
-
-    console.group('🔍 Alert Debug Information');
-    console.log('Container element:', alertsContainer);
-    console.log('Number of alerts found:', alerts.length);
-    console.log('Counter badge:', counterBadge);
-    console.log('Counter text:', counterBadge ? counterBadge.textContent : 'No counter');
-
-    alerts.forEach((alert, index) => {
-        console.log(`Alert ${index + 1}:`, {
-            classes: alert.className,
-            content: alert.innerHTML.substring(0, 100) + '...',
-            isDismissed: alert.classList.contains('alert-dismissed')
-        });
-    });
-
-    console.groupEnd();
-};
-
-// Test function to simulate alerts (call from browser console)
-window.testAlerts = function() {
-    const testAlerts = [
-        {
-            type: 'danger',
-            icon: 'bi-exclamation-triangle',
-            title: 'Test Alert - Danger',
-            message: 'This is a test danger alert',
-            action_url: '#',
-            action_text: 'Fix Issue'
-        },
-        {
-            type: 'warning',
-            icon: 'bi-exclamation-circle',
-            title: 'Test Alert - Warning',
-            message: 'This is a test warning alert',
-            action_url: '#',
-            action_text: 'Review'
-        },
-        {
-            type: 'success',
-            icon: 'bi-check-circle',
-            title: 'Test Alert - Success',
-            message: 'This is a test success alert',
-            action_url: '#',
-            action_text: 'Continue'
-        }
-    ];
-
-    updateAlertsDisplay(testAlerts);
-    showToast('Test alerts loaded', 'info');
-};
-
-// Reset alerts function (call from browser console)
-window.resetAlerts = function() {
-    const alertsContainer = document.getElementById('alertsContainer');
-    alertsContainer.innerHTML = `
-        <div class="alert alert-info" role="alert">
-            <i class="bi bi-info-circle me-2"></i>
-            <strong>¡Todo en orden!</strong> No hay alertas activas en este momento.
-        </div>
-    `;
-    showToast('Alerts reset', 'success');
-};
-
-// Force refresh from server (call from browser console)
-window.forceRefreshAlerts = function() {
-    refreshAlerts();
-};
-</script>
+<script src="{% static 'assets/js/panel-scripts.js' %}?v={{ now|date:'U' }}"></script>
+<script src="{% static 'assets/js/project-panel.js' %}?v={{ now|date:'U' }}"></script>
 
 {% endblock %}

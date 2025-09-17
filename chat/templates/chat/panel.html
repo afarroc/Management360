@@ -51,6 +51,7 @@
     </div>
 </div>
 <script>
+    // Force cache refresh - version 1.1
     function setPanelMode(mode) {
         const panel = document.getElementById('chat-panel');
         panel.classList.remove('fullscreen', 'docked');
@@ -135,7 +136,7 @@
             }
 
             // Reset unread count when panel is restored
-            if (lastRoomId) {
+            if (typeof lastRoomId !== 'undefined' && lastRoomId) {
                 setTimeout(() => resetUnreadCount(lastRoomId), 500);
             }
         });
@@ -185,7 +186,7 @@
         let isWidgetActive = false;
         let widgetVisibilityObserver = null;
         let readReceiptTimeout = null;
-    // let lastRoomId = null; // Eliminada declaración duplicada
+        let lastRoomId = null; // Declare at the beginning to avoid initialization error
 
         async function loadRoomsAndSelectLast() {
             let lastRoom = await getLastRoom();
@@ -235,6 +236,10 @@
             }
         }
 
+        // Ensure lastRoomId is initialized before calling loadRoomsAndSelectLast
+        if (typeof lastRoomId === 'undefined') {
+            lastRoomId = null;
+        }
         await loadRoomsAndSelectLast();
 
         async function loadHistory(roomId) {
@@ -301,7 +306,7 @@
         }
 
         function resetUnreadCount(roomId) {
-            if (!roomId) return;
+            if (!roomId || typeof roomId === 'undefined') return;
 
             fetch('/chat/api/chat/reset-unread/', {
                 method: 'POST',
@@ -364,7 +369,7 @@
                     });
 
                     // If widget became active and there are unread messages, mark them as read
-                    if (isWidgetActive && !wasActive && unreadMessageCount > 0 && lastRoomId) {
+                    if (isWidgetActive && !wasActive && unreadMessageCount > 0 && typeof lastRoomId !== 'undefined' && lastRoomId) {
                         console.log('Panel: Widget became visible, marking messages as read');
                         clearTimeout(readReceiptTimeout);
                         readReceiptTimeout = setTimeout(() => {
@@ -398,7 +403,7 @@
             updateWidgetActiveState();
 
             // Mark messages as read when window gains focus and widget is visible
-            if (isWidgetActive && unreadMessageCount > 0 && lastRoomId) {
+            if (isWidgetActive && unreadMessageCount > 0 && typeof lastRoomId !== 'undefined' && lastRoomId) {
                 clearTimeout(readReceiptTimeout);
                 readReceiptTimeout = setTimeout(() => {
                     resetUnreadCount(lastRoomId);
@@ -603,9 +608,8 @@
         // Cleanup on page unload
         window.addEventListener('beforeunload', cleanupWidgetResources);
 
-        let lastRoomId = null;
         async function connectSocketWithHistory(roomId) {
-            if (roomId === lastRoomId) return; // No recargar si no cambió la sala
+            if (typeof lastRoomId !== 'undefined' && roomId === lastRoomId) return; // No recargar si no cambió la sala
 
             // Validate room ID
             if (!roomId || roomId.trim() === '') {
@@ -660,7 +664,7 @@
                         console.log('Panel: Widget active, will mark message as read');
                         clearTimeout(readReceiptTimeout);
                         readReceiptTimeout = setTimeout(() => {
-                            if (lastRoomId && isWidgetActive) {
+                            if (typeof lastRoomId !== 'undefined' && lastRoomId && isWidgetActive) {
                                 resetUnreadCount(lastRoomId);
                             }
                         }, 500); // Reduced to 0.5 seconds for faster confirmation
@@ -679,7 +683,7 @@
             };
             chatSocket.onclose = function(e) {
                 // Solo reconectar si la sala sigue siendo la misma
-                if (!intentionalClose && roomId === lastRoomId) {
+                if (!intentionalClose && typeof lastRoomId !== 'undefined' && roomId === lastRoomId) {
                     reconnectTimeout = setTimeout(() => connectSocketWithHistory(roomId), 2000);
                 }
             };
