@@ -45,9 +45,20 @@ python --version
 
 ## Copia de Archivos al Dispositivo
 
-### Opción A: Sincronización Optimizada (Más Recomendado)
+### Opción A: Sincronización desde Termux (Recomendado)
 
-**Para Windows (Git Bash):**
+**Para Termux (se ejecuta en Android):**
+```bash
+# 1. Copiar el script a Termux
+scp -P 8022 sync_media_from_windows.sh u0_a211@192.168.18.46:/data/data/com.termux/files/home/projects/Management360/
+
+# 2. Ejecutarlo en Termux
+cd /data/data/com.termux/files/home/projects/Management360
+chmod +x sync_media_from_windows.sh
+./sync_media_from_windows.sh
+```
+
+**Para Windows (Git Bash - alternativo):**
 ```bash
 # Script optimizado que pide contraseña solo una vez
 ./sync_media_to_termux_optimized.sh
@@ -65,21 +76,15 @@ sync_media_to_termux.bat
 ./sync_media_to_termux.sh
 ```
 
-**Para Windows (Git Bash - versión simple):**
-```bash
-# Versión simple pero pide contraseña múltiples veces
-./sync_media_to_termux_gitbash.sh
-```
-
 Este script automáticamente:
+- ✅ **Se ejecuta en Termux** (no en Windows)
 - ✅ **Una sola petición de contraseña SSH**
-- ✅ Verifica archivos locales en `./media/`
-- ✅ Copia TODOS los archivos incluyendo subdirectorios
-- ✅ Limpia archivos antiguos antes de sincronizar
-- ✅ Verifica la sincronización completa
-- ✅ Usa rsync cuando está disponible (más eficiente)
+- ✅ **Copia TODOS los archivos** desde Windows incluyendo subdirectorios
+- ✅ **Limpia archivos antiguos** antes de sincronizar
+- ✅ **Verifica la sincronización completa**
+- ✅ **Usa rsync cuando está disponible** (más eficiente)
 
-**Nota:** Si experimentaste problemas con sincronizaciones anteriores que no copiaban todos los archivos, usa este script optimizado.
+**Nota:** Este enfoque es más robusto porque se ejecuta en el destino final (Termux) y puede verificar correctamente todos los archivos copiados.
 
 ### Opción B: Copia Manual con SCP
 
