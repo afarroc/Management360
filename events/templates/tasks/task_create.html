@@ -28,44 +28,152 @@
         <!-- Left side columns -->
         <div class="col-lg-8">
             <div class="row">
-         
-                <!-- Customers Card -->
-                <div class="col-xxl-4 col-xl-12">
-                    <div class="card info-card customers-card">
-                        <div class="filter">
-                            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                                <li class="dropdown-header text-start">
-                                    <h6>Filter</h6>
-                                </li>
 
-                                <li><a class="dropdown-item" href="#">Today</a></li>
-                                <li><a class="dropdown-item" href="#">This Month</a></li>
-                                <li><a class="dropdown-item" href="#">This Year</a></li>
-                            </ul>
-                        </div>
+                <!-- Task Creation Form Card -->
+                <div class="col-12">
+                    <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Form <span>| {{title}}</span></h5>
-                            <div class="d-flex align-items-center">
+                            <h5 class="card-title">
+                                <i class="bi bi-plus-circle me-2"></i>
+                                {{title}}
+                            </h5>
 
-                                <form method="POST">
-                                    {% csrf_token %}
-                                    {{ form.as_p }}
-                                    <button type="submit">Save Changes</button>
-                                </form>
-                        
-                            </div>
+                            <form method="POST" class="row g-3">
+                                {% csrf_token %}
+
+                                <!-- Title Field -->
+                                <div class="col-md-12">
+                                    <label for="{{ form.title.id_for_label }}" class="form-label">
+                                        <i class="bi bi-tag me-1"></i>Título de la Tarea
+                                    </label>
+                                    {{ form.title }}
+                                    {% if form.title.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.title.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.title.help_text %}
+                                        <div class="form-text">{{ form.title.help_text }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Description Field -->
+                                <div class="col-12">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                                        <i class="bi bi-textarea-resize me-1"></i>Descripción
+                                    </label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.description.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    {% if form.description.help_text %}
+                                        <div class="form-text">{{ form.description.help_text }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Project and Status Row -->
+                                <div class="col-md-6">
+                                    <label for="{{ form.project.id_for_label }}" class="form-label">
+                                        <i class="bi bi-folder me-1"></i>Proyecto
+                                    </label>
+                                    {{ form.project }}
+                                    {% if form.project.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.project.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="{{ form.task_status.id_for_label }}" class="form-label">
+                                        <i class="bi bi-flag me-1"></i>Estado de la Tarea
+                                    </label>
+                                    {{ form.task_status }}
+                                    {% if form.task_status.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.task_status.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Event and Assigned To Row -->
+                                <div class="col-md-6">
+                                    <label for="{{ form.event.id_for_label }}" class="form-label">
+                                        <i class="bi bi-calendar-event me-1"></i>Evento
+                                    </label>
+                                    {{ form.event }}
+                                    {% if form.event.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.event.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="{{ form.assigned_to.id_for_label }}" class="form-label">
+                                        <i class="bi bi-person me-1"></i>Asignado a
+                                    </label>
+                                    {{ form.assigned_to }}
+                                    {% if form.assigned_to.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.assigned_to.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Ticket Price and Important Row -->
+                                <div class="col-md-6">
+                                    <label for="{{ form.ticket_price.id_for_label }}" class="form-label">
+                                        <i class="bi bi-cash me-1"></i>Precio del Ticket
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        {{ form.ticket_price }}
+                                    </div>
+                                    {% if form.ticket_price.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.ticket_price.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="col-md-6 d-flex align-items-center">
+                                    <div class="form-check">
+                                        {{ form.important }}
+                                        <label class="form-check-label" for="{{ form.important.id_for_label }}">
+                                            <i class="bi bi-star me-1"></i>Tarea Importante
+                                        </label>
+                                    </div>
+                                    {% if form.important.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.important.errors %}{{ error }}{% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Submit Button -->
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-2"></i>Crear Tarea
+                                    </button>
+                                    <a href="{% url 'task_panel' %}" class="btn btn-secondary ms-2">
+                                        <i class="bi bi-arrow-left me-2"></i>Cancelar
+                                    </a>
+                                </div>
+                            </form>
 
                         </div>
                     </div>
-                </div><!-- End Customers Card -->
+                </div><!-- End Task Creation Form Card -->
             </div>
         </div><!-- End Left side columns -->
 
         <!-- Right side columns -->
         <div class="col-lg-4">
 
-            {% if instructions %} 
+            {% if instructions %}
             {% include 'layouts/includes/information/info_links_card.html' %}
             {% endif %}
 

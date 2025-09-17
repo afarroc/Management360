@@ -1,35 +1,224 @@
-<div class="col-xxl-6 col-md-6 " id="project-card-{{ project_info.project.id }}">
-    <div class="card">
-        <div class="card-header">
+<div class="col-xxl-6 col-md-6" id="project-tasks-card-{{ project_data.project.id }}">
+    <div class="card h-100 shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-list-check text-primary me-2"></i>
+                Tareas del Proyecto
+            </h5>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-three-dots"></i>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{% url 'task_create' project_data.project.id %}">
+                        <i class="bi bi-plus-circle me-2"></i>Crear Nueva Tarea</a></li>
+                    <li><a class="dropdown-item" href="{% url 'tasks' project_data.project.id %}">
+                        <i class="bi bi-eye me-2"></i>Ver Todas las Tareas</a></li>
+                </ul>
+            </div>
         </div>
-        <div class="card-body">
-            <h5 class="card-title">Tasks</h5>
-            <ul class="list-group">
-                {% if project_data.tasks %}
-                {% for task in project_data.tasks %}
-                <li class="list-group-item d-flex justify-content-between align-items-start">
-                    <div class="ms-2 me-auto">
-                        <div class="fw-bold">
-                            <i class="bi bi-calendar-fill"
-                                style="font-size:15px; color:{{task.task_status.color}};"></i>
-                            <a class="card-subtitle" href="{% url 'task_panel' task.id %}"
-                                style="font-size:15px;">{{task.title}}</a>
+
+        <div class="card-body p-0">
+            {% if project_data.tasks %}
+                <div class="list-group list-group-flush">
+                    {% for task in project_data.tasks %}
+                    <div class="list-group-item px-3 py-2 border-0 border-bottom">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <!-- Task Info -->
+                            <div class="flex-grow-1 d-flex align-items-center">
+                                <!-- Status Indicator -->
+                                <div class="me-3">
+                                    <i class="bi bi-circle-fill"
+                                       style="color: {{ task.task_status.color }}; font-size: 0.8rem;"></i>
+                                </div>
+
+                                <!-- Task Details -->
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <a href="{% url 'task_panel' task.id %}"
+                                           class="text-decoration-none fw-semibold text-dark mb-0"
+                                           style="font-size: 0.9rem;">
+                                            {{ task.title|truncatechars:35 }}
+                                        </a>
+                                        {% if task.important %}
+                                        <i class="bi bi-star-fill text-warning" style="font-size: 0.7rem;"></i>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="badge"
+                                              style="background-color: {{ task.task_status.color }} !important; color: white; font-size: 0.65rem; padding: 0.2em 0.4em;">
+                                            {{ task.task_status.status_name }}
+                                        </span>
+                                        {% if task.description %}
+                                        <small class="text-muted" style="font-size: 0.75rem;">
+                                            {{ task.description|truncatechars:40 }}
+                                        </small>
+                                        {% endif %}
+                                        <small class="text-muted ms-auto" style="font-size: 0.7rem;">
+                                            <i class="bi bi-calendar me-1"></i>{{ task.created_at|date:"d/m" }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quick Actions -->
+                            <div class="d-flex gap-1">
+                                <a href="{% url 'task_panel' task.id %}"
+                                   class="btn btn-sm btn-outline-primary p-1"
+                                   data-bs-toggle="tooltip"
+                                   title="Ver detalles"
+                                   style="width: 28px; height: 28px;">
+                                    <i class="bi bi-eye" style="font-size: 0.8rem;"></i>
+                                </a>
+                                <a href="{% url 'task_edit' task.id %}"
+                                   class="btn btn-sm btn-outline-secondary p-1"
+                                   data-bs-toggle="tooltip"
+                                   title="Editar"
+                                   style="width: 28px; height: 28px;">
+                                    <i class="bi bi-pencil" style="font-size: 0.8rem;"></i>
+                                </a>
+                                <a href="{% url 'task_activate' task.id %}"
+                                   class="btn btn-sm btn-outline-warning p-1"
+                                   data-bs-toggle="tooltip"
+                                   title="Cambiar estado"
+                                   style="width: 28px; height: 28px;">
+                                    <i class="bi bi-arrow-repeat" style="font-size: 0.8rem;"></i>
+                                </a>
+                            </div>
                         </div>
-                        <span style="font-size:12px; color:{{task.task_status.color}};"> | {{task.task_status}}</span>
-                        <a href="{% url 'task_activate' task.id %}"></a>
                     </div>
-                    <span class="badge bg-info rounded-pill"><a class="badge "
-                            href="{% url 'task_activate' task.id %}">Switch</a></span>
-                </li>
-                {% endfor%}
-            </ul>
+                    {% endfor %}
+                </div>
+
+                <!-- Compact Task Summary -->
+                <div class="px-3 py-2 bg-light border-top">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex gap-3">
+                            <small class="text-primary fw-semibold">
+                                <i class="bi bi-list-check me-1"></i>{{ project_data.tasks|length }} Total
+                            </small>
+                            <small class="text-success fw-semibold">
+                                <i class="bi bi-check-circle me-1"></i>{{ project_data.tasks|length|add:"0" }} Completadas
+                            </small>
+                            <small class="text-warning fw-semibold">
+                                <i class="bi bi-clock me-1"></i>{{ project_data.tasks|length|add:"0" }} Pendientes
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
             {% else %}
-            <li class="list-group-item d-flex justify-content-between align-items-start">
-                <p>No hay Tareas para este Proyecto</p>
-            </li>
-            {% endif%}
+                <div class="text-center py-4">
+                    <i class="bi bi-clipboard-x text-muted mb-2" style="font-size: 2rem;"></i>
+                    <h6 class="text-muted mb-1" style="font-size: 0.9rem;">Sin tareas</h6>
+                    <p class="text-muted small mb-2">Crea tu primera tarea</p>
+                    <a href="{% url 'task_create' project_data.project.id %}"
+                       class="btn btn-primary btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i>Crear Tarea
+                    </a>
+                </div>
+            {% endif %}
         </div>
-        <div class="card-footer">
+
+        {% if project_data.tasks %}
+        <div class="card-footer bg-light py-2 px-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <small class="text-muted" style="font-size: 0.75rem;">
+                    <i class="bi bi-clock me-1"></i>
+                    Actualizado {{ project_data.project.updated_at|timesince }}
+                </small>
+                <a href="{% url 'tasks' project_data.project.id %}"
+                   class="btn btn-outline-primary btn-sm py-1 px-2">
+                    <i class="bi bi-arrow-right me-1"></i>Ver Todas
+                </a>
+            </div>
         </div>
+        {% endif %}
     </div>
 </div>
+
+<style>
+/* Compact task list styles */
+.list-group-item {
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+
+.list-group-item:hover {
+    background-color: rgba(0,0,0,0.02);
+    border-left-color: #0d6efd;
+    transform: translateX(2px);
+}
+
+/* Status indicator with subtle animation */
+.list-group-item .bi-circle-fill {
+    transition: all 0.2s ease;
+}
+
+.list-group-item:hover .bi-circle-fill {
+    transform: scale(1.2);
+}
+
+/* Compact button styling */
+.btn-sm {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+}
+
+.btn-sm i {
+    font-size: 0.7rem;
+}
+
+/* Task title styling */
+.list-group-item a {
+    transition: color 0.2s ease;
+}
+
+.list-group-item a:hover {
+    color: #0d6efd !important;
+}
+
+/* Important task indicator */
+.bi-star-fill {
+    animation: twinkle 2s infinite;
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* Compact summary styling */
+.bg-light {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef) !important;
+}
+
+/* Responsive adjustments for compact list */
+@media (max-width: 768px) {
+    .list-group-item .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.5rem;
+    }
+
+    .list-group-item .d-flex > div:last-child {
+        align-self: flex-end;
+    }
+
+    .btn-group {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+}
+
+/* Enhanced tooltip styling for compact buttons */
+.btn[data-bs-toggle="tooltip"] {
+    position: relative;
+}
+
+.btn[data-bs-toggle="tooltip"]:hover {
+    z-index: 10;
+}
+</style>
