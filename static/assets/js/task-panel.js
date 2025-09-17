@@ -23,7 +23,7 @@
 
         // Override bulk action URL for tasks
         window.PanelManager.getBulkActionUrl = function(action) {
-            return "{% url 'task_bulk_action' %}";
+            return '/events/tasks/bulk-action/';
         };
 
         // Bind task-specific events
@@ -42,7 +42,7 @@
     };
 
     window.exportTasks = function() {
-        window.PanelManager.exportItems("{% url 'task_export' %}");
+        window.PanelManager.exportItems('/events/tasks/export/');
     };
 
     window.toggleTaskSelectAll = function() {

@@ -23,7 +23,7 @@
 
         // Override bulk action URL for events
         window.PanelManager.getBulkActionUrl = function(action) {
-            return "{% url 'event_bulk_action' %}";
+            return '/events/events/bulk-action/';
         };
 
         // Bind event-specific events
@@ -42,7 +42,7 @@
     };
 
     window.exportEvents = function() {
-        window.PanelManager.exportItems("{% url 'event_export' %}");
+        window.PanelManager.exportItems('/events/events/export/');
     };
 
     window.toggleEventSelectAll = function() {

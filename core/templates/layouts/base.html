@@ -93,17 +93,17 @@
         {# Contenedor del contenido #}
         {% block content_wrapper %}
         <div class="container-fluid">
+            {# Hidden CSRF form for JavaScript - Must be before chat panel #}
+            <form id="csrf-form" style="display: none;">
+                {% csrf_token %}
+            </form>
+
             {% block content %}{% endblock %}
 
             {# Chat flotante y minimizable en todas las páginas #}
             {% if '/chat/room' not in request.path %}
                 {% include 'chat/panel.html' %}
             {% endif %}
-
-            {# Hidden CSRF form for JavaScript #}
-            <form id="csrf-form" style="display: none;">
-                {% csrf_token %}
-            </form>
         </div>
         {% endblock %}
     </main>

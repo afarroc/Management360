@@ -153,86 +153,201 @@ def calculate_percentage_increase(queryset, days):
         'previous_end_date': previous_end_date,
     }
 
-# Proyects
+# Projects - Optimized Version
 def projects(request, project_id=None):
+    """
+    Optimized projects view with database query improvements and caching
+    """
+    from django.core.cache import cache
+    from django.db.models import Prefetch
 
-    # Obtén la cantidad de eventos, proyectos y tareas por día
-    events_per_day = Event.objects.annotate(date=TruncDate('created_at')).values('date').annotate(count=Count('id')).order_by('date')
-    projects_per_day = Project.objects.annotate(date=TruncDate('created_at')).values('date').annotate(count=Count('id')).order_by('date')
-    tasks_per_day = Task.objects.annotate(date=TruncDate('created_at')).values('date').annotate(count=Count('id')).order_by('date')
+    # Cache key for this view
+    cache_key = f'projects_view_{request.user.id}_{project_id or "all"}'
+    cached_data = cache.get(cache_key)
 
-    # Extrae solo los conteos y conviértelos en listas
-    events_data = [item['count'] for item in events_per_day]
-    projects_data = [item['count'] for item in projects_per_day]
-    tasks_data = [item['count'] for item in tasks_per_day]
+    if cached_data and not request.method == 'POST':
+        return cached_data
 
-    # Obtén las fechas de los eventos, proyectos y tareas
-    event_dates = Event.objects.dates('created_at', 'day')
-    project_dates = Project.objects.dates('created_at', 'day')
-    task_dates = Task.objects.dates('created_at', 'day')
-
-    # Convierte los QuerySets a listas para usar en el gráfico
-    event_dates = [date.strftime('%Y-%m-%dT%H:%M:%S.000Z') for date in event_dates]
-    project_dates = [date.strftime('%Y-%m-%dT%H:%M:%S.000Z') for date in project_dates]
-    task_dates = [date.strftime('%Y-%m-%dT%H:%M:%S.000Z') for date in task_dates]
-
-    print(projects_data)
-
-    print(project_dates)
-    
-    title="Projects"   
-    urls=[
-        {'url':'project_create','name':'Project Create'},
-        {'url':'project_edit','name':'Project Edit'},   
+    title = "Projects"
+    urls = [
+        {'url': 'project_create', 'name': 'Project Create'},
+        {'url': 'project_edit', 'name': 'Project Edit'},
     ]
     other_urls = [
-        {'url': 'events', 'id' : None ,'name': 'Events Panel'},
-        {'url': 'projects', 'id' : None , 'name': 'Projects Panel'},
-        {'url': 'tasks', 'id' : None , 'name': 'Tasks Panel'},
-        ]
+        {'url': 'events', 'id': None, 'name': 'Events Panel'},
+        {'url': 'projects', 'id': None, 'name': 'Projects Panel'},
+        {'url': 'tasks', 'id': None, 'name': 'Tasks Panel'},
+    ]
     instructions = [
         {'instruction': 'Fill carefully the metadata.', 'name': 'Form'},
     ]
+
+    # Optimized: Single query with select_related for related objects
     project_statuses = ProjectStatus.objects.all().order_by('status_name')
-    projects = Project.objects.all().order_by('-updated_at')
-    total_projects = Project.objects.count()
 
-    total_ticket_price = projects.aggregate(Sum('ticket_price'))
+    # Optimized: Use select_related and prefetch_related to avoid N+1 queries
+    projects_queryset = Project.objects.select_related(
+        'host', 'assigned_to', 'project_status', 'event'
+    ).prefetch_related(
+        'attendees',
+        Prefetch('task_set', queryset=Task.objects.select_related('task_status'))
+    ).order_by('-updated_at')
 
-    # Define la fecha de referencia
-    date = timezone.now() - timezone.timedelta(days=1)  # hace 30 días
+    # Get statistics in a single optimized query
+    projects_stats = projects_queryset.aggregate(
+        total_projects=Count('id'),
+        total_ticket_price=Sum('ticket_price'),
+        increase=Count('id', filter=Q(created_at__gte=timezone.now() - timezone.timedelta(days=1)))
+    )
 
-    # Cuenta cuántos proyectos se han creado desde la fecha de referencia
-    increase = Project.objects.filter(created_at__gte=date).count()
-    
-    print(total_ticket_price['ticket_price__sum'])
-    
+    # Optimized chart data generation - single query per model
+    chart_data, chart_data_json = _get_optimized_chart_data()
+
     if project_id:
-        
-        
-        return render(request, "projects/projects.html",{
-            'total_ticket_price':total_ticket_price['ticket_price__sum'],
-            'instructions':instructions,
-            'urls':urls,
-
-        })
+        # Single optimized query for specific project
+        try:
+            project = projects_queryset.get(id=project_id)
+            context = {
+                'project': project,
+                'total_ticket_price': projects_stats['total_ticket_price'],
+                'instructions': instructions,
+                'urls': urls,
+            }
+            response = render(request, "projects/project_detail.html", context)
+        except Project.DoesNotExist:
+            raise Http404("Project not found")
     else:
-        return render(request, "projects/projects.html",{
-            'total_ticket_price':total_ticket_price['ticket_price__sum'],
-            'other_urls':other_urls,
-            'urls':urls,
-            'instructions':instructions,
-            'increase':increase,
-            'projects':projects,
-            'total_projects':total_projects,
-            'project_statuses':project_statuses,
-            'title':title,
-            'events_data':events_data,
-            'projects_data':projects_data,
-            'tasks_data':tasks_data,
-            'event_dates':event_dates,
-        
-        })
+        # Optimized: Use pagination for large datasets
+        from django.core.paginator import Paginator
+        paginator = Paginator(projects_queryset, 20)  # 20 projects per page
+        page_number = request.GET.get('page')
+        projects_page = paginator.get_page(page_number)
+
+        # Get status counts for distribution
+        status_counts = {}
+        for status in project_statuses:
+            status_counts[status.id] = projects_queryset.filter(project_status=status).count()
+            status.projects_count = status_counts[status.id]
+
+        context = {
+            'total_ticket_price': projects_stats['total_ticket_price'],
+            'other_urls': other_urls,
+            'urls': urls,
+            'instructions': instructions,
+            'increase': projects_stats['increase'],
+            'projects': projects_page,
+            'total_projects': projects_stats['total_projects'],
+            'in_progress_count': projects_queryset.filter(project_status__status_name='In Progress').count(),
+            'completed_count': projects_queryset.filter(project_status__status_name='Completed').count(),
+            'project_statuses': project_statuses,
+            'title': title,
+            'chart_data': chart_data,  # Pass chart_data as a single object
+            'chart_data_json': chart_data_json,  # Pass JSON string for template
+        }
+        response = render(request, "projects/projects.html", context)
+
+    # Cache the response for 5 minutes
+    cache.set(cache_key, response, 300)
+    return response
+
+
+def _get_optimized_chart_data():
+    """
+    Optimized function to get chart data with minimal database queries
+    """
+    from django.core.cache import cache
+
+    cache_key = 'projects_chart_data'
+    cached_data = cache.get(cache_key)
+
+    if cached_data:
+        return cached_data['data'], cached_data['json']
+
+    try:
+        # Single optimized query for all chart data
+        chart_queryset = Project.objects.annotate(
+            date=TruncDate('created_at')
+        ).values('date').annotate(
+            project_count=Count('id')
+        ).order_by('date')
+
+        # Get data for the last 30 days only
+        thirty_days_ago = timezone.now() - timezone.timedelta(days=30)
+        recent_chart_data = chart_queryset.filter(date__gte=thirty_days_ago)
+
+        projects_data = [item['project_count'] for item in recent_chart_data] if recent_chart_data else []
+        project_dates = [item['date'].strftime('%Y-%m-%d') for item in recent_chart_data] if recent_chart_data else []
+
+        # Similar optimization for events and tasks
+        events_chart = Event.objects.filter(
+            created_at__gte=thirty_days_ago
+        ).annotate(date=TruncDate('created_at')).values('date').annotate(
+            count=Count('id')
+        ).order_by('date')
+
+        tasks_chart = Task.objects.filter(
+            created_at__gte=thirty_days_ago
+        ).annotate(date=TruncDate('created_at')).values('date').annotate(
+            count=Count('id')
+        ).order_by('date')
+
+        events_data = [item['count'] for item in events_chart] if events_chart else []
+        tasks_data = [item['count'] for item in tasks_chart] if tasks_chart else []
+        event_dates = [item['date'].strftime('%Y-%m-%d') for item in events_chart] if events_chart else []
+        task_dates = [item['date'].strftime('%Y-%m-%d') for item in tasks_chart] if tasks_chart else []
+
+        # Ensure all arrays have the same length for chart compatibility
+        max_length = max(len(projects_data), len(events_data), len(tasks_data))
+        if max_length == 0:
+            # No data available, create default structure
+            default_dates = [(timezone.now() - timezone.timedelta(days=i)).strftime('%Y-%m-%d') for i in range(7)]
+            chart_data = {
+                'events_data': [0] * 7,
+                'projects_data': [0] * 7,
+                'tasks_data': [0] * 7,
+                'event_dates': default_dates,
+                'project_dates': default_dates,
+                'task_dates': default_dates,
+            }
+        else:
+            # Pad shorter arrays with zeros to match the longest
+            projects_data.extend([0] * (max_length - len(projects_data)))
+            events_data.extend([0] * (max_length - len(events_data)))
+            tasks_data.extend([0] * (max_length - len(tasks_data)))
+
+            # Use project_dates as the primary date array since it's most likely to have data
+            primary_dates = project_dates if project_dates else (event_dates if event_dates else task_dates)
+
+            chart_data = {
+                'events_data': events_data,
+                'projects_data': projects_data,
+                'tasks_data': tasks_data,
+                'event_dates': primary_dates,
+                'project_dates': primary_dates,
+                'task_dates': primary_dates,
+            }
+
+        # Convert to JSON string for safe template rendering
+        import json
+        chart_data_json = json.dumps(chart_data)
+
+        # Cache both the data and JSON
+        cache.set(cache_key, {'data': chart_data, 'json': chart_data_json}, 600)
+        return chart_data, chart_data_json
+
+    except Exception as e:
+        # Return safe default data structure in case of any errors
+        default_dates = [(timezone.now() - timezone.timedelta(days=i)).strftime('%Y-%m-%d') for i in range(7)]
+        default_data = {
+            'events_data': [0] * 7,
+            'projects_data': [0] * 7,
+            'tasks_data': [0] * 7,
+            'event_dates': default_dates,
+            'project_dates': default_dates,
+            'task_dates': default_dates,
+        }
+        import json
+        return default_data, json.dumps(default_data)
 
 def project_create(request):
     urls=[
