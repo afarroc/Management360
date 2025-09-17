@@ -56,9 +56,13 @@ fi
 echo "📁 Creando directorio remoto..."
 ssh -p $TERMUX_PORT $TERMUX_USER@$TERMUX_IP "mkdir -p $TERMUX_PATH"
 
-# Sincronizar archivos usando scp
+# Limpiar directorio remoto antes de sincronizar
+echo "🧹 Limpiando directorio remoto..."
+ssh -p $TERMUX_PORT $TERMUX_USER@$TERMUX_IP "rm -rf $TERMUX_PATH/*"
+
+# Sincronizar archivos usando scp (copia el directorio completo)
 echo "📤 Sincronizando archivos..."
-scp -P $TERMUX_PORT -r ./media/* $TERMUX_USER@$TERMUX_IP:$TERMUX_PATH/
+scp -P $TERMUX_PORT -r ./media $TERMUX_USER@$TERMUX_IP:$(dirname $TERMUX_PATH)/
 
 if [ $? -eq 0 ]; then
     echo ""
