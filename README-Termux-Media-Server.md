@@ -45,9 +45,15 @@ python --version
 
 ## Copia de Archivos al Dispositivo
 
-### Opción A: Sincronización Automática (Recomendado)
+### Opción A: Sincronización Optimizada (Más Recomendado)
 
-**Para Windows:**
+**Para Windows (Git Bash):**
+```bash
+# Script optimizado que pide contraseña solo una vez
+./sync_media_to_termux_optimized.sh
+```
+
+**Para Windows (Command Prompt):**
 ```cmd
 # Ejecutar el script de sincronización
 sync_media_to_termux.bat
@@ -59,11 +65,21 @@ sync_media_to_termux.bat
 ./sync_media_to_termux.sh
 ```
 
+**Para Windows (Git Bash - versión simple):**
+```bash
+# Versión simple pero pide contraseña múltiples veces
+./sync_media_to_termux_gitbash.sh
+```
+
 Este script automáticamente:
+- ✅ **Una sola petición de contraseña SSH**
 - ✅ Verifica archivos locales en `./media/`
-- ✅ Conecta vía SSH a Termux
-- ✅ Sincroniza todos los archivos
-- ✅ Verifica la sincronización
+- ✅ Copia TODOS los archivos incluyendo subdirectorios
+- ✅ Limpia archivos antiguos antes de sincronizar
+- ✅ Verifica la sincronización completa
+- ✅ Usa rsync cuando está disponible (más eficiente)
+
+**Nota:** Si experimentaste problemas con sincronizaciones anteriores que no copiaban todos los archivos, usa este script optimizado.
 
 ### Opción B: Copia Manual con SCP
 
@@ -323,6 +339,38 @@ chmod -R 755 /data/data/com.termux/files/home/projects/Management360/media/
 
 # Verificar espacio disponible
 df -h /data/data/com.termux/files/home/
+```
+
+### Solo se copian algunos archivos (room_images pero no courses/profile_pics)
+
+**Síntoma**: La sincronización copia `room_images/` y `__init__.py` pero no `courses/` y `profile_pics/`
+
+**Causa**: Problema con el patrón de copia de archivos en algunos scripts
+
+**Solución**: Usa el script optimizado
+```bash
+# Usa el script optimizado que copia el directorio completo
+./sync_media_to_termux_optimized.sh
+
+# O verifica manualmente
+ls -la media/
+# Deberías ver: courses/ profile_pics/ room_images/
+```
+
+### Error "Connection refused" o "Permission denied"
+
+**Síntoma**: No se puede conectar al servidor SSH
+
+**Solución**:
+```bash
+# Verificar que SSH está ejecutándose en Termux
+ssh -p 8022 u0_a211@192.168.18.46 "echo 'SSH funcionando'"
+
+# Si no funciona, reiniciar SSH en Termux
+sshd
+
+# Verificar puerto
+netstat -tlnp | grep :8022
 ```
 
 ### Logs no aparecen
