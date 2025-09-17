@@ -116,9 +116,13 @@ def main():
     except OSError as e:
         if e.errno == 98:  # Address already in use
             logger.error(f"Port {args.port} is already in use. Try a different port with --port")
-        elif e.errno == 99:  # Cannot assign requested address
-            logger.error(f"Cannot bind to {args.host}:{args.port}. Check the IP address.")
-            logger.info(f"Available local IPs: {get_local_ip()}")
+        elif e.errno == 99 or e.errno == 10049:  # Cannot assign requested address
+            logger.error(f"Cannot bind to {args.host}:{args.port}. The IP address may not be available.")
+            local_ip = get_local_ip()
+            logger.info(f"Try using your local IP: {local_ip}")
+            logger.info(f"Example: python media_server.py --host {local_ip}")
+            logger.info("Or use 0.0.0.0 to bind to all interfaces:")
+            logger.info("Example: python media_server.py --host 0.0.0.0")
         else:
             logger.error(f"Server error: {e}")
         sys.exit(1)
