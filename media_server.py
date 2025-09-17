@@ -37,6 +37,59 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
 
+    def do_POST(self):
+        """Handle file uploads with simple multipart parser"""
+        try:
+            content_length = int(self.headers['Content-Length'])
+            body = self.rfile.read(content_length)
+
+            # Get boundary from Content-Type
+            content_type = self.headers.get('Content-Type', '')
+            if 'boundary=' not in content_type:
+                self.send_error(400, "Invalid content type")
+                return
+            boundary = content_type.split('boundary=')[1]
+
+            # Simple multipart parser
+            parts = body.split(b'--' + boundary.encode())
+            filename = None
+            file_content = None
+
+            for part in parts:
+                if b'Content-Disposition' in part and b'filename=' in part:
+                    # Extract filename
+                    lines = part.split(b'\r\n')
+                    for line in lines:
+                        if b'filename=' in line:
+                            filename_part = line.split(b'filename=')[1].strip(b'"')
+                            filename = filename_part.decode()
+                            break
+                    # Extract content (after double \r\n)
+                    content_start = part.find(b'\r\n\r\n') + 4
+                    file_content = part[content_start:].rstrip(b'\r\n--')
+                    break
+
+            if not filename or not file_content:
+                self.send_error(400, "No file provided")
+                return
+
+            # Sanitize filename
+            filename = os.path.basename(filename)
+
+            # Save the file
+            filepath = os.path.join(self.directory, filename)
+            with open(filepath, 'wb') as f:
+                f.write(file_content)
+
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(b'{"status": "success", "filename": "' + filename.encode() + b'"}')
+
+        except Exception as e:
+            logger.error(f"Upload error: {e}")
+            self.send_error(500, f"Upload failed: {str(e)}")
+
     def log_message(self, format, *args):
         """Override logging to use our custom logger"""
         logger.info(f"{self.address_string()} - {format % args}")
