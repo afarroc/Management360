@@ -42,11 +42,11 @@ mkdir -p "$TERMUX_MEDIA_PATH"
 
 # Verificar archivos en Windows
 echo "🔍 Verificando archivos en Windows..."
-ssh $WINDOWS_USER@$WINDOWS_IP "dir /b '$WINDOWS_PROJECT_PATH/media' 2>nul | head -10" 2>/dev/null || echo "Directorio no encontrado o sin archivos"
+ssh $WINDOWS_USER@$WINDOWS_IP "ls -la '$WINDOWS_PROJECT_PATH/media' 2>/dev/null" 2>/dev/null || echo "Directorio no encontrado o sin archivos"
 
 echo ""
 echo "📊 Información de archivos en Windows:"
-TOTAL_FILES=$(ssh $WINDOWS_USER@$WINDOWS_IP "dir /b '$WINDOWS_PROJECT_PATH/media' 2>nul | find /c /v \"\"" 2>/dev/null || echo "0")
+TOTAL_FILES=$(ssh $WINDOWS_USER@$WINDOWS_IP "find '$WINDOWS_PROJECT_PATH/media' -type f 2>/dev/null | wc -l 2>/dev/null" 2>/dev/null || echo "0")
 echo "Total archivos aproximado: $TOTAL_FILES"
 echo "Directorio: $WINDOWS_PROJECT_PATH/media"
 
@@ -67,14 +67,19 @@ echo "🧹 Limpiando directorio local..."
 rm -rf "$TERMUX_MEDIA_PATH"/*
 echo "✅ Directorio local preparado"
 
-# Sincronizar archivos desde Windows usando rsync sobre SSH
+# Sincronizar archivos desde Windows usando scp
 echo "📤 Copiando archivos desde Windows..."
-if command -v rsync &> /dev/null; then
-    echo "📦 Usando rsync para sincronización eficiente..."
-    rsync -avz --delete -e ssh $WINDOWS_USER@$WINDOWS_IP:"$WINDOWS_PROJECT_PATH/media/" "$TERMUX_MEDIA_PATH/"
+echo "📦 Usando scp para copia segura..."
+
+# Crear un script temporal para verificar que los archivos existen antes de copiar
+ssh $WINDOWS_USER@$WINDOWS_IP "if [ -d '$WINDOWS_PROJECT_PATH/media' ]; then echo 'Directorio encontrado, procediendo...'; else echo 'ERROR: Directorio no encontrado'; exit 1; fi"
+
+if [ $? -eq 0 ]; then
+    # Copiar el directorio completo
+    scp -r $WINDOWS_USER@$WINDOWS_IP:"$WINDOWS_PROJECT_PATH/media" "$(dirname "$TERMUX_MEDIA_PATH")/"
 else
-    echo "📦 rsync no disponible, usando scp..."
-    scp -r $WINDOWS_USER@$WINDOWS_IP:"$WINDOWS_PROJECT_PATH/media/*" "$TERMUX_MEDIA_PATH/"
+    echo "❌ Error: No se puede acceder al directorio en Windows"
+    exit 1
 fi
 
 if [ $? -eq 0 ]; then
