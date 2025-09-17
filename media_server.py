@@ -48,7 +48,11 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
             if 'boundary=' not in content_type:
                 self.send_error(400, "Invalid content type")
                 return
-            boundary = content_type.split('boundary=')[1]
+            boundary = content_type.split('boundary=')[1].strip('"\'')
+
+            # Debug
+            print(f"Boundary: {boundary}")
+            print(f"Body start: {body[:200]}")
 
             # Simple multipart parser
             parts = body.split(b'--' + boundary.encode())
@@ -64,8 +68,8 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
                             filename_part = line.split(b'filename=')[1].strip(b'"')
                             filename = filename_part.decode()
                             break
-                    # Extract content (after double \r\n)
-                    content_start = part.find(b'\r\n\r\n') + 4
+                    # Extract content (after headers)
+                    content_start = part.find(b'\r\n\r\n', part.find(b'filename=')) + 4
                     file_content = part[content_start:].rstrip(b'\r\n--')
                     break
 
@@ -73,11 +77,17 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
                 self.send_error(400, "No file provided")
                 return
 
-            # Sanitize filename
-            filename = os.path.basename(filename)
+            # Allow subdirectories for proper organization
+            # Sanitize to prevent directory traversal (no ..)
+            if '..' in filename or filename.startswith('/'):
+                self.send_error(400, "Invalid filename")
+                return
+
+            # Create directories if needed
+            filepath = os.path.join(self.directory, filename)
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
             # Save the file
-            filepath = os.path.join(self.directory, filename)
             with open(filepath, 'wb') as f:
                 f.write(file_content)
 
