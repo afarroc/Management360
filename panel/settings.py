@@ -180,7 +180,20 @@ else:
 
 # Media Files - Ahora servidos desde servidor remoto en Termux
 MEDIA_URL = 'http://192.168.18.46:8000/'
-MEDIA_ROOT = BASE_DIR / 'media'  # Mantener para uploads locales si es necesario
+# MEDIA_ROOT = BASE_DIR / 'media'  # No needed with custom storage
+
+# Custom storage for uploading directly to remote server
+DEFAULT_FILE_STORAGE = 'panel.storages.RemoteMediaStorage'
+
+# Force RemoteMediaStorage initialization
+from django.core.files.storage import default_storage
+from panel.storages import RemoteMediaStorage
+
+# Replace the default storage with our custom one
+if not isinstance(default_storage, RemoteMediaStorage):
+    print("=== FORCING REMOTE MEDIA STORAGE ===")
+    default_storage._wrapped = RemoteMediaStorage()
+    print("RemoteMediaStorage forced successfully")
 
 # Email Configuration
 if DEBUG:
