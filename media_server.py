@@ -43,9 +43,13 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
             # Handle both multipart form data and direct file uploads
             content_type = self.headers.get('Content-Type', '')
 
+            # Read body first for all POST requests
+            content_length = int(self.headers['Content-Length'])
+            body = self.rfile.read(content_length)
+
             if 'multipart/form-data' in content_type:
                 # Handle Django's multipart upload
-                filename = self._parse_multipart_form_data()
+                filename, file_content = self._parse_multipart_form_data(body, content_type)
             else:
                 # Fallback to Content-Disposition header
                 content_disposition = self.headers.get('Content-Disposition', '')
@@ -53,6 +57,7 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
                     self.send_error(400, "No filename in Content-Disposition")
                     return
                 filename = content_disposition.split('filename=')[1].strip('"')
+                file_content = body
 
             if not filename:
                 self.send_error(400, "No filename")
@@ -63,21 +68,13 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
                 self.send_error(400, "Invalid filename")
                 return
 
-            # Read body
-            content_length = int(self.headers['Content-Length'])
-            body = self.rfile.read(content_length)
-
-            # If multipart, extract file content from body
-            if 'multipart/form-data' in content_type:
-                body = self._extract_file_content(body, content_type)
-
             # Create directories if needed
             filepath = os.path.join(self.directory, filename)
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
 
             # Save the file
             with open(filepath, 'wb') as f:
-                f.write(body)
+                f.write(file_content)
 
             logger.info(f"File uploaded successfully: {filename}")
             self.send_response(200)
@@ -89,17 +86,9 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
             logger.error(f"Upload error: {e}")
             self.send_error(500, f"Upload failed: {str(e)}")
 
-    def _parse_multipart_form_data(self):
-        """Parse multipart form data to extract filename"""
-        content_disposition = self.headers.get('Content-Disposition', '')
-        if 'filename=' in content_disposition:
-            return content_disposition.split('filename=')[1].strip('"')
-        return None
-
-    def _extract_file_content(self, body, content_type):
-        """Extract file content from multipart form data"""
+    def _parse_multipart_form_data(self, body, content_type):
+        """Parse multipart form data to extract filename and file content"""
         try:
-            # Simple multipart parser - find the file content between boundaries
             body_str = body.decode('latin-1')
 
             # Find the boundary
@@ -108,17 +97,31 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
                 parts = body_str.split(f'--{boundary}')
 
                 for part in parts:
-                    if 'filename=' in part and 'Content-Type:' in part:
-                        # Find the actual file content (after headers)
-                        content_start = part.find('\r\n\r\n')
-                        if content_start != -1:
-                            return part[content_start + 4:].encode('latin-1')
+                    if 'filename=' in part:
+                        # Extract filename from Content-Disposition
+                        lines = part.split('\r\n')
+                        filename = None
+                        for line in lines:
+                            if line.startswith('Content-Disposition:') and 'filename=' in line:
+                                filename_part = line.split('filename=')[1].strip('"')
+                                filename = filename_part
+                                break
 
-            # Fallback: return original body if parsing fails
-            return body
+                        if filename:
+                            # Find the actual file content (after headers)
+                            content_start = part.find('\r\n\r\n')
+                            if content_start != -1:
+                                file_content = part[content_start + 4:].encode('latin-1')
+                                # Remove trailing \r\n if present
+                                if file_content.endswith(b'\r\n'):
+                                    file_content = file_content[:-2]
+                                return filename, file_content
+
+            # Fallback: no filename found
+            return None, body
         except Exception as e:
             logger.warning(f"Failed to parse multipart data: {e}")
-            return body
+            return None, body
 
     def log_message(self, format, *args):
         """Override logging to use our custom logger"""
