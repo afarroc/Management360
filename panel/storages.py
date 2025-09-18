@@ -11,7 +11,7 @@ class RemoteMediaStorage(Storage):
         print(f"MEDIA_URL from settings: {settings.MEDIA_URL}")
         self.server_url = settings.MEDIA_URL.rstrip('/')
         print(f"Server URL set to: {self.server_url}")
-        self.upload_url = f"{self.server_url}/upload"  # Assuming we add /upload endpoint, but for now use root
+        self.upload_url = self.server_url  # Upload to root endpoint
         print(f"Upload URL set to: {self.upload_url}")
         print("=== STORAGE INITIALIZATION COMPLETE ===")
 
@@ -20,6 +20,11 @@ class RemoteMediaStorage(Storage):
         print(f"File name to save: {name}")
         print(f"Server URL: {self.server_url}")
         print(f"Upload URL: {self.upload_url}")
+
+        # Validate name
+        if not name or name is None:
+            print("ERROR: File name is None or empty, cannot upload")
+            raise Exception("Upload failed: No filename provided")
 
         # Get file content
         print("Reading file content...")
@@ -64,14 +69,14 @@ class RemoteMediaStorage(Storage):
         }
 
         print("=== PREPARING HTTP REQUEST ===")
-        print(f"Sending POST request to: {self.server_url}")
+        print(f"Sending POST request to: {self.upload_url}")
         print(f"Headers: {headers}")
         print(f"Body size: {len(body)} bytes")
         print(f"Boundary: ----WebKitFormBoundary7MA4YWxkTrZu0gW")
 
         print("=== SENDING REQUEST ===")
         try:
-            response = requests.post(self.server_url, data=body, headers=headers, timeout=10)
+            response = requests.post(self.upload_url, data=body, headers=headers, timeout=10)
             print("=== RESPONSE RECEIVED ===")
             print(f"Response status: {response.status_code}")
             print(f"Response headers: {dict(response.headers)}")
