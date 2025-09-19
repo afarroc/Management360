@@ -83,7 +83,7 @@
                 {% if current_lesson.content %}
                 <div class="lesson-content mt-4">
                     <h5>Descripción</h5>
-                    {{ current_lesson.content|linebreaks }}
+                    {{ current_lesson.content|safe }}
                 </div>
                 {% endif %}
                 
@@ -100,7 +100,7 @@
                             <hr class="my-4">
                             <h5>Contenido adicional</h5>
                         {% endif %}
-                        {{ current_lesson.content|linebreaks }}
+                        {{ current_lesson.content|safe }}
                     {% endif %}
 
                     {% if not current_lesson.structured_content and not current_lesson.content %}
