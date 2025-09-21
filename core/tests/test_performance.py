@@ -13,6 +13,7 @@ from django.db import connection
 from django.test.utils import override_settings
 
 from events.models import Event, Project, Task, Status, ProjectStatus, TaskStatus
+from events.management.task_manager import TaskManager
 
 
 class HomeViewPerformanceTest(TestCase):
@@ -84,11 +85,17 @@ class HomeViewPerformanceTest(TestCase):
                 host=self.user
             )
 
-            Task.objects.create(
+            # Usar TaskManager para crear tareas con procedimientos correctos
+            task_manager = TaskManager(self.user)
+            task_manager.create_task(
                 title=f'Test Task {i}',
                 description=f'Task description {i}',
+                important=False,
+                project=project,
+                event=event,
                 task_status=self.task_todo if i % 4 == 0 else self.task_in_progress,
-                project=project
+                assigned_to=self.user,
+                ticket_price=0.07
             )
 
     def test_home_view_response_time(self):

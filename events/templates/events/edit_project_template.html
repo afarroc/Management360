@@ -1,0 +1,323 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-pencil me-2"></i>
+                        {{ title }}
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{% url 'project_template_detail' template.id %}" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>
+                            Volver a Plantilla
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="row">
+                            <div class="col-md-8">
+                                <!-- Información de la plantilla -->
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-info-circle me-2"></i>
+                                            Información de la Plantilla
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            {{ template_form.name.label_tag }}
+                                            {{ template_form.name }}
+                                            {% if template_form.name.help_text %}
+                                                <div class="form-text">{{ template_form.name.help_text }}</div>
+                                            {% endif %}
+                                            {% if template_form.name.errors %}
+                                                <div class="text-danger">
+                                                    {{ template_form.name.errors }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="mb-3">
+                                            {{ template_form.description.label_tag }}
+                                            {{ template_form.description }}
+                                            {% if template_form.description.help_text %}
+                                                <div class="form-text">{{ template_form.description.help_text }}</div>
+                                            {% endif %}
+                                            {% if template_form.description.errors %}
+                                                <div class="text-danger">
+                                                    {{ template_form.description.errors }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    {{ template_form.category.label_tag }}
+                                                    {{ template_form.category }}
+                                                    {% if template_form.category.help_text %}
+                                                        <div class="form-text">{{ template_form.category.help_text }}</div>
+                                                    {% endif %}
+                                                    {% if template_form.category.errors %}
+                                                        <div class="text-danger">
+                                                            {{ template_form.category.errors }}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    {{ template_form.estimated_duration.label_tag }}
+                                                    {{ template_form.estimated_duration }}
+                                                    {% if template_form.estimated_duration.help_text %}
+                                                        <div class="form-text">{{ template_form.estimated_duration.help_text }}</div>
+                                                    {% endif %}
+                                                    {% if template_form.estimated_duration.errors %}
+                                                        <div class="text-danger">
+                                                            {{ template_form.estimated_duration.errors }}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                {{ template_form.is_public }}
+                                                {{ template_form.is_public.label_tag }}
+                                            </div>
+                                            {% if template_form.is_public.help_text %}
+                                                <div class="form-text">{{ template_form.is_public.help_text }}</div>
+                                            {% endif %}
+                                            {% if template_form.is_public.errors %}
+                                                <div class="text-danger">
+                                                    {{ template_form.is_public.errors }}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Tareas de la plantilla -->
+                                <div class="card mt-4">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-list-task me-2"></i>
+                                            Tareas de la Plantilla
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        {{ task_formset.management_form }}
+
+                                        <div id="task-forms">
+                                            {% for form in task_formset %}
+                                                <div class="task-form-item" data-form-index="{{ forloop.counter0 }}">
+                                                    <div class="card mb-3">
+                                                        <div class="card-header d-flex justify-content-between align-items-center">
+                                                            <h6 class="mb-0">Tarea #{{ forloop.counter }}</h6>
+                                                            {% if task_formset.can_delete %}
+                                                                <div class="form-check">
+                                                                    {{ form.DELETE }}
+                                                                    {{ form.DELETE.label_tag }}
+                                                                </div>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="card-body">
+                                                            <div class="row">
+                                                                <div class="col-md-6">
+                                                                    <div class="mb-3">
+                                                                        {{ form.title.label_tag }}
+                                                                        {{ form.title }}
+                                                                        {% if form.title.errors %}
+                                                                            <div class="text-danger">{{ form.title.errors }}</div>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <div class="mb-3">
+                                                                        {{ form.estimated_hours.label_tag }}
+                                                                        {{ form.estimated_hours }}
+                                                                        {% if form.estimated_hours.errors %}
+                                                                            <div class="text-danger">{{ form.estimated_hours.errors }}</div>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                {{ form.description.label_tag }}
+                                                                {{ form.description }}
+                                                                {% if form.description.errors %}
+                                                                    <div class="text-danger">{{ form.description.errors }}</div>
+                                                                {% endif %}
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                {{ form.required_skills.label_tag }}
+                                                                {{ form.required_skills }}
+                                                                {% if form.required_skills.errors %}
+                                                                    <div class="text-danger">{{ form.required_skills.errors }}</div>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+
+                                        {% if task_formset.non_form_errors %}
+                                            <div class="alert alert-danger">
+                                                {{ task_formset.non_form_errors }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">
+                                            <i class="bi bi-lightbulb me-1"></i>
+                                            Consejos para Editar
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <ul class="list-unstyled small">
+                                            <li class="mb-2">
+                                                <i class="bi bi-check-circle text-success me-1"></i>
+                                                Los cambios afectarán a futuros usos de la plantilla
+                                            </li>
+                                            <li class="mb-2">
+                                                <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+                                                No afectará a proyectos ya creados con esta plantilla
+                                            </li>
+                                            <li class="mb-2">
+                                                <i class="bi bi-clock text-info me-1"></i>
+                                                Actualiza las horas estimadas si es necesario
+                                            </li>
+                                            <li class="mb-2">
+                                                <i class="bi bi-tag text-primary me-1"></i>
+                                                Revisa las habilidades requeridas
+                                            </li>
+                                            <li class="mb-0">
+                                                <i class="bi bi-eye text-secondary me-1"></i>
+                                                Previsualiza antes de guardar
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">
+                                            <i class="bi bi-bar-chart me-1"></i>
+                                            Resumen Actual
+                                        </h6>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <div id="task-count" class="mb-2">
+                                            <h4 class="text-primary">{{ task_formset.total_form_count }}</h4>
+                                            <small class="text-muted">Tareas en la plantilla</small>
+                                        </div>
+                                        <div id="total-hours" class="mb-2">
+                                            <h4 class="text-success">
+                                                {% if template.templatetask_set.exists %}
+                                                    {{ template.templatetask_set.aggregate(total=Sum('estimated_hours')).total|floatformat:1 }}
+                                                {% else %}
+                                                    0
+                                                {% endif %}
+                                            </h4>
+                                            <small class="text-muted">Horas totales estimadas</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex gap-2 justify-content-center">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-1"></i>
+                                        Guardar Cambios
+                                    </button>
+                                    <a href="{% url 'project_template_detail' template.id %}" class="btn btn-secondary">
+                                        <i class="bi bi-x-circle me-1"></i>
+                                        Cancelar
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.task-form-item {
+    position: relative;
+}
+
+.task-form-item .card {
+    border-left: 4px solid #007bff;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.3);
+}
+
+.form-check-input:checked {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+</style>
+
+<script>
+// Calcular horas totales automáticamente
+document.addEventListener('DOMContentLoaded', function() {
+    function updateTotalHours() {
+        const hourInputs = document.querySelectorAll('input[name$="-estimated_hours"]');
+        let total = 0;
+
+        hourInputs.forEach(input => {
+            const value = parseFloat(input.value) || 0;
+            total += value;
+        });
+
+        document.querySelector('#total-hours h4').textContent = total.toFixed(1);
+    }
+
+    // Actualizar al cambiar cualquier input de horas
+    document.addEventListener('input', function(e) {
+        if (e.target.name && e.target.name.includes('estimated_hours')) {
+            updateTotalHours();
+        }
+    });
+
+    // Actualizar al cargar la página
+    updateTotalHours();
+});
+</script>
+{% endblock %}
