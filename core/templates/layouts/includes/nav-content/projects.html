@@ -1,29 +1,61 @@
+<!-- =======================================================
+     OPTIMIZED PROJECTS SECTION
+     ======================================================= -->
 <li class="nav-item">
     <a class="nav-link collapsed" data-bs-target="#projects-nav" data-bs-toggle="collapse" href="{% url 'projects' %}">
         <i class="bi bi-calendar3-range"></i><span>Projects</span><i class="bi bi-chevron-down ms-auto"></i>
     </a>
-    <ul id="projects-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-        <li>
-            <a href="{% url 'project_panel' %}">
-                <i class="bi bi-circle"></i><span>Project Panel</span>
-            </a>
-        </li>
+    <ul id="projects-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
+        <!-- Main Views -->
         <li>
             <a href="{% url 'projects' %}">
-                <i class="bi bi-circle"></i><span>Projects</span>
+                <i class="bi bi-list-ul"></i><span>All Projects</span>
             </a>
         </li>
+        <li>
+            <a href="{% url 'project_panel' %}">
+                <i class="bi bi-speedometer2"></i><span>Project Panel</span>
+            </a>
+        </li>
+
+        <!-- Actions -->
         {% if user.is_authenticated %}
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#project-actions-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-gear"></i><span>Project Actions</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="project-actions-nav" class="nav-content collapse" data-bs-parent="#projects-nav">
+                <li>
+                    <a href="{% url 'project_create' %}">
+                        <i class="bi bi-plus-circle"></i><span>Create Project</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'project_edit_no_id' %}">
+                        <i class="bi bi-pencil"></i><span>Edit Project</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'project_activate_no_id' %}">
+                        <i class="bi bi-play-circle"></i><span>Activate Project</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        <!-- Templates -->
         <li>
-            <a href="{% url 'project_create' %}">
-                <i class="bi bi-circle"></i><span>Create Projects</span>
+            <a href="{% url 'project_templates' %}">
+                <i class="bi bi-file-earmark-plus"></i><span>Project Templates</span>
             </a>
         </li>
+
+        <!-- Reports -->
         <li>
-            <a href="{% url 'project_edit' %}">
-                <i class="bi bi-circle"></i><span>Edit Project</span>
+            <a href="{% url 'project_export' %}">
+                <i class="bi bi-download"></i><span>Export Projects</span>
             </a>
         </li>
         {% endif %}
     </ul>
-</li><!-- End projects Nav -->
+</li><!-- End Optimized Projects Nav -->

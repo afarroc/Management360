@@ -17,6 +17,8 @@ from django.http import Http404, HttpResponse, JsonResponse, HttpResponseRedirec
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from difflib import SequenceMatcher
+import re
 
 # Local Imports
 from .management.utils import (
@@ -28,11 +30,14 @@ from .management.task_manager import TaskManager
 from .models import (
     Classification, Event, EventAttendee, ProjectStatus,
     TaskStatus, Project, Status, Task, EventState, TaskState,
-    TaskProgram
+    TaskProgram, ProjectTemplate, TemplateTask, InboxItem, Reminder,
+    TagCategory, Tag, TaskDependency, InboxItemClassification,
+    InboxItemAuthorization, InboxItemHistory
 )
 from .forms import (
     CreateNewEvent, CreateNewProject, CreateNewTask, EditClassificationForm,
-    EventStatusForm, TaskStatusForm, ProjectStatusForm
+    EventStatusForm, TaskStatusForm, ProjectStatusForm,
+    ProjectTemplateForm, TemplateTaskForm, TemplateTaskFormSet
 )
 
 def event_assign(request, event_id=None):
@@ -415,12 +420,90 @@ def project_create(request):
         })
 
 def project_detail(request, id):
+    """
+    Vista detallada de un proyecto individual con estadísticas completas
+    """
+    from django.db.models import Q, Count
+
     project = get_object_or_404(Project, id=id)
-    tasks=Task.objects.filter(project_id=id)
-    return render(request, 'projects/detail.html', {
-        'project' : project,
-        'tasks':tasks
-    })
+
+    # Verificar permisos
+    if not (project.host == request.user or request.user in project.attendees.all()):
+        messages.error(request, 'No tienes permisos para ver este proyecto.')
+        return redirect('projects')
+
+    # Obtener tareas del proyecto con información detallada
+    tasks = Task.objects.filter(project_id=id).select_related(
+        'task_status', 'assigned_to', 'host'
+    ).order_by('created_at')
+
+    # Calcular estadísticas del proyecto
+    total_tasks = tasks.count()
+    completed_tasks = tasks.filter(task_status__status_name='Completed').count()
+    in_progress_tasks = tasks.filter(task_status__status_name='In Progress').count()
+    pending_tasks = tasks.filter(task_status__status_name='To Do').count()
+
+    # Calcular progreso
+    progress_percentage = 0
+    if total_tasks > 0:
+        progress_percentage = (completed_tasks / total_tasks) * 100
+
+    # Tareas por estado para gráficos
+    tasks_by_status = tasks.values('task_status__status_name').annotate(
+        count=Count('id')
+    ).order_by('task_status__status_name')
+
+    # Tareas importantes
+    important_tasks = tasks.filter(important=True).exclude(
+        task_status__status_name='Completed'
+    )
+
+    # Actividad reciente (últimas 5 tareas actualizadas)
+    recent_tasks = tasks.order_by('-updated_at')[:5]
+
+    # Estadísticas de tiempo (si hay campo de tiempo estimado)
+    estimated_time_total = 0
+    actual_time_total = 0
+
+    # Preparar datos para gráficos
+    status_data = []
+    status_colors = []
+    for status_item in tasks_by_status:
+        status_data.append(status_item['count'])
+        # Obtener color del estado (si existe)
+        try:
+            status_obj = TaskStatus.objects.get(status_name=status_item['task_status__status_name'])
+            status_colors.append(status_obj.color)
+        except:
+            status_colors.append('#6c757d')  # Color por defecto
+
+    context = {
+        'project': project,
+        'tasks': tasks,
+
+        # Estadísticas
+        'total_tasks': total_tasks,
+        'completed_tasks': completed_tasks,
+        'in_progress_tasks': in_progress_tasks,
+        'pending_tasks': pending_tasks,
+        'progress_percentage': progress_percentage,
+        'important_tasks_count': important_tasks.count(),
+
+        # Datos para gráficos
+        'tasks_by_status': tasks_by_status,
+        'status_data': status_data,
+        'status_colors': status_colors,
+
+        # Actividad
+        'recent_tasks': recent_tasks,
+        'important_tasks': important_tasks,
+
+        # Tiempos
+        'estimated_time_total': estimated_time_total,
+        'actual_time_total': actual_time_total,
+    }
+
+    return render(request, 'projects/project_detail.html', context)
 
 def project_delete(request, project_id):
     if request.method == 'POST':
@@ -1168,12 +1251,9 @@ def tasks(request, task_id=None, project_id=None):
         task_data = {'task': task}
         alerts = generate_task_alerts(task_data, request.user)
 
-        return render(request, "tasks/tasks.html",{
+        return render(request, "tasks/task_detail.html",{
 
-            'instructions':instructions,
             'title':title,
-            'urls':urls,
-            'other_urls':other_urls,
             'task':task,
             'task_statuses':task_statuses,
             'alerts': alerts,
@@ -1551,6 +1631,576 @@ def task_change_status_ajax(request):
             return JsonResponse({'success': False, 'error': str(e)})
 
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+@login_required
+def inbox_view(request):
+    """
+    Vista de la bandeja de entrada GTD para capturar tareas rápidamente
+    """
+    from .models import InboxItem
+
+    if request.method == 'POST':
+        # Crear nuevo item en el inbox
+        title = request.POST.get('title', '').strip()
+        description = request.POST.get('description', '').strip()
+
+        if title:
+            # Crear item con categorización inicial
+            inbox_item = InboxItem.objects.create(
+                title=title,
+                description=description,
+                created_by=request.user,
+                gtd_category='pendiente',
+                priority='media'
+            )
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Item agregado al inbox correctamente',
+                    'item_id': inbox_item.id
+                })
+            else:
+                messages.success(request, 'Item agregado al inbox correctamente')
+                return redirect('inbox')
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': 'El título es obligatorio'
+                })
+            else:
+                messages.error(request, 'El título es obligatorio')
+                return redirect('inbox')
+
+    # Obtener items del inbox del usuario
+    inbox_items = InboxItem.objects.filter(created_by=request.user)
+
+    # Categorización GTD
+    unprocessed_items = inbox_items.filter(is_processed=False)
+    processed_items = inbox_items.filter(is_processed=True)
+
+    # Items por categoría GTD
+    accionables = unprocessed_items.filter(gtd_category='accionable')
+    no_accionables = unprocessed_items.filter(gtd_category='no_accionable')
+    pendientes = unprocessed_items.filter(gtd_category='pendiente')
+
+    # Items por tipo de acción
+    hacer_items = unprocessed_items.filter(action_type='hacer')
+    delegar_items = unprocessed_items.filter(action_type='delegar')
+    posponer_items = unprocessed_items.filter(action_type='posponer')
+    proyecto_items = unprocessed_items.filter(action_type='proyecto')
+    eliminar_items = unprocessed_items.filter(action_type='eliminar')
+    archivar_items = unprocessed_items.filter(action_type='archivar')
+    incubar_items = unprocessed_items.filter(action_type='incubar')
+
+    # Estadísticas GTD
+    gtd_stats = {
+        'total': unprocessed_items.count(),
+        'accionables': accionables.count(),
+        'no_accionables': no_accionables.count(),
+        'pendientes': pendientes.count(),
+        'hacer': hacer_items.count(),
+        'delegar': delegar_items.count(),
+        'posponer': posponer_items.count(),
+        'proyectos': proyecto_items.count(),
+        'eliminar': eliminar_items.count(),
+        'archivar': archivar_items.count(),
+        'incubar': incubar_items.count(),
+    }
+
+    context = {
+        'title': 'Bandeja de Entrada GTD',
+        'unprocessed_items': unprocessed_items,
+        'processed_items': processed_items,
+        'total_unprocessed': unprocessed_items.count(),
+        'total_processed': processed_items.count(),
+
+        # Categorización GTD
+        'accionables': accionables,
+        'no_accionables': no_accionables,
+        'pendientes': pendientes,
+
+        # Tipos de acción
+        'hacer_items': hacer_items,
+        'delegar_items': delegar_items,
+        'posponer_items': posponer_items,
+        'proyecto_items': proyecto_items,
+        'eliminar_items': eliminar_items,
+        'archivar_items': archivar_items,
+        'incubar_items': incubar_items,
+
+        # Estadísticas
+        'gtd_stats': gtd_stats,
+    }
+
+    return render(request, 'events/inbox.html', context)
+
+
+@login_required
+def inbox_stats_api(request):
+    """
+    API endpoint para obtener estadísticas del inbox GTD en tiempo real
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    try:
+        from .models import InboxItem
+
+        # Obtener items del inbox del usuario
+        inbox_items = InboxItem.objects.filter(created_by=request.user)
+
+        # Estadísticas básicas
+        total_items = inbox_items.count()
+        unprocessed_items = inbox_items.filter(is_processed=False)
+        processed_items = inbox_items.filter(is_processed=True)
+
+        # Items por categoría GTD
+        accionables = unprocessed_items.filter(gtd_category='accionable')
+        no_accionables = unprocessed_items.filter(gtd_category='no_accionable')
+        pendientes = unprocessed_items.filter(gtd_category='pendiente')
+
+        # Items por tipo de acción
+        hacer_items = unprocessed_items.filter(action_type='hacer')
+        delegar_items = unprocessed_items.filter(action_type='delegar')
+        posponer_items = unprocessed_items.filter(action_type='posponer')
+        proyecto_items = unprocessed_items.filter(action_type='proyecto')
+        eliminar_items = unprocessed_items.filter(action_type='eliminar')
+        archivar_items = unprocessed_items.filter(action_type='archivar')
+        incubar_items = unprocessed_items.filter(action_type='incubar')
+
+        # Items de hoy
+        today = timezone.now().date()
+        today_start = timezone.make_aware(datetime.datetime.combine(today, datetime.time.min))
+        today_end = timezone.make_aware(datetime.datetime.combine(today, datetime.time.max))
+        today_items = inbox_items.filter(created_at__range=(today_start, today_end))
+
+        # Items recientes (últimas 24 horas)
+        last_24h = timezone.now() - timedelta(hours=24)
+        recent_items = inbox_items.filter(created_at__gte=last_24h)
+
+        # Estadísticas detalladas
+        stats = {
+            'total': total_items,
+            'unprocessed': unprocessed_items.count(),
+            'processed': processed_items.count(),
+            'today': today_items.count(),
+            'recent': recent_items.count(),
+            'gtd_categories': {
+                'accionables': accionables.count(),
+                'no_accionables': no_accionables.count(),
+                'pendientes': pendientes.count(),
+            },
+            'action_types': {
+                'hacer': hacer_items.count(),
+                'delegar': delegar_items.count(),
+                'posponer': posponer_items.count(),
+                'proyectos': proyecto_items.count(),
+                'eliminar': eliminar_items.count(),
+                'archivar': archivar_items.count(),
+                'incubar': incubar_items.count(),
+            },
+            'percentages': {
+                'processed_rate': round((processed_items.count() / total_items * 100), 1) if total_items > 0 else 0,
+                'unprocessed_rate': round((unprocessed_items.count() / total_items * 100), 1) if total_items > 0 else 0,
+                'today_rate': round((today_items.count() / total_items * 100), 1) if total_items > 0 else 0,
+            },
+            'trends': {
+                'today_vs_yesterday': today_items.count() - inbox_items.filter(
+                    created_at__range=(
+                        today_start - timedelta(days=1),
+                        today_end - timedelta(days=1)
+                    )
+                ).count(),
+                'processed_today': processed_items.filter(processed_at__date=today).count(),
+            }
+        }
+
+        return JsonResponse({
+            'success': True,
+            'stats': stats,
+            'timestamp': timezone.now().isoformat()
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+def find_similar_tasks(user, title, description=None, threshold=0.6):
+    """
+    Busca tareas similares basadas en similitud de texto
+    """
+    from .models import Task
+
+    # Obtener todas las tareas del usuario
+    user_tasks = Task.objects.filter(
+        Q(host=user) | Q(assigned_to=user)
+    ).select_related('task_status', 'project', 'event')
+
+    similar_tasks = []
+
+    # Normalizar texto para comparación
+    def normalize_text(text):
+        if not text:
+            return ""
+        return re.sub(r'[^\w\s]', '', text.lower().strip())
+
+    normalized_title = normalize_text(title)
+    normalized_description = normalize_text(description) if description else ""
+
+    for task in user_tasks:
+        # Calcular similitud del título
+        task_title_norm = normalize_text(task.title)
+        title_similarity = SequenceMatcher(None, normalized_title, task_title_norm).ratio()
+
+        # Calcular similitud de la descripción si existe
+        desc_similarity = 0
+        if normalized_description and task.description:
+            task_desc_norm = normalize_text(task.description)
+            desc_similarity = SequenceMatcher(None, normalized_description, task_desc_norm).ratio()
+        elif not normalized_description and not task.description:
+            desc_similarity = 0.5  # Considerar como parcialmente similar si ambos están vacíos
+
+        # Calcular similitud ponderada (título tiene más peso)
+        overall_similarity = (title_similarity * 0.7) + (desc_similarity * 0.3)
+
+        if overall_similarity >= threshold:
+            similar_tasks.append({
+                'task': task,
+                'similarity': overall_similarity,
+                'title_similarity': title_similarity,
+                'description_similarity': desc_similarity
+            })
+
+    # Ordenar por similitud descendente
+    similar_tasks.sort(key=lambda x: x['similarity'], reverse=True)
+    return similar_tasks
+
+
+def find_similar_projects(user, title, description=None, threshold=0.6):
+    """
+    Busca proyectos similares basados en similitud de texto
+    """
+    from .models import Project
+
+    # Obtener todos los proyectos del usuario
+    user_projects = Project.objects.filter(
+        Q(host=user) | Q(assigned_to=user) | Q(attendees=user)
+    ).distinct().select_related('project_status', 'event')
+
+    similar_projects = []
+
+    # Normalizar texto para comparación
+    def normalize_text(text):
+        if not text:
+            return ""
+        return re.sub(r'[^\w\s]', '', text.lower().strip())
+
+    normalized_title = normalize_text(title)
+    normalized_description = normalize_text(description) if description else ""
+
+    for project in user_projects:
+        # Calcular similitud del título
+        project_title_norm = normalize_text(project.title)
+        title_similarity = SequenceMatcher(None, normalized_title, project_title_norm).ratio()
+
+        # Calcular similitud de la descripción si existe
+        desc_similarity = 0
+        if normalized_description and project.description:
+            project_desc_norm = normalize_text(project.description)
+            desc_similarity = SequenceMatcher(None, normalized_description, project_desc_norm).ratio()
+        elif not normalized_description and not project.description:
+            desc_similarity = 0.5  # Considerar como parcialmente similar si ambos están vacíos
+
+        # Calcular similitud ponderada (título tiene más peso)
+        overall_similarity = (title_similarity * 0.7) + (desc_similarity * 0.3)
+
+        if overall_similarity >= threshold:
+            similar_projects.append({
+                'project': project,
+                'similarity': overall_similarity,
+                'title_similarity': title_similarity,
+                'description_similarity': desc_similarity
+            })
+
+    # Ordenar por similitud descendente
+    similar_projects.sort(key=lambda x: x['similarity'], reverse=True)
+    return similar_projects
+
+
+@login_required
+def process_inbox_item(request, item_id):
+    """
+    Vista para procesar un item del inbox siguiendo la metodología GTD
+    """
+    from .models import InboxItem
+    from .forms import CreateNewTask
+
+    try:
+        inbox_item = InboxItem.objects.get(id=item_id, created_by=request.user)
+    except InboxItem.DoesNotExist:
+        messages.error(request, 'Item no encontrado')
+        return redirect('inbox')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        gtd_category = request.POST.get('gtd_category')
+        action_type = request.POST.get('action_type')
+
+        # Actualizar categorización GTD si se proporciona
+        if gtd_category:
+            inbox_item.gtd_category = gtd_category
+        if action_type:
+            inbox_item.action_type = action_type
+        inbox_item.save()
+
+        if action == 'convert_to_task':
+            # Convertir en tarea usando TaskManager
+            try:
+                # Crear el TaskManager para el usuario
+                task_manager = TaskManager(request.user)
+
+                # Crear tarea usando el TaskManager (sin evento ni proyecto)
+                task = task_manager.create_task(
+                    title=inbox_item.title,
+                    description=inbox_item.description,
+                    important=False,
+                    project=None,  # Tarea sin proyecto
+                    event=None,    # Tarea sin evento
+                    task_status=None,  # Usará 'To Do' por defecto
+                    assigned_to=request.user,
+                    ticket_price=0.07
+                )
+
+                # Marcar como procesado y vincular a la tarea
+                from django.contrib.contenttypes.models import ContentType
+                task_content_type = ContentType.objects.get_for_model(Task)
+
+                inbox_item.is_processed = True
+                inbox_item.processed_to_content_type = task_content_type
+                inbox_item.processed_to_object_id = task.id
+                inbox_item.processed_at = timezone.now()
+                inbox_item.save()
+
+                messages.success(request, f'Tarea "{task.title}" creada exitosamente desde el inbox GTD')
+                return redirect('tasks', task.id)
+
+            except Exception as e:
+                messages.error(request, f'Error al crear la tarea: {e}')
+
+        elif action == 'delete':
+            # Eliminar item
+            inbox_item.delete()
+            messages.success(request, 'Item eliminado del inbox')
+            return redirect('inbox')
+
+        elif action == 'postpone':
+            # Posponer (mantener sin procesar)
+            messages.info(request, 'Item pospuesto para procesar después')
+            return redirect('inbox')
+
+        elif action == 'categorize':
+            # Solo categorizar sin procesar
+            messages.success(request, f'Item categorizado como {gtd_category}')
+            return redirect('inbox')
+
+        elif action == 'link_to_task':
+            # Vincular a tarea existente
+            task_id = request.POST.get('task_id')
+            if task_id:
+                try:
+                    existing_task = Task.objects.get(id=task_id)
+
+                    # Verificar permisos
+                    if existing_task.host != request.user and request.user not in existing_task.attendees.all():
+                        messages.error(request, 'No tienes permisos para vincular a esta tarea.')
+                        return redirect('process_inbox_item', item_id=item_id)
+
+                    # Marcar como procesado y vincular correctamente usando GenericForeignKey
+                    from django.contrib.contenttypes.models import ContentType
+                    task_content_type = ContentType.objects.get_for_model(Task)
+
+                    inbox_item.is_processed = True
+                    inbox_item.processed_to_content_type = task_content_type
+                    inbox_item.processed_to_object_id = existing_task.id
+                    inbox_item.processed_at = timezone.now()
+                    inbox_item.save()
+
+                    messages.success(request,
+                        f'Item del inbox vinculado exitosamente a la tarea: "{existing_task.title}"')
+                    return redirect('tasks', task_id=existing_task.id)
+
+                except Task.DoesNotExist:
+                    messages.error(request, 'La tarea objetivo no existe.')
+                except Exception as e:
+                    messages.error(request, f'Error al vincular: {e}')
+
+        elif action == 'link_to_project':
+            # Vincular a proyecto existente
+            project_id = request.POST.get('project_id')
+            if project_id:
+                try:
+                    existing_project = Project.objects.get(id=project_id)
+
+                    # Verificar permisos
+                    if existing_project.host != request.user and request.user not in existing_project.attendees.all():
+                        messages.error(request, 'No tienes permisos para vincular a este proyecto.')
+                        return redirect('process_inbox_item', item_id=item_id)
+
+                    # Marcar como procesado y vincular al proyecto
+                    from django.contrib.contenttypes.models import ContentType
+                    project_content_type = ContentType.objects.get_for_model(Project)
+
+                    inbox_item.is_processed = True
+                    inbox_item.processed_to_content_type = project_content_type
+                    inbox_item.processed_to_object_id = existing_project.id
+                    inbox_item.processed_at = timezone.now()
+                    inbox_item.save()
+
+                    messages.success(request,
+                        f'Item del inbox vinculado exitosamente al proyecto: "{existing_project.title}"')
+                    return redirect('projects', project_id=existing_project.id)
+
+                except Project.DoesNotExist:
+                    messages.error(request, 'El proyecto objetivo no existe.')
+                except Exception as e:
+                    messages.error(request, f'Error al vincular: {e}')
+
+        elif action == 'convert_to_project':
+            # Convertir en proyecto usando ProjectManager
+            try:
+                # Crear el ProjectManager para el usuario
+                project_manager = ProjectManager(request.user)
+
+                # Crear proyecto usando el ProjectManager (sin evento)
+                project = project_manager.create_project(
+                    title=inbox_item.title,
+                    description=inbox_item.description,
+                    project_status=None,  # Usará 'Created' por defecto
+                    assigned_to=request.user,
+                    ticket_price=0.07
+                )
+
+                # Marcar como procesado y vincular al proyecto
+                from django.contrib.contenttypes.models import ContentType
+                project_content_type = ContentType.objects.get_for_model(Project)
+
+                inbox_item.is_processed = True
+                inbox_item.processed_to_content_type = project_content_type
+                inbox_item.processed_to_object_id = project.id
+                inbox_item.processed_at = timezone.now()
+                inbox_item.save()
+
+                messages.success(request, f'Proyecto "{project.title}" creado exitosamente desde el inbox GTD')
+                return redirect('projects', project.id)
+
+            except Exception as e:
+                messages.error(request, f'Error al crear el proyecto: {e}')
+
+        elif action == 'reference':
+            # Guardar como referencia (no accionable)
+            inbox_item.gtd_category = 'no_accionable'
+            inbox_item.action_type = 'archivar'
+            inbox_item.is_processed = True
+            inbox_item.processed_at = timezone.now()
+            inbox_item.save()
+
+            messages.success(request, f'Item "{inbox_item.title}" guardado como referencia')
+            return redirect('inbox')
+
+        elif action == 'someday':
+            # Guardar como "algún día/quizás" (no accionable)
+            inbox_item.gtd_category = 'no_accionable'
+            inbox_item.action_type = 'incubar'
+            inbox_item.is_processed = True
+            inbox_item.processed_at = timezone.now()
+            inbox_item.save()
+
+            messages.success(request, f'Item "{inbox_item.title}" guardado para "Algún día/Quizás"')
+            return redirect('inbox')
+
+        elif action == 'choose_existing_task':
+            # Mostrar modal para elegir tarea existente
+            # Esta acción solo muestra el modal, no procesa nada
+            return redirect('process_inbox_item', item_id=item_id)
+
+        elif action == 'choose_existing_project':
+            # Mostrar modal para elegir proyecto existente
+            # Esta acción solo muestra el modal, no procesa nada
+            return redirect('process_inbox_item', item_id=item_id)
+
+    # GET request - mostrar formulario de procesamiento
+    # Obtener estadísticas del usuario para el template
+    processed_count = InboxItem.objects.filter(created_by=request.user, is_processed=True).count()
+    unprocessed_count = InboxItem.objects.filter(created_by=request.user, is_processed=False).count()
+
+    # Buscar tareas y proyectos similares para evitar duplicados
+    similar_tasks = find_similar_tasks(
+        user=request.user,
+        title=inbox_item.title,
+        description=inbox_item.description,
+        threshold=0.5  # Umbral más bajo para mostrar más resultados
+    )
+
+    similar_projects = find_similar_projects(
+        user=request.user,
+        title=inbox_item.title,
+        description=inbox_item.description,
+        threshold=0.5  # Umbral más bajo para mostrar más resultados
+    )
+
+    # Categorizar similitudes por nivel de confianza
+    high_confidence_tasks = [t for t in similar_tasks if t['similarity'] >= 0.8]
+    medium_confidence_tasks = [t for t in similar_tasks if 0.6 <= t['similarity'] < 0.8]
+    low_confidence_tasks = [t for t in similar_tasks if 0.5 <= t['similarity'] < 0.6]
+
+    high_confidence_projects = [p for p in similar_projects if p['similarity'] >= 0.8]
+    medium_confidence_projects = [p for p in similar_projects if 0.6 <= p['similarity'] < 0.8]
+    low_confidence_projects = [p for p in similar_projects if 0.5 <= p['similarity'] < 0.6]
+
+    # Opciones GTD para el template
+    gtd_categories = [
+        {'value': 'accionable', 'label': 'Accionable', 'icon': 'bi-check-circle', 'color': 'success'},
+        {'value': 'no_accionable', 'label': 'No Accionable', 'icon': 'bi-x-circle', 'color': 'info'},
+    ]
+
+    action_types = [
+        {'value': 'hacer', 'label': 'Hacer', 'icon': 'bi-check2', 'color': 'success', 'category': 'accionable'},
+        {'value': 'delegar', 'label': 'Delegar', 'icon': 'bi-people', 'color': 'warning', 'category': 'accionable'},
+        {'value': 'posponer', 'label': 'Posponer', 'icon': 'bi-clock', 'color': 'info', 'category': 'accionable'},
+        {'value': 'proyecto', 'label': 'Convertir en Proyecto', 'icon': 'bi-folder-plus', 'color': 'primary', 'category': 'accionable'},
+        {'value': 'eliminar', 'label': 'Eliminar', 'icon': 'bi-trash', 'color': 'danger', 'category': 'no_accionable'},
+        {'value': 'archivar', 'label': 'Archivar para Referencia', 'icon': 'bi-archive', 'color': 'secondary', 'category': 'no_accionable'},
+        {'value': 'incubar', 'label': 'Incubar (Algún Día)', 'icon': 'bi-lightbulb', 'color': 'light', 'category': 'no_accionable'},
+        {'value': 'esperar', 'label': 'Esperar Más Información', 'icon': 'bi-hourglass', 'color': 'warning', 'category': 'no_accionable'},
+    ]
+
+    context = {
+        'title': 'Procesar Item del Inbox GTD',
+        'inbox_item': inbox_item,
+        'processed_count': processed_count,
+        'unprocessed_count': unprocessed_count,
+        # Resultados de búsqueda de duplicados
+        'similar_tasks': similar_tasks,
+        'similar_projects': similar_projects,
+        'high_confidence_tasks': high_confidence_tasks,
+        'medium_confidence_tasks': medium_confidence_tasks,
+        'low_confidence_tasks': low_confidence_tasks,
+        'high_confidence_projects': high_confidence_projects,
+        'medium_confidence_projects': medium_confidence_projects,
+        'low_confidence_projects': low_confidence_projects,
+        'has_similar_items': len(similar_tasks) + len(similar_projects) > 0,
+        # Opciones GTD
+        'gtd_categories': gtd_categories,
+        'action_types': action_types,
+    }
+
+    return render(request, 'events/process_inbox_item.html', context)
 
 def task_activate(request, task_id=None):
     switch = 'In Progress'
@@ -2714,3 +3364,1613 @@ def test_board(request, id=None):
     }
     
     return render(request, 'tests/test.html', context)
+
+@login_required
+def kanban_board(request):
+    """
+    Vista Kanban para mostrar tareas organizadas por estado
+    """
+    title = "Kanban Board"
+
+    # Obtener todas las tareas del usuario
+    task_manager = TaskManager(request.user)
+    tasks_data, _ = task_manager.get_all_tasks()
+
+    # Organizar tareas por estado
+    kanban_columns = {
+        'To Do': {
+            'title': 'Por Hacer',
+            'color': '#6c757d',
+            'tasks': []
+        },
+        'In Progress': {
+            'title': 'En Progreso',
+            'color': '#007bff',
+            'tasks': []
+        },
+        'In Review': {
+            'title': 'En Revisión',
+            'color': '#fd7e14',
+            'tasks': []
+        },
+        'Completed': {
+            'title': 'Completado',
+            'color': '#28a745',
+            'tasks': []
+        }
+    }
+
+    # Categorizar las tareas
+    for task_data in tasks_data:
+        task = task_data['task']
+        status_name = task.task_status.status_name
+
+        if status_name in kanban_columns:
+            kanban_columns[status_name]['tasks'].append(task_data)
+
+    # Obtener etiquetas disponibles para filtros
+    from .models import TagCategory, Tag
+    tag_categories = TagCategory.objects.filter(is_system=True)
+
+    context = {
+        'title': title,
+        'kanban_columns': kanban_columns,
+        'tag_categories': tag_categories,
+    }
+
+    return render(request, 'events/kanban_board.html', context)
+
+@login_required
+def kanban_project(request, project_id):
+    """
+    Vista Kanban específica para un proyecto
+    """
+    title = "Kanban del Proyecto"
+
+    try:
+        project = Project.objects.get(id=project_id)
+        if not (project.host == request.user or request.user in project.attendees.all()):
+            messages.error(request, 'No tienes permisos para ver este proyecto.')
+            return redirect('projects')
+    except Project.DoesNotExist:
+        messages.error(request, 'El proyecto no existe.')
+        return redirect('projects')
+
+    # Obtener tareas del proyecto específico
+    tasks = Task.objects.filter(project=project).select_related(
+        'task_status', 'assigned_to', 'host'
+    )
+
+    # Organizar tareas por estado
+    kanban_columns = {
+        'To Do': {
+            'title': 'Por Hacer',
+            'color': '#6c757d',
+            'tasks': []
+        },
+        'In Progress': {
+            'title': 'En Progreso',
+            'color': '#007bff',
+            'tasks': []
+        },
+        'In Review': {
+            'title': 'En Revisión',
+            'color': '#fd7e14',
+            'tasks': []
+        },
+        'Completed': {
+            'title': 'Completado',
+            'color': '#28a745',
+            'tasks': []
+        }
+    }
+
+    # Categorizar las tareas
+    for task in tasks:
+        status_name = task.task_status.status_name
+        if status_name in kanban_columns:
+            # Obtener etiquetas de la tarea
+            task_tags = task.tags.all()  # Las tareas pueden tener etiquetas a través del modelo Tag
+
+            task_data = {
+                'task': task,
+                'tags': task_tags
+            }
+            kanban_columns[status_name]['tasks'].append(task_data)
+
+    # Obtener etiquetas disponibles para filtros
+    from .models import TagCategory
+    tag_categories = TagCategory.objects.filter(is_system=True)
+
+    context = {
+        'title': title,
+        'project': project,
+        'kanban_columns': kanban_columns,
+        'tag_categories': tag_categories,
+    }
+
+    return render(request, 'events/kanban_board.html', context)
+
+@login_required
+def eisenhower_matrix(request):
+    """
+    Vista de la Matriz de Eisenhower para priorización visual
+    """
+    title = "Matriz de Eisenhower"
+
+    # Obtener todas las tareas del usuario
+    task_manager = TaskManager(request.user)
+    tasks_data, _ = task_manager.get_all_tasks()
+
+    # Definir los cuadrantes de la matriz
+    eisenhower_quadrants = {
+        'urgent_important': {
+            'title': 'Urgente e Importante',
+            'subtitle': '¡Hacer inmediatamente!',
+            'color': '#dc3545',
+            'bg_color': '#ffebee',
+            'icon': 'bi-exclamation-triangle-fill',
+            'tasks': []
+        },
+        'important_not_urgent': {
+            'title': 'Importante pero No Urgente',
+            'subtitle': 'Planificar para hacer',
+            'color': '#ffc107',
+            'bg_color': '#fff8e1',
+            'icon': 'bi-calendar-check',
+            'tasks': []
+        },
+        'urgent_not_important': {
+            'title': 'Urgente pero No Importante',
+            'subtitle': 'Delegar si es posible',
+            'color': '#fd7e14',
+            'bg_color': '#fff3e0',
+            'icon': 'bi-people',
+            'tasks': []
+        },
+        'not_urgent_important': {
+            'title': 'No Urgente ni Importante',
+            'subtitle': 'Eliminar o posponer',
+            'color': '#6c757d',
+            'bg_color': '#f8f9fa',
+            'icon': 'bi-trash',
+            'tasks': []
+        }
+    }
+
+    # Categorizar las tareas según la matriz de Eisenhower
+    for task_data in tasks_data:
+        task = task_data['task']
+
+        # Determinar si es urgente (por fecha de vencimiento o estado)
+        is_urgent = (
+            task.task_status.status_name in ['To Do', 'In Progress'] or
+            task.important  # Tareas marcadas como importantes
+        )
+
+        # Determinar si es importante (por prioridad o etiquetas)
+        is_important = (
+            task.important or
+            task.title.lower().startswith(('urgente', 'importante', 'prioridad', 'review', 'fix', 'bug'))
+        )
+
+        # Asignar a cuadrante
+        if is_urgent and is_important:
+            quadrant = 'urgent_important'
+        elif is_important and not is_urgent:
+            quadrant = 'important_not_urgent'
+        elif is_urgent and not is_important:
+            quadrant = 'urgent_not_important'
+        else:
+            quadrant = 'not_urgent_important'
+
+        eisenhower_quadrants[quadrant]['tasks'].append({
+            'task': task,
+            'task_data': task_data,
+            'quadrant': quadrant
+        })
+
+    # Obtener etiquetas disponibles para filtros
+    from .models import TagCategory, Tag
+    tag_categories = TagCategory.objects.filter(is_system=True)
+
+    context = {
+        'title': title,
+        'eisenhower_quadrants': eisenhower_quadrants,
+        'tag_categories': tag_categories,
+        'total_tasks': sum(len(quadrant['tasks']) for quadrant in eisenhower_quadrants.values()),
+    }
+
+    return render(request, 'events/eisenhower_matrix.html', context)
+
+@login_required
+def move_task_eisenhower(request, task_id, quadrant):
+    """
+    API endpoint para mover tareas entre cuadrantes de la matriz de Eisenhower
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    try:
+        task = Task.objects.get(id=task_id)
+
+        # Verificar permisos
+        if task.host != request.user and request.user not in task.attendees.all():
+            return JsonResponse({'success': False, 'error': 'No tienes permisos para modificar esta tarea'})
+
+        # Determinar el nuevo estado basado en el cuadrante
+        new_status_map = {
+            'urgent_important': 'In Progress',  # Urgente e Importante -> En Progreso
+            'important_not_urgent': 'To Do',    # Importante pero No Urgente -> Por Hacer
+            'urgent_not_important': 'To Do',    # Urgente pero No Importante -> Por Hacer
+            'not_urgent_important': 'To Do'     # No Urgente ni Importante -> Por Hacer
+        }
+
+        new_status_name = new_status_map.get(quadrant, 'To Do')
+        new_status = TaskStatus.objects.get(status_name=new_status_name)
+
+        # Actualizar el estado de la tarea
+        old_status = task.task_status
+        task.record_edit(
+            editor=request.user,
+            field_name='task_status',
+            old_value=str(old_status),
+            new_value=str(new_status)
+        )
+
+        # Actualizar el campo "importante" basado en el cuadrante
+        is_important = quadrant in ['urgent_important', 'important_not_urgent']
+        if task.important != is_important:
+            task.important = is_important
+            task.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Tarea movida a: {new_status_name}',
+            'new_quadrant': quadrant
+        })
+
+    except Task.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Tarea no encontrada'})
+    except TaskStatus.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Estado no encontrado'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@login_required
+def project_templates(request):
+    """
+    Vista para mostrar todas las plantillas de proyectos disponibles
+    """
+    from .models import ProjectTemplate
+
+    # Obtener filtros
+    category_filter = request.GET.get('category', '')
+    search_query = request.GET.get('search', '')
+
+    # Base queryset
+    templates = ProjectTemplate.objects.all()
+
+    # Aplicar filtros
+    if category_filter:
+        templates = templates.filter(category=category_filter)
+
+    if search_query:
+        templates = templates.filter(
+            Q(name__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+
+    # Obtener categorías únicas para el filtro
+    categories = ProjectTemplate.objects.values_list('category', flat=True).distinct()
+
+    # Separar plantillas públicas y privadas
+    public_templates = templates.filter(is_public=True)
+    user_templates = templates.filter(created_by=request.user)
+
+    context = {
+        'title': 'Plantillas de Proyectos',
+        'public_templates': public_templates,
+        'user_templates': user_templates,
+        'categories': categories,
+        'category_filter': category_filter,
+        'search_query': search_query,
+    }
+
+    return render(request, 'events/project_templates.html', context)
+
+
+@login_required
+def create_project_template(request):
+    """
+    Vista para crear una nueva plantilla de proyecto
+    """
+    from .models import ProjectTemplate, TemplateTask
+
+    if request.method == 'POST':
+        template_form = ProjectTemplateForm(request.POST)
+        task_formset = TemplateTaskFormSet(request.POST)
+
+        if template_form.is_valid() and task_formset.is_valid():
+            try:
+                with transaction.atomic():
+                    # Crear la plantilla
+                    template = template_form.save(commit=False)
+                    template.created_by = request.user
+                    template.save()
+
+                    # Crear las tareas de plantilla
+                    tasks = task_formset.save(commit=False)
+                    for i, task in enumerate(tasks):
+                        task.template = template
+                        task.order = i + 1
+                        task.save()
+
+                    # Guardar las relaciones many-to-many
+                    task_formset.save_m2m()
+
+                    messages.success(request, f'Plantilla "{template.name}" creada exitosamente')
+                    return redirect('project_template_detail', template_id=template.id)
+
+            except Exception as e:
+                messages.error(request, f'Error al crear la plantilla: {e}')
+        else:
+            messages.error(request, 'Por favor, corrige los errores en el formulario.')
+    else:
+        template_form = ProjectTemplateForm()
+        task_formset = TemplateTaskFormSet()
+
+    context = {
+        'title': 'Crear Plantilla de Proyecto',
+        'template_form': template_form,
+        'task_formset': task_formset,
+    }
+
+    return render(request, 'events/create_project_template.html', context)
+
+
+@login_required
+def project_template_detail(request, template_id):
+    """
+    Vista para mostrar los detalles de una plantilla de proyecto
+    """
+    from .models import ProjectTemplate
+
+    try:
+        template = ProjectTemplate.objects.get(id=template_id)
+
+        # Verificar permisos
+        if not template.is_public and template.created_by != request.user:
+            messages.error(request, 'No tienes permisos para ver esta plantilla.')
+            return redirect('project_templates')
+
+        context = {
+            'title': f'Plantilla: {template.name}',
+            'template': template,
+            'can_edit': template.created_by == request.user,
+            'can_use': True,  # Cualquier usuario puede usar plantillas públicas
+        }
+
+        return render(request, 'events/project_template_detail.html', context)
+
+    except ProjectTemplate.DoesNotExist:
+        messages.error(request, 'Plantilla no encontrada.')
+        return redirect('project_templates')
+
+
+@login_required
+def edit_project_template(request, template_id):
+    """
+    Vista para editar una plantilla de proyecto existente
+    """
+    from .models import ProjectTemplate, TemplateTask
+
+    try:
+        template = ProjectTemplate.objects.get(id=template_id)
+
+        # Verificar permisos
+        if template.created_by != request.user:
+            messages.error(request, 'No tienes permisos para editar esta plantilla.')
+            return redirect('project_templates')
+
+        if request.method == 'POST':
+            template_form = ProjectTemplateForm(request.POST, instance=template)
+            task_formset = TemplateTaskFormSet(request.POST, instance=template)
+
+            if template_form.is_valid() and task_formset.is_valid():
+                try:
+                    with transaction.atomic():
+                        template_form.save()
+
+                        # Eliminar tareas existentes y crear nuevas
+                        TemplateTask.objects.filter(template=template).delete()
+
+                        tasks = task_formset.save(commit=False)
+                        for i, task in enumerate(tasks):
+                            task.template = template
+                            task.order = i + 1
+                            task.save()
+
+                        task_formset.save_m2m()
+
+                        messages.success(request, f'Plantilla "{template.name}" actualizada exitosamente')
+                        return redirect('project_template_detail', template_id=template.id)
+
+                except Exception as e:
+                    messages.error(request, f'Error al actualizar la plantilla: {e}')
+            else:
+                messages.error(request, 'Por favor, corrige los errores en el formulario.')
+        else:
+            template_form = ProjectTemplateForm(instance=template)
+            task_formset = TemplateTaskFormSet(instance=template)
+
+        context = {
+            'title': f'Editar Plantilla: {template.name}',
+            'template': template,
+            'template_form': template_form,
+            'task_formset': task_formset,
+        }
+
+        return render(request, 'events/edit_project_template.html', context)
+
+    except ProjectTemplate.DoesNotExist:
+        messages.error(request, 'Plantilla no encontrada.')
+        return redirect('project_templates')
+
+
+@login_required
+def delete_project_template(request, template_id):
+    """
+    Vista para eliminar una plantilla de proyecto
+    """
+    from .models import ProjectTemplate
+
+    try:
+        template = ProjectTemplate.objects.get(id=template_id)
+
+        # Verificar permisos
+        if template.created_by != request.user:
+            messages.error(request, 'No tienes permisos para eliminar esta plantilla.')
+            return redirect('project_templates')
+
+        if request.method == 'POST':
+            template_name = template.name
+            template.delete()
+
+            messages.success(request, f'Plantilla "{template_name}" eliminada exitosamente')
+            return redirect('project_templates')
+
+        context = {
+            'title': 'Eliminar Plantilla',
+            'template': template,
+        }
+
+        return render(request, 'events/delete_project_template.html', context)
+
+    except ProjectTemplate.DoesNotExist:
+        messages.error(request, 'Plantilla no encontrada.')
+        return redirect('project_templates')
+
+
+@login_required
+def use_project_template(request, template_id):
+    """
+    Vista para usar una plantilla para crear un nuevo proyecto
+    """
+    from .models import ProjectTemplate, Project, Task, TaskStatus
+    from .forms import CreateNewProject
+
+    try:
+        template = ProjectTemplate.objects.get(id=template_id)
+
+        # Verificar permisos
+        if not template.is_public and template.created_by != request.user:
+            messages.error(request, 'No tienes permisos para usar esta plantilla.')
+            return redirect('project_templates')
+
+        if request.method == 'POST':
+            project_form = CreateNewProject(request.POST)
+
+            if project_form.is_valid():
+                try:
+                    with transaction.atomic():
+                        # Crear el proyecto
+                        project = project_form.save(commit=False)
+                        project.host = request.user
+                        project.event = project_form.cleaned_data['event']
+
+                        # Si no hay evento, crear uno
+                        if not project.event:
+                            status = Status.objects.get(status_name='Created')
+                            new_event = Event.objects.create(
+                                title=project_form.cleaned_data['title'],
+                                event_status=status,
+                                host=request.user,
+                                assigned_to=request.user,
+                            )
+                            project.event = new_event
+
+                        project.save()
+                        project_form.save_m2m()
+
+                        # Crear tareas basadas en la plantilla usando TaskManager
+                        template_tasks = template.templatetask_set.all().order_by('order')
+
+                        # Crear TaskManager para el usuario
+                        task_manager = TaskManager(request.user)
+
+                        for template_task in template_tasks:
+                            # Usar TaskManager para crear tareas con procedimientos correctos
+                            task_manager.create_task(
+                                title=template_task.title,
+                                description=template_task.description,
+                                important=False,
+                                project=project,
+                                event=project.event,  # Asignar el evento del proyecto
+                                task_status=None,  # Usará 'To Do' por defecto
+                                assigned_to=request.user,
+                                ticket_price=0.07
+                            )
+
+                        messages.success(request,
+                            f'Proyecto "{project.title}" creado exitosamente usando la plantilla "{template.name}"')
+                        return redirect('projects', project_id=project.id)
+
+                except Exception as e:
+                    messages.error(request, f'Error al crear el proyecto: {e}')
+            else:
+                messages.error(request, 'Por favor, corrige los errores en el formulario.')
+        else:
+            # Pre-llenar el formulario con datos de la plantilla
+            initial_data = {
+                'title': f"{template.name} - {timezone.now().strftime('%Y-%m-%d')}",
+                'description': template.description,
+            }
+            project_form = CreateNewProject(initial=initial_data)
+
+        context = {
+            'title': f'Usar Plantilla: {template.name}',
+            'template': template,
+            'project_form': project_form,
+            'task_count': template.templatetask_set.count(),
+        }
+
+        return render(request, 'events/use_project_template.html', context)
+
+    except ProjectTemplate.DoesNotExist:
+        messages.error(request, 'Plantilla no encontrada.')
+        return redirect('project_templates')
+
+
+@login_required
+def task_dependencies(request, task_id=None):
+    """
+    Vista para gestionar dependencias entre tareas
+    """
+    from .models import TaskDependency
+
+    # Debug logs para identificar el problema de URL
+    logger = logging.getLogger(__name__)
+    logger.info(f"[task_dependencies] Request method: {request.method}")
+    logger.info(f"[task_dependencies] Task ID parameter: {task_id}")
+    logger.info(f"[task_dependencies] Request path: {request.path}")
+    logger.info(f"[task_dependencies] Request GET parameters: {request.GET}")
+    logger.info(f"[task_dependencies] Request POST parameters: {request.POST}")
+
+    if task_id:
+        # Ver dependencias de una tarea específica
+        logger.info(f"[task_dependencies] Processing specific task ID: {task_id}")
+        try:
+            task = Task.objects.get(id=task_id)
+            if not (task.host == request.user or request.user in task.attendees.all()):
+                logger.warning(f"[task_dependencies] Permission denied for task {task_id}")
+                messages.error(request, 'No tienes permisos para ver las dependencias de esta tarea.')
+                return redirect('tasks')
+
+            # Obtener dependencias donde esta tarea es la dependiente
+            dependencies = TaskDependency.objects.filter(task=task)
+            # Obtener tareas que esta tarea bloquea
+            blocking = TaskDependency.objects.filter(depends_on=task)
+
+            logger.info(f"[task_dependencies] Found {dependencies.count()} dependencies and {blocking.count()} blocking tasks for task {task_id}")
+
+            context = {
+                'title': f'Dependencias de: {task.title}',
+                'task': task,
+                'dependencies': dependencies,
+                'blocking': blocking,
+                'available_tasks': Task.objects.filter(
+                    project=task.project
+                ).exclude(id=task_id).order_by('title')
+            }
+            return render(request, 'events/task_dependencies.html', context)
+
+        except Task.DoesNotExist:
+            logger.error(f"[task_dependencies] Task {task_id} not found")
+            messages.error(request, 'Tarea no encontrada.')
+            return redirect('tasks')
+    else:
+        # Vista general de todas las dependencias
+        logger.info("[task_dependencies] Processing general dependencies view (no task_id)")
+        all_dependencies = TaskDependency.objects.all().order_by('-created_at')
+        logger.info(f"[task_dependencies] Found {all_dependencies.count()} total dependencies")
+
+        context = {
+            'title': 'Gestión de Dependencias',
+            'all_dependencies': all_dependencies,
+        }
+        return render(request, 'events/task_dependencies_list.html', context)
+
+
+@login_required
+def create_task_dependency(request, task_id):
+    """
+    Vista para crear una nueva dependencia entre tareas
+    """
+    from .models import TaskDependency
+
+    try:
+        task = Task.objects.get(id=task_id)
+        if not (task.host == request.user or request.user in task.attendees.all()):
+            messages.error(request, 'No tienes permisos para gestionar dependencias de esta tarea.')
+            return redirect('tasks')
+    except Task.DoesNotExist:
+        messages.error(request, 'Tarea no encontrada.')
+        return redirect('tasks')
+
+    if request.method == 'POST':
+        depends_on_id = request.POST.get('depends_on')
+        dependency_type = request.POST.get('dependency_type')
+
+        try:
+            depends_on_task = Task.objects.get(id=depends_on_id)
+
+            # Validar que no se cree una dependencia circular
+            if task_id == depends_on_id:
+                messages.error(request, 'Una tarea no puede depender de sí misma.')
+                return redirect('task_dependencies_list', task_id=task_id)
+
+            # Verificar si ya existe esta dependencia
+            existing = TaskDependency.objects.filter(
+                task=task,
+                depends_on=depends_on_task
+            ).exists()
+
+            if existing:
+                messages.error(request, 'Esta dependencia ya existe.')
+                return redirect('task_dependencies_list', task_id=task_id)
+
+            # Crear la dependencia
+            TaskDependency.objects.create(
+                task=task,
+                depends_on=depends_on_task,
+                dependency_type=dependency_type
+            )
+
+            messages.success(request, f'Dependencia creada: "{task.title}" depende de "{depends_on_task.title}"')
+            return redirect('task_dependencies_list', task_id=task_id)
+
+        except Task.DoesNotExist:
+            messages.error(request, 'La tarea objetivo no existe.')
+        except Exception as e:
+            messages.error(request, f'Error al crear la dependencia: {e}')
+
+    # Obtener tareas disponibles para dependencias
+    available_tasks = Task.objects.filter(
+        project=task.project
+    ).exclude(id=task_id).order_by('title')
+
+    context = {
+        'title': f'Crear Dependencia para: {task.title}',
+        'task': task,
+        'available_tasks': available_tasks,
+        'dependency_types': TaskDependency._meta.get_field('dependency_type').choices,
+    }
+
+    return render(request, 'events/create_task_dependency.html', context)
+
+
+@login_required
+def delete_task_dependency(request, dependency_id):
+    """
+    Vista para eliminar una dependencia entre tareas
+    """
+    from .models import TaskDependency
+
+    try:
+        dependency = TaskDependency.objects.get(id=dependency_id)
+        task_id = dependency.task.id
+
+        if not (dependency.task.host == request.user or request.user in dependency.task.attendees.all()):
+            messages.error(request, 'No tienes permisos para eliminar esta dependencia.')
+            return redirect('tasks')
+
+        if request.method == 'POST':
+            task_title = dependency.task.title
+            depends_on_title = dependency.depends_on.title
+
+            dependency.delete()
+
+            messages.success(request, f'Dependencia eliminada: "{task_title}" ya no depende de "{depends_on_title}"')
+            return redirect('task_dependencies_list', task_id=task_id)
+
+        context = {
+            'title': 'Eliminar Dependencia',
+            'dependency': dependency,
+        }
+        return render(request, 'events/delete_task_dependency.html', context)
+
+    except TaskDependency.DoesNotExist:
+        messages.error(request, 'Dependencia no encontrada.')
+        return redirect('tasks')
+
+
+@login_required
+def task_dependency_graph(request, task_id):
+    """
+    Vista para mostrar el gráfico de dependencias de una tarea
+    """
+    try:
+        task = Task.objects.get(id=task_id)
+        if not (task.host == request.user or request.user in task.attendees.all()):
+            messages.error(request, 'No tienes permisos para ver el gráfico de dependencias.')
+            return redirect('tasks')
+    except Task.DoesNotExist:
+        messages.error(request, 'Tarea no encontrada.')
+        return redirect('tasks')
+
+    # Obtener todas las dependencias relacionadas (hacia adelante y hacia atrás)
+    from .models import TaskDependency
+
+    def get_all_dependencies(task, visited=None):
+        """Obtener todas las dependencias recursivamente"""
+        if visited is None:
+            visited = set()
+
+        if task.id in visited:
+            return []
+
+        visited.add(task.id)
+        dependencies = []
+
+        # Tareas que dependen de esta tarea (tareas bloqueadas)
+        blocking = TaskDependency.objects.filter(depends_on=task)
+        for dep in blocking:
+            dependencies.append({
+                'task': dep.task,
+                'type': 'blocking',
+                'dependency_type': dep.dependency_type
+            })
+            # Recursivamente obtener dependencias de las tareas bloqueadas
+            dependencies.extend(get_all_dependencies(dep.task, visited))
+
+        # Tareas de las que esta tarea depende
+        depending_on = TaskDependency.objects.filter(task=task)
+        for dep in depending_on:
+            dependencies.append({
+                'task': dep.depends_on,
+                'type': 'depends_on',
+                'dependency_type': dep.dependency_type
+            })
+            # Recursivamente obtener dependencias de las tareas que son dependencias
+            dependencies.extend(get_all_dependencies(dep.depends_on, visited))
+
+        return dependencies
+
+    all_dependencies = get_all_dependencies(task)
+
+    # Crear estructura para el gráfico
+    nodes = []
+    edges = []
+    processed_tasks = set()
+
+    def add_task_to_graph(task_obj):
+        if task_obj.id in processed_tasks:
+            return
+
+        processed_tasks.add(task_obj.id)
+        nodes.append({
+            'id': task_obj.id,
+            'label': task_obj.title,
+            'status': task_obj.task_status.status_name,
+            'color': task_obj.task_status.color,
+            'important': task_obj.important
+        })
+
+    # Añadir la tarea principal
+    add_task_to_graph(task)
+
+    # Añadir todas las tareas relacionadas
+    for dep in all_dependencies:
+        add_task_to_graph(dep['task'])
+
+        # Crear arista
+        if dep['type'] == 'blocking':
+            # Esta tarea bloquea a dep['task']
+            edges.append({
+                'from': task.id,
+                'to': dep['task'].id,
+                'label': dep['dependency_type'].replace('_', ' ').title(),
+                'type': 'blocking'
+            })
+        else:
+            # Esta tarea depende de dep['task']
+            edges.append({
+                'from': dep['task'].id,
+                'to': task.id,
+                'label': dep['dependency_type'].replace('_', ' ').title(),
+                'type': 'depends_on'
+            })
+
+    context = {
+        'title': f'Gráfico de Dependencias: {task.title}',
+        'task': task,
+        'nodes': nodes,
+        'edges': edges,
+    }
+
+    return render(request, 'events/task_dependency_graph.html', context)
+
+
+@login_required
+def reminders_dashboard(request):
+    """
+    Vista principal del dashboard de recordatorios
+    """
+    # Obtener recordatorios del usuario
+    user_reminders = Reminder.objects.filter(created_by=request.user)
+
+    # Separar por estado
+    pending_reminders = user_reminders.filter(is_sent=False, remind_at__gte=timezone.now())
+    sent_reminders = user_reminders.filter(is_sent=True)
+    overdue_reminders = user_reminders.filter(is_sent=False, remind_at__lt=timezone.now())
+
+    # Obtener recordatorios para hoy
+    today = timezone.now().date()
+    today_start = timezone.make_aware(datetime.datetime.combine(today, datetime.time.min))
+    today_end = timezone.make_aware(datetime.datetime.combine(today, datetime.time.max))
+
+    today_reminders = user_reminders.filter(
+        remind_at__range=(today_start, today_end),
+        is_sent=False
+    )
+
+    # Estadísticas
+    total_reminders = user_reminders.count()
+    pending_count = pending_reminders.count()
+    sent_count = sent_reminders.count()
+    overdue_count = overdue_reminders.count()
+
+    context = {
+        'title': 'Dashboard de Recordatorios',
+        'user_reminders': user_reminders,
+        'pending_reminders': pending_reminders,
+        'sent_reminders': sent_reminders,
+        'overdue_reminders': overdue_reminders,
+        'today_reminders': today_reminders,
+        'total_reminders': total_reminders,
+        'pending_count': pending_count,
+        'sent_count': sent_count,
+        'overdue_count': overdue_count,
+    }
+
+    return render(request, 'events/reminders_dashboard.html', context)
+
+
+@login_required
+def create_reminder(request):
+    """
+    Vista para crear un nuevo recordatorio
+    """
+    from .forms import ReminderForm
+
+    if request.method == 'POST':
+        form = ReminderForm(request.POST)
+        if form.is_valid():
+            reminder = form.save(commit=False)
+            reminder.created_by = request.user
+            reminder.save()
+
+            messages.success(request, f'Recordatorio "{reminder.title}" creado exitosamente')
+            return redirect('reminders_dashboard')
+        
+        
+# ============================================================================
+# INBOX ADMINISTRATION SYSTEM
+# ============================================================================
+
+@login_required
+def inbox_admin_dashboard(request):
+    """
+    Panel de administración de inboxes - Vista principal para gestionar items del inbox
+    """
+    # Verificar permisos de administrador
+    if not request.user.profile.role in ['SU', 'ADMIN']:
+        messages.error(request, 'No tienes permisos para acceder al panel de administración de inboxes.')
+        return redirect('inbox')
+
+    # Filtros
+    status_filter = request.GET.get('status', 'all')
+    category_filter = request.GET.get('category', 'all')
+    user_filter = request.GET.get('user', 'all')
+    search_query = request.GET.get('search', '')
+
+    # Base queryset
+    inbox_items = InboxItem.objects.select_related(
+        'created_by'
+    ).prefetch_related(
+        'authorized_users',
+        'classification_votes',
+        'inboxitemclassification_set'
+    )
+
+    # Aplicar filtros
+    if status_filter == 'processed':
+        inbox_items = inbox_items.filter(is_processed=True)
+    elif status_filter == 'unprocessed':
+        inbox_items = inbox_items.filter(is_processed=False)
+    elif status_filter == 'public':
+        inbox_items = inbox_items.filter(is_public=True)
+
+    if category_filter != 'all':
+        inbox_items = inbox_items.filter(gtd_category=category_filter)
+
+    if user_filter != 'all':
+        inbox_items = inbox_items.filter(created_by=user_filter)
+
+    if search_query:
+        inbox_items = inbox_items.filter(
+            models.Q(title__icontains=search_query) |
+            models.Q(description__icontains=search_query) |
+            models.Q(created_by__username__icontains=search_query)
+        )
+
+    # Estadísticas generales
+    stats = {
+        'total': InboxItem.objects.count(),
+        'processed': InboxItem.objects.filter(is_processed=True).count(),
+        'unprocessed': InboxItem.objects.filter(is_processed=False).count(),
+        'public': InboxItem.objects.filter(is_public=True).count(),
+        'private': InboxItem.objects.filter(is_public=False).count(),
+        'today': InboxItem.objects.filter(created_at__date=timezone.now().date()).count(),
+        'this_week': InboxItem.objects.filter(created_at__gte=timezone.now() - timedelta(days=7)).count(),
+    }
+
+    # Items recientes
+    recent_items = inbox_items[:10]
+
+    # Usuarios activos
+    active_users = User.objects.filter(
+        models.Q(inboxitem__isnull=False) |
+        models.Q(authorized_inbox_items__isnull=False) |
+        models.Q(classified_inbox_items__isnull=False)
+    ).distinct()[:20]
+
+    context = {
+        'title': 'Administración de Inbox GTD',
+        'inbox_items': inbox_items,
+        'recent_items': recent_items,
+        'stats': stats,
+        'active_users': active_users,
+        'status_filter': status_filter,
+        'category_filter': category_filter,
+        'user_filter': user_filter,
+        'search_query': search_query,
+    }
+
+    return render(request, 'events/inbox_admin_dashboard.html', context)
+
+
+@login_required
+def inbox_item_detail_admin(request, item_id):
+    """
+    Vista detallada de un item del inbox para administración
+    """
+    # Verificar permisos
+    if not request.user.profile.role in ['SU', 'ADMIN']:
+        messages.error(request, 'No tienes permisos para ver detalles de items del inbox.')
+        return redirect('inbox_admin_dashboard')
+
+    try:
+        inbox_item = InboxItem.objects.select_related(
+            'created_by'
+        ).prefetch_related(
+            'authorized_users',
+            'classification_votes',
+            'inboxitemclassification_set__user',
+            'inboxitemauthorization_set__user'
+        ).get(id=item_id)
+
+        # Incrementar contador de vistas
+        inbox_item.increment_views()
+
+        # Obtener clasificaciones existentes
+        classifications = inbox_item.inboxitemclassification_set.all()
+
+        # Calcular consenso
+        consensus_category = inbox_item.get_classification_consensus()
+        consensus_action = inbox_item.get_action_type_consensus()
+
+        # Historial de actividad
+        activity_history = InboxItemHistory.objects.filter(inbox_item=inbox_item)[:20]
+
+        context = {
+            'title': f'Administrar: {inbox_item.title}',
+            'inbox_item': inbox_item,
+            'classifications': classifications,
+            'consensus_category': consensus_category,
+            'consensus_action': consensus_action,
+            'activity_history': activity_history,
+        }
+
+        return render(request, 'events/inbox_item_detail_admin.html', context)
+
+    except InboxItem.DoesNotExist:
+        messages.error(request, 'Item del inbox no encontrado.')
+        return redirect('inbox_admin_dashboard')
+
+
+@login_required
+def classify_inbox_item_admin(request, item_id):
+    """
+    Vista para clasificar un item del inbox desde el panel de administración
+    """
+    # Verificar permisos
+    if not request.user.profile.role in ['SU', 'ADMIN']:
+        messages.error(request, 'No tienes permisos para clasificar items del inbox.')
+        return redirect('inbox_admin_dashboard')
+
+    try:
+        inbox_item = InboxItem.objects.get(id=item_id)
+    except InboxItem.DoesNotExist:
+        messages.error(request, 'Item del inbox no encontrado.')
+        return redirect('inbox_admin_dashboard')
+
+    if request.method == 'POST':
+        gtd_category = request.POST.get('gtd_category')
+        action_type = request.POST.get('action_type')
+        priority = request.POST.get('priority', 'media')
+        confidence = request.POST.get('confidence', 50)
+        notes = request.POST.get('notes', '')
+
+        # Crear o actualizar clasificación
+        classification, created = InboxItemClassification.objects.get_or_create(
+            inbox_item=inbox_item,
+            user=request.user,
+            defaults={
+                'gtd_category': gtd_category,
+                'action_type': action_type,
+                'priority': priority,
+                'confidence': confidence,
+                'notes': notes
+            }
+        )
+
+        if not created:
+            # Actualizar clasificación existente
+            classification.gtd_category = gtd_category
+            classification.action_type = action_type
+            classification.priority = priority
+            classification.confidence = confidence
+            classification.notes = notes
+            classification.save()
+
+        # Registrar en el historial
+        InboxItemHistory.objects.create(
+            inbox_item=inbox_item,
+            user=request.user,
+            action='classified',
+            old_values=None,
+            new_values={
+                'gtd_category': gtd_category,
+                'action_type': action_type,
+                'priority': priority,
+                'confidence': confidence
+            }
+        )
+
+        messages.success(request, f'Clasificación guardada para "{inbox_item.title}"')
+        return redirect('inbox_item_detail_admin', item_id=item_id)
+
+    # GET request - mostrar formulario
+    context = {
+        'title': f'Clasificar: {inbox_item.title}',
+        'inbox_item': inbox_item,
+    }
+
+    return render(request, 'events/classify_inbox_item_admin.html', context)
+
+
+@login_required
+def authorize_inbox_item(request, item_id):
+    """
+    Vista para autorizar usuarios a ver/clasificar un item del inbox
+    """
+    # Verificar permisos
+    if not request.user.profile.role in ['SU', 'ADMIN']:
+        messages.error(request, 'No tienes permisos para autorizar usuarios.')
+        return redirect('inbox_admin_dashboard')
+
+    try:
+        inbox_item = InboxItem.objects.get(id=item_id)
+    except InboxItem.DoesNotExist:
+        messages.error(request, 'Item del inbox no encontrado.')
+        return redirect('inbox_admin_dashboard')
+
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        permission_level = request.POST.get('permission_level', 'classify')
+
+        try:
+            user = User.objects.get(id=user_id)
+
+            # Crear autorización
+            authorization, created = InboxItemAuthorization.objects.get_or_create(
+                inbox_item=inbox_item,
+                user=user,
+                defaults={
+                    'granted_by': request.user,
+                    'permission_level': permission_level
+                }
+            )
+
+            if not created:
+                authorization.permission_level = permission_level
+                authorization.granted_by = request.user
+                authorization.save()
+
+            # Registrar en el historial
+            InboxItemHistory.objects.create(
+                inbox_item=inbox_item,
+                user=request.user,
+                action='authorized',
+                old_values=None,
+                new_values={
+                    'authorized_user': user.username,
+                    'permission_level': permission_level
+                }
+            )
+
+            messages.success(request, f'Autorización actualizada para {user.username}')
+            return redirect('inbox_item_detail_admin', item_id=item_id)
+
+        except User.DoesNotExist:
+            messages.error(request, 'Usuario no encontrado.')
+
+    # GET request - mostrar formulario
+    context = {
+        'title': f'Autorizar Usuarios: {inbox_item.title}',
+        'inbox_item': inbox_item,
+    }
+
+    return render(request, 'events/authorize_inbox_item.html', context)
+
+
+@login_required
+def inbox_admin_bulk_action(request):
+    """
+    Vista para acciones masivas en items del inbox
+    """
+    # Verificar permisos
+    if not request.user.profile.role in ['SU', 'ADMIN']:
+        messages.error(request, 'No tienes permisos para realizar acciones masivas.')
+        return redirect('inbox_admin_dashboard')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        selected_items = request.POST.getlist('selected_items')
+
+        if not selected_items:
+            messages.error(request, 'No se seleccionaron items.')
+            return redirect('inbox_admin_dashboard')
+
+        items = InboxItem.objects.filter(id__in=selected_items)
+
+        if action == 'make_public':
+            count = items.update(is_public=True)
+            messages.success(request, f'Se hicieron públicos {count} item(s).')
+
+        elif action == 'make_private':
+            count = items.update(is_public=False)
+            messages.success(request, f'Se hicieron privados {count} item(s).')
+
+        elif action == 'mark_processed':
+            count = 0
+            for item in items:
+                if not item.is_processed:
+                    item.is_processed = True
+                    item.processed_at = timezone.now()
+                    item.save()
+                    count += 1
+            messages.success(request, f'Se marcaron como procesados {count} item(s).')
+
+        elif action == 'delete':
+            count = items.count()
+            items.delete()
+            messages.success(request, f'Se eliminaron {count} item(s).')
+
+    return redirect('inbox_admin_dashboard')
+
+
+@login_required
+def get_available_tasks(request):
+    """
+    API endpoint para obtener tareas disponibles para vincular con items del inbox
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    try:
+        search_term = request.GET.get('search', '').strip()
+
+        # Obtener tareas del usuario
+        user_tasks = Task.objects.filter(
+            Q(host=request.user) | Q(assigned_to=request.user)
+        ).select_related('task_status', 'project').order_by('-updated_at')
+
+        # Filtrar por término de búsqueda si se proporciona
+        if search_term:
+            user_tasks = user_tasks.filter(
+                Q(title__icontains=search_term) |
+                Q(description__icontains=search_term) |
+                Q(project__title__icontains=search_term)
+            )
+
+        # Limitar resultados para mejor rendimiento
+        user_tasks = user_tasks[:50]
+
+        tasks_data = []
+        for task in user_tasks:
+            tasks_data.append({
+                'id': task.id,
+                'title': task.title,
+                'description': task.description[:100] + '...' if task.description and len(task.description) > 100 else task.description,
+                'status': task.task_status.status_name,
+                'status_color': task.task_status.color,
+                'project': task.project.title if task.project else 'Sin proyecto',
+                'project_id': task.project.id if task.project else None,
+                'updated_at': task.updated_at.strftime('%d/%m/%Y %H:%M'),
+                'important': task.important
+            })
+
+        return JsonResponse({
+            'success': True,
+            'tasks': tasks_data,
+            'total': len(tasks_data)
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@login_required
+def get_available_projects(request):
+    """
+    API endpoint para obtener proyectos disponibles para vincular con items del inbox
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    try:
+        search_term = request.GET.get('search', '').strip()
+
+        # Obtener proyectos del usuario
+        user_projects = Project.objects.filter(
+            Q(host=request.user) | Q(assigned_to=request.user) | Q(attendees=request.user)
+        ).distinct().select_related('project_status', 'event').order_by('-updated_at')
+
+        # Filtrar por término de búsqueda si se proporciona
+        if search_term:
+            user_projects = user_projects.filter(
+                Q(title__icontains=search_term) |
+                Q(description__icontains=search_term) |
+                Q(event__title__icontains=search_term)
+            )
+
+        # Limitar resultados para mejor rendimiento
+        user_projects = user_projects[:50]
+
+        projects_data = []
+        for project in user_projects:
+            projects_data.append({
+                'id': project.id,
+                'title': project.title,
+                'description': project.description[:100] + '...' if project.description and len(project.description) > 100 else project.description,
+                'status': project.project_status.status_name,
+                'status_color': project.project_status.color,
+                'event': project.event.title if project.event else 'Sin evento',
+                'event_id': project.event.id if project.event else None,
+                'task_count': project.task_set.count(),
+                'updated_at': project.updated_at.strftime('%d/%m/%Y %H:%M'),
+                'important': getattr(project, 'important', False)  # Si el proyecto tiene campo importante
+            })
+
+        return JsonResponse({
+            'success': True,
+            'projects': projects_data,
+            'total': len(projects_data)
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@login_required
+def create_reminder(request):
+    """
+    Vista para crear un nuevo recordatorio
+    """
+    from .forms import ReminderForm
+
+    if request.method == 'POST':
+        form = ReminderForm(request.POST)
+        if form.is_valid():
+            reminder = form.save(commit=False)
+            reminder.created_by = request.user
+            reminder.save()
+
+            messages.success(request, f'Recordatorio "{reminder.title}" creado exitosamente')
+            return redirect('reminders_dashboard')
+
+
+    else:
+        form = ReminderForm()
+
+    context = {
+        'title': 'Crear Recordatorio',
+        'form': form,
+    }
+
+    return render(request, 'events/create_reminder.html', context)
+
+
+@login_required
+def unified_dashboard(request):
+    """
+    Dashboard unificado que integra todas las herramientas de productividad
+    """
+    from django.db.models import Q, Count
+    from datetime import datetime, timedelta
+
+    # Obtener datos del usuario
+    user = request.user
+
+    # Estadísticas generales
+    today = timezone.now().date()
+    this_week = today - timedelta(days=7)
+
+    # Tareas del usuario
+    user_tasks = Task.objects.filter(
+        Q(host=user) | Q(assigned_to=user)
+    ).select_related('task_status', 'project', 'event')
+
+    # Proyectos del usuario
+    user_projects = Project.objects.filter(
+        Q(host=user) | Q(assigned_to=user) | Q(attendees=user)
+    ).distinct().select_related('project_status', 'event')
+
+    # Eventos del usuario
+    user_events = Event.objects.filter(
+        Q(host=user) | Q(assigned_to=user) | Q(attendees=user)
+    ).distinct().select_related('event_status')
+
+    # Estadísticas de tareas
+    task_stats = {
+        'total': user_tasks.count(),
+        'completed': user_tasks.filter(task_status__status_name='Completed').count(),
+        'in_progress': user_tasks.filter(task_status__status_name='In Progress').count(),
+        'pending': user_tasks.filter(task_status__status_name='To Do').count(),
+        'overdue': user_tasks.filter(
+            Q(updated_at__lt=timezone.now() - timedelta(days=3)) &
+            ~Q(task_status__status_name='Completed')
+        ).count()
+    }
+
+    # Estadísticas de proyectos
+    project_stats = {
+        'total': user_projects.count(),
+        'completed': user_projects.filter(project_status__status_name='Completed').count(),
+        'in_progress': user_projects.filter(project_status__status_name='In Progress').count(),
+        'pending': user_projects.filter(project_status__status_name='Created').count(),
+    }
+
+    # Estadísticas de eventos
+    event_stats = {
+        'total': user_events.count(),
+        'completed': user_events.filter(event_status__status_name='Completed').count(),
+        'in_progress': user_events.filter(event_status__status_name='In Progress').count(),
+        'upcoming': user_events.filter(
+            Q(updated_at__gte=this_week) &
+            ~Q(event_status__status_name='Completed')
+        ).count()
+    }
+
+    # Actividad reciente (últimos 7 días)
+    recent_tasks = user_tasks.filter(updated_at__gte=this_week)[:5]
+    recent_projects = user_projects.filter(updated_at__gte=this_week)[:5]
+    recent_events = user_events.filter(updated_at__gte=this_week)[:5]
+
+    # Items del inbox GTD
+    inbox_items = InboxItem.objects.filter(created_by=user, is_processed=False)[:5]
+
+    # Recordatorios próximos
+    upcoming_reminders = Reminder.objects.filter(
+        created_by=user,
+        is_sent=False,
+        remind_at__gte=timezone.now(),
+        remind_at__lte=timezone.now() + timedelta(days=7)
+    ).order_by('remind_at')[:5]
+
+    # Tareas prioritarias (importantes y urgentes)
+    priority_tasks = user_tasks.filter(
+        Q(important=True) &
+        Q(task_status__status_name__in=['To Do', 'In Progress'])
+    ).order_by('-important', '-updated_at')[:5]
+
+    # Proyectos activos
+    active_projects = user_projects.filter(
+        project_status__status_name__in=['In Progress', 'Created']
+    ).order_by('-updated_at')[:5]
+
+    context = {
+        'title': 'Dashboard Unificado de Productividad',
+
+        # Estadísticas
+        'task_stats': task_stats,
+        'project_stats': project_stats,
+        'event_stats': event_stats,
+
+        # Datos recientes
+        'recent_tasks': recent_tasks,
+        'recent_projects': recent_projects,
+        'recent_events': recent_events,
+
+        # Herramientas específicas
+        'inbox_items': inbox_items,
+        'upcoming_reminders': upcoming_reminders,
+        'priority_tasks': priority_tasks,
+        'active_projects': active_projects,
+
+        # URLs de acceso rápido
+        'quick_access': {
+            'kanban': {'url': 'kanban_board', 'title': 'Kanban Board', 'icon': 'bi-kanban', 'color': 'primary'},
+            'eisenhower': {'url': 'eisenhower_matrix', 'title': 'Eisenhower Matrix', 'icon': 'bi-grid-3x3', 'color': 'warning'},
+            'inbox': {'url': 'inbox', 'title': 'GTD Inbox', 'icon': 'bi-inbox', 'color': 'info'},
+            'templates': {'url': 'project_templates', 'title': 'Project Templates', 'icon': 'bi-file-earmark-plus', 'color': 'success'},
+            'reminders': {'url': 'reminders_dashboard', 'title': 'Reminders', 'icon': 'bi-bell', 'color': 'danger'},
+            'dependencies': {'url': 'task_dependencies_list', 'title': 'Task Dependencies', 'icon': 'bi-link', 'color': 'secondary'},
+        }
+    }
+
+    return render(request, 'events/unified_dashboard.html', context)
+
+
+@login_required
+def edit_reminder(request, reminder_id):
+    """
+    Vista para editar un recordatorio existente
+    """
+    from .forms import ReminderForm
+
+    try:
+        reminder = Reminder.objects.get(id=reminder_id, created_by=request.user)
+    except Reminder.DoesNotExist:
+        messages.error(request, 'Recordatorio no encontrado.')
+        return redirect('reminders_dashboard')
+
+    if request.method == 'POST':
+        form = ReminderForm(request.POST, instance=reminder)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Recordatorio "{reminder.title}" actualizado exitosamente')
+            return redirect('reminders_dashboard')
+    else:
+        form = ReminderForm(instance=reminder)
+
+    context = {
+        'title': 'Editar Recordatorio',
+        'form': form,
+        'reminder': reminder,
+    }
+
+    return render(request, 'events/edit_reminder.html', context)
+
+
+@login_required
+def delete_reminder(request, reminder_id):
+    """
+    Vista para eliminar un recordatorio
+    """
+    try:
+        reminder = Reminder.objects.get(id=reminder_id, created_by=request.user)
+    except Reminder.DoesNotExist:
+        messages.error(request, 'Recordatorio no encontrado.')
+        return redirect('reminders_dashboard')
+
+    if request.method == 'POST':
+        reminder_title = reminder.title
+        reminder.delete()
+        messages.success(request, f'Recordatorio "{reminder_title}" eliminado exitosamente')
+        return redirect('reminders_dashboard')
+
+    context = {
+        'title': 'Eliminar Recordatorio',
+        'reminder': reminder,
+    }
+
+    return render(request, 'events/delete_reminder.html', context)
+
+
+@login_required
+def mark_reminder_sent(request, reminder_id):
+    """
+    API endpoint para marcar un recordatorio como enviado
+    """
+    if request.method == 'POST':
+        try:
+            reminder = Reminder.objects.get(id=reminder_id, created_by=request.user)
+            reminder.is_sent = True
+            reminder.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Recordatorio marcado como enviado'
+            })
+        except Reminder.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'Recordatorio no encontrado'
+            })
+
+    return JsonResponse({
+        'success': False,
+        'error': 'Método no permitido'
+    })
+
+
+@login_required
+def bulk_reminder_action(request):
+    """
+    Vista para acciones masivas en recordatorios
+    """
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        selected_reminders = request.POST.getlist('selected_reminders')
+
+        if not selected_reminders:
+            messages.error(request, 'No se seleccionaron recordatorios.')
+            return redirect('reminders_dashboard')
+
+        reminders = Reminder.objects.filter(id__in=selected_reminders, created_by=request.user)
+
+        if action == 'mark_sent':
+            count = reminders.update(is_sent=True)
+            messages.success(request, f'Se marcaron {count} recordatorio(s) como enviados.')
+
+        elif action == 'delete':
+            count = reminders.count()
+            reminders.delete()
+            messages.success(request, f'Se eliminaron {count} recordatorio(s).')
+
+        elif action == 'duplicate':
+            for reminder in reminders:
+                Reminder.objects.create(
+                    title=f"{reminder.title} (Copia)",
+                    description=reminder.description,
+                    remind_at=reminder.remind_at,
+                    task=reminder.task,
+                    project=reminder.project,
+                    event=reminder.event,
+                    created_by=request.user,
+                    reminder_type=reminder.reminder_type
+                )
+            messages.success(request, f'Se duplicaron {count} recordatorio(s).')
+
+    return redirect('reminders_dashboard')

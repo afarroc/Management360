@@ -12,7 +12,7 @@
                 <ul class="dropdown-menu">
                     <li><a class="dropdown-item" href="{% url 'task_create' project_data.project.id %}">
                         <i class="bi bi-plus-circle me-2"></i>Crear Nueva Tarea</a></li>
-                    <li><a class="dropdown-item" href="{% url 'tasks' project_data.project.id %}">
+                    <li><a class="dropdown-item" href="{% url 'tasks_with_id' project_data.project.id %}">
                         <i class="bi bi-eye me-2"></i>Ver Todas las Tareas</a></li>
                 </ul>
             </div>
@@ -128,7 +128,7 @@
                     <i class="bi bi-clock me-1"></i>
                     Actualizado {{ project_data.project.updated_at|timesince }}
                 </small>
-                <a href="{% url 'tasks' project_data.project.id %}"
+                <a href="{% url 'tasks_with_id' project_data.project.id %}"
                    class="btn btn-outline-primary btn-sm py-1 px-2">
                     <i class="bi bi-arrow-right me-1"></i>Ver Todas
                 </a>

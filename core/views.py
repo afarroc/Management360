@@ -804,6 +804,18 @@ def faq_view(request):
     }
     return render(request, 'faq/faq.html', context)
 
+
+def gtd_guide_view(request):
+    """
+    Vista para mostrar la guía completa de procesamiento de inbox GTD
+    """
+    context = {
+        'page_title': 'Guía de Procesamiento GTD',
+        'title': 'Guía Completa: Procesamiento de Inbox GTD',
+        'subtitle': 'Aprende a usar eficientemente el sistema de procesamiento de items del inbox'
+    }
+    return render(request, 'docs/gtd_guide.html', context)
+
 def blank_view(request):
     context = {
         'page_title': 'Blank Page',

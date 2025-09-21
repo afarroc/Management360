@@ -1,0 +1,696 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="mb-2">
+                        <i class="bi bi-book text-primary me-2"></i>
+                        {{ title }}
+                    </h1>
+                    <p class="text-muted mb-0">{{ subtitle }}</p>
+                </div>
+                <div>
+                    <a href="{% url 'faq' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-question-circle me-1"></i>
+                        FAQ
+                    </a>
+                    <a href="{% url 'inbox' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-inbox me-1"></i>
+                        Inbox GTD
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <ul class="nav nav-pills nav-fill" id="gtd-guide-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="intro-tab" data-bs-toggle="pill" data-bs-target="#intro" type="button" role="tab">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Introducción
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="processing-tab" data-bs-toggle="pill" data-bs-target="#processing" type="button" role="tab">
+                                <i class="bi bi-gear me-1"></i>
+                                Procesamiento
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="methodology-tab" data-bs-toggle="pill" data-bs-target="#methodology" type="button" role="tab">
+                                <i class="bi bi-diagram-3 me-1"></i>
+                                Metodología
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="best-practices-tab" data-bs-toggle="pill" data-bs-target="#best-practices" type="button" role="tab">
+                                <i class="bi bi-lightbulb me-1"></i>
+                                Mejores Prácticas
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="troubleshooting-tab" data-bs-toggle="pill" data-bs-target="#troubleshooting" type="button" role="tab">
+                                <i class="bi bi-tools me-1"></i>
+                                Solución de Problemas
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="gtd-guide-tabs-content">
+        <!-- Introducción Tab -->
+        <div class="tab-pane fade show active" id="intro" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-info-circle me-2"></i>
+                                ¿Qué es el Inbox GTD?
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="lead">
+                                El <strong>Inbox GTD</strong> es el componente central de la metodología
+                                <strong>Getting Things Done</strong> que te permite capturar, procesar y
+                                organizar todas tus tareas de manera eficiente.
+                            </p>
+
+                            <h5>¿Por qué usar el Inbox GTD?</h5>
+                            <ul>
+                                <li><strong>Captura inmediata:</strong> Registra ideas y tareas al momento</li>
+                                <li><strong>Procesamiento estructurado:</strong> Decide qué hacer con cada item</li>
+                                <li><strong>Organización automática:</strong> Clasifica tareas por contexto y prioridad</li>
+                                <li><strong>Revisión constante:</strong> Mantén tu sistema actualizado</li>
+                                <li><strong>Ejecución efectiva:</strong> Enfócate en lo que realmente importa</li>
+                            </ul>
+
+                            <div class="alert alert-success">
+                                <h6><i class="bi bi-check-circle me-2"></i>Beneficios principales:</h6>
+                                <ul class="mb-0">
+                                    <li>Reduce el estrés mental</li>
+                                    <li>Aumenta la productividad</li>
+                                    <li>Mejora la toma de decisiones</li>
+                                    <li>Proporciona claridad mental</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">
+                                <i class="bi bi-speedometer2 me-2"></i>
+                                Acceso Rápido
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="/events/inbox/" class="btn btn-primary">
+                                    <i class="bi bi-inbox me-2"></i>
+                                    Ir al Inbox
+                                </a>
+                                <a href="/events/inbox/process/" class="btn btn-success">
+                                    <i class="bi bi-gear me-2"></i>
+                                    Procesar Items
+                                </a>
+                                <a href="/events/unified_dashboard/" class="btn btn-warning">
+                                    <i class="bi bi-grid-3x3 me-2"></i>
+                                    Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mt-3">
+                        <div class="card-header bg-secondary text-white">
+                            <h6 class="mb-0">
+                                <i class="bi bi-bar-chart me-2"></i>
+                                Estadísticas
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="text-center">
+                                <h4 class="text-primary mb-0" id="inbox-count">0</h4>
+                                <small class="text-muted">Items en Inbox</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Procesamiento Tab -->
+        <div class="tab-pane fade" id="processing" role="tabpanel">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-gear me-2"></i>
+                                Funciones de Procesamiento
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="processing-function">
+                                        <div class="function-icon">
+                                            <i class="bi bi-check-circle-fill text-success" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h5>✅ Convertir en Tarea</h5>
+                                        <p class="text-muted">
+                                            Crea una nueva tarea usando el TaskManager con todos los procedimientos GTD.
+                                            La tarea se crea con estado "To Do" y se registra en TaskState.
+                                        </p>
+                                        <ul class="small">
+                                            <li>Usa TaskManager para creación</li>
+                                            <li>Asigna estado inicial "To Do"</li>
+                                            <li>Registra TaskState automáticamente</li>
+                                            <li>Mantiene trazabilidad completa</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="processing-function">
+                                        <div class="function-icon">
+                                            <i class="bi bi-trash text-danger" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h5>🗑️ Eliminar</h5>
+                                        <p class="text-muted">
+                                            Elimina permanentemente el item del inbox sin crear tareas.
+                                            Útil para información irrelevante o duplicada.
+                                        </p>
+                                        <ul class="small">
+                                            <li>Acción irreversible</li>
+                                            <li>No crea registros adicionales</li>
+                                            <li>Libera espacio en el inbox</li>
+                                            <li>Para items no accionables</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <div class="processing-function">
+                                        <div class="function-icon">
+                                            <i class="bi bi-clock text-warning" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h5>⏸️ Posponer</h5>
+                                        <p class="text-muted">
+                                            Mantiene el item en el inbox para procesar después.
+                                            Ideal para items que necesitan más tiempo o información.
+                                        </p>
+                                        <ul class="small">
+                                            <li>No realiza cambios en BD</li>
+                                            <li>Permanence visible en inbox</li>
+                                            <li>Para items que necesitan contexto</li>
+                                            <li>Permite procesamiento diferido</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="processing-function">
+                                        <div class="function-icon">
+                                            <i class="bi bi-people text-info" style="font-size: 3rem;"></i>
+                                        </div>
+                                        <h5>👥 Delegar</h5>
+                                        <p class="text-muted">
+                                            Asigna el item a otro miembro del equipo.
+                                            <strong class="text-warning">Próximamente disponible.</strong>
+                                        </p>
+                                        <ul class="small">
+                                            <li>Selección de miembro del equipo</li>
+                                            <li>Notificación automática</li>
+                                            <li>Seguimiento de estado</li>
+                                            <li>Reportes de delegación</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metodología Tab -->
+        <div class="tab-pane fade" id="methodology" role="tabpanel">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">
+                                <i class="bi bi-diagram-3 me-2"></i>
+                                Los 5 Pasos de GTD
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="gtd-step">
+                                        <div class="step-number">1</div>
+                                        <h5>Recopilar</h5>
+                                        <p class="text-muted">
+                                            Captura todo lo que requiere tu atención en el inbox.
+                                            No juzgues ni organices en este paso.
+                                        </p>
+                                        <ul class="small">
+                                            <li>Captura inmediata</li>
+                                            <li>Sin filtros</li>
+                                            <li>Todo va al inbox</li>
+                                            <li>Confía en el sistema</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="gtd-step">
+                                        <div class="step-number">2</div>
+                                        <h5>Procesar</h5>
+                                        <p class="text-muted">
+                                            Revisa cada item y decide qué hacer con él.
+                                            La pregunta clave: "¿Requiere acción?"
+                                        </p>
+                                        <ul class="small">
+                                            <li>Decisión rápida</li>
+                                            <li>¿Requiere acción?</li>
+                                            <li>2 minutos o menos</li>
+                                            <li>Procesamiento regular</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="gtd-step">
+                                        <div class="step-number">3</div>
+                                        <h5>Organizar</h5>
+                                        <p class="text-muted">
+                                            Clasifica los items procesados en sistemas apropiados.
+                                            Cada item debe tener un lugar específico.
+                                        </p>
+                                        <ul class="small">
+                                            <li>Proyectos definidos</li>
+                                            <li>Contextos claros</li>
+                                            <li>Prioridades establecidas</li>
+                                            <li>Sistemas de referencia</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mt-4">
+                                <div class="col-md-6">
+                                    <div class="gtd-step">
+                                        <div class="step-number">4</div>
+                                        <h5>Revisar</h5>
+                                        <p class="text-muted">
+                                            Revisa regularmente todos tus compromisos y proyectos.
+                                            Mantén el sistema actualizado y confiable.
+                                        </p>
+                                        <ul class="small">
+                                            <li>Revisión diaria</li>
+                                            <li>Revisión semanal</li>
+                                            <li>Actualización constante</li>
+                                            <li>Calendario sincronizado</li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="gtd-step">
+                                        <div class="step-number">5</div>
+                                        <h5>Ejecutar</h5>
+                                        <p class="text-muted">
+                                            Realiza las acciones basándote en contexto, tiempo y energía.
+                                            Confía en tu intuición informada.
+                                        </p>
+                                        <ul class="small">
+                                            <li>Contexto adecuado</li>
+                                            <li>Tiempo disponible</li>
+                                            <li>Nivel de energía</li>
+                                            <li>Prioridades claras</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mejores Prácticas Tab -->
+        <div class="tab-pane fade" id="best-practices" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">
+                                <i class="bi bi-lightbulb me-2"></i>
+                                Hábitos Diarios
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <h6>Procesamiento Regular</h6>
+                            <ul>
+                                <li><strong>Mañana:</strong> Procesar inbox (15-30 min)</li>
+                                <li><strong>Mediodía:</strong> Revisión rápida (5-10 min)</li>
+                                <li><strong>Tarde:</strong> Procesamiento final (15-30 min)</li>
+                            </ul>
+
+                            <h6>Captura Inmediata</h6>
+                            <ul>
+                                <li>Registra ideas inmediatamente</li>
+                                <li>No confíes en la memoria</li>
+                                <li>Usa el inbox como depósito temporal</li>
+                                <li>Captura en cualquier dispositivo</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0">
+                                <i class="bi bi-check-circle me-2"></i>
+                                Consejos Prácticos
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <h6>Regla de los 2 Minutos</h6>
+                            <ul>
+                                <li>Si toma menos de 2 minutos → Hazlo ahora</li>
+                                <li>Si toma más → Convierte en tarea o pospone</li>
+                                <li>No acumules tareas pequeñas</li>
+                            </ul>
+
+                            <h6>Límites de Tiempo</h6>
+                            <ul>
+                                <li>Limita sesiones a 30-60 minutos</li>
+                                <li>Si un item toma más tiempo → Posponer</li>
+                                <li>Mantén el momentum</li>
+                                <li>Procesa items pequeños primero</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                Errores Comunes a Evitar
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>❌ No procesar regularmente</h6>
+                                    <p class="text-muted small">
+                                        El inbox se acumula y pierde efectividad. Procesa al menos 2 veces al día.
+                                    </p>
+
+                                    <h6>❌ Convertir todo en tareas</h6>
+                                    <p class="text-muted small">
+                                        No todo requiere acción. Usa "Eliminar" para información irrelevante.
+                                    </p>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <h6>❌ Posponer indefinidamente</h6>
+                                    <p class="text-muted small">
+                                        Los items pospuestos deben revisarse. Establece fechas límite.
+                                    </p>
+
+                                    <h6>❌ No revisar el sistema</h6>
+                                    <p class="text-muted small">
+                                        Sin revisiones regulares, el sistema se vuelve obsoleto.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Solución de Problemas Tab -->
+        <div class="tab-pane fade" id="troubleshooting" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-tools me-2"></i>
+                                Solución de Problemas
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="accordion" id="troubleshooting-accordion">
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#problem1">
+                                            Inbox siempre lleno
+                                        </button>
+                                    </h2>
+                                    <div id="problem1" class="accordion-collapse collapse show" data-bs-parent="#troubleshooting-accordion">
+                                        <div class="accordion-body">
+                                            <h6>Síntomas:</h6>
+                                            <ul>
+                                                <li>Más de 20 items sin procesar</li>
+                                                <li>Dificultad para encontrar items importantes</li>
+                                                <li>Sensación de agobio</li>
+                                            </ul>
+                                            <h6>Soluciones:</h6>
+                                            <ul>
+                                                <li>Aumenta frecuencia de procesamiento</li>
+                                                <li>Limita captura de nuevos items temporalmente</li>
+                                                <li>Revisa criterios para "requiere acción"</li>
+                                                <li>Elimina items irrelevantes agresivamente</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#problem2">
+                                            Items siempre pospuestos
+                                        </button>
+                                    </h2>
+                                    <div id="problem2" class="accordion-collapse collapse" data-bs-parent="#troubleshooting-accordion">
+                                        <div class="accordion-body">
+                                            <h6>Causas:</h6>
+                                            <ul>
+                                                <li>Items demasiado grandes o complejos</li>
+                                                <li>Falta de información necesaria</li>
+                                                <li>Dependencias no identificadas</li>
+                                            </ul>
+                                            <h6>Soluciones:</h6>
+                                            <ul>
+                                                <li>Divide items grandes en tareas más pequeñas</li>
+                                                <li>Identifica qué información falta</li>
+                                                <li>Establece fechas límite para obtener información</li>
+                                                <li>Convierte en tareas con próximos pasos claros</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#problem3">
+                                            Muchas tareas sin completar
+                                        </button>
+                                    </h2>
+                                    <div id="problem3" class="accordion-collapse collapse" data-bs-parent="#troubleshooting-accordion">
+                                        <div class="accordion-body">
+                                            <h6>Posibles causas:</h6>
+                                            <ul>
+                                                <li>Falta de prioridades claras</li>
+                                                <li>Sobrecarga de tareas</li>
+                                                <li>Contextos inadecuados</li>
+                                            </ul>
+                                            <h6>Soluciones:</h6>
+                                            <ul>
+                                                <li>Usa la matriz de Eisenhower para priorizar</li>
+                                                <li>Limita tareas activas simultáneas</li>
+                                                <li>Revisa contextos regularmente</li>
+                                                <li>Archiva tareas no relevantes</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header bg-secondary text-white">
+                            <h6 class="mb-0">
+                                <i class="bi bi-headset me-2"></i>
+                                Soporte
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <h6>¿Necesitas ayuda?</h6>
+                            <ul class="list-unstyled">
+                                <li>
+                                    <a href="{% url 'faq' %}" class="text-decoration-none">
+                                        <i class="bi bi-question-circle me-2"></i>
+                                        Consulta el FAQ
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="/events/unified_dashboard/" class="text-decoration-none">
+                                        <i class="bi bi-grid-3x3 me-2"></i>
+                                        Revisa el Dashboard
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="/events/inbox/" class="text-decoration-none">
+                                        <i class="bi bi-inbox me-2"></i>
+                                        Ve al Inbox
+                                    </a>
+                                </li>
+                            </ul>
+
+                            <div class="alert alert-info">
+                                <small>
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>Tip:</strong> La clave del éxito con GTD es la consistencia,
+                                    no la perfección. Empieza pequeño y construye el hábito gradualmente.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.processing-function {
+    text-align: center;
+    padding: 2rem 1rem;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.processing-function:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.function-icon {
+    margin-bottom: 1rem;
+}
+
+.gtd-step {
+    text-align: center;
+    padding: 2rem 1rem;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.step-number {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0 auto 1rem;
+}
+
+.nav-pills .nav-link {
+    border-radius: 25px;
+    margin: 0 0.25rem;
+    transition: all 0.3s ease;
+}
+
+.nav-pills .nav-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.nav-pills .nav-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .nav-pills .nav-link {
+        margin: 0.25rem 0;
+        border-radius: 15px;
+    }
+
+    .processing-function,
+    .gtd-step {
+        padding: 1.5rem 1rem;
+    }
+}
+</style>
+
+<script>
+// Actualizar estadísticas del inbox
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/dashboard/refresh/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: 'data_type=stats'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Aquí podrías actualizar estadísticas si las tienes disponibles
+            console.log('Dashboard data refreshed');
+        }
+    })
+    .catch(error => {
+        console.log('Error refreshing dashboard data:', error);
+    });
+});
+</script>
+{% endblock %}

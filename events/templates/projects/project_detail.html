@@ -1,14 +1,339 @@
 {% extends 'layouts/base.html' %}
+{% load static %}
+
+<!-- Load global panel styles -->
+<link rel="stylesheet" href="{% static 'assets/css/panel-styles.css' %}">
+
+<style>
+/* Project Detail specific styles */
+.project-detail-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.project-detail-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+}
+
+.project-detail-card .card-header {
+    border-radius: 12px 12px 0 0 !important;
+    border: none;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+}
+
+/* Task cards in detail view */
+.task-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
+}
+
+.task-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Status badges */
+.status-badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Progress indicators */
+.progress {
+    border-radius: 10px;
+    background-color: rgba(0,0,0,0.05);
+    height: 8px;
+}
+
+.progress-bar {
+    border-radius: 10px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .project-detail-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .task-card .card-body {
+        padding: 1rem;
+    }
+}
+</style>
+
 {% block content %}
 
-<h1>{{project}}</h1>
+<!-- Page Title -->
+<div class="pagetitle">
+    <h1><i class="bi bi-folder-fill me-2"></i>{{ project.title }}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}"><i class="bi bi-house-door"></i></a></li>
+            <li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects</a></li>
+            <li class="breadcrumb-item active">{{ project.title|truncatechars:30 }}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
 
-{% for task in tasks %}
+<section class="section dashboard">
+    <div class="row">
+        <!-- Project Information -->
+        <div class="col-lg-8">
+            <div class="row">
+                <!-- Project Overview Card -->
+                <div class="col-12 mb-4">
+                    <div class="card project-detail-card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-info-circle me-2"></i>Project Overview
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-muted">Title</label>
+                                        <p class="mb-0">{{ project.title }}</p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-muted">Status</label>
+                                        <div>
+                                            <span class="status-badge bg-{% if project.project_status.status_name == 'Completed' %}success{% elif project.project_status.status_name == 'In Progress' %}warning{% else %}secondary{% endif %}">
+                                                <i class="bi bi-{% if project.project_status.status_name == 'Completed' %}check-circle{% elif project.project_status.status_name == 'In Progress' %}play-circle{% else %}pause-circle{% endif %} me-1"></i>
+                                                {{ project.project_status.status_name }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-muted">Created</label>
+                                        <p class="mb-0">
+                                            <i class="bi bi-calendar me-1"></i>
+                                            {{ project.created_at|date:"M d, Y" }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-muted">Host</label>
+                                        <p class="mb-0">
+                                            <i class="bi bi-person-circle me-1"></i>
+                                            {{ project.host.username }}
+                                        </p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-muted">Assigned To</label>
+                                        <p class="mb-0">
+                                            <i class="bi bi-person-check me-1"></i>
+                                            {{ project.assigned_to.username }}
+                                        </p>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold text-muted">Last Updated</label>
+                                        <p class="mb-0">
+                                            <i class="bi bi-clock me-1"></i>
+                                            {{ project.updated_at|date:"M d, Y H:i" }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
 
-<div class="card">
-    <h1>{{task.title}}</h1>
-</div>
+                            {% if project.description %}
+                            <div class="mt-3">
+                                <label class="form-label fw-bold text-muted">Description</label>
+                                <p class="mb-0">{{ project.description }}</p>
+                            </div>
+                            {% endif %}
 
-{% endfor %}
+                            {% if project.event %}
+                            <div class="mt-3">
+                                <label class="form-label fw-bold text-muted">Associated Event</label>
+                                <p class="mb-0">
+                                    <i class="bi bi-calendar-event me-1"></i>
+                                    <a href="{% url 'event_detail' project.event.id %}" class="text-decoration-none">
+                                        {{ project.event.title }}
+                                    </a>
+                                </p>
+                            </div>
+                            {% else %}
+                            <div class="mt-3">
+                                <label class="form-label fw-bold text-muted">Associated Event</label>
+                                <p class="mb-0 text-muted">
+                                    <i class="bi bi-calendar-x me-1"></i>
+                                    No associated event
+                                </p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tasks Section -->
+                <div class="col-12">
+                    <div class="card project-detail-card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-list-check me-2"></i>Project Tasks
+                            </h5>
+                            <span class="badge bg-primary">{{ tasks|length }} tasks</span>
+                        </div>
+                        <div class="card-body">
+                            {% if tasks %}
+                                <div class="row">
+                                    {% for task in tasks %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card task-card h-100">
+                                            <div class="card-body">
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <h6 class="card-title mb-0">{{ task.title }}</h6>
+                                                    <span class="status-badge bg-{% if task.task_status.status_name == 'Completed' %}success{% elif task.task_status.status_name == 'In Progress' %}warning{% else %}secondary{% endif %}">
+                                                        {{ task.task_status.status_name|slice:":1" }}
+                                                    </span>
+                                                </div>
+
+                                                {% if task.description %}
+                                                <p class="card-text small text-muted mb-2">{{ task.description|truncatechars:100 }}</p>
+                                                {% endif %}
+
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-person me-1"></i>{{ task.assigned_to.username }}
+                                                    </small>
+                                                    <a href="{% url 'task_detail' task.id %}" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-eye me-1"></i>View
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <i class="bi bi-list-check text-muted mb-2" style="font-size: 3rem;"></i>
+                                    <h6 class="text-muted">No tasks found</h6>
+                                    <p class="text-muted small">This project doesn't have any tasks yet.</p>
+                                    <a href="{% url 'task_create' project.id %}" class="btn btn-primary">
+                                        <i class="bi bi-plus-circle me-1"></i>Create First Task
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!-- End Left side columns -->
+
+        <!-- Right side columns -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-gear-fill me-2"></i>Quick Actions</h5>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'task_create' project.id %}" class="btn btn-success">
+                            <i class="bi bi-plus-circle me-2"></i>Add Task
+                        </a>
+                        <a href="{% url 'project_edit' project.id %}" class="btn btn-outline-primary">
+                            <i class="bi bi-pencil me-2"></i>Edit Project
+                        </a>
+                        <a href="{% url 'projects' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Back to Projects
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Statistics -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-bar-chart me-2"></i>Statistics</h5>
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small text-muted">Total Tasks</span>
+                            <span class="badge bg-primary">{{ tasks|length }}</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-primary" role="progressbar"
+                                  data-width="{% if tasks %}100{% else %}0{% endif %}"
+                                  aria-valuenow="{% if tasks %}100{% else %}0{% endif %}"
+                                  aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    {% with completed_tasks=tasks|length %}
+                    {% if tasks %}
+                        {% widthratio completed_tasks tasks|length 100 as completed_percentage %}
+                    {% else %}
+                        {% with completed_percentage=0 %}{% endwith %}
+                    {% endif %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="small text-muted">Completed</span>
+                            <span class="badge bg-success">{{ completed_tasks }}</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" role="progressbar"
+                                  data-width="{{ completed_percentage }}"
+                                  aria-valuenow="{{ completed_percentage }}"
+                                  aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+                    {% endwith %}
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="small text-muted">Progress</span>
+                        <span class="fw-bold">
+                            {{ completed_percentage }}%
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Info -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-info-circle me-2"></i>Project Info</h5>
+                    <div class="small">
+                        <div class="mb-2">
+                            <strong>ID:</strong> #{{ project.id }}
+                        </div>
+                        <div class="mb-2">
+                            <strong>Ticket Price:</strong> ${{ project.ticket_price }}
+                        </div>
+                        {% if project.attendees.all %}
+                        <div class="mb-2">
+                            <strong>Attendees:</strong> {{ project.attendees.count }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div><!-- End Right side columns -->
+    </div>
+</section>
 
 {% endblock %}
+
+<!-- JavaScript for dynamic progress bars -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set progress bar widths dynamically
+    const progressBars = document.querySelectorAll('.progress-bar[data-width]');
+    progressBars.forEach(function(bar) {
+        const width = bar.getAttribute('data-width');
+        bar.style.width = width + '%';
+    });
+});
+</script>

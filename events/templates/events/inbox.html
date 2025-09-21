@@ -1,0 +1,672 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-inbox-fill text-primary me-2"></i>
+                        {{ title }}
+                    </h2>
+                    <p class="text-muted mb-0">Sistema GTD - Getting Things Done</p>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#quickAddModal">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Capturar Idea
+                    </button>
+                    <a href="{% url 'unified_dashboard' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-speedometer2 me-1"></i>
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas GTD -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-bar-chart-line me-2"></i>
+                        Estadísticas GTD
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <!-- Items Pendientes -->
+                        <div class="col-md-3">
+                            <div class="stat-card bg-warning bg-opacity-10 border-warning border-opacity-25">
+                                <div class="stat-icon text-warning">
+                                    <i class="bi bi-circle"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3 class="stat-number">{{ gtd_stats.total }}</h3>
+                                    <p class="stat-label">Pendientes</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Accionables -->
+                        <div class="col-md-3">
+                            <div class="stat-card bg-success bg-opacity-10 border-success border-opacity-25">
+                                <div class="stat-icon text-success">
+                                    <i class="bi bi-check-circle"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3 class="stat-number">{{ gtd_stats.accionables }}</h3>
+                                    <p class="stat-label">Accionables</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- No Accionables -->
+                        <div class="col-md-3">
+                            <div class="stat-card bg-info bg-opacity-10 border-info border-opacity-25">
+                                <div class="stat-icon text-info">
+                                    <i class="bi bi-x-circle"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3 class="stat-number">{{ gtd_stats.no_accionables }}</h3>
+                                    <p class="stat-label">No Accionables</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Procesados -->
+                        <div class="col-md-3">
+                            <div class="stat-card bg-secondary bg-opacity-10 border-secondary border-opacity-25">
+                                <div class="stat-icon text-secondary">
+                                    <i class="bi bi-check2-all"></i>
+                                </div>
+                                <div class="stat-content">
+                                    <h3 class="stat-number">{{ total_processed }}</h3>
+                                    <p class="stat-label">Procesados</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categorías GTD -->
+    <div class="row">
+        <!-- Items Pendientes de Categorizar -->
+        {% if pendientes %}
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-question-circle me-2"></i>
+                        Pendientes de Categorizar ({{ gtd_stats.pendientes }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for item in pendientes %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 border-warning">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ item.title }}</h6>
+                                    {% if item.description %}
+                                    <p class="card-text small text-muted">{{ item.description|truncatechars:100 }}</p>
+                                    {% endif %}
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>
+                                            {{ item.created_at|date:"d/m/Y H:i" }}
+                                        </small>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'process_inbox_item' item.id %}" class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-gear me-1"></i>
+                                                Categorizar
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Items Accionables -->
+        {% if accionables %}
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Items Accionables ({{ gtd_stats.accionables }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for item in accionables %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 border-success">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">{{ item.title }}</h6>
+                                        <span class="badge bg-success">{{ item.action_type|default:"Sin definir" }}</span>
+                                    </div>
+                                    {% if item.description %}
+                                    <p class="card-text small text-muted">{{ item.description|truncatechars:100 }}</p>
+                                    {% endif %}
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>
+                                            {{ item.created_at|date:"d/m/Y H:i" }}
+                                        </small>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'process_inbox_item' item.id %}" class="btn btn-success btn-sm">
+                                                <i class="bi bi-gear me-1"></i>
+                                                Procesar
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Items No Accionables -->
+        {% if no_accionables %}
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-x-circle me-2"></i>
+                        Items No Accionables ({{ gtd_stats.no_accionables }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for item in no_accionables %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 border-info">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">{{ item.title }}</h6>
+                                        <span class="badge bg-info">{{ item.action_type|default:"Sin definir" }}</span>
+                                    </div>
+                                    {% if item.description %}
+                                    <p class="card-text small text-muted">{{ item.description|truncatechars:100 }}</p>
+                                    {% endif %}
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>
+                                            {{ item.created_at|date:"d/m/Y H:i" }}
+                                        </small>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'process_inbox_item' item.id %}" class="btn btn-info btn-sm">
+                                                <i class="bi bi-gear me-1"></i>
+                                                Procesar
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Items Procesados -->
+        {% if processed_items %}
+        <div class="col-12 mb-4">
+            <div class="card shadow-sm border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-check2-all me-2"></i>
+                        Items Procesados ({{ total_processed }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for item in processed_items|slice:":8" %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 border-success">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">{{ item.title }}</h6>
+                                        <span class="badge bg-success">Procesado</span>
+                                    </div>
+                                    {% if item.description %}
+                                    <p class="card-text small text-muted">{{ item.description|truncatechars:80 }}</p>
+                                    {% endif %}
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>
+                                            {{ item.created_at|date:"d/m/Y H:i" }}
+                                        </small>
+                                        {% if item.processed_to %}
+                                        <a href="{% url 'tasks_with_id' item.processed_to.id %}" class="btn btn-success btn-sm">
+                                            <i class="bi bi-arrow-right me-1"></i>
+                                            Ver Tarea
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if processed_items|length > 8 %}
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            Y {{ processed_items|length|add:"-8" }} más...
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Estado vacío -->
+        {% if not unprocessed_items and not processed_items %}
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-inbox display-1 text-muted"></i>
+                    <h4 class="mt-3 text-muted">Tu bandeja de entrada está vacía</h4>
+                    <p class="text-muted">¡Excelente! Has procesado todos tus items pendientes.</p>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#quickAddModal">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Agregar tu primera idea
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para agregar items rápidamente -->
+<div class="modal fade" id="quickAddModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-lightning me-2"></i>
+                    Captura Rápida
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="quickAddForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="quickTitle" class="form-label">Título *</label>
+                        <input type="text" class="form-control" id="quickTitle" name="title"
+                               placeholder="¿Qué necesitas hacer?" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quickDescription" class="form-label">Descripción</label>
+                        <textarea class="form-control" id="quickDescription" name="description"
+                                  rows="3" placeholder="Detalles adicionales (opcional)"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check2 me-1"></i>
+                        Agregar al Inbox
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos GTD mejorados */
+.stat-card {
+    padding: 1.5rem;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    text-align: center;
+    border: 1px solid;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    margin: 0;
+    opacity: 0.8;
+}
+
+/* Gradientes para headers */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Cards de categorías GTD */
+.card {
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+    border: none;
+    font-weight: 600;
+}
+
+/* Badges mejorados */
+.badge {
+    font-size: 0.75rem;
+    padding: 0.4em 0.8em;
+    border-radius: 20px;
+}
+
+/* Modal mejorado */
+.modal-content {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 16px 16px 0 0;
+    border: none;
+}
+
+.modal-header .btn-close {
+    filter: invert(1);
+}
+
+/* Botones mejorados */
+.btn {
+    border-radius: 25px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .stat-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+    }
+}
+
+/* Animaciones */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.stat-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+.stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* Colores GTD específicos */
+.text-gtd-actionable { color: #28a745; }
+.text-gtd-reference { color: #17a2b8; }
+.text-gtd-waiting { color: #ffc107; }
+.text-gtd-someday { color: #6c757d; }
+</style>
+
+<script>
+// Funciones GTD mejoradas
+function deleteInboxItem(itemId) {
+    if (confirm('¿Estás seguro de que quieres eliminar este item? Esta acción no se puede deshacer.')) {
+        // Crear formulario temporal para POST
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.innerHTML = `
+            <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+            <input type="hidden" name="action" value="delete">
+        `;
+
+        // Agregar al DOM y enviar
+        document.body.appendChild(form);
+        form.action = `/events/inbox/process/${itemId}/`;
+        form.submit();
+    }
+}
+
+function categorizeItem(itemId, category) {
+    // Crear formulario temporal para categorizar
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.innerHTML = `
+        <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+        <input type="hidden" name="action" value="categorize">
+        <input type="hidden" name="gtd_category" value="${category}">
+    `;
+
+    document.body.appendChild(form);
+    form.action = `/events/inbox/process/${itemId}/`;
+    form.submit();
+}
+
+// Manejar envío del formulario de agregar rápido
+document.getElementById('quickAddForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+
+    // Mostrar loading
+    submitBtn.innerHTML = '<i class="bi bi-arrow-clockwise spinning me-1"></i>Capturando...';
+    submitBtn.disabled = true;
+
+    fetch('/events/inbox/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mostrar éxito con animación
+            if (typeof showNotification !== 'undefined') {
+                showNotification(data.message, 'success');
+            } else {
+                alert(data.message);
+            }
+
+            // Cerrar modal y limpiar formulario
+            const modal = bootstrap.Modal.getInstance(document.getElementById('quickAddModal'));
+            modal.hide();
+            this.reset();
+
+            // Mostrar feedback visual
+            showCaptureSuccess();
+
+            // Recargar página para mostrar nuevo item
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            // Mostrar error
+            if (typeof showNotification !== 'undefined') {
+                showNotification(data.error, 'error');
+            } else {
+                alert('Error: ' + data.error);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        if (typeof showNotification !== 'undefined') {
+            showNotification('Error al capturar item', 'error');
+        } else {
+            alert('Error al capturar item');
+        }
+    })
+    .finally(() => {
+        // Restaurar botón
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+});
+
+// Función para mostrar feedback de captura exitosa
+function showCaptureSuccess() {
+    // Crear elemento de notificación flotante
+    const notification = document.createElement('div');
+    notification.className = 'position-fixed top-50 start-50 translate-middle';
+    notification.style.zIndex = '9999';
+    notification.innerHTML = `
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-2"></i>
+            ¡Idea capturada exitosamente!
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Remover después de 3 segundos
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 3000);
+}
+
+// Funciones para acciones rápidas GTD
+function quickAction(itemId, action) {
+    const actions = {
+        'hacer': { category: 'accionable', type: 'hacer', color: 'success' },
+        'delegar': { category: 'accionable', type: 'delegar', color: 'warning' },
+        'posponer': { category: 'accionable', type: 'posponer', color: 'info' },
+        'proyecto': { category: 'accionable', type: 'proyecto', color: 'primary' },
+        'eliminar': { category: 'no_accionable', type: 'eliminar', color: 'danger' },
+        'archivar': { category: 'no_accionable', type: 'archivar', color: 'secondary' },
+        'incubar': { category: 'no_accionable', type: 'incubar', color: 'light' }
+    };
+
+    const actionData = actions[action];
+    if (!actionData) return;
+
+    if (confirm(`¿Marcar este item como "${actionData.type}"?`)) {
+        categorizeItem(itemId, actionData.category);
+    }
+}
+
+// Inicializar tooltips y otras funcionalidades
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Agregar animaciones de entrada
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+
+        setTimeout(() => {
+            card.style.transition = 'all 0.6s ease-out';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+
+    // Funcionalidad de búsqueda en tiempo real (si existe campo de búsqueda)
+    const searchInput = document.getElementById('inboxSearch');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                // Implementar búsqueda si es necesario
+                console.log('Buscando:', this.value);
+            }, 300);
+        });
+    }
+});
+
+// Funciones para estadísticas en tiempo real
+function updateStats() {
+    // Esta función podría actualizar las estadísticas dinámicamente
+    // sin necesidad de recargar la página
+    console.log('Actualizando estadísticas...');
+}
+
+// Auto-actualizar estadísticas cada 30 segundos
+setInterval(updateStats, 30000);
+</script>
+{% endblock %}

@@ -37,9 +37,9 @@
                 <tbody>
                     {% for project in projects %}
                     <tr>
-                        <th scope="row"><a href="{% url 'projects' project.id %}">#{{project.id}}</a></th>
+                        <th scope="row"><a href="{% url 'projects_with_id' project.id %}">#{{project.id}}</a></th>
                         <td>{{project.host}}</td>
-                        <td><a href="{% url 'projects' project.id %}" class="text-primary">{{project.title}}</a></td>
+                        <td><a href="{% url 'projects_with_id' project.id %}" class="text-primary">{{project.title}}</a></td>
                         <td>{{project.ticket_price}}</td>
                         <td>
                             <span style="background-color: {{ project.project_status.color }};" class="badge">

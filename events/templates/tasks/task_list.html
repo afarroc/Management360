@@ -56,8 +56,8 @@
                 <tbody>
                     {% for task in tasks %}
                     <tr>
-                        <td><a href="{% url 'tasks' task.id %}">{{ task.id }} </a></td>
-                        <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{task.description}}" href="{% url 'tasks' task.id %}">{{ task.title }}</a></td>
+                        <td><a href="{% url 'tasks_with_id' task.id %}">{{ task.id }} </a></td>
+                        <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{task.description}}" href="{% url 'tasks_with_id' task.id %}">{{ task.title }}</a></td>
                         <td>{{ tasks.host.username }}</td>
                         <td>
                             <a href="{% url 'task_edit' task.id %}" class="btn btn-primary">
