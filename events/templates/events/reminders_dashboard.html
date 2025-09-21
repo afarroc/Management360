@@ -1,0 +1,218 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="bi bi-bell me-2"></i>{{ title }}
+                    </h3>
+                    <div>
+                        <a href="{% url 'create_reminder' %}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle me-1"></i>Crear Recordatorio
+                        </a>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="refreshReminders()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Estadísticas -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h4 class="text-primary">{{ total_reminders }}</h4>
+                                    <p class="mb-0">Total</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning">
+                                <div class="card-body text-center">
+                                    <h4 class="text-white">{{ pending_count }}</h4>
+                                    <p class="mb-0 text-white">Pendientes</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success">
+                                <div class="card-body text-center">
+                                    <h4 class="text-white">{{ sent_count }}</h4>
+                                    <p class="mb-0 text-white">Enviados</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-danger">
+                                <div class="card-body text-center">
+                                    <h4 class="text-white">{{ overdue_count }}</h4>
+                                    <p class="mb-0 text-white">Vencidos</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recordatorios de Hoy -->
+                    {% if today_reminders %}
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="text-warning">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                Recordatorios para Hoy ({{ today_reminders.count }})
+                            </h5>
+                            <div class="list-group">
+                                {% for reminder in today_reminders %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ reminder.title }}</h6>
+                                        <p class="mb-1">{{ reminder.description|default:"Sin descripción" }}</p>
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>{{ reminder.remind_at|date:"H:i" }}
+                                            {% if reminder.task %} | Tarea: {{ reminder.task.title }}{% endif %}
+                                            {% if reminder.project %} | Proyecto: {{ reminder.project.title }}{% endif %}
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-success btn-sm" onclick="markAsSent({{ reminder.id }})">
+                                            <i class="bi bi-check-circle me-1"></i>Marcar Enviado
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Recordatorios Pendientes -->
+                    <div class="row">
+                        <div class="col-12">
+                            <h5>Recordatorios Pendientes</h5>
+                            {% if pending_reminders %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Título</th>
+                                            <th>Fecha</th>
+                                            <th>Relacionado con</th>
+                                            <th>Tipo</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for reminder in pending_reminders %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ reminder.title }}</strong>
+                                                {% if reminder.description %}
+                                                <br><small class="text-muted">{{ reminder.description }}</small>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">{{ reminder.remind_at|date:"d/m/Y H:i" }}</span>
+                                            </td>
+                                            <td>
+                                                {% if reminder.task %}
+                                                <span class="badge bg-primary">Tarea: {{ reminder.task.title }}</span>
+                                                {% elif reminder.project %}
+                                                <span class="badge bg-success">Proyecto: {{ reminder.project.title }}</span>
+                                                {% elif reminder.event %}
+                                                <span class="badge bg-warning">Evento: {{ reminder.event.title }}</span>
+                                                {% else %}
+                                                <span class="text-muted">General</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if reminder.reminder_type == 'email' %}
+                                                <i class="bi bi-envelope text-primary"></i> Email
+                                                {% elif reminder.reminder_type == 'push' %}
+                                                <i class="bi bi-bell text-warning"></i> Push
+                                                {% else %}
+                                                <i class="bi bi-chat-text text-success"></i> Ambos
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{% url 'edit_reminder' reminder.id %}" class="btn btn-outline-primary">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <button class="btn btn-outline-success" onclick="markAsSent({{ reminder.id }})">
+                                                        <i class="bi bi-check-circle"></i>
+                                                    </button>
+                                                    <button class="btn btn-outline-danger" onclick="deleteReminder({{ reminder.id }})">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i>
+                                No hay recordatorios pendientes. ¡Excelente!
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript para funcionalidades AJAX -->
+<script>
+function refreshReminders() {
+    location.reload();
+}
+
+function markAsSent(reminderId) {
+    if (confirm('¿Marcar este recordatorio como enviado?')) {
+        fetch('/events/reminders/' + reminderId + '/mark-sent/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Recordatorio marcado como enviado');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error de conexión');
+        });
+    }
+}
+
+function deleteReminder(reminderId) {
+    if (confirm('¿Estás seguro de que quieres eliminar este recordatorio?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/events/reminders/' + reminderId + '/delete/';
+
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = 'csrfmiddlewaretoken';
+        csrfToken.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        form.appendChild(csrfToken);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

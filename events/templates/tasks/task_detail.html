@@ -1,0 +1,244 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'assets/css/alerts-styles.css' %}">
+{% block content %}
+
+<!-- Mensajes de confirmación y éxito -->
+{% if messages %}
+<div class="alert alert-info" role="alert">
+    {% for message in messages %}
+    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
+        {% endfor %}
+</div>
+{% endif %}
+
+<div class="pagetitle">
+    <h1>Detalle de Tarea</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'tasks' %}">Tareas</a></li>
+            <li class="breadcrumb-item active">Detalle</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ task.title }}</h5>
+
+                    <!-- Información básica de la tarea -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Estado:</strong>
+                            <span class="badge bg-{{ task.task_status.color|default:'secondary' }}">
+                                {{ task.task_status.status_name }}
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Prioridad:</strong>
+                            {% if task.important %}
+                                <span class="badge bg-danger">Alta</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Normal</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if task.description %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>Descripción:</strong>
+                            <p class="mt-2">{{ task.description }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Información del proyecto si existe -->
+                    {% if task.project %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Proyecto:</strong>
+                            <a href="{% url 'projects_with_id' task.project.id %}" class="text-decoration-none">
+                                {{ task.project.title }}
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Estado del Proyecto:</strong>
+                            <span class="badge bg-{{ task.project.project_status.color|default:'secondary' }}">
+                                {{ task.project.project_status.status_name }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Información del evento si existe -->
+                    {% if task.event %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Evento:</strong>
+                            <a href="{% url 'event_detail' task.event.id %}" class="text-decoration-none">
+                                {{ task.event.title }}
+                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Estado del Evento:</strong>
+                            <span class="badge bg-{{ task.event.event_status.color|default:'secondary' }}">
+                                {{ task.event.event_status.status_name }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Información de asignación -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Asignado a:</strong>
+                            {% if task.assigned_to %}
+                                {{ task.assigned_to.get_full_name|default:task.assigned_to.username }}
+                            {% else %}
+                                <span class="text-muted">No asignado</span>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Creado por:</strong>
+                            {{ task.host.get_full_name|default:task.host.username }}
+                        </div>
+                    </div>
+
+                    <!-- Fechas -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Creado:</strong>
+                            {{ task.created_at|date:"d/m/Y H:i" }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Última actualización:</strong>
+                            {{ task.updated_at|date:"d/m/Y H:i" }}
+                        </div>
+                    </div>
+
+                    <!-- Precio del ticket si existe -->
+                    {% if task.ticket_price %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>Precio del Ticket:</strong>
+                            ${{ task.ticket_price }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Acciones disponibles -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6>Acciones</h6>
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'task_edit' task.id %}" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </a>
+                                <a href="{% url 'task_dependencies' task.id %}" class="btn btn-info btn-sm">
+                                    <i class="bi bi-link"></i> Dependencias
+                                </a>
+                                <a href="{% url 'task_dependency_graph' task.id %}" class="btn btn-secondary btn-sm">
+                                    <i class="bi bi-diagram-3"></i> Gráfico
+                                </a>
+                                {% if task.project %}
+                                <a href="{% url 'kanban_project' task.project.id %}" class="btn btn-success btn-sm">
+                                    <i class="bi bi-kanban"></i> Kanban
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alertas específicas de la tarea -->
+            {% if alerts %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6><i class="bi bi-exclamation-triangle"></i> Alertas</h6>
+                </div>
+                <div class="card-body">
+                    {% for alert in alerts %}
+                    <div class="alert alert-{{ alert.type }} alert-dismissible fade show" role="alert">
+                        <i class="bi {{ alert.icon }}"></i>
+                        <strong>{{ alert.title }}</strong> {{ alert.message }}
+                        {% if alert.action_url %}
+                        <a href="{{ alert.action_url }}" class="btn btn-sm btn-outline-{{ alert.type }}">
+                            {{ alert.action_text }}
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Panel lateral con información adicional -->
+        <div class="col-lg-4">
+            <!-- Estados disponibles -->
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="bi bi-list-ul"></i> Estados Disponibles</h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% for status in task_statuses %}
+                        <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                           onclick="changeTaskStatus({{ task.id }}, {{ status.id }}, '{{ status.status_name|escapejs }}')">
+                            <span class="badge bg-{{ status.color|default:'secondary' }} me-2">●</span>
+                            {{ status.status_name }}
+                            <small class="text-muted">Cambiar</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información del sistema -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="bi bi-info-circle"></i> Información</h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <strong>ID de Tarea:</strong> {{ task.id }}<br>
+                        <strong>URL de la API:</strong><br>
+                        <code>/events/tasks/{{ task.id }}/</code>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- JavaScript para cambiar el estado de la tarea -->
+<script>
+function changeTaskStatus(taskId, statusId, statusName) {
+    if (confirm(`¿Estás seguro de cambiar el estado de la tarea a "${statusName}"?`)) {
+        fetch(`/events/change_task_status/${taskId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `new_status_id=${statusId}`
+        })
+        .then(response => response.text())
+        .then(data => {
+            alert('Estado actualizado exitosamente');
+            location.reload();
+        })
+        .catch(error => {
+            alert('Error al actualizar el estado: ' + error);
+        });
+    }
+}
+</script>
+
+{% endblock %}

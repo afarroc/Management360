@@ -64,5 +64,50 @@ class ProjectManager:
             projects.append(project_data)
             if project.project_status_id == self.active_status.id:
                 active_projects.append(project_data)
-        
+
         return projects, active_projects
+
+    def create_project(self, title, description=None, project_status=None, assigned_to=None, ticket_price=0.07):
+        """
+        Crear un nuevo proyecto usando el ProjectManager con procedimientos correctos
+        """
+        from ..models import Project, ProjectStatus, ProjectState, Event, Status
+        from django.utils import timezone
+        from django.db import transaction, IntegrityError
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        # Obtener el estado por defecto si no se especifica
+        if project_status is None:
+            try:
+                project_status = ProjectStatus.objects.get(status_name='Created')
+            except ProjectStatus.DoesNotExist:
+                # Si no existe 'Created', usar el primero disponible
+                project_status = ProjectStatus.objects.first()
+                if not project_status:
+                    raise ValueError("No hay estados de proyecto disponibles")
+
+        # Usar el usuario del manager si no se especifica assigned_to
+        if assigned_to is None:
+            assigned_to = self.user
+
+        # Crear el proyecto
+        project = Project.objects.create(
+            title=title,
+            description=description or '',
+            project_status=project_status,
+            host=self.user,  # El host es siempre el usuario del manager
+            assigned_to=assigned_to,
+            ticket_price=ticket_price
+        )
+
+        # Crear el estado inicial del proyecto
+        ProjectState.objects.create(
+            project=project,
+            status=project_status,
+            start_time=timezone.now()
+        )
+
+        logger.info(f"Project '{title}' created successfully by ProjectManager for user {self.user.username}")
+        return project

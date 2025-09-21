@@ -1,0 +1,307 @@
+{% load static %}
+<!-- ============================================================================
+     INBOX GTD FLOATING BUTTON - GLOBAL ACCESS COMPONENT
+     ============================================================================
+     This template contains the HTML structure for the global inbox GTD
+     floating button that provides quick access to inbox functionality from any page.
+
+     Features:
+     - Floating button with pulse animation
+     - Expandable panel with quick capture form
+     - Real-time statistics display
+     - Toast notifications integration
+     - Responsive design for all screen sizes
+     - Accessibility features (keyboard navigation, ARIA labels)
+
+     Dependencies:
+     - Bootstrap 5.x
+     - Bootstrap Icons
+     - inbox_floating_button.css
+     - inbox_floating_button.js
+
+     ============================================================================ -->
+
+<!-- Inbox GTD Floating Container -->
+<div id="inboxFloatingContainer" class="inbox-floating-container">
+    <!-- Floating Button -->
+    <div class="inbox-floating-button" id="inboxFloatingButton" role="button" tabindex="0" aria-label="Abrir Inbox GTD (Ctrl+I)">
+        <div class="inbox-button-content">
+            <i class="bi bi-lightning-charge-fill inbox-icon-main" aria-hidden="true"></i>
+            <span class="inbox-badge" id="inboxBadge" aria-label="Items pendientes en inbox">0</span>
+        </div>
+        <div class="inbox-pulse-ring" aria-hidden="true"></div>
+    </div>
+
+    <!-- Expandable Panel -->
+    <div class="inbox-panel" id="inboxPanel" role="dialog" aria-labelledby="inboxPanelTitle" aria-hidden="true">
+        <!-- Panel Header -->
+        <div class="inbox-panel-header">
+            <h3 class="inbox-panel-title" id="inboxPanelTitle">
+                <i class="bi bi-inbox-fill" aria-hidden="true"></i>
+                Inbox GTD
+            </h3>
+            <button class="inbox-panel-close" id="inboxPanelClose" aria-label="Cerrar panel de inbox">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <!-- Quick Capture Form -->
+        <form class="inbox-quick-form" id="inboxQuickForm">
+            <div class="inbox-form-group">
+                <label for="inboxQuickTitle">Título *</label>
+                <input
+                    type="text"
+                    id="inboxQuickTitle"
+                    name="title"
+                    placeholder="¿Qué necesitas capturar?"
+                    required
+                    aria-describedby="titleHelp"
+                    autocomplete="off"
+                >
+                <small id="titleHelp" class="form-text text-muted">Describe brevemente lo que quieres recordar o hacer</small>
+            </div>
+
+            <div class="inbox-form-group">
+                <label for="inboxQuickDescription">Descripción (opcional)</label>
+                <textarea
+                    id="inboxQuickDescription"
+                    name="description"
+                    placeholder="Agrega más detalles si es necesario..."
+                    rows="3"
+                    aria-describedby="descHelp"
+                ></textarea>
+                <small id="descHelp" class="form-text text-muted">Información adicional para contextualizar el item</small>
+            </div>
+
+            <div class="inbox-form-actions">
+                <button type="submit" class="inbox-btn-primary" id="inboxQuickSubmit">
+                    <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
+                    Capturar
+                </button>
+                <button type="button" class="inbox-btn-secondary" onclick="window.open('/events/inbox/', '_blank')">
+                    <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                    Ver Inbox
+                </button>
+            </div>
+        </form>
+
+        <!-- Statistics Section -->
+        <div class="inbox-stats">
+            <div class="inbox-stats-grid">
+                <div class="inbox-stat-item">
+                    <div class="inbox-stat-number" id="inboxStatTotal">0</div>
+                    <div class="inbox-stat-label">Total</div>
+                </div>
+                <div class="inbox-stat-item">
+                    <div class="inbox-stat-number" id="inboxStatUnprocessed">0</div>
+                    <div class="inbox-stat-label">Pendientes</div>
+                </div>
+                <div class="inbox-stat-item">
+                    <div class="inbox-stat-number" id="inboxStatProcessed">0</div>
+                    <div class="inbox-stat-label">Procesados</div>
+                </div>
+                <div class="inbox-stat-item">
+                    <div class="inbox-stat-number" id="inboxStatToday">0</div>
+                    <div class="inbox-stat-label">Hoy</div>
+                </div>
+                <div class="inbox-stat-item">
+                    <div class="inbox-stat-number" id="inboxStatRecent">0</div>
+                    <div class="inbox-stat-label">Recientes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Access Tooltip (shown on hover) -->
+<div class="inbox-tooltip" id="inboxTooltip" role="tooltip" aria-hidden="true">
+    <div class="inbox-tooltip-content">
+        <strong>Inbox GTD</strong>
+        <small>Captura rápida de ideas y tareas</small>
+        <div class="inbox-tooltip-shortcut">
+            <kbd>Ctrl</kbd> + <kbd>I</kbd>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================================
+     ACCESSIBILITY ENHANCEMENTS
+     ============================================================================ -->
+
+<!-- Screen Reader Announcements -->
+<div id="inboxAnnouncements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+<!-- Skip Link for Keyboard Navigation -->
+<a href="#inboxPanel" class="sr-only-focusable btn btn-primary" style="position: fixed; top: 10px; left: 10px; z-index: 9999;">
+    Saltar al Inbox GTD
+</a>
+
+<!-- ============================================================================
+     STYLE OVERRIDES (for specific customizations)
+     ============================================================================ -->
+<style>
+/* Custom styles that complement the main CSS file */
+
+/* Enhanced focus styles for better accessibility */
+.inbox-floating-button:focus-visible {
+    outline: 3px solid #007bff;
+    outline-offset: 3px;
+}
+
+/* Loading animation for the submit button */
+.inbox-btn-primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Enhanced badge animation */
+.inbox-badge {
+    animation: badgePulse 2s infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.5);
+    }
+}
+
+/* Tooltip styles */
+.inbox-tooltip {
+    position: absolute;
+    bottom: 80px;
+    right: 70px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+    z-index: 1052;
+    white-space: nowrap;
+}
+
+.inbox-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 20px;
+    border: 5px solid transparent;
+    border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+.inbox-floating-button:hover + .inbox-tooltip,
+.inbox-tooltip:hover {
+    opacity: 1;
+    visibility: visible;
+}
+
+.inbox-tooltip-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.inbox-tooltip-shortcut {
+    margin-top: 4px;
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+.inbox-tooltip-shortcut kbd {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 500;
+}
+
+/* Screen reader only styles */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.sr-only-focusable:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 8px 16px;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .inbox-tooltip {
+        display: none;
+    }
+
+    .inbox-stats-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .inbox-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .inbox-form-actions {
+        flex-direction: column;
+    }
+
+    .inbox-btn-secondary {
+        margin-top: 8px;
+    }
+}
+</style>
+
+<!-- ============================================================================
+     INITIALIZATION SCRIPT
+     ============================================================================ -->
+<script>
+// Initialize tooltips and other Bootstrap components when document is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tooltips if available
+    if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
+
+    // Add keyboard shortcut hint on first visit
+    const hasSeenShortcut = localStorage.getItem('inboxGTD_shortcut_shown');
+    if (!hasSeenShortcut) {
+        setTimeout(() => {
+            const tooltip = document.getElementById('inboxTooltip');
+            if (tooltip) {
+                tooltip.style.opacity = '1';
+                tooltip.style.visibility = 'visible';
+                setTimeout(() => {
+                    tooltip.style.opacity = '0';
+                    tooltip.style.visibility = 'hidden';
+                }, 3000);
+            }
+            localStorage.setItem('inboxGTD_shortcut_shown', 'true');
+        }, 3000);
+    }
+});
+</script>

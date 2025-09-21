@@ -1,0 +1,291 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="bi bi-diagram-3 me-2"></i>
+                        {{ title }}
+                    </h3>
+                    <div class="card-tools">
+                        <a href="{% url 'tasks' %}" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>
+                            Volver a Tareas
+                        </a>
+                        <a href="{% url 'create_task_dependency' task.id %}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle me-1"></i>
+                            Nueva Dependencia
+                        </a>
+                        <a href="{% url 'task_dependency_graph' task.id %}" class="btn btn-info btn-sm">
+                            <i class="bi bi-graph-up me-1"></i>
+                            Ver Gráfico
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if task %}
+                        <!-- Información de la tarea -->
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <div class="task-info-card" style="border-left: 4px solid {{ task.task_status.color }};">
+                                    <h4>{{ task.title }}</h4>
+                                    {% if task.description %}
+                                        <p class="text-muted">{{ task.description }}</p>
+                                    {% endif %}
+                                    <div class="task-meta">
+                                        <span class="badge task-status-badge" data-color="{{ task.task_status.color }}">
+                                            <i class="bi bi-circle-fill me-1"></i>
+                                            {{ task.task_status.status_name }}
+                                        </span>
+                                        {% if task.important %}
+                                            <span class="badge bg-warning">
+                                                <i class="bi bi-star-fill me-1"></i>
+                                                Importante
+                                            </span>
+                                        {% endif %}
+                                        <small class="text-muted">
+                                            <i class="bi bi-calendar me-1"></i>
+                                            Creada: {{ task.created_at|date:"d/m/Y H:i" }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <h6>Dependencias Totales</h6>
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="dependency-count">
+                                                    <h4 class="text-primary">{{ dependencies.count }}</h4>
+                                                    <small class="text-muted">Depende de</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="dependency-count">
+                                                    <h4 class="text-success">{{ blocking.count }}</h4>
+                                                    <small class="text-muted">Bloquea</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Dependencias -->
+                        <div class="row">
+                            <!-- Tareas de las que depende -->
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-arrow-down-circle text-primary me-2"></i>
+                                            Depende de ({{ dependencies.count }})
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if dependencies %}
+                                            <div class="list-group list-group-flush">
+                                                {% for dependency in dependencies %}
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <h6 class="mb-1">{{ dependency.depends_on.title }}</h6>
+                                                            <small class="text-muted">
+                                                                {{ dependency.dependency_type|title|cut:"_"|cut:" " }}
+                                                            </small>
+                                                            <br>
+                                                            <small class="badge dependency-status-badge" data-color="{{ dependency.depends_on.task_status.color }}">
+                                                                {{ dependency.depends_on.task_status.status_name }}
+                                                            </small>
+                                                        </div>
+                                                        <div class="btn-group btn-group-sm">
+                                                            <a href="{% url 'tasks_with_id' dependency.depends_on.id %}"
+                                                               class="btn btn-outline-info btn-sm">
+                                                                <i class="bi bi-eye"></i>
+                                                            </a>
+                                                            <a href="{% url 'delete_task_dependency' dependency.id %}"
+                                                               class="btn btn-outline-danger btn-sm"
+                                                               onclick="return confirm('¿Eliminar esta dependencia?')">
+                                                                <i class="bi bi-trash"></i>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <div class="text-center text-muted">
+                                                <i class="bi bi-check-circle me-2"></i>
+                                                Esta tarea no depende de ninguna otra.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tareas que bloquea -->
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-arrow-up-circle text-success me-2"></i>
+                                            Bloquea ({{ blocking.count }})
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if blocking %}
+                                            <div class="list-group list-group-flush">
+                                                {% for dependency in blocking %}
+                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <h6 class="mb-1">{{ dependency.task.title }}</h6>
+                                                            <small class="text-muted">
+                                                                {{ dependency.dependency_type|title|cut:"_"|cut:" " }}
+                                                            </small>
+                                                            <br>
+                                                            <small class="badge dependency-status-badge" data-color="{{ dependency.task.task_status.color }}">
+                                                                {{ dependency.task.task_status.status_name }}
+                                                            </small>
+                                                        </div>
+                                                        <div class="btn-group btn-group-sm">
+                                                            <a href="{% url 'tasks_with_id' dependency.task.id %}"
+                                                               class="btn btn-outline-info btn-sm">
+                                                                <i class="bi bi-eye"></i>
+                                                            </a>
+                                                            <a href="{% url 'delete_task_dependency' dependency.id %}"
+                                                               class="btn btn-outline-danger btn-sm"
+                                                               onclick="return confirm('¿Eliminar esta dependencia?')">
+                                                                <i class="bi bi-trash"></i>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <div class="text-center text-muted">
+                                                <i class="bi bi-check-circle me-2"></i>
+                                                Esta tarea no bloquea a ninguna otra.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Información sobre dependencias -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="card-title mb-0">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Tipos de Dependencias
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="dependency-type-info">
+                                                    <h6 class="text-primary">Finalizar para Comenzar</h6>
+                                                    <small class="text-muted">La tarea debe finalizar antes de que la dependiente pueda comenzar.</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="dependency-type-info">
+                                                    <h6 class="text-success">Comenzar para Comenzar</h6>
+                                                    <small class="text-muted">La tarea debe comenzar antes de que la dependiente pueda comenzar.</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="dependency-type-info">
+                                                    <h6 class="text-warning">Finalizar para Finalizar</h6>
+                                                    <small class="text-muted">La tarea debe finalizar antes de que la dependiente pueda finalizar.</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="dependency-type-info">
+                                                    <h6 class="text-info">Comenzar para Finalizar</h6>
+                                                    <small class="text-muted">La tarea debe comenzar antes de que la dependiente pueda finalizar.</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Tarea no encontrada o no tienes permisos para verla.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.task-info-card {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.task-meta {
+    margin-top: 1rem;
+}
+
+.task-meta .badge {
+    margin-right: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.dependency-count {
+    padding: 1rem;
+}
+
+.dependency-count h4 {
+    margin-bottom: 0.25rem;
+    font-weight: bold;
+}
+
+.dependency-type-info {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background: #f8f9fa;
+    margin-bottom: 1rem;
+}
+
+.dependency-type-info h6 {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.task-status-badge, .dependency-status-badge {
+    background-color: attr(data-color) !important;
+    color: white !important;
+}
+</style>
+{% endblock %}

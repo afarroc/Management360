@@ -65,3 +65,69 @@ class TaskManager:
 
     def get_active_tasks(self):
         return [task for task in self.user_tasks if task.task_status_id == self.active_status.id]
+
+    def create_task(self, title, description=None, important=False, project=None, event=None,
+                    task_status=None, assigned_to=None, ticket_price=0.07):
+        """
+        Crear una nueva tarea usando el TaskManager con procedimientos correctos
+        """
+        from ..models import Task, TaskStatus, TaskState, Event, Status
+        from django.utils import timezone
+        from django.db import transaction, IntegrityError
+
+        # Obtener el estado por defecto si no se especifica
+        if task_status is None:
+            try:
+                task_status = TaskStatus.objects.get(status_name='To Do')
+            except TaskStatus.DoesNotExist:
+                # Si no existe 'To Do', usar el primero disponible
+                task_status = TaskStatus.objects.first()
+                if not task_status:
+                    raise ValueError("No hay estados de tarea disponibles")
+
+        # Usar el usuario del manager si no se especifica assigned_to
+        if assigned_to is None:
+            assigned_to = self.user
+
+        # Si no hay evento, crear uno automáticamente (igual que en event_create)
+        if not event:
+            try:
+                status = Status.objects.get(status_name='Created')
+                with transaction.atomic():
+                    new_event = Event.objects.create(
+                        title=title,
+                        event_status=status,
+                        host=self.user,
+                        assigned_to=self.user,
+                    )
+                    event = new_event
+                    logger.info(f"Created event '{title}' for task '{title}'")
+            except Status.DoesNotExist:
+                logger.error("Status 'Created' not found when creating task")
+                raise ValueError("Estado 'Created' no encontrado")
+            except IntegrityError as e:
+                logger.error(f"Error creating event for task: {e}")
+                raise ValueError(f"Error al crear el evento para la tarea: {e}")
+
+        # Crear la tarea
+        task = Task.objects.create(
+            title=title,
+            description=description or '',
+            important=important,
+            project=project,
+            event=event,
+            task_status=task_status,
+            assigned_to=assigned_to,
+            host=self.user,  # El host es siempre el usuario del manager
+            ticket_price=ticket_price
+        )
+
+        # Crear el estado inicial de la tarea
+        TaskState.objects.create(
+            task=task,
+            status=task_status,
+            start_time=timezone.now()
+        )
+
+        logger.info(f"Task '{title}' created successfully by TaskManager for user {self.user.username}")
+        return task

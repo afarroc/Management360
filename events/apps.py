@@ -10,6 +10,7 @@ class EventsConfig(AppConfig):
         import events.templatetags.schedule_filters
         import events.templatetags.custom_tags
         import events.templatetags.signals
+        import events.signals  # Importar señales principales
         # import initial_data
 
         # initial_data.create_default_users() # Eliminado

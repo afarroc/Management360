@@ -73,7 +73,7 @@
                                 {{ project_info.project.project_status.status_name }}
                             </span>
                         </td>
-                        <td><a href="{% url 'tasks' project_info.project.id %}" class="text-primary">{{project_info.count_tasks}}</a></td>
+                        <td><a href="{% url 'tasks_with_id' project_info.project.id %}" class="text-primary">{{project_info.count_tasks}}</a></td>
                         <td>
                             <div class="dropdown">
                                 <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -177,7 +177,7 @@
                                                title="Ver proyecto">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="{% url 'tasks' project_info.project.id %}"
+                                            <a href="{% url 'tasks_with_id' project_info.project.id %}"
                                                class="btn btn-outline-info"
                                                data-bs-toggle="tooltip"
                                                title="Ver tareas">
@@ -286,7 +286,7 @@
                                                title="Ver proyecto">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="{% url 'tasks' project_info.project.id %}"
+                                            <a href="{% url 'tasks_with_id' project_info.project.id %}"
                                                class="btn btn-outline-info"
                                                data-bs-toggle="tooltip"
                                                title="Ver tareas">

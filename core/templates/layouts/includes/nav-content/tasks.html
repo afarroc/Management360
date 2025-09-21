@@ -1,29 +1,74 @@
+<!-- =======================================================
+     OPTIMIZED TASKS SECTION
+     ======================================================= -->
 <li class="nav-item">
     <a class="nav-link collapsed" data-bs-target="#tasks-nav" data-bs-toggle="collapse" href="{% url 'tasks' %}">
-        <i class="bi bi-calendar"></i><span>Tasks</span><i class="bi bi-chevron-down ms-auto"></i>
+        <i class="bi bi-calendar-check"></i><span>Tasks</span><i class="bi bi-chevron-down ms-auto"></i>
     </a>
-    <ul id="tasks-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+    <ul id="tasks-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
 
-        <li>
-            <a href="{% url 'task_panel' %}">
-                <i class="bi bi-circle"></i><span>Task Panel</span>
-            </a>
-        </li>
+        <!-- Main Views -->
         <li>
             <a href="{% url 'tasks' %}">
-                <i class="bi bi-circle"></i><span>Tasks</span>
-            </a>
-        </li>        {% if user.is_authenticated %}
-        <li>
-            <a href="{% url 'task_create' %}">
-                <i class="bi bi-circle"></i><span>Create tasks</span>
+                <i class="bi bi-list-ul"></i><span>All Tasks</span>
             </a>
         </li>
         <li>
-            <a href="{% url 'task_edit' %}">
-                <i class="bi bi-circle"></i><span>Edit Task</span>
+            <a href="{% url 'task_panel' %}">
+                <i class="bi bi-speedometer2"></i><span>Task Panel</span>
+            </a>
+        </li>
+
+        <!-- Actions -->
+        {% if user.is_authenticated %}
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#task-actions-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-gear"></i><span>Task Actions</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="task-actions-nav" class="nav-content collapse" data-bs-parent="#tasks-nav">
+                <li>
+                    <a href="{% url 'task_create' %}">
+                        <i class="bi bi-plus-circle"></i><span>Create Task</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'task_edit_no_id' %}">
+                        <i class="bi bi-pencil"></i><span>Edit Task</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'task_activate_no_id' %}">
+                        <i class="bi bi-play-circle"></i><span>Activate Task</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        <!-- Advanced Task Features -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#task-advanced-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-diagram-3"></i><span>Advanced Features</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="task-advanced-nav" class="nav-content collapse" data-bs-parent="#tasks-nav">
+                <li>
+                    <a href="{% url 'task_dependencies_list' %}">
+                        <i class="bi bi-link"></i><span>Task Dependencies</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'task_dependencies_list' %}">
+                        <i class="bi bi-list-ul"></i><span>All Dependencies</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
+        <!-- Reports -->
+        <li>
+            <a href="{% url 'task_export' %}">
+                <i class="bi bi-download"></i><span>Export Tasks</span>
             </a>
         </li>
         {% endif %}
     </ul>
-</li><!-- End tasks Nav -->
+</li><!-- End Optimized Tasks Nav -->

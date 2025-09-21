@@ -9,6 +9,7 @@ urlpatterns = [
     path('about/', views.about_view, name='about'),
     path('contact/', views.contact_view, name='contact'),
     path('faq/', views.faq_view, name='faq'),
+    path('gtd-guide/', views.gtd_guide_view, name='gtd_guide'),
     path('blank/', views.blank_view, name='blank'),
 
     # URLs dinámicas

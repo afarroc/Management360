@@ -3,6 +3,8 @@ from django.db import models
 from django.core.validators import FileExtensionValidator
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 
 # Modelo para los estados del evento
 class Status(models.Model):
@@ -170,12 +172,13 @@ class Task(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     # Agregar blank=True para permitir que el campo sea opcional en formularios
     done = models.BooleanField(default=False)
-    project = models.ForeignKey('Project', on_delete=models.CASCADE)  # Usa comillas si Project está definido más abajo en el mismo archivo
+    project = models.ForeignKey('Project', on_delete=models.CASCADE, blank=True, null=True)  # Usa comillas si Project está definido más abajo en el mismo archivo
     event = models.ForeignKey('Event', on_delete=models.CASCADE, blank=True, null=True)
     task_status = models.ForeignKey(TaskStatus, on_delete=models.CASCADE)
-    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_tasks') 
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_tasks')
     host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_tasks')  # Asegúrate de que esta línea esté presente
     ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
+    tags = models.ManyToManyField('Tag', blank=True)
 
 
     def change_status(self, new_status_id):
@@ -268,12 +271,33 @@ class EventHistory(models.Model):
     def __str__(self):
         return f"{self.event.id} - {self.field_name} - {self.editor.username} : - ({self.old_value} - {self.new_value})"
 
-# Modelo para las etiquetas
-class Tag(models.Model):
-    name = models.CharField(max_length=50)
+# Sistema de etiquetas mejorado para múltiples metodologías
+class TagCategory(models.Model):
+    name = models.CharField(max_length=50, help_text="GTD, Priority, Context, Custom")
+    description = models.TextField()
+    color = models.CharField(max_length=7, default="#007bff")
+    icon = models.CharField(max_length=50, blank=True)
+    is_system = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        verbose_name_plural = "Tag Categories"
+
+class Tag(models.Model):
+    name = models.CharField(max_length=50)
+    category = models.ForeignKey(TagCategory, on_delete=models.CASCADE)
+    color = models.CharField(max_length=7, default="#6c757d")
+    description = models.TextField(blank=True)
+    is_system = models.BooleanField(default=False)  # Para etiquetas predefinidas
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.category.name}: {self.name}"
+
+    class Meta:
+        unique_together = ['name', 'category']
 
 # Modelo principal del evento
 class Event(models.Model):
@@ -378,4 +402,265 @@ class Message(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     message = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
+
+# Dependencias entre tareas
+class TaskDependency(models.Model):
+    task = models.ForeignKey('Task', on_delete=models.CASCADE, related_name='dependencies')
+    depends_on = models.ForeignKey('Task', on_delete=models.CASCADE, related_name='blocking')
+    dependency_type = models.CharField(max_length=20, choices=[
+        ('finish_to_start', 'Finalizar para comenzar'),
+        ('start_to_start', 'Comenzar para comenzar'),
+        ('finish_to_finish', 'Finalizar para finalizar'),
+        ('start_to_finish', 'Comenzar para finalizar')
+    ])
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.task.title} depende de {self.depends_on.title}"
+
+    class Meta:
+        unique_together = ['task', 'depends_on']
+
+# Plantillas de proyectos
+class ProjectTemplate(models.Model):
+    name = models.CharField(max_length=200)
+    description = models.TextField()
+    category = models.CharField(max_length=100)
+    estimated_duration = models.IntegerField(help_text="Duración en días")
+    is_public = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+class TemplateTask(models.Model):
+    template = models.ForeignKey(ProjectTemplate, on_delete=models.CASCADE)
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    order = models.IntegerField()
+    estimated_hours = models.DecimalField(max_digits=6, decimal_places=2)
+    required_skills = models.ManyToManyField(Tag, blank=True)
+
+    def __str__(self):
+        return f"{self.template.name}: {self.title}"
+
+    class Meta:
+        ordering = ['order']
+
+# Inbox para GTD (Getting Things Done)
+class InboxItem(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_processed = models.BooleanField(default=False)
+    processed_at = models.DateTimeField(null=True, blank=True)
+
+    # Generic foreign key para apuntar a Task o Project
+    processed_to_content_type = models.ForeignKey('contenttypes.ContentType', null=True, blank=True, on_delete=models.SET_NULL)
+    processed_to_object_id = models.PositiveIntegerField(null=True, blank=True)
+    processed_to = GenericForeignKey('processed_to_content_type', 'processed_to_object_id')
+
+    tags = models.ManyToManyField(Tag, blank=True)
+
+    # Campos GTD mejorados
+    gtd_category = models.CharField(max_length=20, choices=[
+        ('accionable', 'Accionable'),
+        ('no_accionable', 'No Accionable'),
+        ('pendiente', 'Pendiente de Categorizar')
+    ], default='pendiente', help_text="Categorización GTD principal")
+
+    action_type = models.CharField(max_length=20, choices=[
+        ('hacer', 'Hacer'),
+        ('delegar', 'Delegar'),
+        ('posponer', 'Posponer'),
+        ('proyecto', 'Convertir en Proyecto'),
+        ('eliminar', 'Eliminar'),
+        ('archivar', 'Archivar para Referencia'),
+        ('incubar', 'Incubar (Algún Día)'),
+        ('esperar', 'Esperar Más Información')
+    ], blank=True, null=True, help_text="Tipo de acción específica")
+
+    priority = models.CharField(max_length=10, choices=[
+        ('alta', 'Alta'),
+        ('media', 'Media'),
+        ('baja', 'Baja')
+    ], default='media', help_text="Prioridad del item")
+
+    context = models.CharField(max_length=50, blank=True, help_text="Contexto donde se puede ejecutar (ej: @casa, @trabajo, @teléfono)")
+
+    estimated_time = models.IntegerField(blank=True, null=True, help_text="Tiempo estimado en minutos")
+
+    due_date = models.DateTimeField(blank=True, null=True, help_text="Fecha límite si aplica")
+
+    energy_required = models.CharField(max_length=20, choices=[
+        ('baja', 'Baja Energía'),
+        ('media', 'Media Energía'),
+        ('alta', 'Alta Energía')
+    ], default='media', help_text="Nivel de energía mental requerido")
+
+    notes = models.TextField(blank=True, help_text="Notas adicionales para el procesamiento")
+
+    # Sistema de clasificación colaborativa
+    is_public = models.BooleanField(default=False, help_text="¿Puede ser visto por otros usuarios?")
+    authorized_users = models.ManyToManyField(
+        User,
+        through='InboxItemAuthorization',
+        through_fields=('inbox_item', 'user'),
+        related_name='authorized_inbox_items',
+        blank=True,
+        help_text="Usuarios autorizados para ver y clasificar este item"
+    )
+
+    # Campos para consenso de clasificación
+    classification_votes = models.ManyToManyField(
+        User,
+        through='InboxItemClassification',
+        through_fields=('inbox_item', 'user'),
+        related_name='classified_inbox_items',
+        blank=True,
+        help_text="Usuarios que han votado en la clasificación"
+    )
+
+    # Campos para seguimiento de actividad
+    last_activity = models.DateTimeField(auto_now=True)
+    view_count = models.PositiveIntegerField(default=0, help_text="Número de veces que ha sido visto")
+
+    def __str__(self):
+        return f"{self.title} [{self.gtd_category}]"
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def get_classification_consensus(self):
+        """Obtiene el consenso de clasificación basado en votos"""
+        classifications = self.inboxitemclassification_set.values('gtd_category').annotate(
+            count=models.Count('gtd_category')
+        ).order_by('-count')
+
+        if classifications:
+            return classifications[0]['gtd_category']
+        return self.gtd_category
+
+    def get_action_type_consensus(self):
+        """Obtiene el consenso de tipo de acción basado en votos"""
+        action_types = self.inboxitemclassification_set.values('action_type').annotate(
+            count=models.Count('action_type')
+        ).order_by('-count')
+
+        if action_types:
+            return action_types[0]['action_type']
+        return self.action_type
+
+    def increment_views(self):
+        """Incrementa el contador de vistas"""
+        self.view_count += 1
+        self.save(update_fields=['view_count', 'last_activity'])
+
+# Recordatorios mejorados
+class Reminder(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    remind_at = models.DateTimeField()
+    task = models.ForeignKey('Task', null=True, blank=True, on_delete=models.CASCADE)
+    project = models.ForeignKey('Project', null=True, blank=True, on_delete=models.CASCADE)
+    event = models.ForeignKey('Event', null=True, blank=True, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_sent = models.BooleanField(default=False)
+    reminder_type = models.CharField(max_length=20, choices=[
+        ('email', 'Email'),
+        ('push', 'Push Notification'),
+        ('both', 'Email y Push')
+    ])
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.remind_at}"
+
+    class Meta:
+        ordering = ['remind_at']
+
+# Sistema de autorización para items del inbox
+class InboxItemAuthorization(models.Model):
+    inbox_item = models.ForeignKey('InboxItem', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    granted_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='granted_authorizations')
+    granted_at = models.DateTimeField(auto_now_add=True)
+    permission_level = models.CharField(max_length=20, choices=[
+        ('view', 'Solo Vista'),
+        ('classify', 'Vista y Clasificación'),
+        ('edit', 'Vista, Clasificación y Edición'),
+        ('admin', 'Administrador Completo')
+    ], default='classify')
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.inbox_item.title} ({self.permission_level})"
+
+    class Meta:
+        unique_together = ['inbox_item', 'user']
+
+# Sistema de clasificación colaborativa para items del inbox
+class InboxItemClassification(models.Model):
+    inbox_item = models.ForeignKey('InboxItem', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    gtd_category = models.CharField(max_length=20, choices=[
+        ('accionable', 'Accionable'),
+        ('no_accionable', 'No Accionable'),
+        ('pendiente', 'Pendiente de Categorizar')
+    ])
+    action_type = models.CharField(max_length=20, choices=[
+        ('hacer', 'Hacer'),
+        ('delegar', 'Delegar'),
+        ('posponer', 'Posponer'),
+        ('proyecto', 'Convertir en Proyecto'),
+        ('eliminar', 'Eliminar'),
+        ('archivar', 'Archivar para Referencia'),
+        ('incubar', 'Incubar (Algún Día)'),
+        ('esperar', 'Esperar Más Información')
+    ], blank=True, null=True)
+    priority = models.CharField(max_length=10, choices=[
+        ('alta', 'Alta'),
+        ('media', 'Media'),
+        ('baja', 'Baja')
+    ], default='media')
+    confidence = models.IntegerField(
+        default=50,
+        help_text="Nivel de confianza en la clasificación (0-100%)"
+    )
+    notes = models.TextField(blank=True, help_text="Notas sobre la clasificación")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}: {self.inbox_item.title} -> {self.gtd_category}"
+
+    class Meta:
+        unique_together = ['inbox_item', 'user']
+        ordering = ['-updated_at']
+
+# Historial de cambios en items del inbox
+class InboxItemHistory(models.Model):
+    inbox_item = models.ForeignKey('InboxItem', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    action = models.CharField(max_length=50, choices=[
+        ('created', 'Creado'),
+        ('viewed', 'Visto'),
+        ('classified', 'Clasificado'),
+        ('edited', 'Editado'),
+        ('processed', 'Procesado'),
+        ('shared', 'Compartido'),
+        ('authorized', 'Autorización Cambiada')
+    ])
+    old_values = models.JSONField(blank=True, null=True, help_text="Valores anteriores")
+    new_values = models.JSONField(blank=True, null=True, help_text="Nuevos valores")
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    user_agent = models.TextField(blank=True, help_text="Browser/client info")
+
+    def __str__(self):
+        return f"{self.user.username}: {self.action} - {self.inbox_item.title}"
+
+    class Meta:
+        ordering = ['-timestamp']
 

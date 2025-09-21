@@ -1,0 +1,84 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="bi bi-trash me-2"></i>{{ title }}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>¡Atención!</strong> Esta acción no se puede deshacer.
+                    </div>
+
+                    <div class="mb-4">
+                        <h5>Detalles del Recordatorio:</h5>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <strong>Título:</strong> {{ reminder.title }}
+                            </li>
+                            {% if reminder.description %}
+                            <li class="list-group-item">
+                                <strong>Descripción:</strong> {{ reminder.description }}
+                            </li>
+                            {% endif %}
+                            <li class="list-group-item">
+                                <strong>Fecha del Recordatorio:</strong>
+                                <span class="badge bg-info">{{ reminder.remind_at|date:"d/m/Y H:i" }}</span>
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Tipo de Notificación:</strong>
+                                {% if reminder.reminder_type == 'email' %}
+                                <i class="bi bi-envelope text-primary"></i> Email
+                                {% elif reminder.reminder_type == 'push' %}
+                                <i class="bi bi-bell text-warning"></i> Push
+                                {% else %}
+                                <i class="bi bi-chat-text text-success"></i> Ambos
+                                {% endif %}
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Estado:</strong>
+                                {% if reminder.is_sent %}
+                                <span class="badge bg-success">Enviado</span>
+                                {% else %}
+                                <span class="badge bg-warning">Pendiente</span>
+                                {% endif %}
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Relacionado con:</strong>
+                                {% if reminder.task %}
+                                <span class="badge bg-primary">Tarea: {{ reminder.task.title }}</span>
+                                {% elif reminder.project %}
+                                <span class="badge bg-success">Proyecto: {{ reminder.project.title }}</span>
+                                {% elif reminder.event %}
+                                <span class="badge bg-warning">Evento: {{ reminder.event.title }}</span>
+                                {% else %}
+                                <span class="text-muted">General</span>
+                                {% endif %}
+                            </li>
+                        </ul>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'reminders_dashboard' %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i>Eliminar Recordatorio
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
