@@ -9,10 +9,9 @@ async def enviar_solicitud(pregunta):
         async with aiohttp.ClientSession() as session:
             async with session.post('http://localhost:11434/api/generate', json={
             "model": "deepseek-r1:8b",
+            "prompt": pregunta,
             "format": "json",
-            "stream": "false",
-
-
+            "stream": False
             }) as respuesta:
                 print(f"[LOG] Estado de la respuesta: {respuesta.status}")
                 print(f"[LOG] Headers de la respuesta: {dict(respuesta.headers)}")

@@ -1,7 +1,8 @@
 
 import os
 from dotenv import load_dotenv
-from ollama import AsyncClient
+import aiohttp
+import asyncio
 import logging
 from typing import AsyncGenerator
 import json
@@ -11,10 +12,13 @@ import json
 load_dotenv()
 
 # Configuración del cliente y logging
-OLLAMA_HOST = os.getenv('OLLAMA_HOST', 'localhost:11434')
-client = AsyncClient(host=OLLAMA_HOST)
+# Forzar localhost:11434 ya que la variable de entorno del sistema puede estar mal configurada
+OLLAMA_HOST = 'http://localhost:11434'
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Semáforo para limitar conexiones concurrentes
+semaphore = asyncio.Semaphore(2)
 
 # Configuración del modelo desde .env
 MODEL_CONFIG = {
@@ -35,8 +39,7 @@ class ConversationManager:
 
     async def generate_response(self, messages: list, conversation_id: str = None) -> AsyncGenerator[dict, None]:
         """
-        Genera respuestas en streaming para una conversación, con manejo de estado y caché.
-        Emite fragmentos de pensamiento (<|thought|>...<|endofthought|>) y respuesta normal.
+        Genera respuestas en streaming para una conversación usando requests directos a OLLAMA.
         """
         try:
             print("\n[OLLAMA] Nueva interacción:")
@@ -48,61 +51,46 @@ class ConversationManager:
             if not cleaned_messages:
                 for m in reversed(messages):
                     if m.get('role') == 'user' and m.get('content'):
-                        cleaned_messages = [{
-                            'role': 'user',
-                            'content': str(m.get('content'))[:2000]
-                        }]
+                        cleaned_messages = [m]
                         print("[OLLAMA] Forzando envío del mensaje del usuario por historial vacío.")
                         break
             print("Mensajes enviados:")
             for m in cleaned_messages:
                 print(f"  - {m['role']}: {m['content'][:100]}{'...' if len(m['content']) > 100 else ''}")
+
             if conversation_id:
                 self._update_conversation_cache(conversation_id, cleaned_messages)
-            generation_config = {**MODEL_CONFIG, 'messages': cleaned_messages}
-            total_tokens = 0
-            thought_mode = False
-            async for chunk in await client.chat(**generation_config, stream=True):
-                if chunk and chunk.get('message', {}).get('content'):
-                    content = chunk['message']['content']
-                    print(f"[OLLAMA] {content}")
-                    idx_thought_start = content.find('<think>')
-                    idx_thought_end = content.find('</think>')
-                    while content:
-                        if not thought_mode and idx_thought_start != -1:
-                            # Emitir lo anterior como respuesta normal
-                            before_thought = content[:idx_thought_start]
-                            if before_thought:
-                                yield {'message': {'content': before_thought}}
-                            content = content[idx_thought_start+7:]
-                            thought_mode = True
-                            idx_thought_start = -1
-                            idx_thought_end = content.find('</think>')
-                            continue
-                        if thought_mode:
-                            if idx_thought_end != -1:
-                                # Pensamiento final
-                                thought_text = content[:idx_thought_end]
-                                if thought_text:
-                                    yield {'message': {'content': f'<|thought|>{thought_text}'}}
-                                yield {'message': {'content': '<|endofthought|>'}}
-                                content = content[idx_thought_end+8:]
-                                thought_mode = False
-                                idx_thought_start = content.find('<think>')
-                                idx_thought_end = content.find('</think>')
-                                continue
-                            else:
-                                # Pensamiento parcial
-                                if content:
-                                    yield {'message': {'content': f'<|thought|>{content}'}}
-                                content = ''
-                                break
-                        # Si no hay etiquetas, todo es texto normal
-                        if content:
-                            yield {'message': {'content': content}}
-                            content = ''
-            print(f"[OLLAMA] Total de tokens generados: {total_tokens}\n")
-        except ConnectionError as e:
+
+            # Usar requests directos como en assistant.py
+            prompt = self._messages_to_prompt(cleaned_messages)
+
+            async with semaphore:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(f'{OLLAMA_HOST}/api/generate', json={
+                        "model": MODEL_CONFIG['model'],
+                        "prompt": prompt,
+                        "options": MODEL_CONFIG['options'],
+                        "stream": True
+                    }) as response:
+                        print(f"[OLLAMA] Estado de respuesta: {response.status}")
+                        if response.status != 200:
+                            yield {'message': {'content': f'Error del servidor OLLAMA: {response.status}'}}
+                            return
+
+                        async for line in response.content:
+                            if line:
+                                try:
+                                    chunk = json.loads(line.decode('utf-8'))
+                                    if 'response' in chunk:
+                                        content = chunk['response']
+                                        print(f"[OLLAMA] {content}")
+                                        yield {'message': {'content': content}}
+                                    if chunk.get('done', False):
+                                        break
+                                except json.JSONDecodeError:
+                                    continue
+
+        except aiohttp.ClientError as e:
             logger.error(f"Connection error: {e}")
             print(f"[OLLAMA][ERROR] Connection error: {e}")
             yield {'message': {'content': 'Error de conexión con el servidor de modelos. Intente nuevamente.'}}
@@ -121,6 +109,20 @@ class ConversationManager:
                     'content': str(msg['content'])[:2000]  # Limitar longitud
                 })
         return valid_messages
+
+    def _messages_to_prompt(self, messages: list) -> str:
+        """Convierte mensajes en un prompt de texto para el modelo llama3.2"""
+        system_prompt = """Eres un asistente de IA útil y directo. Responde de manera clara y concisa a las preguntas del usuario."""
+
+        prompt_parts = [system_prompt]
+        for msg in messages:
+            role = msg.get('role', 'user')
+            content = msg.get('content', '')
+            if role == 'user':
+                prompt_parts.append(f"Usuario: {content}")
+            elif role == 'assistant':
+                prompt_parts.append(f"Asistente: {content}")
+        return "\n\n".join(prompt_parts)
 
     def _update_conversation_cache(self, conversation_id: str, messages: list):
         """Maneja el caché de conversaciones persistentes"""
