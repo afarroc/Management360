@@ -68,8 +68,8 @@
                 <tbody>
                     {% for event in events %}
                     <tr>
-                        <td><a href="{% url 'event_panel' event.id %}">{{ event.id }} </a></td>
-                        <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{event.description}}" href="{% url 'event_panel' event.id %}">{{ event.title }}</a></td>
+                        <td><a href="{% url 'event_panel_with_id' event.id %}">{{ event.id }} </a></td>
+                        <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{event.description}}" href="{% url 'event_panel_with_id' event.id %}">{{ event.title }}</a></td>
                         <td>{{ event.event_status.status_name }}</td>
                         <td>{{ event.venue }}</td>
                         <td>{{ event.host.username }}</td>

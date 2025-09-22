@@ -32,10 +32,10 @@
                 <tbody>
                     {% for data in tasks_data %}
                     <tr>
-                        <td class="fw-bold"><a href="{% url 'task_panel' data.task.id %}">{{data.task.title}}</a></td>
-                        <td > 
+                        <td class="fw-bold"><a href="{% url 'task_panel_with_id' data.task.id %}">{{data.task.title}}</a></td>
+                        <td >
                             {% if data.task.project %}
-                            <a href="{% url 'project_panel' data.task.project.id %}">{{data.task.project.title}}
+                            <a href="{% url 'project_panel_with_id' data.task.project.id %}">{{data.task.project.title}}
                                 <br><i class="bi bi-circle-fill" style="color: {{ data.task.project.project_status.color }};" > {{data.task.project.project_status}} </i>
                             </a>
                             {% else %}
@@ -43,7 +43,7 @@
                         </td>
                         <td>
                             {% if data.task.event %}
-                            <a href="{% url 'event_panel' data.task.event.id %}">{{data.task.event.title}}
+                            <a href="{% url 'event_panel_with_id' data.task.event.id %}">{{data.task.event.title}}
                                 <br><i class="bi bi-circle-fill" style="color: {{ data.task.event.event_status.color }};" > {{data.task.event.event_status}} </i>
                             </a>
                             {% else %}

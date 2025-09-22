@@ -3368,9 +3368,9 @@ def test_board(request, id=None):
 @login_required
 def kanban_board(request):
     """
-    Vista Kanban para mostrar tareas organizadas por estado
+    Vista Kanban moderna para mostrar tareas organizadas por estado
     """
-    title = "Kanban Board"
+    title = "Kanban Board Moderno"
 
     # Obtener todas las tareas del usuario
     task_manager = TaskManager(request.user)
@@ -3388,14 +3388,14 @@ def kanban_board(request):
             'color': '#007bff',
             'tasks': []
         },
-        'In Review': {
-            'title': 'En Revisión',
-            'color': '#fd7e14',
-            'tasks': []
-        },
         'Completed': {
             'title': 'Completado',
             'color': '#28a745',
+            'tasks': []
+        },
+        'In Review': {
+            'title': 'En Revisión',
+            'color': '#fd7e14',
             'tasks': []
         }
     }
@@ -3412,13 +3412,30 @@ def kanban_board(request):
     from .models import TagCategory, Tag
     tag_categories = TagCategory.objects.filter(is_system=True)
 
+    # Calcular estadísticas para el dashboard moderno
+    total_tasks = len(tasks_data)
+    in_progress_count = sum(1 for task_data in tasks_data if task_data['task'].task_status.status_name == 'In Progress')
+    completed_count = sum(1 for task_data in tasks_data if task_data['task'].task_status.status_name == 'Completed')
+    pending_count = sum(1 for task_data in tasks_data if task_data['task'].task_status.status_name == 'To Do')
+
+    # Obtener proyectos para el modal de creación rápida
+    from .models import Project
+    projects = Project.objects.filter(
+        Q(host=request.user) | Q(attendees=request.user)
+    ).distinct().order_by('title')
+
     context = {
         'title': title,
         'kanban_columns': kanban_columns,
         'tag_categories': tag_categories,
+        'total_tasks': total_tasks,
+        'in_progress_count': in_progress_count,
+        'completed_count': completed_count,
+        'pending_count': pending_count,
+        'projects': projects,
     }
 
-    return render(request, 'events/kanban_board.html', context)
+    return render(request, 'events/kanban_board_modern.html', context)
 
 @login_required
 def kanban_project(request, project_id):

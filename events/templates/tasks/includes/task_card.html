@@ -34,7 +34,7 @@
 		</div>
 
 		<div class="card-body">
-			<h5 class="card-title"><a href="{% url 'task_panel' task_data.task.id %}">{{ task_data.task.title }}</a> <span>| Task id: {{task_data.task.id}}</span></h5>
+			<h5 class="card-title"><a href="{% url 'task_panel_with_id' task_data.task.id %}">{{ task_data.task.title }}</a> <span>| Task id: {{task_data.task.id}}</span></h5>
 
 			<div class="d-flex align-items-center">
 				<div
@@ -68,7 +68,7 @@
 			{% if task_data.task.event_id %}
 
 			<div>
-				<p class="card-textt"><a href="{% url 'event_panel' task_data.task.event_id %}">{{ task_data.task.event.title }}</a> <span>| Event id: {{task_data.task.event.id}}</span></p>
+				<p class="card-textt"><a href="{% url 'event_panel_with_id' task_data.task.event_id %}">{{ task_data.task.event.title }}</a> <span>| Event id: {{task_data.task.event.id}}</span></p>
 			</div>
 	
 			{% endif %}
