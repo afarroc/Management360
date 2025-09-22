@@ -35,7 +35,7 @@
                             <tr>
                                 <th scope="row">
                                     {% if event_data.event.id %}
-                                        <a href="{% url 'event_panel' event_data.event.id %}">
+                                        <a href="{% url 'event_panel_with_id' event_data.event.id %}">
                                             {{ event_data.event.id }}
                                         </a>
                                     {% else %}

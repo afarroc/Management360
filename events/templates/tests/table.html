@@ -37,7 +37,7 @@
                                 {% for item in task_states_with_duration %}
                                     <tr>
                                         <td>{{ item.task_state.id }}</td>
-                                        <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{item.task_state.task.id}}" href="{% url 'task_panel' item.task_state.task.id %}">{{ item.task_state.task.title }}</a></td>
+                                        <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{item.task_state.task.id}}" href="{% url 'task_panel_with_id' item.task_state.task.id %}">{{ item.task_state.task.title }}</a></td>
 
                                         <td>{{ item.start_date|date:"d-m"}}</td>
                                         <td>{{ item.start_time }}</td>

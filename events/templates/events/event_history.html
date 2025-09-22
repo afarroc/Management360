@@ -62,7 +62,7 @@
                                     {% for item in events_history %}
                                     <tr>
                                         <th scope="row"><a href="{% url 'event_history' item.event.id %}">{{item.event.id}}</a></th>
-                                        <th scope="row"><a href="{% url 'event_panel' item.event.id %}">{{item.event.title}}</a></th>
+                                        <th scope="row"><a href="{% url 'event_panel_with_id' item.event.id %}">{{item.event.title}}</a></th>
                                         <td>{{ item.start_time|date:"d-M H:i" }}</td>
                                         <td>{{ item.end_time|date:"d-M H:i" }}</td>
                                         <td><span 

@@ -58,8 +58,8 @@
                                             <tbody>
                                                 {% for project in projects %}
                                                 <tr>
-                                                    <td><a href="{% url 'project_panel' project.id %}">{{ project.id }} </a></td>
-                                                    <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{project.description}}" href="{% url 'project_panel' project.id %}">{{ project.title }}</a></td>
+                                                    <td><a href="{% url 'project_panel_with_id' project.id %}">{{ project.id }} </a></td>
+                                                    <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{project.description}}" href="{% url 'project_panel_with_id' project.id %}">{{ project.title }}</a></td>
                                                     <td>{{ project.assigned_to.username }}</td>
                                                     <td>{{ project.project_status.status_name }}</td>
                                                     <td>

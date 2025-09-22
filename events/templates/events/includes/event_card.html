@@ -34,7 +34,7 @@
 		</div>
 
 		<div class="card-body">
-			<h5 class="card-title"><a href="{% url 'event_panel' event_data.event.id %}">{{ event_data.event.title }}</a><span>| Event id: {{event_data.event.id}}</span></h5>
+			<h5 class="card-title"><a href="{% url 'event_panel_with_id' event_data.event.id %}">{{ event_data.event.title }}</a><span>| Event id: {{event_data.event.id}}</span></h5>
 			<div class="d-flex align-items-center">
 				<div
 					style="color: {{event_data.event.event_status.color}};"

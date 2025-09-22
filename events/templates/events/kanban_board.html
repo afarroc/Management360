@@ -354,20 +354,6 @@
         </div>
     </div>
 
-    <!-- Kanban Legend -->
-    <div class="kanban-legend mb-3">
-        <div class="legend-item">
-            <div class="legend-color" style="background: #dc3545;"></div>
-            <span>Alta Prioridad</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color" style="background: #ffc107;"></div>
-            <span>Media Prioridad</span>
-        </div>
-        <div class="legend-color" style="background: #28a745;"></div>
-        <span>Baja Prioridad</span>
-    </div>
-
     <!-- Kanban Board -->
     <div class="kanban-container" id="kanbanBoard">
         {% for status_name, column in kanban_columns.items %}
@@ -445,6 +431,22 @@
             </div>
         </div>
         {% endfor %}
+    </div>
+
+    <!-- Kanban Legend -->
+    <div class="kanban-legend mt-3">
+        <div class="legend-item">
+            <div class="legend-color" style="background: #dc3545;"></div>
+            <span>Alta Prioridad</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #ffc107;"></div>
+            <span>Media Prioridad</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-color" style="background: #17a2b8;"></div>
+            <span>Baja Prioridad</span>
+        </div>
     </div>
 </div>
 
