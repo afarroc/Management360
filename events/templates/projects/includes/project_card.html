@@ -24,7 +24,6 @@
 							<i class="bi bi-plus-circle me-2 text-success"></i>Create Task
 						</a>
 					</li>
-					{% if request.user.profile.role == 'SU' %}
 					<li>
 						<a href="{% url 'project_edit' project_data.project.id %}" class="dropdown-item">
 							<i class="bi bi-pencil me-2 text-primary"></i>Edit Project
@@ -37,7 +36,6 @@
 							<i class="bi bi-trash me-2"></i>Delete Project
 						</a>
 					</li>
-					{% endif %}
 				</ul>
 			</div>
 		</div>
