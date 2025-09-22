@@ -527,6 +527,36 @@ class InboxItem(models.Model):
     last_activity = models.DateTimeField(auto_now=True)
     view_count = models.PositiveIntegerField(default=0, help_text="Número de veces que ha sido visto")
 
+    # NUEVOS CAMPOS GTD MEJORADOS
+    # Nivel de energía requerido para ejecutar la tarea
+    energy_required = models.CharField(max_length=20, choices=[
+        ('baja', 'Baja Energía'),
+        ('media', 'Media Energía'),
+        ('alta', 'Alta Energía')
+    ], default='media', help_text="Nivel de energía mental requerido")
+
+    # Tiempo estimado en minutos
+    estimated_time = models.IntegerField(blank=True, null=True, help_text="Tiempo estimado en minutos")
+
+    # Sistema "Waiting For" - para tareas que esperan respuesta externa
+    waiting_for = models.TextField(blank=True, help_text="¿Qué se está esperando? (ej: respuesta de cliente)")
+    waiting_for_date = models.DateTimeField(blank=True, null=True, help_text="Fecha esperada de respuesta")
+
+    # Sistema de revisión GTD
+    next_review_date = models.DateTimeField(blank=True, null=True, help_text="Próxima fecha de revisión")
+    review_notes = models.TextField(blank=True, help_text="Notas de revisiones anteriores")
+
+    # Metadatos adicionales para análisis
+    created_during = models.CharField(max_length=20, choices=[
+        ('morning', 'Mañana (6-12)'),
+        ('afternoon', 'Tarde (12-18)'),
+        ('evening', 'Noche (18-24)'),
+        ('night', 'Madrugada (0-6)')
+    ], blank=True, help_text="Horario de creación para análisis de patrones")
+
+    # Campo para almacenar contexto específico del usuario
+    user_context = models.JSONField(blank=True, null=True, help_text="Contexto personalizado del usuario")
+
     def __str__(self):
         return f"{self.title} [{self.gtd_category}]"
 
@@ -663,4 +693,94 @@ class InboxItemHistory(models.Model):
 
     class Meta:
         ordering = ['-timestamp']
+
+# Sistema de patrones de clasificación automática GTD
+class GTDClassificationPattern(models.Model):
+    name = models.CharField(max_length=100, help_text="Nombre descriptivo del patrón")
+    description = models.TextField(help_text="Descripción de cuándo aplicar este patrón")
+
+    # Condiciones del patrón
+    keywords = models.JSONField(help_text="Lista de palabras clave que activan este patrón")
+    keywords_operator = models.CharField(max_length=10, choices=[
+        ('AND', 'Todas las palabras'),
+        ('OR', 'Cualquier palabra'),
+        ('NOT', 'Ninguna de las palabras')
+    ], default='OR')
+
+    # Resultados de clasificación
+    gtd_category = models.CharField(max_length=20, choices=[
+        ('accionable', 'Accionable'),
+        ('no_accionable', 'No Accionable'),
+        ('pendiente', 'Pendiente de Categorizar')
+    ])
+
+    action_type = models.CharField(max_length=20, choices=[
+        ('hacer', 'Hacer'),
+        ('delegar', 'Delegar'),
+        ('posponer', 'Posponer'),
+        ('proyecto', 'Convertir en Proyecto'),
+        ('eliminar', 'Eliminar'),
+        ('archivar', 'Archivar para Referencia'),
+        ('incubar', 'Incubar (Algún Día)'),
+        ('esperar', 'Esperar Más Información')
+    ])
+
+    priority = models.CharField(max_length=10, choices=[
+        ('alta', 'Alta'),
+        ('media', 'Media'),
+        ('baja', 'Baja')
+    ], default='media')
+
+    energy_required = models.CharField(max_length=20, choices=[
+        ('baja', 'Baja Energía'),
+        ('media', 'Media Energía'),
+        ('alta', 'Alta Energía')
+    ], default='media')
+
+    # Configuración del patrón
+    is_active = models.BooleanField(default=True)
+    confidence_score = models.IntegerField(default=70, help_text="Nivel de confianza (0-100%)")
+    usage_count = models.IntegerField(default=0, help_text="Veces que se ha usado este patrón")
+
+    # Metadatos
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.gtd_category} -> {self.action_type})"
+
+    class Meta:
+        verbose_name = "Patrón de Clasificación GTD"
+        verbose_name_plural = "Patrones de Clasificación GTD"
+
+# Sistema de aprendizaje automático simple para GTD
+class GTDLearningEntry(models.Model):
+    inbox_item = models.ForeignKey('InboxItem', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # Lo que el usuario decidió
+    user_gtd_category = models.CharField(max_length=20)
+    user_action_type = models.CharField(max_length=20)
+    user_priority = models.CharField(max_length=10)
+
+    # Lo que el sistema predijo
+    predicted_gtd_category = models.CharField(max_length=20, blank=True)
+    predicted_action_type = models.CharField(max_length=20, blank=True)
+    predicted_priority = models.CharField(max_length=10, blank=True)
+
+    # Confianza de la predicción
+    prediction_confidence = models.IntegerField(default=0)
+
+    # Metadatos
+    was_correct = models.BooleanField(default=False, help_text="¿La predicción fue correcta?")
+    learned_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Aprendizaje: {self.inbox_item.title[:50]}..."
+
+    class Meta:
+        verbose_name = "Entrada de Aprendizaje GTD"
+        verbose_name_plural = "Entradas de Aprendizaje GTD"
+
 

@@ -9,6 +9,10 @@ class ProjectManager:
         self.active_status = self.get_active_status()
 
     def get_user_projects(self):
+        # Verificar si el usuario está autenticado
+        if not self.user.is_authenticated:
+            return Project.objects.none()
+
         if hasattr(self.user, 'profile') and hasattr(self.user.profile, 'role') and self.user.profile.role == 'SU':
             return Project.objects.all().order_by('-updated_at')
         else:

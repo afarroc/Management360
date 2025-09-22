@@ -130,7 +130,7 @@ class InboxItemAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         """Optimizar las consultas para incluir las relaciones necesarias"""
-        return super().get_queryset(request).select_related('created_by', 'processed_to').prefetch_related('tags')
+        return super().get_queryset(request).select_related('created_by').prefetch_related('tags')
 
 # Sistema de recordatorios mejorados
 @admin.register(Reminder)
