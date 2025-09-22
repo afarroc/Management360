@@ -58,9 +58,9 @@
                         <td>
                             <input type="checkbox" name="selected_projects" value="{{ project_info.project.id }}">
                         </td>
-                        <td><a href="{% url 'project_panel' project_info.project.id %}" class="text-primary">{{project_info.project.title}}</a></td>
+                        <td><a href="{% url 'project_panel_with_id' project_info.project.id %}" class="text-primary">{{project_info.project.title}}</a></td>
                         {% if project_info.project.event %}
-                        <td><a href="{% url 'event_panel' project_info.project.event.id %}" class="text-primary">{{project_info.project.event.title}}</a></td>
+                        <td><a href="{% url 'event_panel_with_id' project_info.project.event.id %}" class="text-primary">{{project_info.project.event.title}}</a></td>
                         {% else %}
                         <td><span class="text-muted">None</span></td>
                         {% endif %}
@@ -80,7 +80,7 @@
                                     <i class="bi bi-three-dots"></i>
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="{% url 'project_panel' project_info.project.id %}">
+                                    <li><a class="dropdown-item" href="{% url 'project_panel_with_id' project_info.project.id %}">
                                         <i class="bi bi-eye me-2"></i>View Details</a></li>
                                     <li><a class="dropdown-item" href="{% url 'project_edit' project_info.project.id %}">
                                         <i class="bi bi-pencil me-2"></i>Edit Project</a></li>
@@ -115,18 +115,18 @@
                                             <i class="bi bi-three-dots"></i>
                                         </button>
                                         <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="{% url 'project_panel' project_info.project.id %}">
+                                            <li><a class="dropdown-item" href="{% url 'project_panel_with_id' project_info.project.id %}">
                                                 <i class="bi bi-eye me-2"></i>Ver Detalles</a></li>
                                             <li><a class="dropdown-item" href="{% url 'project_edit' project_info.project.id %}">
                                                 <i class="bi bi-pencil me-2"></i>Editar</a></li>
-                                            <li><a class="dropdown-item" href="{% url 'task_create' project_info.project.id %}">
+                                            <li><a class="dropdown-item" href="{% url 'task_create_with_project' project_info.project.id %}">
                                                 <i class="bi bi-plus-circle me-2"></i>Crear Tarea</a></li>
                                         </ul>
                                     </div>
                                 </div>
                                 <div class="card-body">
                                     <h6 class="card-title mb-2">
-                                        <a href="{% url 'project_panel' project_info.project.id %}"
+                                        <a href="{% url 'project_panel_with_id' project_info.project.id %}"
                                            class="text-decoration-none text-dark fw-bold">
                                             {{ project_info.project.title|truncatechars:35 }}
                                         </a>
@@ -143,7 +143,7 @@
                                         <small class="text-muted d-block">
                                             <i class="bi bi-calendar-event me-1"></i>Evento:
                                         </small>
-                                        <a href="{% url 'event_panel' project_info.project.event.id %}"
+                                        <a href="{% url 'event_panel_with_id' project_info.project.event.id %}"
                                            class="badge bg-light text-dark text-decoration-none">
                                             {{ project_info.project.event.title|truncatechars:25 }}
                                         </a>
@@ -171,7 +171,7 @@
                                             {{ project_info.project.updated_at|timesince }}
                                         </small>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{% url 'project_panel' project_info.project.id %}"
+                                            <a href="{% url 'project_panel_with_id' project_info.project.id %}"
                                                class="btn btn-outline-primary"
                                                data-bs-toggle="tooltip"
                                                title="Ver proyecto">
@@ -226,18 +226,18 @@
                                             <i class="bi bi-three-dots"></i>
                                         </button>
                                         <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="{% url 'project_panel' project_info.project.id %}">
+                                            <li><a class="dropdown-item" href="{% url 'project_panel_with_id' project_info.project.id %}">
                                                 <i class="bi bi-eye me-2"></i>Ver Detalles</a></li>
                                             <li><a class="dropdown-item" href="{% url 'project_edit' project_info.project.id %}">
                                                 <i class="bi bi-pencil me-2"></i>Editar</a></li>
-                                            <li><a class="dropdown-item" href="{% url 'task_create' project_info.project.id %}">
+                                            <li><a class="dropdown-item" href="{% url 'task_create_with_project' project_info.project.id %}">
                                                 <i class="bi bi-plus-circle me-2"></i>Crear Tarea</a></li>
                                         </ul>
                                     </div>
                                 </div>
                                 <div class="card-body">
                                     <h6 class="card-title mb-2">
-                                        <a href="{% url 'project_panel' project_info.project.id %}"
+                                        <a href="{% url 'project_panel_with_id' project_info.project.id %}"
                                            class="text-decoration-none text-dark fw-bold">
                                             {{ project_info.project.title|truncatechars:35 }}
                                         </a>
@@ -254,7 +254,7 @@
                                         <small class="text-muted d-block">
                                             <i class="bi bi-calendar-event me-1"></i>Evento:
                                         </small>
-                                        <a href="{% url 'event_panel' project_info.project.event.id %}"
+                                        <a href="{% url 'event_panel_with_id' project_info.project.event.id %}"
                                            class="badge bg-light text-dark text-decoration-none">
                                             {{ project_info.project.event.title|truncatechars:25 }}
                                         </a>
@@ -280,7 +280,7 @@
                                             Completado {{ project_info.project.updated_at|timesince }}
                                         </small>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{% url 'project_panel' project_info.project.id %}"
+                                            <a href="{% url 'project_panel_with_id' project_info.project.id %}"
                                                class="btn btn-outline-success"
                                                data-bs-toggle="tooltip"
                                                title="Ver proyecto">
