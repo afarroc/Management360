@@ -125,7 +125,8 @@ urlpatterns = [
     # ============================================================================
 
     # Kanban Board
-    path('kanban/', views.kanban_board, name='kanban_board'),
+    path('kanban/', views.kanban_board_unified, name='kanban_board'),
+    path('kanban/organized/', views.kanban_board_unified, name='kanban_board_organized'),
     path('kanban/project/<int:project_id>/', views.kanban_project, name='kanban_project'),
 
     # Eisenhower Matrix

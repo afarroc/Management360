@@ -2,362 +2,839 @@
 {% load static %}
 {% load schedule_filters %}
 {% block content %}
-{% if messages %}
-{% include 'layouts/includes/alert.html' %}
-{% endif %}
-<div class="pagetitle">
-    <h1>{{page_title}}</h1>
-    <nav>
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item active">{{page_title}}</li>
-        </ol>
-    </nav>
-</div><!-- End Page Title -->
 
-<!-- Progress Bar -->
-<div class="mb-4">
-    <h5 class="text-center mb-3">Progreso de Configuración</h5>
-    <div class="progress" style="height: 25px;">
-        <div class="progress-bar bg-success" role="progressbar" style="width: {% widthratio completed_steps|length 5 100 %}%;" aria-valuenow="{% widthratio completed_steps|length 5 100 %}" aria-valuemin="0" aria-valuemax="100">
-            {{ completed_steps|length }}/5 Pasos Completados
+<!-- Hero Section Simple -->
+<section class="hero-section-simple" style="background: #f8f9fa; border-bottom: 1px solid #e9ecef; padding: 40px 0;">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-12 text-center">
+                <div class="hero-content-simple">
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <img src="{% static 'assets/img/logo.png' %}" alt="Management360" class="me-3" style="height: 50px; width: auto;">
+                        <div>
+                            <h1 class="h3 fw-bold mb-0 text-dark">{{page_title}}</h1>
+                            <p class="text-muted mb-0">Configuración Inicial del Sistema</p>
+                        </div>
+                    </div>
+                    <p class="text-muted">Bienvenido al asistente de configuración inicial de Management360. Complete los pasos a continuación para configurar su sistema.</p>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+</section>
 
+<!-- Page Title Section -->
+<div class="pagetitle">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+                        <li class="breadcrumb-item active">{{page_title}}</li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div><!-- End Page Title -->
+
+<!-- Progress Section -->
 <section class="section dashboard">
-    <div class="row">
-        <!-- Card 1: Create Superuser -->
-        <div class="col-xxl-4 col-md-6">
-            <div class="card info-card revenue-card shadow-sm hover-shadow">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-shield-lock me-2"></i>Create Superuser</h5>
-                    {% if '1' in completed_steps %}
-                    <div class="d-flex align-items-center">
-                        <div class="ps-3">
-                            <h6><i class="bi bi-check-circle-fill text-success me-2"></i>Completed</h6>
+    <div class="container-fluid">
+        <div class="row justify-content-center mb-4">
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h4 class="mb-0"><i class="bi bi-speedometer2 me-2 text-primary"></i>Progreso de Configuración</h4>
+                            <span class="badge bg-primary fs-6 px-3 py-2">{{ completed_steps|length }}/5 Pasos</span>
                         </div>
-                    </div>
-                    {% else %}
-                    <form method="post" enctype="multipart/form-data" id="create-superuser-form">
-                        {% csrf_token %}
-                        <input type="hidden" name="create_su" value="" id="create-su-hidden">
-                        <button type="submit" name="create_su_btn" id="create-superuser-btn" class="btn btn-primary create-superuser-button" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear el primer usuario administrador del sistema" data-tracking-id="superuser-creation-btn">Create Superuser</button>
-                    </form>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Card 2: Create Superuser Profile -->
-        <div class="col-xxl-4 col-md-6">
-            <div class="card info-card revenue-card shadow-sm hover-shadow">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-person-badge me-2"></i>Create Superuser Profile</h5>
-                    {% if '1' not in completed_steps %}
-                    <div class="d-flex align-items-center">
-                        <div class="ps-3">
-                            <h6><i class="bi bi-clock text-warning me-2"></i>Pending</h6>
-                        </div>
-                    </div>
-                    {% elif '2' in completed_steps %}
-                    <div class="d-flex align-items-center">
-                        <div class="ps-3">
-                            <h6><i class="bi bi-check-circle-fill text-success me-2"></i>Completed</h6>
-                        </div>
-                    </div>
-                    {% else %}
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="full_name" class="form-label">Full Name</label>
-                            <input type="text" class="form-control" id="full_name" name="full_name" placeholder="Ingrese su nombre completo" required aria-describedby="full_name_help">
-                        </div>
-                        <div class="mb-3">
-                            <label for="profession" class="form-label">Profession</label>
-                            <input type="text" class="form-control" id="profession" name="profession" placeholder="Ingrese su profesión" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="role" class="form-label">Role</label>
-                            <select class="form-select" id="role" name="role" required>
-                                <option value="SU">Supervisor</option>
-                                <option value="GE">Event Manager</option>
-                                <option value="AD">Administrator</option>
-                                <option value="US" selected>Standard User</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="profile_picture" class="form-label">Profile Picture (Optional)</label>
-                            <input type="file" class="form-control" id="profile_picture" name="profile_picture">
-                        </div>
-                        <button type="submit" name="create_profile" class="btn btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Guardar la información del perfil del superusuario">Save Profile</button>
-                    </form>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        <!-- NEW CARD: Create Initial Statuses -->
-        <div class="col-xxl-4 col-md-6">
-            <div class="card info-card revenue-card shadow-sm hover-shadow">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-list-check me-2"></i>Create Initial Statuses</h5>
-                    {% if '2' not in completed_steps %}
-                    <div class="d-flex align-items-center">
-                        <div class="ps-3">
-                            <h6><i class="bi bi-clock text-warning me-2"></i>Pending</h6>
-                        </div>
-                    </div>
-                    {% elif '3' in completed_steps %}
-                    <div class="d-flex align-items-center">
-                        <div class="ps-3">
-                            <h6><i class="bi bi-check-circle-fill text-success me-2"></i>Completed</h6>
-                        </div>
-                    </div>
-                    {% else %}
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <p>This will create default statuses for Events, Projects and Tasks.</p>
-                            <div class="row g-4">
-                                <div class="col-md-4">
-                                    <h6>Event Statuses</h6>
-                                    <ul class="list-group">
-                                        <li class="list-group-item">Created</li>
-                                        <li class="list-group-item">In Progress</li>
-                                        <li class="list-group-item">Paused</li>
-                                        <li class="list-group-item">Completed</li>
-                                        <li class="list-group-item">Cancelled</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-4">
-                                    <h6>Project Statuses</h6>
-                                    <ul class="list-group">
-                                        <li class="list-group-item">Draft</li>
-                                        <li class="list-group-item">Planning</li>
-                                        <li class="list-group-item">In Progress</li>
-                                        <li class="list-group-item">On Hold</li>
-                                        <li class="list-group-item">Completed</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-4">
-                                    <h6>Task Statuses</h6>
-                                    <ul class="list-group">
-                                        <li class="list-group-item">To Do</li>
-                                        <li class="list-group-item">In Progress</li>
-                                        <li class="list-group-item">Blocked</li>
-                                        <li class="list-group-item">Completed</li>
-                                        <li class="list-group-item">Verified</li>
-                                    </ul>
-                                </div>
+                        <div class="progress mb-3" style="height: 30px; border-radius: 15px;">
+                            <div class="progress-bar bg-gradient" role="progressbar"
+                                 style="width: {% widthratio completed_steps|length 5 100 %}%"
+                                 aria-valuenow="{% widthratio completed_steps|length 5 100 %}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                                <span class="text-white fw-bold">{{ completed_steps|length }}/5 Pasos Completados</span>
                             </div>
                         </div>
-                        <button type="submit" name="create_initial_statuses" class="btn btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear estados predeterminados para eventos, proyectos y tareas">Create Statuses</button>
-                    </form>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Card 3: Create Random Users -->
-        <div class="col-xxl-4 col-md-6">
-            <div class="card info-card revenue-card shadow-sm hover-shadow">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-people me-2"></i>Create Random Users</h5>
-                    {% if '3' not in completed_steps %}
-                    <div class="d-flex align-items-center">
-                        <div class="ps-3">
-                            <h6><i class="bi bi-clock text-warning me-2"></i>Pending</h6>
-                        </div>
-                    </div>
-                    {% else %}
-                    <!-- ... existing random users form ... -->
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="domain" class="form-label">Dominio:</label>
-                            <input type="text" class="form-control" id="domain" name="domain" placeholder="ejemplo.com" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="num_users" class="form-label">Número de Usuarios:</label>
-                            <input type="number" class="form-control" id="num_users" name="num_users" min="1" max="100" placeholder="10" required>
-                        </div>
-                        <div>
-                            <label for="group_id">Asignar al Grupo:</label>
-                            <select id="group_id" name="group_id" class="form-select">
-                                <option value="">Ninguno</option>
-                                {% for group in all_groups %}
-                                <option value="{{ group.id }}">{{ group.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div>
-                            <label for="new_group_name">o Crear Nuevo Grupo:</label>
-                            <input type="text" id="new_group_name" name="new_group_name">
-                        </div>
-                        <button type="submit" name="create_random_users" class="btn btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Generar usuarios aleatorios para testing">Crear Usuarios</button>
-                    </form>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- Card 4: Create User Groups -->
-        <div class="col-xxl-4 col-md-6">
-            <div class="card enhanced-card management-card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center me-3" style="background: linear-gradient(135deg, #4154f1 0%, #764ba2 100%); width: 48px; height: 48px;">
-                            <i class="bi bi-person-plus text-white" style="font-size: 1.5rem;"></i>
-                        </div>
-                        <div>
-                            <h5 class="card-title mb-0">Crear Grupos de Usuarios</h5>
-                            <p class="text-muted small mb-0">Gestiona permisos y accesos</p>
-                        </div>
-                    </div>
-
-                    {% if '3' not in completed_steps %}
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="status-badge status-pending me-2">
-                            <i class="bi bi-clock me-1"></i> Pendiente
-                        </div>
-                        <small class="text-muted">Complete los pasos anteriores primero</small>
-                    </div>
-                    {% else %}
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="status-badge status-in-progress me-2">
-                            <i class="bi bi-gear me-1"></i> Configurar
-                        </div>
-                    </div>
-
-                    <div class="group-form-container">
-                        <form method="post" id="create-group-form">
-                            {% csrf_token %}
-                            <input type="hidden" name="create_group" value="1" id="create-group-hidden">
-
-                            <div class="mb-4">
-                                <label for="group_name" class="form-label">
-                                    <i class="bi bi-tag me-2"></i>Nombre del Grupo
-                                </label>
-                                <input type="text" class="form-control" id="group_name" name="group_name"
-                                       placeholder="Ej: Administradores, Editores, Usuarios" required>
-                                <div class="form-text">
-                                    <i class="bi bi-info-circle me-1"></i>
-                                    Ingrese un nombre descriptivo para el grupo
+                        <div class="row text-center">
+                            {% for i in "12345" %}
+                            <div class="col">
+                                <div class="step-indicator {% if i in completed_steps %}completed{% else %}pending{% endif %}">
+                                    <div class="step-number">{{ i }}</div>
+                                    <small class="step-label">
+                                        {% if i == '1' %}Superusuario{% elif i == '2' %}Perfil{% elif i == '3' %}Estados{% elif i == '4' %}Usuarios{% else %}Grupos{% endif %}
+                                    </small>
                                 </div>
                             </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-                            <div class="mb-4">
-                                <label class="form-label">
-                                    <i class="bi bi-people me-2"></i>Seleccionar Usuarios
-                                </label>
-                                <div class="user-selection-grid">
-                                    <div class="row">
-                                        {% for user in all_users %}
-                                        <div class="col-md-6 mb-2">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox"
-                                                       id="user_{{ user.username }}" name="usernames"
-                                                       value="{{ user.username }}">
-                                                <label class="form-check-label" for="user_{{ user.username }}">
-                                                    <strong>{{ user.username }}</strong>
-                                                    {% if user.first_name %}
-                                                        <small class="text-muted d-block">
-                                                            {{ user.first_name }} {{ user.last_name }}
-                                                        </small>
-                                                    {% endif %}
-                                                </label>
-                                            </div>
-                                        </div>
-                                        {% endfor %}
+<!-- Main Setup Cards Section -->
+<section class="section">
+    <div class="container-fluid">
+        <div class="row g-4">
+            <!-- Card 1: Create Superuser -->
+            <div class="col-xxl-4 col-md-6">
+                <div class="card setup-card {% if '1' in completed_steps %}completed{% else %}pending{% endif %}">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="card-icon me-3 {% if '1' in completed_steps %}bg-success{% else %}bg-primary{% endif %}">
+                                <i class="bi bi-shield-lock"></i>
+                            </div>
+                            <div>
+                                <h5 class="card-title mb-1">Crear Superusuario</h5>
+                                <p class="text-muted small mb-0">Paso 1 de 5</p>
+                            </div>
+                        </div>
+
+                        {% if '1' in completed_steps %}
+                        <div class="superuser-summary">
+                            <div class="d-flex align-items-center text-success mb-3">
+                                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                                <span class="fw-semibold">Superusuario del Sistema</span>
+                            </div>
+
+                            <div class="admin-profile-card">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="admin-avatar me-3">
+                                        {% if user.is_authenticated and user.cv.profile_picture %}
+                                            <img src="{{ user.cv.profile_picture.url }}" alt="Profile Avatar" class="admin-avatar-img">
+                                        {% else %}
+                                            <img src="{% static 'assets/img/profile-img.jpg' %}" alt="Default Profile" class="admin-avatar-img">
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Superusuario Principal</h6>
+                                        <small class="text-muted">Administrador del Sistema</small>
                                     </div>
                                 </div>
-                                <div class="form-text">
-                                    <i class="bi bi-lightbulb me-1"></i>
-                                    Seleccione los usuarios que pertenecerán a este grupo
+
+                                <div class="admin-details">
+                                    <div class="row g-2">
+                                        <div class="col-12">
+                                            <div class="detail-item">
+                                                <i class="bi bi-person me-2"></i>
+                                                <strong>Usuario:</strong> <span class="text-primary">su</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="detail-item">
+                                                <i class="bi bi-envelope me-2"></i>
+                                                <strong>Email:</strong> <span class="text-primary">su@localhost</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="detail-item">
+                                                <i class="bi bi-key me-2"></i>
+                                                <strong>Estado:</strong> <span class="badge bg-success">Activo</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="detail-item">
+                                                <i class="bi bi-calendar me-2"></i>
+                                                <strong>Creado:</strong> <span class="text-muted">Sistema inicializado</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="admin-actions mt-3">
+                                    <button class="btn btn-outline-primary btn-sm me-2" onclick="showSuperuserDetails()">
+                                        <i class="bi bi-pencil me-1"></i>Editar
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm" onclick="showSuperuserDetails()">
+                                        <i class="bi bi-eye me-1"></i>Ver Detalles
+                                    </button>
                                 </div>
                             </div>
 
-                            <div class="d-grid">
-                                <button type="submit" class="btn btn-primary"
-                                        data-bs-toggle="tooltip" data-bs-placement="top"
-                                        title="Crear grupo y asignar usuarios seleccionados"
-                                        onclick="document.getElementById('create-group-hidden').value='1';">
+                            <div class="alert alert-success mt-3 border-0">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-info-circle text-success me-2 mt-1"></i>
+                                    <div>
+                                        <strong>¡Sistema Protegido!</strong>
+                                        <p class="mb-0 mt-1 small">
+                                            El superusuario tiene acceso completo al sistema y puede gestionar todos los aspectos de Management360.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <form method="post" enctype="multipart/form-data" id="create-superuser-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="create_su" value="" id="create-su-hidden">
+                            <button type="submit" name="create_su_btn" id="create-superuser-btn"
+                                    class="btn btn-primary w-100 create-superuser-button"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="Crear el primer usuario administrador del sistema">
+                                <i class="bi bi-person-plus me-2"></i>
+                                Crear Superusuario
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Create Superuser Profile -->
+            <div class="col-xxl-4 col-md-6">
+                <div class="card setup-card {% if '1' not in completed_steps %}disabled{% elif '2' in completed_steps %}completed{% else %}active{% endif %}">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="card-icon me-3 {% if '2' in completed_steps %}bg-success{% elif '1' in completed_steps %}bg-info{% else %}bg-secondary{% endif %}">
+                                <i class="bi bi-person-badge"></i>
+                            </div>
+                            <div>
+                                <h5 class="card-title mb-1">Perfil del Superusuario</h5>
+                                <p class="text-muted small mb-0">Paso 2 de 5</p>
+                            </div>
+                        </div>
+
+                        {% if '1' not in completed_steps %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-clock fs-2 text-muted mb-2"></i>
+                            <p class="text-muted mb-0">Complete el paso anterior</p>
+                        </div>
+                        {% elif '2' in completed_steps %}
+                        <div class="profile-summary">
+                            <div class="d-flex align-items-center text-success mb-3">
+                                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                                <span class="fw-semibold">Perfil del Superusuario Completado</span>
+                            </div>
+
+                            <div class="admin-profile-card">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="admin-avatar me-3">
+                                        {% if user.is_authenticated and user.cv.profile_picture %}
+                                            <img src="{{ user.cv.profile_picture.url }}" alt="Profile Avatar" class="admin-avatar-img">
+                                        {% else %}
+                                            <img src="{% static 'assets/img/profile-img.jpg' %}" alt="Default Profile" class="admin-avatar-img">
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Perfil de Superusuario</h6>
+                                        <small class="text-muted">Información Personal Configurada</small>
+                                    </div>
+                                </div>
+
+                                <div class="admin-details">
+                                    <div class="row g-2">
+                                        <div class="col-12">
+                                            <div class="detail-item">
+                                                <i class="bi bi-person me-2"></i>
+                                                <strong>Nombre:</strong> <span class="text-primary">Superusuario Principal</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="detail-item">
+                                                <i class="bi bi-briefcase me-2"></i>
+                                                <strong>Profesión:</strong> <span class="text-primary">Administrador del Sistema</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="detail-item">
+                                                <i class="bi bi-tag me-2"></i>
+                                                <strong>Rol:</strong> <span class="badge bg-info">Supervisor</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="detail-item">
+                                                <i class="bi bi-calendar me-2"></i>
+                                                <strong>Configurado:</strong> <span class="text-muted">Sistema inicializado</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="admin-actions mt-3">
+                                    <button class="btn btn-outline-primary btn-sm me-2" onclick="showProfileDetails()">
+                                        <i class="bi bi-pencil me-1"></i>Editar
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm" onclick="showProfileDetails()">
+                                        <i class="bi bi-eye me-1"></i>Ver Detalles
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-success mt-3 border-0">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-info-circle text-success me-2 mt-1"></i>
+                                    <div>
+                                        <strong>¡Perfil Protegido!</strong>
+                                        <p class="mb-0 mt-1 small">
+                                            El perfil del superusuario está completamente configurado y listo para gestionar el sistema Management360.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label for="full_name" class="form-label">
+                                        <i class="bi bi-person me-1"></i>Nombre Completo
+                                    </label>
+                                    <input type="text" class="form-control" id="full_name" name="full_name"
+                                           placeholder="Ingrese su nombre completo" required>
+                                </div>
+                                <div class="col-12">
+                                    <label for="profession" class="form-label">
+                                        <i class="bi bi-briefcase me-1"></i>Profesión
+                                    </label>
+                                    <input type="text" class="form-control" id="profession" name="profession"
+                                           placeholder="Ingrese su profesión" required>
+                                </div>
+                                <div class="col-12">
+                                    <label for="role" class="form-label">
+                                        <i class="bi bi-tag me-1"></i>Rol
+                                    </label>
+                                    <select class="form-select" id="role" name="role" required>
+                                        <option value="SU">Supervisor</option>
+                                        <option value="GE">Gestor de Eventos</option>
+                                        <option value="AD">Administrador</option>
+                                        <option value="US" selected>Usuario Estándar</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label for="profile_picture" class="form-label">
+                                        <i class="bi bi-image me-1"></i>Foto de Perfil (Opcional)
+                                    </label>
+                                    <input type="file" class="form-control" id="profile_picture" name="profile_picture"
+                                           accept="image/*">
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Formatos aceptados: JPG, PNG, GIF. Máximo 2MB.
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" name="create_profile" class="btn btn-info w-100 mt-3">
+                                <i class="bi bi-check-circle me-2"></i>
+                                Guardar Perfil
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <!-- Card 3: Create Initial Statuses -->
+            <div class="col-xxl-4 col-md-6">
+                <div class="card setup-card {% if '2' not in completed_steps %}disabled{% elif '3' in completed_steps %}completed{% else %}active{% endif %}">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="card-icon me-3 {% if '3' in completed_steps %}bg-success{% elif '2' in completed_steps %}bg-warning{% else %}bg-secondary{% endif %}">
+                                <i class="bi bi-list-check"></i>
+                            </div>
+                            <div>
+                                <h5 class="card-title mb-1">Estados Iniciales</h5>
+                                <p class="text-muted small mb-0">Paso 3 de 5</p>
+                            </div>
+                        </div>
+
+                        {% if '2' not in completed_steps %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-clock fs-2 text-muted mb-2"></i>
+                            <p class="text-muted mb-0">Complete los pasos anteriores</p>
+                        </div>
+                        {% elif '3' in completed_steps %}
+                        <div class="status-summary">
+                            <div class="d-flex align-items-center text-success mb-3">
+                                <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                                <span class="fw-semibold">Estados Iniciales Configurados</span>
+                            </div>
+
+                            <div class="status-overview-card">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="status-icon me-3">
+                                        <img src="{% static 'images/pandas/panda6.png' %}" alt="Status Overview" class="status-avatar-img">
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1">Estados del Sistema</h6>
+                                        <small class="text-muted">Configuración de Estados Completada</small>
+                                    </div>
+                                </div>
+
+                                <div class="status-details">
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <div class="status-category-completed">
+                                                <h6 class="status-category-title">
+                                                    <i class="bi bi-calendar-event me-2"></i>
+                                                    Estados de Eventos
+                                                    <span class="badge bg-success ms-2">5 Estados</span>
+                                                </h6>
+                                                <div class="status-list-completed">
+                                                    <span class="status-item-completed">Creado</span>
+                                                    <span class="status-item-completed">En Progreso</span>
+                                                    <span class="status-item-completed">Pausado</span>
+                                                    <span class="status-item-completed">Completado</span>
+                                                    <span class="status-item-completed">Cancelado</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="status-category-completed">
+                                                <h6 class="status-category-title">
+                                                    <i class="bi bi-folder me-2"></i>
+                                                    Estados de Proyectos
+                                                    <span class="badge bg-info ms-2">5 Estados</span>
+                                                </h6>
+                                                <div class="status-list-completed">
+                                                    <span class="status-item-completed">Borrador</span>
+                                                    <span class="status-item-completed">Planificación</span>
+                                                    <span class="status-item-completed">En Progreso</span>
+                                                    <span class="status-item-completed">En Espera</span>
+                                                    <span class="status-item-completed">Completado</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="status-category-completed">
+                                                <h6 class="status-category-title">
+                                                    <i class="bi bi-check-square me-2"></i>
+                                                    Estados de Tareas
+                                                    <span class="badge bg-warning ms-2">5 Estados</span>
+                                                </h6>
+                                                <div class="status-list-completed">
+                                                    <span class="status-item-completed">Por Hacer</span>
+                                                    <span class="status-item-completed">En Progreso</span>
+                                                    <span class="status-item-completed">Bloqueado</span>
+                                                    <span class="status-item-completed">Completado</span>
+                                                    <span class="status-item-completed">Verificado</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="status-actions mt-3">
+                                    <button class="btn btn-outline-primary btn-sm me-2" onclick="showStatusDetails()">
+                                        <i class="bi bi-pencil me-1"></i>Editar Estados
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm" onclick="showStatusDetails()">
+                                        <i class="bi bi-eye me-1"></i>Ver Detalles
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-success mt-3 border-0">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-info-circle text-success me-2 mt-1"></i>
+                                    <div>
+                                        <strong>¡Estados Configurados!</strong>
+                                        <p class="mb-0 mt-1 small">
+                                            Los 15 estados iniciales han sido creados exitosamente y están listos para usar en el sistema Management360.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="status-preview">
+                            <p class="text-muted mb-3">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Se crearán los estados predeterminados para Eventos, Proyectos y Tareas.
+                            </p>
+
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="status-category">
+                                        <h6 class="status-category-title">
+                                            <i class="bi bi-calendar-event me-1"></i>
+                                            Estados de Eventos
+                                        </h6>
+                                        <div class="status-list">
+                                            <span class="status-item">Creado</span>
+                                            <span class="status-item">En Progreso</span>
+                                            <span class="status-item">Pausado</span>
+                                            <span class="status-item">Completado</span>
+                                            <span class="status-item">Cancelado</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="status-category">
+                                        <h6 class="status-category-title">
+                                            <i class="bi bi-folder me-1"></i>
+                                            Estados de Proyectos
+                                        </h6>
+                                        <div class="status-list">
+                                            <span class="status-item">Borrador</span>
+                                            <span class="status-item">Planificación</span>
+                                            <span class="status-item">En Progreso</span>
+                                            <span class="status-item">En Espera</span>
+                                            <span class="status-item">Completado</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="status-category">
+                                        <h6 class="status-category-title">
+                                            <i class="bi bi-check-square me-1"></i>
+                                            Estados de Tareas
+                                        </h6>
+                                        <div class="status-list">
+                                            <span class="status-item">Por Hacer</span>
+                                            <span class="status-item">En Progreso</span>
+                                            <span class="status-item">Bloqueado</span>
+                                            <span class="status-item">Completado</span>
+                                            <span class="status-item">Verificado</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form method="post" class="mt-3">
+                            {% csrf_token %}
+                            <button type="submit" name="create_initial_statuses" class="btn btn-warning w-100">
+                                <i class="bi bi-plus-circle me-2"></i>
+                                Crear Estados
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 4: Create Random Users -->
+            <div class="col-xxl-4 col-md-6">
+                <div class="card setup-card {% if '3' not in completed_steps %}disabled{% else %}active{% endif %}">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="card-icon me-3 {% if '3' in completed_steps %}bg-success{% else %}bg-info{% endif %}">
+                                <i class="bi bi-people"></i>
+                            </div>
+                            <div>
+                                <h5 class="card-title mb-1">Usuarios de Prueba</h5>
+                                <p class="text-muted small mb-0">Paso 4 de 5</p>
+                            </div>
+                        </div>
+
+                        {% if '3' not in completed_steps %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-clock fs-2 text-muted mb-2"></i>
+                            <p class="text-muted mb-0">Complete los pasos anteriores</p>
+                        </div>
+                        {% else %}
+                        <form method="post" class="user-creation-form">
+                            {% csrf_token %}
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label for="domain" class="form-label">
+                                        <i class="bi bi-globe me-1"></i>Dominio de Email
+                                    </label>
+                                    <input type="text" class="form-control" id="domain" name="domain"
+                                           placeholder="ejemplo.com" required>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Dominio para los emails de los usuarios de prueba
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label for="num_users" class="form-label">
+                                        <i class="bi bi-hash me-1"></i>Cantidad de Usuarios
+                                    </label>
+                                    <input type="number" class="form-control" id="num_users" name="num_users"
+                                           min="1" max="100" placeholder="10" required>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Número de usuarios aleatorios a crear (1-100)
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label for="group_id" class="form-label">
+                                        <i class="bi bi-diagram-3 me-1"></i>Asignar a Grupo Existente
+                                    </label>
+                                    <select id="group_id" name="group_id" class="form-select">
+                                        <option value="">Seleccionar grupo...</option>
+                                        {% for group in all_groups %}
+                                        <option value="{{ group.id }}">{{ group.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="col-12">
+                                    <label for="new_group_name" class="form-label">
+                                        <i class="bi bi-plus-circle me-1"></i>O Crear Nuevo Grupo
+                                    </label>
+                                    <input type="text" id="new_group_name" name="new_group_name"
+                                           class="form-control" placeholder="Nombre del nuevo grupo">
+                                    <div class="form-text">
+                                        <i class="bi bi-lightbulb me-1"></i>
+                                        Deje vacío si no desea crear un grupo nuevo
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="submit" name="create_random_users" class="btn btn-info w-100 mt-3">
+                                <i class="bi bi-robot me-2"></i>
+                                Generar Usuarios Aleatorios
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 5: Create User Groups -->
+            <div class="col-xxl-4 col-md-6">
+                <div class="card setup-card {% if '3' not in completed_steps %}disabled{% else %}active{% endif %}">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="card-icon me-3 {% if '3' in completed_steps %}bg-success{% else %}bg-info{% endif %}">
+                                <i class="bi bi-diagram-3"></i>
+                            </div>
+                            <div>
+                                <h5 class="card-title mb-1">Grupos de Usuarios</h5>
+                                <p class="text-muted small mb-0">Paso 5 de 5</p>
+                            </div>
+                        </div>
+
+                        {% if '3' not in completed_steps %}
+                        <div class="text-center py-3">
+                            <i class="bi bi-clock fs-2 text-muted mb-2"></i>
+                            <p class="text-muted mb-0">Complete los pasos anteriores</p>
+                        </div>
+                        {% else %}
+                        <div class="group-management-section">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="badge bg-success me-2">
+                                    <i class="bi bi-gear me-1"></i> Configurar
+                                </div>
+                            </div>
+
+                            <form method="post" id="create-group-form" class="group-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="create_group" value="1" id="create-group-hidden">
+
+                                <div class="mb-4">
+                                    <label for="group_name" class="form-label fw-semibold">
+                                        <i class="bi bi-tag me-2"></i>Nombre del Grupo
+                                    </label>
+                                    <input type="text" class="form-control" id="group_name" name="group_name"
+                                           placeholder="Ej: Administradores, Editores, Usuarios" required>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Ingrese un nombre descriptivo para el grupo
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold">
+                                        <i class="bi bi-people me-2"></i>Seleccionar Usuarios
+                                    </label>
+                                    <div class="user-selection-container">
+                                        <div class="user-grid">
+                                            {% for user in all_users %}
+                                            <div class="user-item">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox"
+                                                           id="user_{{ user.username }}" name="usernames"
+                                                           value="{{ user.username }}">
+                                                    <label class="form-check-label" for="user_{{ user.username }}">
+                                                        <div class="user-info">
+                                                            <strong>{{ user.username }}</strong>
+                                                            {% if user.first_name %}
+                                                                <small class="text-muted d-block">
+                                                                    {{ user.first_name }} {{ user.last_name }}
+                                                                </small>
+                                                            {% endif %}
+                                                        </div>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-lightbulb me-1"></i>
+                                        Seleccione los usuarios que pertenecerán a este grupo
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-info w-100">
                                     <i class="bi bi-check-circle me-2"></i>
                                     Crear Grupo
                                 </button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
+                        {% endif %}
                     </div>
-
-                    {% endif %}
                 </div>
             </div>
-        </div>
 
-        <!-- Card 5: Create Another Superuser -->
-        {% if request.user.is_authenticated and request.user.is_superuser %}
-        <div class="col-xxl-4 col-md-6">
-            <div class="card info-card revenue-card shadow-sm hover-shadow">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-person-plus-fill me-2"></i>Create Another Superuser</h5>
-                    <!-- ... existing another superuser form ... -->
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="su_username" class="form-label">Username:</label>
-                            <input type="text" class="form-control" id="su_username" name="su_username" placeholder="nuevo_admin" required>
+            <!-- Card 6: Create Another Superuser (Bonus) -->
+            {% if request.user.is_authenticated and request.user.is_superuser %}
+            <div class="col-xxl-4 col-md-6">
+                <div class="card setup-card bonus-card">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="card-icon me-3 bg-gradient">
+                                <i class="bi bi-person-plus-fill"></i>
+                            </div>
+                            <div>
+                                <h5 class="card-title mb-1">Superusuario Adicional</h5>
+                                <p class="text-muted small mb-0">Opcional</p>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="su_email" class="form-label">Email:</label>
-                            <input type="email" class="form-control" id="su_email" name="su_email" placeholder="admin@ejemplo.com" required>
+
+                        <div class="bonus-content">
+                            <div class="text-center mb-3">
+                                <img src="{% static 'images/pandas/panda2.png' %}" alt="Bonus Feature"
+                                     class="img-fluid mb-2" style="max-height: 80px; opacity: 0.8;">
+                                <p class="text-muted small">¿Necesita otro administrador?</p>
+                            </div>
+
+                            <form method="post" class="additional-su-form">
+                                {% csrf_token %}
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label for="su_username" class="form-label">
+                                            <i class="bi bi-person me-1"></i>Nombre de Usuario
+                                        </label>
+                                        <input type="text" class="form-control" id="su_username" name="su_username"
+                                               placeholder="nuevo_admin" required>
+                                    </div>
+                                    <div class="col-12">
+                                        <label for="su_email" class="form-label">
+                                            <i class="bi bi-envelope me-1"></i>Email
+                                        </label>
+                                        <input type="email" class="form-control" id="su_email" name="su_email"
+                                               placeholder="admin@ejemplo.com" required>
+                                    </div>
+                                </div>
+
+                                <button type="submit" name="create_another_su" class="btn btn-outline-primary w-100 mt-3">
+                                    <i class="bi bi-plus-circle me-2"></i>
+                                    Crear Superusuario Adicional
+                                </button>
+                            </form>
                         </div>
-                        <button type="submit" name="create_another_su" class="btn btn-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="Crear un usuario administrador adicional">Crear Superusuario</button>
-                    </form>
+                    </div>
                 </div>
             </div>
+            {% endif %}
         </div>
-        {% endif %}
-
     </div>
+</section>
 
-    <!-- Setup Summary -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card border-info">
-                <div class="card-body">
-                    <h5 class="card-title text-info"><i class="bi bi-info-circle me-2"></i>Resumen de Configuración</h5>
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <div class="p-3">
-                                <i class="bi bi-shield-lock display-4 text-primary"></i>
-                                <p class="mt-2">Superusuario</p>
+<!-- Setup Summary & Success Section -->
+<section class="section">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="card summary-card">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-lg-8">
+                                <h4 class="card-title mb-3">
+                                    <i class="bi bi-info-circle me-2 text-info"></i>
+                                    Resumen de Configuración
+                                </h4>
+
+                                <div class="row g-3 mb-4">
+                                    <div class="col-md-3">
+                                        <div class="summary-item {% if '1' in completed_steps %}completed{% else %}pending{% endif %}">
+                                            <div class="summary-icon">
+                                                <i class="bi bi-shield-lock"></i>
+                                            </div>
+                                            <div class="summary-text">
+                                                <h6>Superusuario</h6>
+                                                <small class="{% if '1' in completed_steps %}text-success{% else %}text-muted{% endif %}">
+                                                    {% if '1' in completed_steps %}Completado{% else %}Pendiente{% endif %}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="summary-item {% if '2' in completed_steps %}completed{% else %}pending{% endif %}">
+                                            <div class="summary-icon">
+                                                <i class="bi bi-person-badge"></i>
+                                            </div>
+                                            <div class="summary-text">
+                                                <h6>Perfil</h6>
+                                                <small class="{% if '2' in completed_steps %}text-success{% else %}text-muted{% endif %}">
+                                                    {% if '2' in completed_steps %}Completado{% else %}Pendiente{% endif %}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="summary-item {% if '3' in completed_steps %}completed{% else %}pending{% endif %}">
+                                            <div class="summary-icon">
+                                                <i class="bi bi-list-check"></i>
+                                            </div>
+                                            <div class="summary-text">
+                                                <h6>Estados</h6>
+                                                <small class="{% if '3' in completed_steps %}text-success{% else %}text-muted{% endif %}">
+                                                    {% if '3' in completed_steps %}Completado{% else %}Pendiente{% endif %}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="summary-item {% if '3' in completed_steps %}completed{% else %}pending{% endif %}">
+                                            <div class="summary-icon">
+                                                <i class="bi bi-people"></i>
+                                            </div>
+                                            <div class="summary-text">
+                                                <h6>Usuarios</h6>
+                                                <small class="{% if '3' in completed_steps %}text-success{% else %}text-muted{% endif %}">
+                                                    {% if '3' in completed_steps %}Completado{% else %}Pendiente{% endif %}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-light border-0">
+                                    <div class="d-flex align-items-start">
+                                        <i class="bi bi-lightbulb text-warning me-2 mt-1"></i>
+                                        <div>
+                                            <strong>¡Consejo!</strong>
+                                            <p class="mb-0 mt-1">
+                                                Complete todos los pasos de configuración para tener un sistema completamente funcional.
+                                                Los pasos marcados como "Completado" ya están configurados correctamente.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="celebration-section text-center">
+                                    <img src="{% static 'images/pandas/panda3.png' %}" alt="Success"
+                                         class="img-fluid mb-3" style="max-height: 120px;">
+                                    <h5 class="text-success mb-2">¡Excelente Progreso!</h5>
+                                    <p class="text-muted small">
+                                        {{ completed_steps|length }} de 5 pasos completados
+                                    </p>
+                                    {% if completed_steps|length == 5 %}
+                                    <div class="mt-3">
+                                        <button class="btn btn-success" onclick="goToHome()">
+                                            <i class="bi bi-rocket-takeoff me-2"></i>
+                                            ¡Comenzar a Usar el Sistema!
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="p-3">
-                                <i class="bi bi-person-badge display-4 text-success"></i>
-                                <p class="mt-2">Perfil</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="p-3">
-                                <i class="bi bi-list-check display-4 text-warning"></i>
-                                <p class="mt-2">Estados</p>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="p-3">
-                                <i class="bi bi-people display-4 text-info"></i>
-                                <p class="mt-2">Usuarios</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="alert alert-light mt-3">
-                        <small class="text-muted">
-                            <i class="bi bi-lightbulb me-1"></i>
-                            Complete todos los pasos de configuración para tener un sistema completamente funcional.
-                            Los pasos marcados como "Completed" ya están configurados correctamente.
-                        </small>
                     </div>
                 </div>
             </div>
@@ -366,157 +843,682 @@
 </section>
 
 <style>
-.hover-shadow:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
-    transform: translateY(-2px);
-    transition: all 0.3s ease;
+/* ===========================================
+   OPTIMIZED SETUP STYLES
+   Using Management360 Project Assets
+   =========================================== */
+
+/* Hero Section Simple */
+.hero-section-simple {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
 }
-.card {
-    transition: all 0.3s ease;
+
+.hero-content-simple {
+    max-width: 800px;
+    margin: 0 auto;
 }
-.progress {
+
+/* Progress Section */
+.step-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px;
     border-radius: 10px;
-}
-.btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
 }
 
-/* Specific styling for create superuser button tracking */
-.create-superuser-button {
-    position: relative;
+.step-indicator.completed {
+    background: linear-gradient(135deg, #d1e7dd 0%, #a3d9a4 100%);
+    color: #0f5132;
 }
 
-.create-superuser-button::after {
-    content: "TRACKED";
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background: #dc3545;
-    color: white;
-    font-size: 8px;
-    padding: 2px 4px;
-    border-radius: 3px;
+.step-indicator.pending {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    color: #664d03;
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: bold;
-}
-.btn:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-.form-control:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-    transform: scale(1.01);
-    transition: all 0.2s ease;
-}
-.card.completed {
-    border-left: 4px solid #198754;
-}
-.card.pending {
-    border-left: 4px solid #ffc107;
-}
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-.card {
-    animation: fadeIn 0.5s ease-out;
+    font-size: 18px;
+    margin-bottom: 8px;
 }
 
-/* Enhanced Group Creation Form Styles */
-.group-form-container {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-radius: 0.5rem;
-    padding: 1.5rem;
-    margin-top: 1rem;
+.step-indicator.completed .step-number {
+    background: #198754;
+    color: white;
 }
 
-.group-form-container .form-label {
+.step-indicator.pending .step-number {
+    background: #ffc107;
+    color: white;
+}
+
+/* Setup Cards */
+.setup-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.setup-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.setup-card.completed {
+    border-left: 5px solid #198754;
+    background: linear-gradient(135deg, #f8fffe 0%, #e8f5e8 100%);
+}
+
+.setup-card.active {
+    border-left: 5px solid #0d6efd;
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8eeff 100%);
+}
+
+.setup-card.disabled {
+    opacity: 0.6;
+    filter: grayscale(50%);
+}
+
+.setup-card.bonus-card {
+    border-left: 5px solid #6f42c1;
+    background: linear-gradient(135deg, #fdfbfe 0%, #f3e5f5 100%);
+}
+
+.card-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+}
+
+.card-icon.bg-primary {
+    background: linear-gradient(135deg, #4154f1 0%, #764ba2 100%);
+}
+
+.card-icon.bg-info {
+    background: linear-gradient(135deg, #0dcaf0 0%, #20c997 100%);
+}
+
+.card-icon.bg-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+}
+
+.card-icon.bg-success {
+    background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+}
+
+.card-icon.bg-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #adb5bd 100%);
+}
+
+.card-icon.bg-gradient {
+    background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+}
+
+/* Status Preview */
+.status-category {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.status-category-title {
     color: #495057;
     font-weight: 600;
-    margin-bottom: 0.5rem;
+    margin-bottom: 10px;
+    font-size: 14px;
 }
 
-.group-form-container .form-control {
+.status-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.status-item {
+    background: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    color: #6c757d;
+    border: 1px solid #e9ecef;
+}
+
+/* Status Summary - Completed States */
+.status-summary {
+    margin-top: 15px;
+}
+
+.status-overview-card {
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8eeff 100%);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(65, 84, 241, 0.1);
+}
+
+.status-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4154f1 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.status-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.status-details {
+    margin-top: 15px;
+}
+
+.status-category-completed {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-left: 4px solid #198754;
+}
+
+.status-category-completed .status-category-title {
+    color: #198754;
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+}
+
+.status-list-completed {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.status-item-completed {
+    background: linear-gradient(135deg, #d1e7dd 0%, #a3d9a4 100%);
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    color: #0f5132;
+    border: 1px solid rgba(25, 135, 84, 0.2);
+    font-weight: 500;
+    display: inline-block;
+    margin-right: 8px;
+    margin-bottom: 4px;
+}
+
+.status-actions {
+    padding-top: 15px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.status-actions .btn {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
+/* User Creation Form */
+.user-creation-form .form-control {
+    border-radius: 8px;
     border: 2px solid #e9ecef;
-    border-radius: 0.375rem;
     transition: all 0.2s ease;
 }
 
-.group-form-container .form-control:focus {
+.user-creation-form .form-control:focus {
     border-color: #4154f1;
     box-shadow: 0 0 0 0.2rem rgba(65, 84, 241, 0.25);
 }
 
-.group-form-container .form-check-input:checked {
-    background-color: #4154f1;
-    border-color: #4154f1;
+/* Group Management */
+.group-management-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 15px;
 }
 
-.group-form-container .btn-primary {
-    background: linear-gradient(135deg, #4154f1 0%, #764ba2 100%);
+.user-selection-container {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    background: white;
+}
+
+.user-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 10px;
+    padding: 15px;
+}
+
+.user-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 10px;
+    transition: all 0.2s ease;
+}
+
+.user-item:hover {
+    background: #e9ecef;
+}
+
+.user-info strong {
+    color: #4154f1;
+}
+
+/* Summary Section */
+.summary-card {
     border: none;
-    padding: 0.75rem 1.5rem;
-    font-weight: 600;
-    border-radius: 0.5rem;
+    border-radius: 15px;
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8eeff 100%);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.summary-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border-radius: 10px;
     transition: all 0.3s ease;
 }
 
-.group-form-container .btn-primary:hover {
+.summary-item.completed {
+    background: linear-gradient(135deg, #d1e7dd 0%, #a3d9a4 100%);
+}
+
+.summary-item.pending {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+}
+
+.summary-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    font-size: 18px;
+}
+
+.summary-item.completed .summary-icon {
+    background: #198754;
+    color: white;
+}
+
+.summary-item.pending .summary-icon {
+    background: #ffc107;
+    color: white;
+}
+
+.summary-text h6 {
+    margin-bottom: 5px;
+    color: #495057;
+}
+
+/* Celebration Section */
+.celebration-section {
+    background: linear-gradient(135deg, #d1e7dd 0%, #a3d9a4 100%);
+    border-radius: 15px;
+    padding: 30px 20px;
+}
+
+/* Progress Bar Enhancement */
+.progress {
+    border-radius: 15px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, #198754, #20c997, #198754);
+    background-size: 200% 100%;
+    animation: gradientShift 3s ease infinite;
+    border-radius: 15px;
+    transition: width 0.6s ease;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Button Enhancements */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-    background: linear-gradient(135deg, #764ba2 0%, #4154f1 100%);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-.user-selection-grid {
-    max-height: 250px;
-    overflow-y: auto;
-    padding: 0.5rem;
+.btn-primary {
+    background: linear-gradient(135deg, #4154f1 0%, #764ba2 100%);
 }
 
-.user-selection-grid::-webkit-scrollbar {
+.btn-info {
+    background: linear-gradient(135deg, #0dcaf0 0%, #20c997 100%);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+}
+
+/* Completion Status */
+.completion-status {
+    text-align: center;
+    padding: 20px;
+    background: linear-gradient(135deg, #d1e7dd 0%, #a3d9a4 100%);
+    border-radius: 10px;
+    margin-top: 15px;
+}
+
+/* Superuser Summary Styles */
+.superuser-summary {
+    margin-top: 15px;
+}
+
+.admin-profile-card {
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8eeff 100%);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(65, 84, 241, 0.1);
+}
+
+.admin-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4154f1 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    overflow: hidden;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.admin-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* Admin Avatar Large for Modal */
+.admin-avatar-large {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4154f1 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    overflow: hidden;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.admin-avatar-large .admin-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* Detail Items Large for Modal */
+.detail-item-large {
+    display: flex;
+    align-items: flex-start;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.detail-item-large i {
+    margin-right: 15px;
+    margin-top: 2px;
+    font-size: 18px;
+}
+
+.detail-item-large strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #495057;
+}
+
+.admin-details {
+    margin-top: 15px;
+}
+
+.detail-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-item i {
+    color: #6c757d;
+    width: 16px;
+}
+
+.detail-item strong {
+    color: #495057;
+    margin-right: 8px;
+}
+
+.admin-actions {
+    padding-top: 15px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.admin-actions .btn {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .hero-section-simple {
+        padding: 30px 0;
+        text-align: center;
+    }
+
+    .hero-section-simple .d-flex {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .step-indicator {
+        padding: 10px;
+    }
+
+    .step-number {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+    }
+
+    .user-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .summary-item {
+        margin-bottom: 15px;
+    }
+}
+
+/* Animation Classes */
+.fade-in {
+    animation: fadeIn 0.6s ease-out;
+}
+
+.slide-up {
+    animation: slideUp 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Loading States */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Custom Scrollbar */
+.user-selection-container::-webkit-scrollbar {
     width: 6px;
 }
 
-.user-selection-grid::-webkit-scrollbar-track {
+.user-selection-container::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 3px;
 }
 
-.user-selection-grid::-webkit-scrollbar-thumb {
+.user-selection-container::-webkit-scrollbar-thumb {
     background: #c1c1c1;
     border-radius: 3px;
 }
 
-.user-selection-grid::-webkit-scrollbar-thumb:hover {
+.user-selection-container::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
 </style>
 
 <script>
+// ===========================================
+// OPTIMIZED SETUP JAVASCRIPT
+// Using Management360 Project Assets
+// ===========================================
+
 function copyToClipboard(elementId) {
-    var copyText = document.getElementById(elementId).textContent;
+    const copyText = document.getElementById(elementId).textContent;
     navigator.clipboard.writeText(copyText).then(function() {
-        alert('Password copied to clipboard');
+        // Show custom toast notification
+        showToast('Contraseña copiada al portapapeles', 'success');
     }, function(err) {
         console.error('Error copying to clipboard: ', err);
+        showToast('Error al copiar la contraseña', 'error');
     });
 }
 
-// Initialize tooltips
+// Custom toast notification function
+function showToast(message, type = 'info') {
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${type} border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
+
+    // Create toast container if it doesn't exist
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+        toastContainer.style.zIndex = '9999';
+        document.body.appendChild(toastContainer);
+    }
+
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+
+    // Auto remove after 3 seconds
+    const toastElement = toastContainer.lastElementChild;
+    setTimeout(() => {
+        if (toastElement && toastElement.parentNode) {
+            toastElement.remove();
+        }
+    }, 3000);
+}
+
+// Initialize tooltips and enhanced functionality
 document.addEventListener('DOMContentLoaded', function () {
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    // Initialize Bootstrap tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
-    // Simple button handling - add loading state AFTER form submission starts
+    // Enhanced button interactions with loading states
     const buttons = document.querySelectorAll('button[type="submit"]');
     buttons.forEach(button => {
+        const originalText = button.innerHTML;
+
         button.addEventListener('click', function(e) {
-            // Don't disable immediately - let the form submit first
-            // The button will be disabled by the browser during form submission
+            // Add loading state
+            button.innerHTML = '<i class="bi bi-arrow-clockwise spinning me-2"></i>Procesando...';
+            button.disabled = true;
+
+            // Store original text for reset
+            button.setAttribute('data-original-text', originalText);
         });
     });
 
@@ -525,7 +1527,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const buttons = document.querySelectorAll('button[type="submit"]');
         buttons.forEach(button => {
             if (button.disabled) {
-                button.innerHTML = button.getAttribute('data-original-text') || 'Crear Grupo';
+                const originalText = button.getAttribute('data-original-text') || button.innerHTML;
+                button.innerHTML = originalText;
                 button.disabled = false;
             }
         });
@@ -534,8 +1537,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // SPECIFIC TRACKING FOR CREATE SUPERUSER BUTTON
     const createSuperuserBtn = document.getElementById('create-superuser-btn');
     if (createSuperuserBtn) {
-
-        // Track click and set hidden input value BEFORE form submission
         createSuperuserBtn.addEventListener('click', function(e) {
             // Set hidden input value to indicate button was clicked
             const hiddenInput = document.getElementById('create-su-hidden');
@@ -543,45 +1544,502 @@ document.addEventListener('DOMContentLoaded', function () {
                 hiddenInput.value = 'Create Superuser';
             }
 
-            // Small delay to ensure value is set before form submission
-            setTimeout(() => {
-                // Ensure form submits
-            }, 10);
+            // Show loading state
+            this.innerHTML = '<i class="bi bi-arrow-clockwise spinning me-2"></i>Creando Superusuario...';
+            this.disabled = true;
         });
 
         // Track form submission for this specific button
         const createSuperuserForm = document.getElementById('create-superuser-form');
         if (createSuperuserForm) {
             createSuperuserForm.addEventListener('submit', function(e) {
-                // Verify hidden input has correct value before submission
                 const hiddenInput = document.getElementById('create-su-hidden');
                 if (hiddenInput && !hiddenInput.value) {
                     hiddenInput.value = 'Create Superuser';
                 }
-
-                // Ensure form can still be submitted even if JavaScript fails
-                // Don't prevent default, let the form submit naturally
             });
         }
-
     }
 
-    // Add visual feedback for form validation
+    // Enhanced form validation with visual feedback
     const allForms = document.querySelectorAll('form');
     allForms.forEach(form => {
         const inputs = form.querySelectorAll('input[required], select[required]');
         inputs.forEach(input => {
             input.addEventListener('blur', function() {
-                if (this.value.trim() === '') {
-                    this.classList.add('is-invalid');
-                } else {
-                    this.classList.remove('is-invalid');
-                    this.classList.add('is-valid');
+                validateField(this);
+            });
+
+            input.addEventListener('input', function() {
+                if (this.classList.contains('is-invalid')) {
+                    validateField(this);
                 }
             });
         });
     });
+
+    // Real-time validation function
+    function validateField(field) {
+        const value = field.value.trim();
+
+        if (field.hasAttribute('required') && value === '') {
+            field.classList.add('is-invalid');
+            field.classList.remove('is-valid');
+            showFieldError(field, 'Este campo es obligatorio');
+        } else if (field.type === 'email' && value && !isValidEmail(value)) {
+            field.classList.add('is-invalid');
+            field.classList.remove('is-valid');
+            showFieldError(field, 'Ingrese un email válido');
+        } else {
+            field.classList.remove('is-invalid');
+            field.classList.add('is-valid');
+            hideFieldError(field);
+        }
+    }
+
+    function isValidEmail(email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
+    }
+
+    function showFieldError(field, message) {
+        hideFieldError(field); // Remove existing error
+
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'invalid-feedback d-block';
+        errorDiv.textContent = message;
+        errorDiv.id = field.id + '-error';
+
+        field.parentNode.appendChild(errorDiv);
+    }
+
+    function hideFieldError(field) {
+        const existingError = document.getElementById(field.id + '-error');
+        if (existingError) {
+            existingError.remove();
+        }
+    }
+
+    // Progress animation on scroll
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('fade-in');
+            }
+        });
+    }, observerOptions);
+
+    // Observe setup cards for animation
+    const setupCards = document.querySelectorAll('.setup-card');
+    setupCards.forEach(card => {
+        observer.observe(card);
+    });
+
+    // Enhanced user selection for group creation
+    const userCheckboxes = document.querySelectorAll('input[name="usernames"]');
+    userCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const label = this.closest('.user-item');
+            if (this.checked) {
+                label.style.backgroundColor = 'rgba(65, 84, 241, 0.1)';
+                label.style.borderLeft = '3px solid #4154f1';
+            } else {
+                label.style.backgroundColor = '#f8f9fa';
+                label.style.borderLeft = '3px solid transparent';
+            }
+        });
+    });
+
+    // Auto-save draft functionality (if needed)
+    let autoSaveTimeout;
+    const formInputs = document.querySelectorAll('input, select, textarea');
+    formInputs.forEach(input => {
+        input.addEventListener('input', function() {
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(() => {
+                // Auto-save logic could go here
+                console.log('Auto-saving draft...');
+            }, 2000);
+        });
+    });
+
+    // Keyboard navigation improvements
+    document.addEventListener('keydown', function(e) {
+        // ESC key to clear focus
+        if (e.key === 'Escape') {
+            document.activeElement.blur();
+        }
+
+        // Enter key on buttons
+        if (e.key === 'Enter' && e.target.tagName === 'BUTTON') {
+            e.target.click();
+        }
+    });
+
+    // Smooth scrolling for any anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+
+    // Initialize any additional components
+    initializeComponents();
 });
+
+function initializeComponents() {
+    // Initialize any additional components or plugins
+    console.log('Management360 Setup initialized successfully');
+
+    // Show welcome message
+    setTimeout(() => {
+        showToast('Bienvenido al asistente de configuración de Management360', 'info');
+    }, 1000);
+}
+
+// Show Status Details Modal
+function showStatusDetails() {
+    const modalHtml = `
+        <div class="modal fade" id="statusModal" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning text-white">
+                        <h5 class="modal-title" id="statusModalLabel">
+                            <i class="bi bi-list-check me-2"></i>
+                            Detalles de Estados Iniciales
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <div class="admin-avatar-large mb-3" style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
+                                    {% if user.cv.profile_picture %}
+                                        <img src="{{ user.cv.profile_picture.url }}" alt="Profile Avatar" class="admin-avatar-img">
+                                    {% else %}
+                                        <img src="{% static 'assets/img/profile-img.jpg' %}" alt="Default Profile" class="admin-avatar-img">
+                                    {% endif %}
+                                </div>
+                                <h4 class="text-warning">Estados del Sistema</h4>
+                                <p class="text-muted">Configuración Completa</p>
+                                <span class="badge bg-success">15 Estados Creados</span>
+                            </div>
+                            <div class="col-md-8">
+                                <h5>Resumen de Estados Configurados</h5>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <div class="detail-item-large">
+                                            <i class="bi bi-calendar-event text-primary"></i>
+                                            <div>
+                                                <strong>Estados de Eventos (5):</strong><br>
+                                                <span class="text-muted">Creado, En Progreso, Pausado, Completado, Cancelado</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="detail-item-large">
+                                            <i class="bi bi-folder text-info"></i>
+                                            <div>
+                                                <strong>Estados de Proyectos (5):</strong><br>
+                                                <span class="text-muted">Borrador, Planificación, En Progreso, En Espera, Completado</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="detail-item-large">
+                                            <i class="bi bi-check-square text-warning"></i>
+                                            <div>
+                                                <strong>Estados de Tareas (5):</strong><br>
+                                                <span class="text-muted">Por Hacer, En Progreso, Bloqueado, Completado, Verificado</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="detail-item-large">
+                                            <i class="bi bi-calendar text-secondary"></i>
+                                            <div>
+                                                <strong>Fecha de Creación:</strong><br>
+                                                <span class="text-muted">Sistema inicializado correctamente</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-info mt-3">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Estados Disponibles:</strong>
+                                    <p class="mb-0 mt-2">
+                                        Todos los estados iniciales han sido configurados y están disponibles para usar en:
+                                    </p>
+                                    <ul class="mb-0 mt-2">
+                                        <li>Gestión de Eventos</li>
+                                        <li>Administración de Proyectos</li>
+                                        <li>Control de Tareas</li>
+                                        <li>Seguimiento de Procesos</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-1"></i>Cerrar
+                        </button>
+                        <button type="button" class="btn btn-warning" onclick="showToast('Funcionalidad próximamente', 'info')">
+                            <i class="bi bi-pencil me-1"></i>Editar Estados
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add modal to page if it doesn't exist
+    if (!document.getElementById('statusModal')) {
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+    modal.show();
+}
+
+// Show Profile Details Modal
+function showProfileDetails() {
+    const modalHtml = `
+        <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-info text-white">
+                        <h5 class="modal-title" id="profileModalLabel">
+                            <i class="bi bi-person-badge me-2"></i>
+                            Detalles del Perfil de Superusuario
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <div class="admin-avatar-large mb-3">
+                                    {% if user.is_authenticated and user.cv.profile_picture %}
+                                        <img src="{{ user.cv.profile_picture.url }}" alt="Profile Avatar" class="admin-avatar-img">
+                                    {% else %}
+                                        <img src="{% static 'assets/img/profile-img.jpg' %}" alt="Default Profile" class="admin-avatar-img">
+                                    {% endif %}
+                                </div>
+                                <h4 class="text-info">Perfil de Superusuario</h4>
+                                <p class="text-muted">Información Personal</p>
+                                <span class="badge bg-success">Completado</span>
+                            </div>
+                            <div class="col-md-8">
+                                <h5>Información del Perfil</h5>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <div class="detail-item-large">
+                                            <i class="bi bi-person text-primary"></i>
+                                            <div>
+                                                <strong>Nombre Completo:</strong><br>
+                                                <span class="text-primary">Superusuario Principal</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="detail-item-large">
+                                            <i class="bi bi-briefcase text-info"></i>
+                                            <div>
+                                                <strong>Profesión:</strong><br>
+                                                <span>Administrador del Sistema</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="detail-item-large">
+                                            <i class="bi bi-tag text-warning"></i>
+                                            <div>
+                                                <strong>Rol Asignado:</strong><br>
+                                                <span class="badge bg-info">Supervisor</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="detail-item-large">
+                                            <i class="bi bi-calendar text-secondary"></i>
+                                            <div>
+                                                <strong>Fecha de Configuración:</strong><br>
+                                                <span class="text-muted">Sistema inicializado correctamente</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-success mt-3">
+                                    <i class="bi bi-check-circle me-2"></i>
+                                    <strong>Perfil Completado:</strong>
+                                    <p class="mb-0 mt-2">
+                                        El perfil del superusuario está completamente configurado y listo para gestionar el sistema Management360.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-1"></i>Cerrar
+                        </button>
+                        <button type="button" class="btn btn-info" onclick="showToast('Funcionalidad próximamente', 'info')">
+                            <i class="bi bi-pencil me-1"></i>Editar Perfil
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add modal to page if it doesn't exist
+    if (!document.getElementById('profileModal')) {
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('profileModal'));
+    modal.show();
+}
+
+// Show Superuser Details Modal
+function showSuperuserDetails() {
+    const modalHtml = `
+        <div class="modal fade" id="superuserModal" tabindex="-1" aria-labelledby="superuserModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="superuserModalLabel">
+                            <i class="bi bi-shield-check me-2"></i>
+                            Detalles del Superusuario
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <div class="admin-avatar-large mb-3">
+                                    {% if user.is_authenticated and user.cv.profile_picture %}
+                                        <img src="{{ user.cv.profile_picture.url }}" alt="Profile Avatar" class="admin-avatar-img">
+                                    {% else %}
+                                        <img src="{% static 'assets/img/profile-img.jpg' %}" alt="Default Profile" class="admin-avatar-img">
+                                    {% endif %}
+                                </div>
+                                <h4 class="text-primary">Superusuario</h4>
+                                <p class="text-muted">Administrador Principal</p>
+                                <span class="badge bg-success">Activo</span>
+                            </div>
+                            <div class="col-md-8">
+                                <h5>Información del Sistema</h5>
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <div class="detail-item-large">
+                                            <i class="bi bi-person text-primary"></i>
+                                            <div>
+                                                <strong>Nombre de Usuario:</strong><br>
+                                                <span class="text-primary">su</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="detail-item-large">
+                                            <i class="bi bi-envelope text-info"></i>
+                                            <div>
+                                                <strong>Correo Electrónico:</strong><br>
+                                                <span>su@localhost</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="detail-item-large">
+                                            <i class="bi bi-key text-warning"></i>
+                                            <div>
+                                                <strong>Estado del Sistema:</strong><br>
+                                                <span class="text-success">Totalmente Operativo</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="detail-item-large">
+                                            <i class="bi bi-calendar text-secondary"></i>
+                                            <div>
+                                                <strong>Última Actividad:</strong><br>
+                                                <span class="text-muted">Sistema inicializado correctamente</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-info mt-3">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>Permisos del Superusuario:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li>Acceso completo al sistema</li>
+                                        <li>Gestión de usuarios y grupos</li>
+                                        <li>Configuración del sistema</li>
+                                        <li>Acceso a todas las funciones</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-1"></i>Cerrar
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="showToast('Funcionalidad próximamente', 'info')">
+                            <i class="bi bi-pencil me-1"></i>Editar Usuario
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add modal to page if it doesn't exist
+    if (!document.getElementById('superuserModal')) {
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('superuserModal'));
+    modal.show();
+}
+
+// Go to home page function
+function goToHome() {
+    window.location.href = "{% url 'index' %}";
+}
+
+// Export functions for potential external use
+window.Management360Setup = {
+    copyToClipboard,
+    showToast,
+    showSuperuserDetails,
+    showProfileDetails,
+    showStatusDetails,
+    goToHome,
+    validateField: function(field) {
+        if (typeof validateField === 'function') {
+            validateField(field);
+        }
+    }
+};
 </script>
 
 {% endblock %}
