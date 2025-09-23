@@ -285,6 +285,19 @@
   transform: translateY(-2px);
 }
 
+.btn-delete {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.btn-delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
 /* Estado Vacío */
 .empty-state-manage {
   text-align: center;

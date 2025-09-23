@@ -1,0 +1,486 @@
+{% extends "courses/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - CMS{% endblock %}
+
+{% block extra_head %}
+<style>
+.content-blocks-container {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.content-blocks-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.content-blocks-header h1 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.filters-section {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.blocks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.block-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.block-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.block-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+    flex: 1;
+}
+
+.block-type-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.block-type-html { background: #e3f2fd; color: #1565c0; }
+.block-type-bootstrap { background: #e1f5fe; color: #0277bd; }
+.block-type-markdown { background: #e8f5e8; color: #2e7d32; }
+.block-type-json { background: #fff3e0; color: #ef6c00; }
+.block-type-text { background: #f3e5f5; color: #7b1fa2; }
+
+.block-meta {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.block-author {
+    font-size: 0.875rem;
+    color: #718096;
+}
+
+.block-stats {
+    font-size: 0.875rem;
+    color: #718096;
+}
+
+.block-description {
+    font-size: 0.9rem;
+    color: #4a5568;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.block-tags {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.tag {
+    background: #f1f3f4;
+    color: #5f6368;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+.block-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-block-action {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 6px;
+}
+
+.stats-section {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3748;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-text {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+    .content-blocks-header {
+        padding: 1.5rem 0;
+    }
+
+    .content-blocks-header h1 {
+        font-size: 1.75rem;
+    }
+
+    .filters-section {
+        padding: 1.5rem;
+    }
+
+    .blocks-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .block-card {
+        padding: 1rem;
+    }
+
+    .block-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .block-actions {
+        justify-content: center;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+{% endblock %}
+
+{% block course_content %}
+<!-- Header -->
+<div class="content-blocks-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-grid-3x3-gap me-3"></i>{{ title }}</h1>
+                <p class="lead mb-0 mt-2">
+                    {% if title == "Mis Bloques de Contenido" %}
+                        Gestiona tus bloques de contenido personalizados
+                    {% elif title == "Biblioteca Pública de Contenido" %}
+                        Explora bloques públicos creados por la comunidad
+                    {% elif title == "Bloques Destacados" %}
+                        Los mejores bloques destacados por la comunidad
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <div class="mt-4">
+                    {% if title == "Mis Bloques de Contenido" %}
+                        <i class="bi bi-folder fs-1 text-white-50"></i>
+                    {% elif title == "Biblioteca Pública de Contenido" %}
+                        <i class="bi bi-globe fs-1 text-white-50"></i>
+                    {% elif title == "Bloques Destacados" %}
+                        <i class="bi bi-star fs-1 text-white-50"></i>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Estadísticas -->
+    {% if total_blocks %}
+    <div class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-number">{{ total_blocks }}</span>
+                <span class="stat-label">Total de Bloques</span>
+            </div>
+            {% if featured_blocks %}
+            <div class="stat-item">
+                <span class="stat-number">{{ featured_blocks }}</span>
+                <span class="stat-label">Destacados</span>
+            </div>
+            {% endif %}
+            {% if public_blocks %}
+            <div class="stat-item">
+                <span class="stat-number">{{ public_blocks }}</span>
+                <span class="stat-label">Públicos</span>
+            </div>
+            {% endif %}
+            {% if categories %}
+            <div class="stat-item">
+                <span class="stat-number">{{ categories|length }}</span>
+                <span class="stat-label">Categorías</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filtros -->
+    <div class="filters-section">
+        <div class="row">
+            <div class="col-md-4">
+                <label for="search" class="form-label">Buscar</label>
+                <input type="text" id="search" name="search" class="form-control"
+                       placeholder="Buscar por título, descripción o etiquetas..."
+                       value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-3">
+                <label for="category" class="form-label">Categoría</label>
+                <select id="category" name="category" class="form-select">
+                    <option value="">Todas las categorías</option>
+                    {% for category in categories %}
+                    <option value="{{ category }}" {% if request.GET.category == category %}selected{% endif %}>
+                        {{ category|title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="type" class="form-label">Tipo</label>
+                <select id="type" name="type" class="form-select">
+                    <option value="">Todos los tipos</option>
+                    {% for type_value, type_label in content_types %}
+                    <option value="{{ type_value }}" {% if request.GET.type == type_value %}selected{% endif %}>
+                        {{ type_label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-primary w-100" onclick="applyFilters()">
+                    <i class="bi bi-search me-1"></i>Buscar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bloques -->
+    {% if blocks %}
+    <div class="blocks-grid">
+        {% for block in blocks %}
+        <div class="block-card">
+            <div class="block-header">
+                <h3 class="block-title">{{ block.title }}</h3>
+                <span class="block-type-badge block-type-{{ block.content_type }}">
+                    {{ block.get_content_type_display }}
+                </span>
+            </div>
+
+            <div class="block-meta">
+                <span class="block-author">
+                    <i class="bi bi-person me-1"></i>{{ block.author.get_full_name|default:block.author.username }}
+                </span>
+                {% if block.usage_count %}
+                <span class="block-stats">
+                    <i class="bi bi-eye me-1"></i>{{ block.usage_count }} usos
+                </span>
+                {% endif %}
+            </div>
+
+            {% if block.description %}
+            <div class="block-description">
+                {{ block.description|truncatechars:120 }}
+            </div>
+            {% endif %}
+
+            {% if block.tags %}
+            <div class="block-tags">
+                {% for tag in block.get_tags_list %}
+                <span class="tag">{{ tag }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="block-actions">
+                <a href="{% url 'courses:preview_content_block' block.slug %}"
+                   class="btn btn-info btn-block-action">
+                    <i class="bi bi-eye me-1"></i>Vista Previa
+                </a>
+
+                {% if block.author == user %}
+                <a href="{% url 'courses:edit_content_block' block.slug %}"
+                   class="btn btn-primary btn-block-action">
+                    <i class="bi bi-pencil me-1"></i>Editar
+                </a>
+                {% else %}
+                <a href="{% url 'courses:duplicate_content_block' block.slug %}"
+                   class="btn btn-warning btn-block-action">
+                    <i class="bi bi-copy me-1"></i>Duplicar
+                </a>
+                {% endif %}
+
+                {% if block.is_featured %}
+                <span class="badge bg-warning">
+                    <i class="bi bi-star-fill me-1"></i>Destacado
+                </span>
+                {% endif %}
+
+                {% if block.is_public %}
+                <span class="badge bg-success">
+                    <i class="bi bi-globe me-1"></i>Público
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Estado vacío -->
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            {% if title == "Mis Bloques de Contenido" %}
+                <i class="bi bi-folder"></i>
+            {% elif title == "Biblioteca Pública de Contenido" %}
+                <i class="bi bi-globe"></i>
+            {% elif title == "Bloques Destacados" %}
+                <i class="bi bi-star"></i>
+            {% endif %}
+        </div>
+        <h2 class="empty-state-title">
+            {% if title == "Mis Bloques de Contenido" %}
+                Aún no has creado bloques de contenido
+            {% elif title == "Biblioteca Pública de Contenido" %}
+                No hay bloques públicos disponibles
+            {% elif title == "Bloques Destacados" %}
+                No hay bloques destacados disponibles
+            {% endif %}
+        </h2>
+        <p class="empty-state-text">
+            {% if title == "Mis Bloques de Contenido" %}
+                Crea tu primer bloque de contenido para empezar a construir tu biblioteca personal.
+            {% elif title == "Biblioteca Pública de Contenido" %}
+                Los tutores pueden compartir sus bloques marcándolos como públicos.
+            {% elif title == "Bloques Destacados" %}
+                Los bloques destacados son seleccionados por la comunidad.
+            {% endif %}
+        </p>
+        {% if title == "Mis Bloques de Contenido" %}
+        <a href="{% url 'courses:create_content_block_default' %}" class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-circle me-2"></i>Crear Primer Bloque
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Acciones rápidas -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                <a href="{% url 'courses:content_manager' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-house me-1"></i>Volver al Gestor
+                </a>
+                {% if title == "Mis Bloques de Contenido" %}
+                <a href="{% url 'courses:create_content_block_default' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Crear Nuevo Bloque
+                </a>
+                {% endif %}
+                {% if title == "Biblioteca Pública de Contenido" %}
+                <a href="{% url 'courses:featured_content_blocks' %}" class="btn btn-warning">
+                    <i class="bi bi-star me-1"></i>Ver Destacados
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Función para aplicar filtros
+function applyFilters() {
+    const search = document.getElementById('search').value;
+    const category = document.getElementById('category').value;
+    const type = document.getElementById('type').value;
+
+    let url = window.location.pathname + '?';
+    const params = [];
+
+    if (search) params.push('search=' + encodeURIComponent(search));
+    if (category) params.push('category=' + encodeURIComponent(category));
+    if (type) params.push('type=' + encodeURIComponent(type));
+
+    url += params.join('&');
+    window.location.href = url;
+}
+
+// Permitir búsqueda con Enter
+document.getElementById('search').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        applyFilters();
+    }
+});
+</script>
+{% endblock %}

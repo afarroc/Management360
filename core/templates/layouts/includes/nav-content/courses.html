@@ -3,48 +3,56 @@
         <i class="bi bi-journal-bookmark"></i><span>Cursos</span><i class="bi bi-chevron-down ms-auto"></i>
     </a>
     <ul id="courses-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+        <!-- Sección de Aprendizaje -->
+        <li class="nav-heading">Aprendizaje</li>
         <li>
             <a href="{% url 'courses:courses_list' %}">
-                <i class="bi bi-circle"></i><span>Todos los cursos</span>
+                <i class="bi bi-search"></i><span>Explorar Cursos</span>
             </a>
         </li>
         {% if user.is_authenticated %}
         <li>
             <a href="{% url 'courses:dashboard' %}">
-                <i class="bi bi-circle"></i><span>Mi Dashboard</span>
+                <i class="bi bi-speedometer2"></i><span>Mi Dashboard</span>
             </a>
         </li>
+
+        <!-- Sección de Gestión de Contenido (solo tutores) -->
         {% if user.cv %}
+        <li class="nav-heading">Gestión de Contenido</li>
         <li>
             <a href="{% url 'courses:manage_courses' %}">
-                <i class="bi bi-circle"></i><span>Mis Cursos</span>
+                <i class="bi bi-folder-fill"></i><span>Mis Cursos</span>
             </a>
         </li>
         <li>
             <a href="{% url 'courses:create_course' %}">
-                <i class="bi bi-circle"></i><span>Crear Curso</span>
+                <i class="bi bi-plus-circle-fill"></i><span>Crear Curso</span>
             </a>
         </li>
         <li>
             <a href="{% url 'courses:modules_overview' %}">
-                <i class="bi bi-circle"></i><span>Módulos</span>
+                <i class="bi bi-diagram-3-fill"></i><span>Gestionar Módulos</span>
             </a>
         </li>
         {% endif %}
+
+        <!-- Sección Administrativa (solo staff) -->
         {% if user.is_staff %}
+        <li class="nav-heading">Administración</li>
         <li>
             <a href="{% url 'courses:admin_dashboard' %}">
-                <i class="bi bi-circle"></i><span>Panel Admin</span>
+                <i class="bi bi-shield-check"></i><span>Panel Admin</span>
             </a>
         </li>
         <li>
             <a href="{% url 'courses:admin_users' %}">
-                <i class="bi bi-circle"></i><span>Usuarios</span>
+                <i class="bi bi-people-fill"></i><span>Gestionar Usuarios</span>
             </a>
         </li>
         <li>
             <a href="{% url 'courses:manage_categories' %}">
-                <i class="bi bi-circle"></i><span>Categorías</span>
+                <i class="bi bi-tags-fill"></i><span>Categorías</span>
             </a>
         </li>
         {% endif %}

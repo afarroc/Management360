@@ -642,6 +642,194 @@
     }
 }
 
+/* Estilos para elementos de contenido estructurado adicionales */
+.lesson-video-container {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%);
+    border-radius: 8px;
+    border: 1px solid #ffeaa7;
+}
+
+.lesson-video-info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.video-description {
+    font-weight: 500;
+    color: #2d3436;
+    flex: 1;
+}
+
+.video-duration {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.lesson-exercise-container {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);
+    border-radius: 8px;
+    border: 1px solid #55efc4;
+}
+
+.lesson-exercise-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.exercise-title {
+    font-weight: 600;
+    color: #2d3436;
+}
+
+.lesson-exercise-content {
+    color: #2d3436;
+    font-weight: 500;
+    margin: 0;
+}
+
+.lesson-markdown-container {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+    border-radius: 8px;
+    border: 1px solid #74b9ff;
+}
+
+.lesson-markdown-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.markdown-title {
+    font-weight: 600;
+    color: white;
+}
+
+.lesson-markdown-content {
+    color: white;
+    font-weight: 500;
+    margin: 0;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 0.75rem;
+    border-radius: 6px;
+}
+
+.lesson-link-container {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+    border-radius: 8px;
+    border: 1px solid #a29bfe;
+}
+
+.lesson-link-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.link-title {
+    font-weight: 600;
+    color: white;
+}
+
+.lesson-resource-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    text-decoration: none;
+    color: white;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.lesson-resource-link:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+/* Estilos para otros tipos de elementos */
+.lesson-calculator-container,
+.lesson-case-study-container,
+.lesson-project-container,
+.lesson-diagram-container,
+.lesson-grapher-container,
+.lesson-application-container,
+.lesson-game-container,
+.lesson-formula-container,
+.lesson-animation-container,
+.lesson-simulator-container,
+.lesson-infographic-container,
+.lesson-quiz-container {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.lesson-calculator-header,
+.lesson-case-study-header,
+.lesson-project-header,
+.lesson-diagram-header,
+.lesson-grapher-header,
+.lesson-application-header,
+.lesson-game-header,
+.lesson-formula-header,
+.lesson-animation-header,
+.lesson-simulator-header,
+.lesson-infographic-header,
+.lesson-quiz-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.calculator-title,
+.case-study-title,
+.project-title,
+.diagram-title,
+.grapher-title,
+.application-title,
+.game-title,
+.formula-title,
+.animation-title,
+.simulator-title,
+.infographic-title,
+.quiz-title {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.lesson-calculator-description,
+.lesson-case-study-content,
+.lesson-project-description,
+.lesson-diagram-description,
+.lesson-grapher-description,
+.lesson-application-description,
+.lesson-game-description,
+.lesson-formula-description,
+.lesson-animation-description,
+.lesson-simulator-description,
+.lesson-infographic-description,
+.lesson-quiz-description {
+    color: #4a5568;
+    margin: 0;
+}
+
 /* Estilos para archivos adjuntos mejorados */
 .attached-files-section {
     margin-top: 2rem;
@@ -905,8 +1093,48 @@
     margin-left: 1.5rem;
 }
 
-/* Estilos responsivos para archivos */
+/* Estilos para imágenes incrustadas */
+.lesson-image-container {
+    text-align: center;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+}
+
+.lesson-image {
+    max-width: 100%;
+    height: auto;
+    max-height: 400px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    object-fit: contain;
+    transition: transform 0.3s ease;
+}
+
+.lesson-image:hover {
+    transform: scale(1.02);
+}
+
+.lesson-image-caption {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Responsive para imágenes */
 @media (max-width: 768px) {
+    .lesson-image {
+        max-height: 250px;
+    }
+
+    .lesson-image-container {
+        margin: 1rem 0;
+        padding: 0.75rem;
+    }
+
     .attached-files-grid {
         grid-template-columns: 1fr;
         gap: 0.75rem;

@@ -1,0 +1,365 @@
+{% extends "courses/base.html" %}
+{% load static lesson_tags %}
+
+{% block title %}{{ lesson.title }} - Lección Independiente{% endblock %}
+
+{% block extra_head %}
+<style>
+.standalone-lesson-container {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.lesson-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 3rem 0;
+    margin-bottom: 2rem;
+}
+
+.lesson-header h1 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.lesson-content-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.lesson-info {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.lesson-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.meta-label {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.meta-value {
+    color: #718096;
+}
+
+.lesson-description {
+    color: #4a5568;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+.content-section {
+    padding: 2rem;
+}
+
+.content-section h2 {
+    color: #2d3748;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 0.5rem;
+}
+
+.lesson-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+.btn-lesson-action {
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-lesson-action:hover {
+    text-decoration: none;
+    transform: translateY(-2px);
+}
+
+/* Estilos para el contenido renderizado */
+.rendered-content {
+    line-height: 1.6;
+}
+
+.rendered-content h1,
+.rendered-content h2,
+.rendered-content h3,
+.rendered-content h4,
+.rendered-content h5,
+.rendered-content h6 {
+    color: #2d3748;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.rendered-content h1 { border-bottom: 2px solid #667eea; padding-bottom: 0.5rem; }
+.rendered-content h2 { border-bottom: 2px solid #667eea; padding-bottom: 0.5rem; }
+.rendered-content h3 { border-bottom: 1px solid #e9ecef; padding-bottom: 0.25rem; }
+
+.rendered-content p {
+    margin-bottom: 1rem;
+}
+
+.rendered-content ul,
+.rendered-content ol {
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+}
+
+.rendered-content li {
+    margin-bottom: 0.5rem;
+}
+
+.rendered-content code {
+    background: #f1f3f4;
+    padding: 0.125rem 0.25rem;
+    border-radius: 3px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+}
+
+.rendered-content pre {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 1rem 0;
+}
+
+.rendered-content blockquote {
+    border-left: 4px solid #667eea;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    font-style: italic;
+    color: #718096;
+}
+
+.rendered-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+
+.rendered-content th,
+.rendered-content td {
+    border: 1px solid #e9ecef;
+    padding: 0.75rem;
+    text-align: left;
+}
+
+.rendered-content th {
+    background: #f8f9fa;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .lesson-header {
+        padding: 2rem 0;
+    }
+
+    .lesson-header h1 {
+        font-size: 1.75rem;
+    }
+
+    .lesson-info {
+        padding: 1.5rem;
+    }
+
+    .lesson-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .content-section {
+        padding: 1.5rem;
+    }
+
+    .lesson-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .btn-lesson-action {
+        width: 100%;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block course_content %}
+<div class="standalone-lesson-container">
+    <!-- Header -->
+    <div class="lesson-header">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <h1><i class="bi bi-book me-3"></i>{{ lesson.title }}</h1>
+                    {% if lesson.description %}
+                    <p class="lead mb-0 mt-2">{{ lesson.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <div class="mt-4">
+                        <span class="badge bg-{% if lesson.lesson_type == 'video' %}primary{% elif lesson.lesson_type == 'text' %}success{% elif lesson.lesson_type == 'quiz' %}warning{% else %}info{% endif %} fs-6">
+                            {{ lesson.get_lesson_type_display }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Información de la lección -->
+        <div class="lesson-info">
+            <div class="lesson-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Autor:</span>
+                    <span class="meta-value">{{ lesson.author.get_full_name|default:lesson.author.username }}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Tipo:</span>
+                    <span class="meta-value">{{ lesson.get_lesson_type_display }}</span>
+                </div>
+                {% if lesson.duration_minutes %}
+                <div class="meta-item">
+                    <span class="meta-label">Duración:</span>
+                    <span class="meta-value">{{ lesson.duration_minutes }} minutos</span>
+                </div>
+                {% endif %}
+                <div class="meta-item">
+                    <span class="meta-label">Creada:</span>
+                    <span class="meta-value">{{ lesson.created_at|date:"d M Y" }}</span>
+                </div>
+                {% if lesson.updated_at != lesson.created_at %}
+                <div class="meta-item">
+                    <span class="meta-label">Actualizada:</span>
+                    <span class="meta-value">{{ lesson.updated_at|date:"d M Y H:i" }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if lesson.is_featured %}
+            <div class="mt-2">
+                <span class="badge bg-warning">
+                    <i class="bi bi-star-fill me-1"></i>Lección Destacada
+                </span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Contenido de la lección -->
+        <div class="lesson-content-card">
+            <div class="content-section">
+                {% if lesson.lesson_type == 'video' %}
+                    {% if lesson.video_url %}
+                    <div class="ratio ratio-16x9 mb-4">
+                        <iframe src="{{ lesson.video_url }}" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                    {% endif %}
+
+                {% elif lesson.lesson_type == 'text' %}
+                    {% if lesson.content %}
+                    <div class="rendered-content">
+                        {{ lesson.content|linebreaks }}
+                    </div>
+                    {% endif %}
+
+                {% elif lesson.lesson_type == 'quiz' %}
+                    {% if lesson.quiz_questions %}
+                    <div class="quiz-section">
+                        <h3>Evaluación</h3>
+                        <form method="post" id="quiz-form">
+                            {% csrf_token %}
+                            {% for question in lesson.quiz_questions %}
+                            <div class="question-card mb-4">
+                                <h5>{{ forloop.counter }}. {{ question.question }}</h5>
+                                {% for option in question.options %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="question_{{ forloop.parentloop.counter }}" value="{{ option }}" id="q{{ forloop.parentloop.counter }}_{{ forloop.counter }}">
+                                    <label class="form-check-label" for="q{{ forloop.parentloop.counter }}_{{ forloop.counter }}">
+                                        {{ option }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endfor %}
+                            <button type="submit" class="btn btn-primary">Enviar Respuestas</button>
+                        </form>
+                    </div>
+                    {% endif %}
+
+                {% endif %}
+
+                <!-- Contenido estructurado -->
+                {% if lesson.structured_content %}
+                <div class="structured-content">
+                    {{ lesson.structured_content|render_structured_content }}
+                </div>
+                {% endif %}
+
+                <!-- Archivos adjuntos -->
+                {% if lesson.attachments.all %}
+                <div class="attachments-section mt-4">
+                    <h4><i class="bi bi-paperclip me-2"></i>Archivos Adjuntos</h4>
+                    <div class="attachments-list">
+                        {% for attachment in lesson.attachments.all %}
+                        <div class="attachment-item">
+                            <a href="{{ attachment.file.url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-download me-1"></i>{{ attachment.title }}
+                            </a>
+                            <small class="text-muted ms-2">{{ attachment.file_size|filesizeformat }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="lesson-actions">
+            <a href="{% url 'courses:standalone_lessons_list' %}" class="btn btn-outline-secondary btn-lesson-action">
+                <i class="bi bi-arrow-left me-1"></i>Volver a Lecciones
+            </a>
+
+            {% if lesson.author == user %}
+            <a href="{% url 'courses:edit_standalone_lesson' lesson.slug %}" class="btn btn-primary btn-lesson-action">
+                <i class="bi bi-pencil me-1"></i>Editar Lección
+            </a>
+            <a href="{% url 'courses:delete_standalone_lesson' lesson.slug %}" class="btn btn-danger btn-lesson-action">
+                <i class="bi bi-trash me-1"></i>Eliminar
+            </a>
+            {% else %}
+            <a href="{% url 'courses:duplicate_content_block' lesson.slug %}" class="btn btn-warning btn-lesson-action">
+                <i class="bi bi-copy me-1"></i>Usar como Base
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

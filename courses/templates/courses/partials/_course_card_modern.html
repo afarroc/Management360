@@ -43,6 +43,10 @@ Uso: {% include "courses/partials/_course_card_modern.html" with course=course %
             {% endif %}
 
             <div class="course-actions-modern">
+                <a href="{% url 'courses:manage_content' course.slug %}" class="btn-course-action btn-content" title="Gestionar contenido">
+                    <i class="bi bi-folder"></i>
+                    <span>Contenido</span>
+                </a>
                 <a href="{% url 'courses:edit_course' course.slug %}" class="btn-course-action btn-edit" title="Editar curso">
                     <i class="bi bi-pencil"></i>
                     <span>Editar</span>
@@ -50,6 +54,10 @@ Uso: {% include "courses/partials/_course_card_modern.html" with course=course %
                 <a href="{% url 'courses:course_analytics' course.slug %}" class="btn-course-action btn-analytics" title="Ver analíticas">
                     <i class="bi bi-graph-up"></i>
                     <span>Analíticas</span>
+                </a>
+                <a href="{% url 'courses:delete_course' course.slug %}" class="btn-course-action btn-delete" title="Eliminar curso">
+                    <i class="bi bi-trash"></i>
+                    <span>Eliminar</span>
                 </a>
                 <a href="{% url 'courses:course_detail' course.slug %}" class="btn-course-action btn-view" title="Ver curso">
                     <i class="bi bi-eye"></i>

@@ -1,92 +1,1010 @@
 {% extends "courses/base.html" %}
 {% load crispy_forms_tags %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+/* Variables CSS para consistencia */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --shadow-light: 0 4px 20px rgba(0,0,0,0.08);
+    --shadow-medium: 0 6px 25px rgba(245, 158, 11, 0.3);
+    --border-radius: 15px;
+    --transition-fast: all 0.3s ease;
+}
+
+/* Layout principal optimizado */
+.course-editor-container {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.editor-card {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-light);
+    overflow: hidden;
+    border: none;
+    transition: var(--transition-fast);
+}
+
+.editor-card:hover {
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-2px);
+}
+
+.editor-header {
+    background: var(--primary-gradient);
+    color: white;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.editor-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 150px;
+    height: 150px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    border-radius: 50%;
+    transform: translate(50px, -50px);
+}
+
+.editor-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.editor-subtitle {
+    font-size: 1rem;
+    opacity: 0.9;
+    margin: 0.5rem 0 0 0;
+    position: relative;
+    z-index: 1;
+}
+
+.editor-body {
+    padding: 2.5rem;
+}
+
+/* Secciones organizadas */
+.editor-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
+    transition: var(--transition-fast);
+}
+
+.editor-section:hover {
+    background: white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #667eea;
+}
+
+.section-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--primary-gradient);
+    color: white;
+    margin-right: 1rem;
+    font-size: 1.2rem;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+}
+
+/* Campos de formulario mejorados */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-control {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    transition: var(--transition-fast);
+    background: white;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    background: white;
+}
+
+textarea.form-control {
+    min-height: 120px;
+    resize: vertical;
+}
+
+/* Campos específicos */
+.price-input {
+    position: relative;
+}
+
+.price-input .form-control {
+    padding-left: 2.5rem;
+}
+
+.price-symbol {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #718096;
+    font-weight: 600;
+    z-index: 1;
+}
+
+.duration-input {
+    position: relative;
+}
+
+.duration-input .form-control {
+    padding-right: 3rem;
+}
+
+.duration-unit {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #718096;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Thumbnail upload mejorado */
+.thumbnail-upload {
+    position: relative;
+    border: 2px dashed #cbd5e0;
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    transition: var(--transition-fast);
+    background: #f8f9fa;
+    cursor: pointer;
+}
+
+.thumbnail-upload:hover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.02);
+}
+
+.thumbnail-upload.dragover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+    transform: scale(1.02);
+}
+
+.upload-icon {
+    font-size: 3rem;
+    color: #cbd5e0;
+    margin-bottom: 1rem;
+    transition: var(--transition-fast);
+}
+
+.thumbnail-upload:hover .upload-icon {
+    color: #667eea;
+    transform: scale(1.1);
+}
+
+.upload-text {
+    color: #718096;
+    font-weight: 500;
+}
+
+.upload-hint {
+    font-size: 0.875rem;
+    color: #a0aec0;
+    margin-top: 0.5rem;
+}
+
+.thumbnail-preview {
+    margin-top: 1rem;
+    position: relative;
+    display: inline-block;
+}
+
+.thumbnail-preview img {
+    max-width: 200px;
+    max-height: 150px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-light);
+    transition: var(--transition-fast);
+}
+
+.thumbnail-preview img:hover {
+    transform: scale(1.05);
+}
+
+/* Switches mejorados */
+.switch-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.switch-label {
+    font-weight: 500;
+    color: #2d3748;
+    margin: 0;
+}
+
+.switch-input {
+    position: relative;
+    width: 50px;
+    height: 24px;
+    appearance: none;
+    background: #cbd5e0;
+    border-radius: 12px;
+    transition: var(--transition-fast);
+    cursor: pointer;
+}
+
+.switch-input:checked {
+    background: var(--primary-gradient);
+}
+
+.switch-input::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    top: 3px;
+    left: 3px;
+    transition: var(--transition-fast);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.switch-input:checked::before {
+    left: 29px;
+}
+
+/* Botones de acción */
+.action-buttons {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    border: 1px solid #e9ecef;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.btn-action {
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: var(--transition-fast);
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+}
+
+.btn-save {
+    background: var(--primary-gradient);
+    color: white;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.btn-save:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.btn-cancel {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-cancel:hover {
+    background: #5a6268;
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Estados de carga y feedback */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: var(--shadow-medium);
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Auto-save indicator */
+.autosave-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--success-gradient);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    box-shadow: var(--shadow-medium);
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    z-index: 1000;
+    font-weight: 500;
+}
+
+.autosave-indicator.show {
+    display: flex;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .editor-body {
+        padding: 1.5rem;
+    }
+
+    .editor-section {
+        padding: 1.5rem;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .btn-action {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .switch-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+}
+
+/* Animaciones de entrada */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.editor-section {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.editor-section:nth-child(1) { animation-delay: 0.1s; }
+.editor-section:nth-child(2) { animation-delay: 0.2s; }
+.editor-section:nth-child(3) { animation-delay: 0.3s; }
+.editor-section:nth-child(4) { animation-delay: 0.4s; }
+</style>
+{% endblock %}
 
 {% block course_content %}
-<div class="row justify-content-center">
-    <div class="col-md-10 col-lg-8">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h3 class="mb-0">{{ title }}</h3>
-            </div>
-            <div class="card-body">
-                <form method="post" enctype="multipart/form-data" novalidate>
-                    {% csrf_token %}
-                    
-                    <div class="row">
-                        <div class="col-md-8">
-                            {{ form.title|as_crispy_field }}
-                        </div>
-                        <div class="col-md-4">
-                            {{ form.category|as_crispy_field }}
-                        </div>
+<div class="course-editor-container">
+    <div class="container-fluid">
+        <div class="row justify-content-center">
+            <div class="col-xl-10 col-lg-11 col-md-12">
+                <div class="editor-card">
+                    <!-- Header -->
+                    <div class="editor-header">
+                        <h1 class="editor-title">
+                            <i class="fas fa-edit me-2"></i>{{ title }}
+                        </h1>
+                        <p class="editor-subtitle">
+                            Configure los detalles de su curso para una mejor experiencia de aprendizaje
+                        </p>
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            {{ form.level|as_crispy_field }}
+
+                    <!-- Formulario -->
+                    <form method="post" enctype="multipart/form-data" id="course-form" novalidate>
+                        {% csrf_token %}
+
+                        <div class="editor-body">
+                            <!-- Información Básica -->
+                            <div class="editor-section">
+                                <div class="section-header">
+                                    <div class="section-icon">
+                                        <i class="fas fa-info-circle"></i>
+                                    </div>
+                                    <h2 class="section-title">Información Básica</h2>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-lg-8">
+                                        <div class="form-group">
+                                            <label for="{{ form.title.id_for_label }}" class="form-label">
+                                                <i class="fas fa-heading"></i>Título del Curso *
+                                            </label>
+                                            {{ form.title }}
+                                            {% if form.title.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.title.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-4">
+                                        <div class="form-group">
+                                            <label for="{{ form.category.id_for_label }}" class="form-label">
+                                                <i class="fas fa-tags"></i>Categoría
+                                            </label>
+                                            {{ form.category }}
+                                            {% if form.category.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.category.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.short_description.id_for_label }}" class="form-label">
+                                        <i class="fas fa-quote-left"></i>Descripción Corta *
+                                    </label>
+                                    {{ form.short_description }}
+                                    <small class="form-text text-muted">
+                                        Una breve descripción que aparecerá en las tarjetas de curso (máx. 300 caracteres)
+                                    </small>
+                                    {% if form.short_description.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.short_description.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Configuración del Curso -->
+                            <div class="editor-section">
+                                <div class="section-header">
+                                    <div class="section-icon">
+                                        <i class="fas fa-cogs"></i>
+                                    </div>
+                                    <h2 class="section-title">Configuración del Curso</h2>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="{{ form.level.id_for_label }}" class="form-label">
+                                                <i class="fas fa-chart-line"></i>Nivel de Dificultad
+                                            </label>
+                                            {{ form.level }}
+                                            {% if form.level.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.level.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group price-input">
+                                            <label for="{{ form.price.id_for_label }}" class="form-label">
+                                                <i class="fas fa-dollar-sign"></i>Precio
+                                            </label>
+                                            <span class="price-symbol">$</span>
+                                            {{ form.price }}
+                                            {% if form.price.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.price.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group duration-input">
+                                            <label for="{{ form.duration_hours.id_for_label }}" class="form-label">
+                                                <i class="fas fa-clock"></i>Duración Total
+                                            </label>
+                                            {{ form.duration_hours }}
+                                            <span class="duration-unit">horas</span>
+                                            {% if form.duration_hours.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.duration_hours.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Descripción Detallada -->
+                            <div class="editor-section">
+                                <div class="section-header">
+                                    <div class="section-icon">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <h2 class="section-title">Descripción Detallada</h2>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">
+                                        <i class="fas fa-align-left"></i>Descripción Completa *
+                                    </label>
+                                    {{ form.description }}
+                                    <small class="form-text text-muted">
+                                        Describe detalladamente el contenido del curso, objetivos de aprendizaje y beneficios para los estudiantes
+                                    </small>
+                                    {% if form.description.errors %}
+                                        <div class="text-danger mt-1">
+                                            {% for error in form.description.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Imagen y Publicación -->
+                            <div class="editor-section">
+                                <div class="section-header">
+                                    <div class="section-icon">
+                                        <i class="fas fa-image"></i>
+                                    </div>
+                                    <h2 class="section-title">Imagen y Publicación</h2>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                <i class="fas fa-camera"></i>Imagen del Curso
+                                            </label>
+                                            <div class="thumbnail-upload" onclick="document.getElementById('id_thumbnail').click()">
+                                                <div class="upload-icon">
+                                                    <i class="fas fa-cloud-upload-alt"></i>
+                                                </div>
+                                                <div class="upload-text">Haz clic para seleccionar una imagen</div>
+                                                <div class="upload-hint">Formatos: JPG, PNG, GIF (máx. 5MB)</div>
+                                                {{ form.thumbnail }}
+                                            </div>
+                                            <div id="thumbnail-preview" class="thumbnail-preview"></div>
+                                            {% if form.thumbnail.errors %}
+                                                <div class="text-danger mt-1">
+                                                    {% for error in form.thumbnail.errors %}
+                                                        <small>{{ error }}</small>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label class="form-label">
+                                                <i class="fas fa-toggle-on"></i>Opciones de Publicación
+                                            </label>
+                                            <div class="switch-container">
+                                                {{ form.is_published }}
+                                                <label class="switch-label" for="{{ form.is_published.id_for_label }}">
+                                                    <i class="fas fa-globe-americas me-1"></i>Curso Publicado
+                                                </label>
+                                            </div>
+                                            <small class="form-text text-muted mt-2">
+                                                Los cursos publicados son visibles para todos los estudiantes
+                                            </small>
+                                        </div>
+
+                                        <div class="form-group mt-3">
+                                            <div class="switch-container">
+                                                {{ form.is_featured }}
+                                                <label class="switch-label" for="{{ form.is_featured.id_for_label }}">
+                                                    <i class="fas fa-star me-1"></i>Curso Destacado
+                                                </label>
+                                            </div>
+                                            <small class="form-text text-muted mt-2">
+                                                Los cursos destacados aparecen en la página principal
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Botones de Acción -->
+                            <div class="action-buttons">
+                                <button type="submit" class="btn-action btn-save" id="save-btn">
+                                    <i class="fas fa-save"></i>
+                                    <span>Guardar Cambios</span>
+                                </button>
+                                <a href="{% url 'courses:manage_courses' %}" class="btn-action btn-cancel">
+                                    <i class="fas fa-times"></i>
+                                    <span>Cancelar</span>
+                                </a>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            {{ form.price|as_crispy_field }}
-                        </div>
-                        <div class="col-md-4">
-                            {{ form.duration_hours|as_crispy_field }}
-                        </div>
-                    </div>
-                    
-                    {{ form.short_description|as_crispy_field }}
-                    {{ form.description|as_crispy_field }}
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            {{ form.thumbnail|as_crispy_field }}
-                        </div>
-                        <div class="col-md-3">
-                            {{ form.is_published|as_crispy_field }}
-                        </div>
-                        <div class="col-md-3">
-                            {{ form.is_featured|as_crispy_field }}
-                        </div>
-                    </div>
-                    
-                    <div class="form-group mt-4">
-                        <button type="submit" class="btn btn-primary me-2">
-                            <i class="fas fa-save me-1"></i> Guardar
-                        </button>
-                        <a href="{% url 'courses:manage_courses' %}" class="btn btn-secondary">
-                            <i class="fas fa-times me-1"></i> Cancelar
-                        </a>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loading-overlay">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <h5>Guardando cambios...</h5>
+        <p class="mb-0">Por favor espere mientras se procesa la información</p>
+    </div>
+</div>
+
+<!-- Auto-save Indicator -->
+<div class="autosave-indicator" id="autosave-indicator">
+    <i class="fas fa-check-circle"></i>
+    <span>Cambios guardados automáticamente</span>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Preview de la imagen seleccionada como thumbnail
-document.getElementById('id_thumbnail').addEventListener('change', function(e) {
-    const file = e.target.files[0];
+// Variables globales
+let autoSaveTimeout;
+let isDirty = false;
+
+// Inicialización cuando el DOM está listo
+document.addEventListener('DOMContentLoaded', function() {
+    initializeForm();
+    initializeThumbnailUpload();
+    initializeAutoSave();
+});
+
+// Inicializar funcionalidades del formulario
+function initializeForm() {
+    const form = document.getElementById('course-form');
+    const saveBtn = document.getElementById('save-btn');
+
+    // Validación en tiempo real
+    form.addEventListener('input', function(e) {
+        isDirty = true;
+        validateField(e.target);
+    });
+
+    // Manejar envío del formulario
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        if (validateForm()) {
+            showLoading();
+            form.submit();
+        }
+    });
+
+    // Marcar como sucio cuando cambian selects
+    form.querySelectorAll('select').forEach(select => {
+        select.addEventListener('change', () => isDirty = true);
+    });
+
+    // Marcar como sucio cuando cambian checkboxes
+    form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', () => isDirty = true);
+    });
+}
+
+// Inicializar subida de thumbnail
+function initializeThumbnailUpload() {
+    const fileInput = document.getElementById('id_thumbnail');
+    const uploadArea = document.querySelector('.thumbnail-upload');
+
+    if (fileInput && uploadArea) {
+        // Preview de imagen seleccionada
+        fileInput.addEventListener('change', function(e) {
+            handleFileSelect(e.target.files[0]);
+        });
+
+        // Drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        uploadArea.addEventListener('drop', handleDrop, false);
+    }
+}
+
+// Inicializar auto-guardado
+function initializeAutoSave() {
+    // Auto-guardado cada 30 segundos si hay cambios
+    setInterval(() => {
+        if (isDirty) {
+            autoSave();
+        }
+    }, 30000);
+}
+
+// Funciones de validación
+function validateField(field) {
+    const value = field.value.trim();
+    const isRequired = field.hasAttribute('required');
+
+    // Remover clases de error previas
+    field.classList.remove('is-invalid');
+    let errorElement = field.parentNode.querySelector('.invalid-feedback');
+    if (errorElement) {
+        errorElement.remove();
+    }
+
+    // Validaciones específicas
+    if (field.name === 'title' && value.length > 0 && value.length < 5) {
+        showFieldError(field, 'El título debe tener al menos 5 caracteres');
+        return false;
+    }
+
+    if (field.name === 'price' && value !== '' && (isNaN(value) || parseFloat(value) < 0)) {
+        showFieldError(field, 'El precio debe ser un número positivo');
+        return false;
+    }
+
+    if (field.name === 'duration_hours' && value !== '' && (isNaN(value) || parseInt(value) < 1)) {
+        showFieldError(field, 'La duración debe ser al menos 1 hora');
+        return false;
+    }
+
+    if (field.name === 'short_description' && value.length > 300) {
+        showFieldError(field, 'La descripción corta no puede exceder 300 caracteres');
+        return false;
+    }
+
+    return true;
+}
+
+function validateForm() {
+    let isValid = true;
+    const requiredFields = document.querySelectorAll('[required]');
+
+    requiredFields.forEach(field => {
+        if (!field.value.trim()) {
+            showFieldError(field, 'Este campo es obligatorio');
+            isValid = false;
+        } else if (!validateField(field)) {
+            isValid = false;
+        }
+    });
+
+    return isValid;
+}
+
+function showFieldError(field, message) {
+    field.classList.add('is-invalid');
+
+    let errorElement = field.parentNode.querySelector('.invalid-feedback');
+    if (!errorElement) {
+        errorElement = document.createElement('div');
+        errorElement.className = 'invalid-feedback';
+        field.parentNode.appendChild(errorElement);
+    }
+    errorElement.textContent = message;
+}
+
+// Funciones de subida de archivos
+function handleFileSelect(file) {
     if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            // Crear o actualizar la previsualización
-            let preview = document.getElementById('thumbnail-preview');
-            if (!preview) {
-                preview = document.createElement('div');
-                preview.id = 'thumbnail-preview';
-                preview.className = 'mt-3';
-                document.querySelector('[for="id_thumbnail"]').after(preview);
-            }
-            preview.innerHTML = `
-                <div class="alert alert-info">
-                    <strong>Vista previa:</strong>
-                    <img src="${e.target.result}" class="img-fluid mt-2" style="max-height: 200px;">
-                </div>
-            `;
-        };
-        reader.readAsDataURL(file);
+        validateAndPreviewFile(file);
+    }
+}
+
+function handleDrop(e) {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+
+    if (files.length > 0) {
+        handleFileSelect(files[0]);
+    }
+}
+
+function validateAndPreviewFile(file) {
+    // Validar tipo de archivo
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+        alert('Solo se permiten archivos de imagen (JPG, PNG, GIF)');
+        return;
+    }
+
+    // Validar tamaño (5MB máximo)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+        alert('La imagen no puede ser mayor a 5MB');
+        return;
+    }
+
+    // Mostrar preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        showImagePreview(e.target.result);
+    };
+    reader.readAsDataURL(file);
+
+    isDirty = true;
+}
+
+function showImagePreview(src) {
+    let preview = document.getElementById('thumbnail-preview');
+    if (!preview) {
+        preview = document.createElement('div');
+        preview.id = 'thumbnail-preview';
+        document.querySelector('.thumbnail-upload').after(preview);
+    }
+
+    preview.innerHTML = `
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle me-2"></i>
+            <strong>Imagen seleccionada correctamente</strong>
+            <div class="mt-2">
+                <img src="${src}" class="img-fluid rounded" style="max-height: 150px;">
+            </div>
+        </div>
+    `;
+}
+
+// Funciones de drag and drop
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function highlight() {
+    document.querySelector('.thumbnail-upload').classList.add('dragover');
+}
+
+function unhighlight() {
+    document.querySelector('.thumbnail-upload').classList.remove('dragover');
+}
+
+// Auto-guardado
+function autoSave() {
+    // Aquí iría la lógica de auto-guardado vía AJAX
+    // Por ahora solo mostramos el indicador
+    showAutoSaveIndicator();
+    isDirty = false;
+}
+
+function showAutoSaveIndicator() {
+    const indicator = document.getElementById('autosave-indicator');
+    indicator.classList.add('show');
+
+    setTimeout(() => {
+        indicator.classList.remove('show');
+    }, 3000);
+}
+
+// Loading states
+function showLoading() {
+    document.getElementById('loading-overlay').style.display = 'flex';
+}
+
+// Contador de caracteres para descripción corta
+document.getElementById('id_short_description')?.addEventListener('input', function(e) {
+    const maxLength = 300;
+    const currentLength = e.target.value.length;
+
+    // Crear o actualizar contador
+    let counter = e.target.parentNode.querySelector('.char-counter');
+    if (!counter) {
+        counter = document.createElement('small');
+        counter.className = 'char-counter form-text text-muted mt-1';
+        e.target.after(counter);
+    }
+
+    counter.textContent = `${currentLength}/${maxLength} caracteres`;
+
+    // Cambiar color según proximidad al límite
+    if (currentLength > maxLength * 0.9) {
+        counter.className = 'char-counter form-text text-danger mt-1';
+    } else if (currentLength > maxLength * 0.8) {
+        counter.className = 'char-counter form-text text-warning mt-1';
+    } else {
+        counter.className = 'char-counter form-text text-muted mt-1';
+    }
+});
+
+// Prevenir pérdida de cambios al salir de la página
+window.addEventListener('beforeunload', function(e) {
+    if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '¿Estás seguro de que quieres salir? Los cambios no guardados se perderán.';
     }
 });
 </script>

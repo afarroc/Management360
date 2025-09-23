@@ -1,0 +1,465 @@
+{% extends "courses/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - Management360{% endblock %}
+
+{% block extra_head %}
+<style>
+.my-lessons-container {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.lessons-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.lessons-header h1 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.lessons-stats {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3748;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #718096;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.lessons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.lesson-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.lesson-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.lesson-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.lesson-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+    flex: 1;
+}
+
+.lesson-status {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-published { background: #e8f5e8; color: #2e7d32; }
+.status-draft { background: #fff3e0; color: #ef6c00; }
+.status-featured { background: #e3f2fd; color: #1565c0; }
+
+.lesson-type-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.lesson-type-video { background: #e3f2fd; color: #1565c0; }
+.lesson-type-text { background: #e8f5e8; color: #2e7d32; }
+.lesson-type-quiz { background: #fff3e0; color: #ef6c00; }
+.lesson-type-assignment { background: #f3e5f5; color: #7b1fa2; }
+
+.lesson-meta {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.lesson-stats {
+    font-size: 0.875rem;
+    color: #718096;
+}
+
+.lesson-description {
+    font-size: 0.9rem;
+    color: #4a5568;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.lesson-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-lesson-action {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 6px;
+}
+
+.quick-actions {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.quick-actions h4 {
+    color: #2d3748;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.quick-action-item {
+    display: block;
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.quick-action-item:hover {
+    text-decoration: none;
+    color: inherit;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: #667eea;
+}
+
+.quick-action-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.quick-action-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.quick-action-desc {
+    font-size: 0.9rem;
+    color: #718096;
+    line-height: 1.4;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-text {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+    .lessons-header {
+        padding: 1.5rem 0;
+    }
+
+    .lessons-header h1 {
+        font-size: 1.75rem;
+    }
+
+    .lessons-stats {
+        padding: 1.5rem;
+    }
+
+    .lessons-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .lesson-card {
+        padding: 1rem;
+    }
+
+    .lesson-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .lesson-actions {
+        justify-content: center;
+    }
+
+    .quick-actions-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+</style>
+{% endblock %}
+
+{% block course_content %}
+<div class="my-lessons-container">
+    <!-- Header -->
+    <div class="lessons-header">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <h1><i class="bi bi-folder me-3"></i>{{ title }}</h1>
+                    <p class="lead mb-0 mt-2">
+                        Gestiona tus lecciones independientes y contenido educativo
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <div class="mt-4">
+                        <i class="bi bi-journal-bookmark fs-1 text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Estadísticas -->
+        {% if lessons %}
+        <div class="lessons-stats">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-number">{{ lessons|length }}</span>
+                    <span class="stat-label">Total de Lecciones</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ lessons|length|add:published_count }}</span>
+                    <span class="stat-label">Publicadas</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ lessons|length|add:draft_count }}</span>
+                    <span class="stat-label">Borradores</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ lessons|length|add:featured_count }}</span>
+                    <span class="stat-label">Destacadas</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Acciones rápidas -->
+        <div class="quick-actions">
+            <h4><i class="bi bi-lightning me-2"></i>Acciones Rápidas</h4>
+            <div class="quick-actions-grid">
+                <a href="{% url 'courses:create_standalone_lesson' %}" class="quick-action-item">
+                    <div class="quick-action-icon">
+                        <i class="bi bi-plus-circle"></i>
+                    </div>
+                    <div class="quick-action-title">Crear Nueva Lección</div>
+                    <div class="quick-action-desc">Inicia una nueva lección independiente</div>
+                </a>
+                <a href="{% url 'courses:standalone_lessons_list' %}" class="quick-action-item">
+                    <div class="quick-action-icon">
+                        <i class="bi bi-search"></i>
+                    </div>
+                    <div class="quick-action-title">Ver Todas las Lecciones</div>
+                    <div class="quick-action-desc">Explora lecciones de otros autores</div>
+                </a>
+                <a href="{% url 'courses:content_manager' %}" class="quick-action-item">
+                    <div class="quick-action-icon">
+                        <i class="bi bi-cubes"></i>
+                    </div>
+                    <div class="quick-action-title">Gestor de Contenido</div>
+                    <div class="quick-action-desc">Crea bloques de contenido reutilizable</div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Lecciones -->
+        {% if lessons %}
+        <div class="lessons-grid">
+            {% for lesson in lessons %}
+            <div class="lesson-card">
+                <div class="lesson-header">
+                    <h3 class="lesson-title">{{ lesson.title }}</h3>
+                    <div class="lesson-status">
+                        {% if lesson.is_published %}
+                        <span class="status-badge status-published">Publicado</span>
+                        {% else %}
+                        <span class="status-badge status-draft">Borrador</span>
+                        {% endif %}
+                        {% if lesson.is_featured %}
+                        <span class="status-badge status-featured">Destacado</span>
+                        {% endif %}
+                        <span class="lesson-type-badge lesson-type-{{ lesson.lesson_type }}">
+                            {{ lesson.get_lesson_type_display }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="lesson-meta">
+                    {% if lesson.duration_minutes %}
+                    <span class="lesson-stats">
+                        <i class="bi bi-clock me-1"></i>{{ lesson.duration_minutes }} min
+                    </span>
+                    {% endif %}
+                    <span class="lesson-stats">
+                        <i class="bi bi-calendar me-1"></i>{{ lesson.created_at|date:"d M Y" }}
+                    </span>
+                </div>
+
+                {% if lesson.description %}
+                <div class="lesson-description">
+                    {{ lesson.description|truncatechars:120 }}
+                </div>
+                {% endif %}
+
+                <div class="lesson-actions">
+                    {% if lesson.is_published %}
+                    <a href="{% url 'courses:standalone_lesson_detail' lesson.slug %}"
+                       class="btn btn-primary btn-lesson-action">
+                        <i class="bi bi-eye me-1"></i>Ver
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'courses:edit_standalone_lesson' lesson.slug %}"
+                       class="btn btn-warning btn-lesson-action">
+                        <i class="bi bi-pencil me-1"></i>Editar
+                    </a>
+                    <button type="button" class="btn btn-outline-secondary btn-lesson-action"
+                            onclick="togglePublished('{{ lesson.slug }}')">
+                        <i class="bi bi-{% if lesson.is_published %}eye-slash{% else %}eye{% endif %} me-1"></i>
+                        {% if lesson.is_published %}Ocultar{% else %}Publicar{% endif %}
+                    </button>
+                    <a href="{% url 'courses:delete_standalone_lesson' lesson.slug %}"
+                       class="btn btn-danger btn-lesson-action">
+                        <i class="bi bi-trash me-1"></i>Eliminar
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Estado vacío -->
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="bi bi-book"></i>
+            </div>
+            <h2 class="empty-state-title">Aún no has creado lecciones independientes</h2>
+            <p class="empty-state-text">
+                Crea tu primera lección independiente para compartir conocimiento con la comunidad educativa.
+            </p>
+            <a href="{% url 'courses:create_standalone_lesson' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-plus-circle me-2"></i>Crear Primera Lección
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function togglePublished(slug) {
+    fetch(`/courses/lessons/${slug}/toggle-published/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error al cambiar el estado de publicación');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al cambiar el estado de publicación');
+    });
+}
+</script>
+{% endblock %}

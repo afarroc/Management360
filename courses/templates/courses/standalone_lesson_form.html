@@ -1,7 +1,7 @@
 {% extends "courses/base.html" %}
 {% load static %}
 
-{% block title %}{{ title }} - {{ course.title }}{% endblock %}
+{% block title %}{{ title }}{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -298,6 +298,49 @@ code {
     gap: 0.25rem;
 }
 
+/* Estilos para las secciones identificadas de elementos */
+#elements-sections {
+    border-top: 2px solid #e9ecef;
+    padding-top: 1rem;
+    margin-top: 2rem;
+}
+
+.element-section-card {
+    transition: all 0.3s ease;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.element-section-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.element-section-title {
+    font-size: 0.9rem;
+    line-height: 1.3;
+    color: #2d3748;
+    margin: 0;
+    font-weight: 500;
+}
+
+.element-section-actions {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.5rem;
+}
+
+.element-section-actions .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+.element-type-icon {
+    font-size: 1rem;
+}
+
 .btn-element-action {
     padding: 0.25rem 0.5rem;
     font-size: 0.75rem;
@@ -533,19 +576,19 @@ code {
     background: rgba(239, 68, 68, 0.1);
 }
 
-.course-info {
+.lesson-info {
     background: #f8f9fa;
     border-radius: 10px;
     padding: 1.5rem;
     margin-bottom: 2rem;
 }
 
-.course-info h5 {
+.lesson-info h5 {
     color: #2d3748;
     margin-bottom: 0.5rem;
 }
 
-.course-info p {
+.lesson-info p {
     color: #718096;
     margin: 0;
 }
@@ -668,10 +711,10 @@ code {
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-10">
-                <!-- Información del curso -->
-                <div class="course-info">
-                    <h5><i class="bi bi-journal-bookmark me-2"></i>{{ course.title }}</h5>
-                    <p>Módulo: {{ module.title }} • {{ title|lower }}</p>
+                <!-- Información de la lección independiente -->
+                <div class="lesson-info">
+                    <h5><i class="bi bi-file-earmark-plus me-2"></i>Lección Independiente</h5>
+                    <p>{{ title|lower }} • Contenido autónomo sin curso específico</p>
                 </div>
 
                 <!-- Formulario -->
@@ -779,7 +822,20 @@ code {
                                     </label>
                                 </div>
                                 <div class="form-text">
-                                    Los estudiantes pueden ver esta lección sin estar inscritos en el curso
+                                    Los estudiantes pueden ver esta lección sin estar inscritos en un curso
+                                </div>
+                            </div>
+
+                            <!-- Checkbox Publicar Lección -->
+                            <div class="form-group">
+                                <div class="form-check">
+                                    {{ form.is_published }}
+                                    <label class="form-check-label" for="{{ form.is_published.id_for_label }}">
+                                        <i class="bi bi-globe me-1"></i>Publicar lección
+                                    </label>
+                                </div>
+                                <div class="form-text">
+                                    Los estudiantes pueden acceder a esta lección desde el catálogo público
                                 </div>
                             </div>
 
@@ -878,6 +934,17 @@ code {
                                             <div class="empty-state text-center py-4">
                                                 <i class="bi bi-diagram-3 text-muted fs-1 mb-3"></i>
                                                 <p class="text-muted mb-0">Haz clic en los botones arriba para agregar elementos de contenido</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Secciones identificadas por elemento -->
+                                        <div id="elements-sections" class="mt-4">
+                                            <h6 class="text-muted mb-3">
+                                                <i class="bi bi-list-check me-2"></i>Elementos Agregados
+                                                <span id="sections-count" class="badge bg-secondary ms-2">0 secciones</span>
+                                            </h6>
+                                            <div id="sections-list" class="row g-3">
+                                                <!-- Las secciones se generarán aquí dinámicamente -->
                                             </div>
                                         </div>
                                     </div>
@@ -1002,7 +1069,7 @@ code {
 
                             <!-- Botones -->
                             <div class="d-flex justify-content-between align-items-center mt-4">
-                                <a href="{% url 'courses:manage_content' course.slug %}" class="btn-cancel">
+                                <a href="{% url 'courses:my_standalone_lessons' %}" class="btn-cancel">
                                     <i class="bi bi-arrow-left me-1"></i>Cancelar
                                 </a>
                                 <button type="submit" class="btn-submit">
@@ -1432,6 +1499,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.updateElement = function(elementId) {
         updateJsonField();
         updatePreview();
+        updateElementSections();
     };
 
     // Función para agregar elemento a lista
@@ -1481,7 +1549,134 @@ document.addEventListener('DOMContentLoaded', function() {
         const countElement = document.getElementById('elements-count');
         countElement.textContent = `${count} elemento${count !== 1 ? 's' : ''}`;
         countElement.className = `badge ms-2 ${count > 0 ? 'bg-success' : 'bg-secondary'}`;
+
+        // Actualizar secciones identificadas
+        updateElementSections();
     }
+
+    // Función para actualizar las secciones identificadas
+    function updateElementSections() {
+        const sectionsList = document.getElementById('sections-list');
+        const sectionsCount = document.getElementById('sections-count');
+
+        if (elements.length === 0) {
+            sectionsList.innerHTML = '<div class="col-12"><p class="text-muted text-center py-3">No hay elementos agregados aún</p></div>';
+            sectionsCount.textContent = '0 secciones';
+            sectionsCount.className = 'badge bg-secondary ms-2';
+            return;
+        }
+
+        let sectionsHtml = '';
+        elements.forEach((element, index) => {
+            const elementNumber = index + 1;
+            const elementType = getElementTypeName(element.type);
+            const elementTitle = getElementTitle(element, elementNumber);
+
+            sectionsHtml += `
+                <div class="col-md-6 col-lg-4">
+                    <div class="element-section-card border rounded p-3 bg-white" data-element-index="${index}">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-primary me-2">${elementNumber}</span>
+                            <span class="element-type-icon me-2">${getElementTypeIcon(element.type)}</span>
+                            <small class="text-muted fw-bold">${elementType}</small>
+                        </div>
+                        <h6 class="element-section-title mb-2 text-truncate" title="${elementTitle}">
+                            ${elementTitle}
+                        </h6>
+                        <div class="element-section-actions">
+                            <button type="button" class="btn btn-sm btn-outline-primary me-1"
+                                    onclick="scrollToElement('${element.id}')" title="Ir al elemento">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-warning me-1"
+                                    onclick="editElement('${element.id}')" title="Editar elemento">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                    onclick="removeElement('${element.id}')" title="Eliminar elemento">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        sectionsList.innerHTML = sectionsHtml;
+        sectionsCount.textContent = `${elements.length} sección${elements.length !== 1 ? 'es' : ''}`;
+        sectionsCount.className = 'badge bg-success ms-2';
+    }
+
+    // Función auxiliar para obtener el nombre del tipo de elemento
+    function getElementTypeName(type) {
+        const typeNames = {
+            'heading': 'Encabezado',
+            'text': 'Texto',
+            'list': 'Lista',
+            'image': 'Imagen',
+            'file': 'Archivo',
+            'content_block': 'Bloque CMS'
+        };
+        return typeNames[type] || type;
+    }
+
+    // Función auxiliar para obtener el ícono del tipo de elemento
+    function getElementTypeIcon(type) {
+        const typeIcons = {
+            'heading': '<i class="bi bi-type-h1 text-primary"></i>',
+            'text': '<i class="bi bi-textarea text-success"></i>',
+            'list': '<i class="bi bi-list-ul text-info"></i>',
+            'image': '<i class="bi bi-image text-warning"></i>',
+            'file': '<i class="bi bi-file-earmark text-secondary"></i>',
+            'content_block': '<i class="bi bi-blockquote-left text-dark"></i>'
+        };
+        return typeIcons[type] || '<i class="bi bi-question-circle"></i>';
+    }
+
+    // Función auxiliar para obtener el título del elemento
+    function getElementTitle(element, elementNumber) {
+        // Intentar obtener un título significativo del elemento
+        if (element.type === 'heading' && element.data && element.data.title) {
+            return element.data.title;
+        }
+        if (element.type === 'text' && element.data && element.data.title) {
+            return element.data.title;
+        }
+        if (element.type === 'list' && element.data && element.data.title) {
+            return element.data.title;
+        }
+        if (element.type === 'image' && element.data && element.data.title) {
+            return element.data.title;
+        }
+        if (element.type === 'file' && element.data && element.data.title) {
+            return element.data.title;
+        }
+        if (element.type === 'content_block' && element.data && element.data.title) {
+            return element.data.title;
+        }
+
+        // Si no hay título específico, usar el tipo y número
+        return `${getElementTypeName(element.type)} ${elementNumber}`;
+    }
+
+    // Función para hacer scroll a un elemento específico
+    window.scrollToElement = function(elementId) {
+        const element = document.querySelector(`[data-element-id="${elementId}"]`);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Resaltar temporalmente el elemento
+            element.style.boxShadow = '0 0 0 3px rgba(13, 110, 253, 0.3)';
+            setTimeout(() => {
+                element.style.boxShadow = '';
+            }, 2000);
+        }
+    };
+
+    // Función para editar un elemento (hacer scroll y enfocarlo)
+    window.editElement = function(elementId) {
+        scrollToElement(elementId);
+        // Podríamos agregar más lógica aquí para enfocar el primer campo editable
+    };
 
     // Función para actualizar el campo JSON oculto
     function updateJsonField() {
@@ -2108,8 +2303,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Inicializar vista previa
+        // Inicializar vista previa y secciones
         updatePreview();
+        updateElementSections();
     });
 });
 </script>

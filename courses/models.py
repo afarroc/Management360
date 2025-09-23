@@ -231,11 +231,29 @@ class LessonAttachment(models.Model):
 
 
 class Lesson(models.Model):
+    # Hacer el módulo opcional para permitir lecciones independientes
     module = models.ForeignKey(
         Module,
         on_delete=models.CASCADE,
-        related_name='lessons'
+        related_name='lessons',
+        null=True,
+        blank=True
     )
+
+    # Para lecciones independientes
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='standalone_lessons',
+        null=True,
+        blank=True,
+        help_text="Autor de la lección independiente"
+    )
+    slug = models.SlugField(blank=True, help_text="Slug único para lecciones independientes")
+    description = models.TextField(blank=True, help_text="Descripción de la lección independiente")
+    is_published = models.BooleanField(default=False, help_text="¿Está publicada la lección independiente?")
+    is_featured = models.BooleanField(default=False, help_text="¿Es una lección destacada?")
+
     title = models.CharField(max_length=200)
     lesson_type = models.CharField(
         max_length=10,
@@ -262,11 +280,49 @@ class Lesson(models.Model):
     )
     assignment_due_date = models.DateTimeField(null=True, blank=True)
 
+    # Fechas
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     class Meta:
         ordering = ['order']
 
     def __str__(self):
-        return f"{self.module.title} - {self.title}"
+        if self.module:
+            return f"{self.module.title} - {self.title}"
+        else:
+            return f"Lección Independiente: {self.title}"
+
+    def save(self, *args, **kwargs):
+        # Generar slug para lecciones independientes
+        if not self.module and not self.slug:
+            from django.utils.text import slugify
+            self.slug = slugify(self.title)
+            # Asegurar unicidad del slug
+            counter = 1
+            original_slug = self.slug
+            while Lesson.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+                self.slug = f"{original_slug}-{counter}"
+                counter += 1
+
+        # Validar que las lecciones independientes tengan autor
+        if not self.module and not self.author:
+            raise ValueError("Las lecciones independientes deben tener un autor.")
+
+        super().save(*args, **kwargs)
+
+    @property
+    def is_standalone(self):
+        """Verifica si es una lección independiente"""
+        return self.module is None
+
+    def get_absolute_url(self):
+        """Retorna la URL absoluta de la lección"""
+        if self.is_standalone:
+            return f"/courses/lessons/{self.slug}/"
+        else:
+            # Para lecciones de curso, necesitaríamos más contexto
+            return f"/courses/{self.module.course.slug}/learn/{self.id}/"
 
 class Enrollment(models.Model):
     student = models.ForeignKey(
@@ -324,13 +380,13 @@ class Progress(models.Model):
 
 class Review(models.Model):
     student = models.ForeignKey(
-        User, 
-        on_delete=models.CASCADE, 
+        User,
+        on_delete=models.CASCADE,
         related_name='course_reviews'
     )
     course = models.ForeignKey(
-        Course, 
-        on_delete=models.CASCADE, 
+        Course,
+        on_delete=models.CASCADE,
         related_name='reviews'
     )
     rating = models.PositiveIntegerField(
@@ -339,13 +395,13 @@ class Review(models.Model):
     comment = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         unique_together = ['student', 'course']
-    
+
     def __str__(self):
         return f"{self.student.username} - {self.course.title} - {self.rating}"
-    
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         # Actualizar la calificación promedio del curso
@@ -354,6 +410,117 @@ class Review(models.Model):
             total_rating = sum(review.rating for review in reviews)
             self.course.average_rating = total_rating / reviews.count()
             self.course.save()
+
+# ======================
+# CONTENT MANAGEMENT SYSTEM
+# ======================
+
+class ContentBlock(models.Model):
+    """Modelo para bloques de contenido reutilizable - CMS integrado"""
+
+    CONTENT_TYPES = [
+        ('html', 'HTML Personalizado'),
+        ('bootstrap', 'Componente Bootstrap'),
+        ('markdown', 'Markdown'),
+        ('json', 'JSON Estructurado'),
+        ('text', 'Texto Simple'),
+        ('image', 'Imagen'),
+        ('video', 'Video'),
+        ('quote', 'Cita'),
+        ('code', 'Código'),
+        ('list', 'Lista'),
+        ('table', 'Tabla'),
+        ('card', 'Tarjeta'),
+        ('alert', 'Alerta'),
+        ('button', 'Botón'),
+        ('form', 'Formulario'),
+        ('divider', 'Separador'),
+        ('icon', 'Ícono'),
+        ('progress', 'Barra de Progreso'),
+        ('badge', 'Insignia'),
+        ('timeline', 'Línea de Tiempo'),
+    ]
+
+    title = models.CharField(max_length=200, help_text="Título descriptivo del bloque")
+    slug = models.SlugField(unique=True, help_text="Identificador único para el bloque")
+    description = models.TextField(blank=True, help_text="Descripción del propósito del bloque")
+
+    content_type = models.CharField(
+        max_length=20,
+        choices=CONTENT_TYPES,
+        default='html',
+        help_text="Tipo de contenido del bloque"
+    )
+
+    # Contenido del bloque
+    html_content = models.TextField(blank=True, help_text="Contenido HTML/Bootstrap")
+    json_content = models.JSONField(default=dict, blank=True, help_text="Contenido estructurado en JSON")
+    markdown_content = models.TextField(blank=True, help_text="Contenido en formato Markdown")
+
+    # Metadata
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='content_blocks'
+    )
+    category = models.CharField(max_length=100, blank=True, help_text="Categoría del bloque")
+    tags = models.CharField(max_length=500, blank=True, help_text="Etiquetas separadas por comas")
+
+    # Configuración
+    is_public = models.BooleanField(default=True, help_text="Bloque disponible para todos los tutores")
+    is_featured = models.BooleanField(default=False, help_text="Bloque destacado")
+
+    # Estadísticas de uso
+    usage_count = models.PositiveIntegerField(default=0, help_text="Cuántas veces se ha usado este bloque")
+
+    # Timestamps
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-updated_at']
+        verbose_name = 'Bloque de Contenido'
+        verbose_name_plural = 'Bloques de Contenido'
+
+    def __str__(self):
+        return f"{self.title} ({self.get_content_type_display()})"
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            from django.utils.text import slugify
+            self.slug = slugify(self.title)
+            # Asegurar unicidad del slug
+            counter = 1
+            original_slug = self.slug
+            while ContentBlock.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+                self.slug = f"{original_slug}-{counter}"
+                counter += 1
+        super().save(*args, **kwargs)
+
+    def get_content(self):
+        """Obtiene el contenido principal según el tipo"""
+        if self.content_type == 'html':
+            return self.html_content
+        elif self.content_type == 'bootstrap':
+            return self.html_content
+        elif self.content_type == 'markdown':
+            return self.markdown_content
+        elif self.content_type == 'json':
+            return self.json_content
+        elif self.content_type == 'text':
+            return self.html_content
+        return ''
+
+    def increment_usage(self):
+        """Incrementa el contador de uso"""
+        self.usage_count += 1
+        self.save(update_fields=['usage_count'])
+
+    def get_tags_list(self):
+        """Retorna las etiquetas como lista"""
+        if not self.tags:
+            return []
+        return [tag.strip() for tag in self.tags.split(',') if tag.strip()]
 
 # ======================
 # SIGNALS
