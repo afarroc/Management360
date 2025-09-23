@@ -3,12 +3,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.http import JsonResponse
+from django.db import models
 from django.db.models import Q, Avg, Count, Prefetch
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 from .models import (
-    Course, Module, Lesson, Enrollment, 
-    Progress, Review, CourseCategory,
+    Course, Module, Lesson, Enrollment,
+    Progress, Review, CourseCategory, ContentBlock,
     CourseLevelChoices, EnrollmentStatusChoices, LessonTypeChoices
 )
 from .forms import CourseForm, ModuleForm, LessonForm, ReviewForm, CategoryForm
@@ -205,7 +206,7 @@ def dashboard(request):
     taught_courses = Course.objects.filter(tutor=request.user).annotate(
         student_count=Count('enrollments', filter=Q(enrollments__status=EnrollmentStatusChoices.ACTIVE)),
         avg_rating=Avg('reviews__rating')
-    )
+    ).prefetch_related('modules__lessons')
 
     # Estadísticas específicas de cursos
     total_available_courses = Course.objects.filter(is_published=True).count()
@@ -220,6 +221,13 @@ def dashboard(request):
             'icon': 'fas fa-search',
             'url': 'courses_list',
             'color': 'primary'
+        },
+        {
+            'name': 'Contenido Educativo',
+            'description': 'Lecciones independientes, bloques y contenido gratuito',
+            'icon': 'fas fa-collection',
+            'url': 'standalone_lessons_list',
+            'color': 'success'
         },
         {
             'name': 'Mis Cursos',
@@ -276,6 +284,13 @@ def dashboard(request):
             'icon': 'fas fa-users-cog',
             'url': 'admin_users',
             'color': 'info'
+        },
+        {
+            'name': 'Gestor de Contenido',
+            'description': 'CMS - Crear bloques de contenido reutilizable',
+            'icon': 'fas fa-cubes',
+            'url': 'content_manager',
+            'color': 'dark'
         }
     ]
 
@@ -587,6 +602,66 @@ def edit_course(request, slug):
         'title': 'Editar Curso',
         'course': course,
     })
+
+
+@login_required
+def delete_course(request, slug):
+    """Eliminar un curso con validación de dependencias"""
+    course = get_object_or_404(Course, slug=slug, tutor=request.user)
+
+    # Validaciones de dependencias
+    dependencies = {}
+
+    # Contar estudiantes inscritos activos
+    active_enrollments = course.enrollments.filter(status=EnrollmentStatusChoices.ACTIVE).count()
+    if active_enrollments > 0:
+        dependencies['active_enrollments'] = active_enrollments
+
+    # Contar estudiantes que completaron el curso
+    completed_enrollments = course.enrollments.filter(status=EnrollmentStatusChoices.COMPLETED).count()
+    if completed_enrollments > 0:
+        dependencies['completed_enrollments'] = completed_enrollments
+
+    # Contar módulos
+    modules_count = course.modules.count()
+    if modules_count > 0:
+        dependencies['modules'] = modules_count
+
+    # Contar lecciones totales
+    lessons_count = Lesson.objects.filter(module__course=course).count()
+    if lessons_count > 0:
+        dependencies['lessons'] = lessons_count
+
+    # Contar reseñas
+    reviews_count = course.reviews.count()
+    if reviews_count > 0:
+        dependencies['reviews'] = reviews_count
+
+    if request.method == 'POST':
+        # Si hay estudiantes activos, no permitir eliminación
+        if active_enrollments > 0:
+            messages.error(request, f'No se puede eliminar el curso porque tiene {active_enrollments} estudiante(s) activo(s) inscrito(s).')
+            return redirect('courses:manage_courses')
+
+        # Confirmar eliminación
+        try:
+            course_title = course.title
+            course.delete()
+            messages.success(request, f'Curso "{course_title}" eliminado exitosamente.')
+            return redirect('courses:manage_courses')
+        except Exception as e:
+            messages.error(request, f'Error al eliminar el curso: {str(e)}')
+            return redirect('courses:manage_courses')
+
+    # Mostrar página de confirmación
+    context = {
+        'course': course,
+        'dependencies': dependencies,
+        'has_blocking_dependencies': active_enrollments > 0,
+        'can_delete': active_enrollments == 0,
+    }
+
+    return render(request, 'courses/delete_course.html', context)
 
 @login_required
 def course_analytics(request, slug):
@@ -978,6 +1053,11 @@ def create_lesson(request, slug, module_id):
     else:
         form = LessonForm()
 
+    # Obtener bloques de contenido disponibles (propios y públicos)
+    available_content_blocks = ContentBlock.objects.filter(
+        models.Q(author=request.user) | models.Q(is_public=True)
+    ).select_related('author').order_by('title')
+
     # Información adicional para el template
     context = {
         'form': form,
@@ -986,9 +1066,10 @@ def create_lesson(request, slug, module_id):
         'title': 'Crear Nueva Lección',
         'lesson': None,
         'lesson_types': LessonTypeChoices.choices,
+        'available_content_blocks': available_content_blocks,
     }
 
-    return render(request, 'courses/lesson_form.html', context)
+    return render(request, 'courses/standalone_lesson_form.html', context)
 
 @login_required
 def edit_lesson(request, slug, module_id, lesson_id):
@@ -1029,6 +1110,11 @@ def edit_lesson(request, slug, module_id, lesson_id):
     else:
         form = LessonForm(instance=lesson)
 
+    # Obtener bloques de contenido disponibles (propios y públicos)
+    available_content_blocks = ContentBlock.objects.filter(
+        models.Q(author=request.user) | models.Q(is_public=True)
+    ).select_related('author').order_by('title')
+
     # Información adicional para el template
     context = {
         'form': form,
@@ -1039,9 +1125,10 @@ def edit_lesson(request, slug, module_id, lesson_id):
         'has_structured_content': bool(lesson.structured_content),
         'structured_content_count': len(lesson.structured_content) if lesson.structured_content else 0,
         'lesson_types': LessonTypeChoices.choices,
+        'available_content_blocks': available_content_blocks,
     }
 
-    return render(request, 'courses/lesson_form.html', context)
+    return render(request, 'courses/standalone_lesson_form.html', context)
 
 @login_required
 def delete_lesson(request, slug, module_id, lesson_id):
@@ -1344,4 +1431,839 @@ def edit_user(request, user_id):
 
     return render(request, 'courses/admin/edit_user.html', {
         'user': user,
+    })
+
+# ======================
+# CONTENT MANAGEMENT SYSTEM VIEWS
+# ======================
+
+@login_required
+def content_manager(request):
+    """Panel principal de gestión de contenido - CMS integrado"""
+    if not hasattr(request.user, 'cv'):
+        messages.error(request, 'Necesitas un perfil de tutor para acceder al gestor de contenido')
+        return redirect('cv:detail')
+
+    # Obtener bloques del usuario y públicos
+    user_blocks = ContentBlock.objects.filter(
+        models.Q(author=request.user) | models.Q(is_public=True)
+    ).select_related('author').order_by('-updated_at')
+
+    # Estadísticas
+    total_blocks = user_blocks.count()
+    user_own_blocks = user_blocks.filter(author=request.user).count()
+    featured_blocks = user_blocks.filter(is_featured=True).count()
+
+    # Categorías disponibles
+    categories = ContentBlock.objects.filter(
+        models.Q(author=request.user) | models.Q(is_public=True)
+    ).values_list('category', flat=True).distinct()
+
+    # Funciones disponibles en el CMS
+    cms_functions = [
+        {
+            'name': 'Crear Bloque HTML',
+            'description': 'Crear un nuevo bloque de contenido HTML/Bootstrap',
+            'icon': 'fas fa-code',
+            'url': 'courses:create_content_block',
+            'color': 'primary',
+            'params': {'block_type': 'html'}
+        },
+        {
+            'name': 'Crear Componente Bootstrap',
+            'description': 'Crear un componente reutilizable con Bootstrap',
+            'icon': 'fas fa-bootstrap',
+            'url': 'courses:create_content_block',
+            'color': 'info',
+            'params': {'block_type': 'bootstrap'}
+        },
+        {
+            'name': 'Crear Contenido Markdown',
+            'description': 'Crear contenido usando sintaxis Markdown',
+            'icon': 'fas fa-markdown',
+            'url': 'courses:create_content_block',
+            'color': 'success',
+            'params': {'block_type': 'markdown'}
+        },
+        {
+            'name': 'Mis Bloques',
+            'description': 'Ver todos mis bloques de contenido',
+            'icon': 'fas fa-folder',
+            'url': 'courses:my_content_blocks',
+            'color': 'secondary',
+            'params': {}
+        },
+        {
+            'name': 'Bloques Destacados',
+            'description': 'Bloques destacados por la comunidad',
+            'icon': 'fas fa-star',
+            'url': 'courses:featured_content_blocks',
+            'color': 'warning',
+            'params': {}
+        },
+        {
+            'name': 'Biblioteca Pública',
+            'description': 'Bloques públicos disponibles para todos',
+            'icon': 'fas fa-globe',
+            'url': 'courses:public_content_blocks',
+            'color': 'dark',
+            'params': {}
+        },
+    ]
+
+    context = {
+        'user_blocks': user_blocks[:12],  # Mostrar últimos 12
+        'total_blocks': total_blocks,
+        'user_own_blocks': user_own_blocks,
+        'featured_blocks': featured_blocks,
+        'categories': categories,
+        'cms_functions': cms_functions,
+        'title': 'Gestor de Contenido - CMS',
+    }
+
+    return render(request, 'courses/content_manager.html', context)
+
+@login_required
+def create_content_block(request, block_type='html'):
+    """Crear un nuevo bloque de contenido"""
+    if not hasattr(request.user, 'cv'):
+        messages.error(request, 'Necesitas un perfil de tutor para crear contenido')
+        return redirect('cv:detail')
+
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        category = request.POST.get('category', '')
+        tags = request.POST.get('tags', '')
+        is_public = request.POST.get('is_public') == 'on'
+
+        # Crear el bloque según el tipo
+        block = ContentBlock.objects.create(
+            title=title,
+            description=description,
+            content_type=block_type,
+            author=request.user,
+            category=category,
+            tags=tags,
+            is_public=is_public
+        )
+
+        # Guardar contenido según el tipo
+        if block_type in ['html', 'bootstrap']:
+            block.html_content = request.POST.get('html_content', '')
+        elif block_type == 'markdown':
+            block.markdown_content = request.POST.get('markdown_content', '')
+        elif block_type == 'json':
+            # Procesar JSON si es necesario
+            json_content = request.POST.get('json_content', '{}')
+            try:
+                import json
+                block.json_content = json.loads(json_content)
+            except:
+                block.json_content = {}
+        elif block_type == 'text':
+            block.html_content = request.POST.get('text_content', '')
+        elif block_type == 'image':
+            block.json_content = {
+                'url': request.POST.get('image_url', ''),
+                'alt': request.POST.get('image_alt', ''),
+                'caption': request.POST.get('image_caption', '')
+            }
+        elif block_type == 'video':
+            block.json_content = {
+                'url': request.POST.get('video_url', '')
+            }
+        elif block_type == 'quote':
+            block.json_content = {
+                'text': request.POST.get('quote_text', ''),
+                'author': request.POST.get('quote_author', '')
+            }
+        elif block_type == 'code':
+            block.json_content = {
+                'language': request.POST.get('code_language', 'text'),
+                'code': request.POST.get('code_content', '')
+            }
+        elif block_type == 'list':
+            block.json_content = {
+                'type': request.POST.get('list_type', 'unordered'),
+                'items': [item.strip() for item in request.POST.get('list_items', '').split('\n') if item.strip()]
+            }
+        elif block_type == 'table':
+            headers = [h.strip() for h in request.POST.get('table_headers', '').split(',') if h.strip()]
+            rows = []
+            for row in request.POST.get('table_rows', '').split('\n'):
+                if row.strip():
+                    cells = [cell.strip() for cell in row.split(',') if cell.strip()]
+                    if cells:
+                        rows.append(cells)
+            block.json_content = {
+                'headers': headers,
+                'rows': rows
+            }
+        elif block_type == 'card':
+            block.json_content = {
+                'header': request.POST.get('card_header', ''),
+                'title': request.POST.get('card_title', ''),
+                'text': request.POST.get('card_text', ''),
+                'button': {
+                    'url': request.POST.get('card_button_url', ''),
+                    'text': request.POST.get('card_button_text', 'Ver más')
+                }
+            }
+        elif block_type == 'alert':
+            block.json_content = {
+                'type': request.POST.get('alert_type', 'info'),
+                'message': request.POST.get('alert_message', '')
+            }
+        elif block_type == 'button':
+            block.json_content = {
+                'url': request.POST.get('button_url', ''),
+                'text': request.POST.get('button_text', ''),
+                'style': request.POST.get('button_style', 'primary'),
+                'size': request.POST.get('button_size', 'md'),
+                'icon': request.POST.get('button_icon', '')
+            }
+        elif block_type == 'form':
+            try:
+                import json
+                fields = json.loads(request.POST.get('form_fields', '[]'))
+            except:
+                fields = []
+            block.json_content = {
+                'action': request.POST.get('form_action', ''),
+                'fields': fields,
+                'submit_text': request.POST.get('form_submit_text', 'Enviar')
+            }
+        elif block_type == 'divider':
+            block.json_content = {}
+        elif block_type == 'icon':
+            block.json_content = {
+                'icon': request.POST.get('icon_name', ''),
+                'color': request.POST.get('icon_color', 'primary'),
+                'text': request.POST.get('icon_text', '')
+            }
+        elif block_type == 'progress':
+            block.json_content = {
+                'value': int(request.POST.get('progress_value', 50)),
+                'color': request.POST.get('progress_color', 'primary')
+            }
+        elif block_type == 'badge':
+            block.json_content = {
+                'text': request.POST.get('badge_text', ''),
+                'color': request.POST.get('badge_color', 'primary'),
+                'icon': request.POST.get('badge_icon', '')
+            }
+        elif block_type == 'timeline':
+            try:
+                import json
+                items = json.loads(request.POST.get('timeline_items', '[]'))
+            except:
+                items = []
+            block.json_content = {
+                'items': items
+            }
+
+        block.save()
+
+        messages.success(request, f'Bloque "{title}" creado exitosamente')
+        return redirect('courses:edit_content_block', slug=block.slug)
+
+    # Preparar datos según el tipo
+    context = {
+        'block_type': block_type,
+        'title': f'Crear Bloque - {dict(ContentBlock.CONTENT_TYPES)[block_type]}',
+        'content_types': ContentBlock.CONTENT_TYPES,
+    }
+
+    return render(request, 'courses/content_block_form.html', context)
+
+@login_required
+def edit_content_block(request, slug):
+    """Editar un bloque de contenido existente"""
+    block = get_object_or_404(ContentBlock, slug=slug)
+
+    # Verificar permisos
+    if block.author != request.user and not block.is_public:
+        messages.error(request, 'No tienes permisos para editar este bloque')
+        return redirect('courses:content_manager')
+
+    if request.method == 'POST':
+        block.title = request.POST.get('title')
+        block.description = request.POST.get('description')
+        block.category = request.POST.get('category', '')
+        block.tags = request.POST.get('tags', '')
+        block.is_public = request.POST.get('is_public') == 'on'
+        block.is_featured = request.POST.get('is_featured') == 'on'
+
+        # Actualizar contenido según el tipo
+        if block.content_type in ['html', 'bootstrap']:
+            block.html_content = request.POST.get('html_content', '')
+        elif block.content_type == 'markdown':
+            block.markdown_content = request.POST.get('markdown_content', '')
+        elif block.content_type == 'json':
+            json_content = request.POST.get('json_content', '{}')
+            try:
+                import json
+                block.json_content = json.loads(json_content)
+            except:
+                messages.error(request, 'Contenido JSON inválido')
+                return redirect('courses:edit_content_block', slug=block.slug)
+        elif block.content_type == 'text':
+            block.html_content = request.POST.get('text_content', '')
+        elif block.content_type == 'image':
+            block.json_content = {
+                'url': request.POST.get('image_url', ''),
+                'alt': request.POST.get('image_alt', ''),
+                'caption': request.POST.get('image_caption', '')
+            }
+        elif block.content_type == 'video':
+            block.json_content = {
+                'url': request.POST.get('video_url', '')
+            }
+        elif block.content_type == 'quote':
+            block.json_content = {
+                'text': request.POST.get('quote_text', ''),
+                'author': request.POST.get('quote_author', '')
+            }
+        elif block.content_type == 'code':
+            block.json_content = {
+                'language': request.POST.get('code_language', 'text'),
+                'code': request.POST.get('code_content', '')
+            }
+        elif block.content_type == 'list':
+            block.json_content = {
+                'type': request.POST.get('list_type', 'unordered'),
+                'items': [item.strip() for item in request.POST.get('list_items', '').split('\n') if item.strip()]
+            }
+        elif block.content_type == 'table':
+            headers = [h.strip() for h in request.POST.get('table_headers', '').split(',') if h.strip()]
+            rows = []
+            for row in request.POST.get('table_rows', '').split('\n'):
+                if row.strip():
+                    cells = [cell.strip() for cell in row.split(',') if cell.strip()]
+                    if cells:
+                        rows.append(cells)
+            block.json_content = {
+                'headers': headers,
+                'rows': rows
+            }
+        elif block.content_type == 'card':
+            block.json_content = {
+                'header': request.POST.get('card_header', ''),
+                'title': request.POST.get('card_title', ''),
+                'text': request.POST.get('card_text', ''),
+                'button': {
+                    'url': request.POST.get('card_button_url', ''),
+                    'text': request.POST.get('card_button_text', 'Ver más')
+                }
+            }
+        elif block.content_type == 'alert':
+            block.json_content = {
+                'type': request.POST.get('alert_type', 'info'),
+                'message': request.POST.get('alert_message', '')
+            }
+        elif block.content_type == 'button':
+            block.json_content = {
+                'url': request.POST.get('button_url', ''),
+                'text': request.POST.get('button_text', ''),
+                'style': request.POST.get('button_style', 'primary'),
+                'size': request.POST.get('button_size', 'md'),
+                'icon': request.POST.get('button_icon', '')
+            }
+        elif block.content_type == 'form':
+            try:
+                import json
+                fields = json.loads(request.POST.get('form_fields', '[]'))
+            except:
+                fields = []
+            block.json_content = {
+                'action': request.POST.get('form_action', ''),
+                'fields': fields,
+                'submit_text': request.POST.get('form_submit_text', 'Enviar')
+            }
+        elif block.content_type == 'divider':
+            block.json_content = {}
+        elif block.content_type == 'icon':
+            block.json_content = {
+                'icon': request.POST.get('icon_name', ''),
+                'color': request.POST.get('icon_color', 'primary'),
+                'text': request.POST.get('icon_text', '')
+            }
+        elif block.content_type == 'progress':
+            block.json_content = {
+                'value': int(request.POST.get('progress_value', 50)),
+                'color': request.POST.get('progress_color', 'primary')
+            }
+        elif block.content_type == 'badge':
+            block.json_content = {
+                'text': request.POST.get('badge_text', ''),
+                'color': request.POST.get('badge_color', 'primary'),
+                'icon': request.POST.get('badge_icon', '')
+            }
+        elif block.content_type == 'timeline':
+            try:
+                import json
+                items = json.loads(request.POST.get('timeline_items', '[]'))
+            except:
+                items = []
+            block.json_content = {
+                'items': items
+            }
+
+        block.save()
+        messages.success(request, f'Bloque "{block.title}" actualizado exitosamente')
+        return redirect('courses:edit_content_block', slug=block.slug)
+
+    context = {
+        'content_block': block,
+        'title': f'Editar Bloque - {block.title}',
+        'content_types': ContentBlock.CONTENT_TYPES,
+    }
+
+    return render(request, 'courses/content_block_form.html', context)
+
+@login_required
+def delete_content_block(request, slug):
+    """Eliminar un bloque de contenido"""
+    block = get_object_or_404(ContentBlock, slug=slug)
+
+    # Verificar permisos
+    if block.author != request.user:
+        messages.error(request, 'No tienes permisos para eliminar este bloque')
+        return redirect('courses:content_manager')
+
+    if request.method == 'POST':
+        title = block.title
+        block.delete()
+        messages.success(request, f'Bloque "{title}" eliminado exitosamente')
+        return redirect('courses:content_manager')
+
+    return render(request, 'courses/delete_content_block.html', {
+        'block': block,
+    })
+
+@login_required
+def my_content_blocks(request):
+    """Ver bloques de contenido del usuario actual"""
+    blocks = ContentBlock.objects.filter(author=request.user).order_by('-updated_at')
+
+    # Filtros
+    category_filter = request.GET.get('category')
+    type_filter = request.GET.get('type')
+    search = request.GET.get('search')
+
+    if category_filter:
+        blocks = blocks.filter(category=category_filter)
+    if type_filter:
+        blocks = blocks.filter(content_type=type_filter)
+    if search:
+        blocks = blocks.filter(
+            models.Q(title__icontains=search) |
+            models.Q(description__icontains=search) |
+            models.Q(tags__icontains=search)
+        )
+
+    # Estadísticas
+    total_blocks = blocks.count()
+    public_blocks = blocks.filter(is_public=True).count()
+    featured_blocks = blocks.filter(is_featured=True).count()
+
+    context = {
+        'blocks': blocks,
+        'total_blocks': total_blocks,
+        'public_blocks': public_blocks,
+        'featured_blocks': featured_blocks,
+        'categories': ContentBlock.objects.filter(author=request.user).values_list('category', flat=True).distinct(),
+        'content_types': ContentBlock.CONTENT_TYPES,
+        'title': 'Mis Bloques de Contenido',
+    }
+
+    return render(request, 'courses/content_blocks_list.html', context)
+
+@login_required
+def public_content_blocks(request):
+    """Ver bloques de contenido públicos disponibles"""
+    blocks = ContentBlock.objects.filter(is_public=True).select_related('author').order_by('-updated_at')
+
+    # Filtros
+    category_filter = request.GET.get('category')
+    type_filter = request.GET.get('type')
+    author_filter = request.GET.get('author')
+    search = request.GET.get('search')
+
+    if category_filter:
+        blocks = blocks.filter(category=category_filter)
+    if type_filter:
+        blocks = blocks.filter(content_type=type_filter)
+    if author_filter:
+        blocks = blocks.filter(author__username=author_filter)
+    if search:
+        blocks = blocks.filter(
+            models.Q(title__icontains=search) |
+            models.Q(description__icontains=search) |
+            models.Q(tags__icontains=search)
+        )
+
+    # Estadísticas
+    total_blocks = blocks.count()
+    featured_blocks = blocks.filter(is_featured=True).count()
+
+    # Autores únicos
+    authors = blocks.values_list('author__username', 'author__first_name', 'author__last_name').distinct()
+
+    context = {
+        'blocks': blocks,
+        'total_blocks': total_blocks,
+        'featured_blocks': featured_blocks,
+        'categories': blocks.values_list('category', flat=True).distinct(),
+        'authors': authors,
+        'content_types': ContentBlock.CONTENT_TYPES,
+        'title': 'Biblioteca Pública de Contenido',
+    }
+
+    return render(request, 'courses/content_blocks_list.html', context)
+
+@login_required
+def featured_content_blocks(request):
+    """Ver bloques de contenido destacados"""
+    blocks = ContentBlock.objects.filter(is_featured=True).select_related('author').order_by('-updated_at')
+
+    context = {
+        'blocks': blocks,
+        'title': 'Bloques Destacados',
+    }
+
+    return render(request, 'courses/content_blocks_list.html', context)
+
+@login_required
+def duplicate_content_block(request, slug):
+    """Duplicar un bloque de contenido"""
+    original_block = get_object_or_404(ContentBlock, slug=slug)
+
+    # Verificar que el usuario pueda acceder al bloque
+    if original_block.author != request.user and not original_block.is_public:
+        messages.error(request, 'No tienes permisos para duplicar este bloque')
+        return redirect('courses:content_manager')
+
+    if request.method == 'POST':
+        # Crear copia
+        new_block = ContentBlock.objects.create(
+            title=f"{original_block.title} (Copia)",
+            description=original_block.description,
+            content_type=original_block.content_type,
+            html_content=original_block.html_content,
+            json_content=original_block.json_content,
+            markdown_content=original_block.markdown_content,
+            author=request.user,
+            category=original_block.category,
+            tags=original_block.tags,
+            is_public=False,  # Las copias son privadas por defecto
+        )
+
+        messages.success(request, f'Bloque "{original_block.title}" duplicado exitosamente')
+        return redirect('courses:edit_content_block', slug=new_block.slug)
+
+    return render(request, 'courses/duplicate_content_block.html', {
+        'block': original_block,
+    })
+
+@require_POST
+@login_required
+def toggle_block_featured(request, slug):
+    """Alternar estado destacado de un bloque (solo para el autor)"""
+    block = get_object_or_404(ContentBlock, slug=slug)
+
+    if block.author != request.user:
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    block.is_featured = not block.is_featured
+    block.save()
+
+    return JsonResponse({
+        'success': True,
+        'is_featured': block.is_featured
+    })
+
+@require_POST
+@login_required
+def toggle_block_public(request, slug):
+    """Alternar visibilidad pública de un bloque"""
+    block = get_object_or_404(ContentBlock, slug=slug)
+
+    if block.author != request.user:
+        return JsonResponse({'error': 'No autorizado'}, status=403)
+
+    block.is_public = not block.is_public
+    block.save()
+
+    return JsonResponse({
+        'success': True,
+        'is_public': block.is_public
+    })
+
+@login_required
+def preview_content_block(request, slug):
+    """Vista previa de un bloque de contenido"""
+    block = get_object_or_404(ContentBlock, slug=slug)
+
+    # Verificar permisos
+    if block.author != request.user and not block.is_public:
+        messages.error(request, 'No tienes permisos para ver este bloque')
+        return redirect('courses:content_manager')
+
+    context = {
+        'content_block': block,
+        'title': f'Vista Previa - {block.title}',
+    }
+
+    return render(request, 'courses/content_block_preview.html', context)
+
+# ======================
+# STANDALONE LESSONS VIEWS
+# ======================
+
+@login_required
+def standalone_lessons_list(request):
+    """Lista todas las lecciones independientes, bloques de contenido y lecciones gratuitas disponibles"""
+    # Lecciones independientes
+    standalone_lessons = Lesson.objects.filter(
+        module__isnull=True,
+        is_published=True
+    ).select_related('author').order_by('-created_at')
+
+    # Lecciones gratuitas de cursos
+    free_course_lessons = Lesson.objects.filter(
+        module__isnull=False,
+        is_free=True,
+        module__course__is_published=True
+    ).select_related('author', 'module__course').order_by('-created_at')
+
+    # Combinar todas las lecciones
+    all_lessons = list(standalone_lessons) + list(free_course_lessons)
+
+    # Bloques de contenido públicos y destacados
+    content_blocks = ContentBlock.objects.filter(
+        models.Q(is_public=True) | models.Q(is_featured=True)
+    ).select_related('author').order_by('-updated_at')
+
+    # Filtros
+    content_type = request.GET.get('content_type', 'all')  # all, lessons, blocks
+    author_filter = request.GET.get('author')
+    search = request.GET.get('search')
+
+    # Filtrar lecciones
+    filtered_lessons = all_lessons
+    if author_filter:
+        filtered_lessons = [l for l in filtered_lessons if l.author.username == author_filter]
+    if search:
+        search_lower = search.lower()
+        filtered_lessons = [l for l in filtered_lessons if
+                           search_lower in l.title.lower() or
+                           (l.description and search_lower in l.description.lower())]
+
+    # Filtrar bloques
+    filtered_blocks = content_blocks
+    if author_filter:
+        filtered_blocks = filtered_blocks.filter(author__username=author_filter)
+    if search:
+        filtered_blocks = filtered_blocks.filter(
+            models.Q(title__icontains=search) |
+            models.Q(description__icontains=search) |
+            models.Q(tags__icontains=search)
+        )
+
+    # Aplicar filtro de tipo de contenido
+    if content_type == 'lessons':
+        filtered_blocks = ContentBlock.objects.none()
+    elif content_type == 'blocks':
+        filtered_lessons = []
+
+    # Autores únicos de lecciones
+    lesson_authors = set()
+    for lesson in all_lessons:
+        if lesson.author:  # Verificar que el autor no sea None
+            lesson_authors.add((lesson.author.username, lesson.author.first_name, lesson.author.last_name))
+
+    # Autores únicos de bloques
+    block_authors = set(filtered_blocks.values_list('author__username', 'author__first_name', 'author__last_name'))
+
+    # Combinar autores
+    all_authors = lesson_authors.union(block_authors)
+
+    context = {
+        'lessons': filtered_lessons,
+        'content_blocks': filtered_blocks,
+        'authors': all_authors,
+        'title': 'Contenido Educativo Disponible',
+        'content_type': content_type,
+        'total_lessons': len(filtered_lessons),
+        'total_blocks': filtered_blocks.count(),
+    }
+
+    return render(request, 'courses/standalone_lessons_list.html', context)
+
+@login_required
+def standalone_lesson_detail(request, slug):
+    """Vista detallada de una lección independiente"""
+    lesson = get_object_or_404(
+        Lesson.objects.select_related('author'),
+        slug=slug,
+        module__isnull=True,
+        is_published=True
+    )
+
+    context = {
+        'lesson': lesson,
+        'title': lesson.title,
+    }
+
+    return render(request, 'courses/standalone_lesson_detail.html', context)
+
+@login_required
+def my_standalone_lessons(request):
+    """Lista las lecciones independientes del usuario actual"""
+    if not hasattr(request.user, 'cv'):
+        messages.error(request, 'Necesitas un perfil de tutor para crear lecciones independientes')
+        return redirect('cv:detail')
+
+    lessons = Lesson.objects.filter(
+        author=request.user,
+        module__isnull=True
+    ).order_by('-updated_at')
+
+    context = {
+        'lessons': lessons,
+        'title': 'Mis Lecciones Independientes',
+    }
+
+    return render(request, 'courses/my_standalone_lessons.html', context)
+
+@login_required
+def create_standalone_lesson(request):
+    """Crear una nueva lección independiente"""
+    if not hasattr(request.user, 'cv'):
+        messages.error(request, 'Necesitas un perfil de tutor para crear lecciones independientes')
+        return redirect('cv:detail')
+
+    if request.method == 'POST':
+        form = LessonForm(request.POST, request.FILES)
+        if form.is_valid():
+            lesson = form.save(commit=False)
+            lesson.author = request.user
+            lesson.is_published = False  # Las nuevas lecciones empiezan como borrador
+            lesson.save()
+            messages.success(request, 'Lección independiente creada exitosamente')
+            return redirect('courses:edit_standalone_lesson', slug=lesson.slug)
+    else:
+        form = LessonForm()
+
+    # Obtener bloques de contenido disponibles
+    available_content_blocks = ContentBlock.objects.filter(
+        models.Q(author=request.user) | models.Q(is_public=True)
+    ).select_related('author').order_by('title')
+
+    context = {
+        'form': form,
+        'title': 'Crear Lección Independiente',
+        'lesson': None,
+        'lesson_types': LessonTypeChoices.choices,
+        'available_content_blocks': available_content_blocks,
+        'is_standalone': True,
+    }
+
+    return render(request, 'courses/standalone_lesson_form.html', context)
+
+@login_required
+def edit_standalone_lesson(request, slug):
+    """Editar una lección independiente existente"""
+    lesson = get_object_or_404(
+        Lesson,
+        slug=slug,
+        author=request.user,
+        module__isnull=True
+    )
+
+    if request.method == 'POST':
+        form = LessonForm(request.POST, request.FILES, instance=lesson)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Lección independiente actualizada exitosamente')
+            return redirect('courses:edit_standalone_lesson', slug=lesson.slug)
+    else:
+        form = LessonForm(instance=lesson)
+
+    # Obtener bloques de contenido disponibles
+    available_content_blocks = ContentBlock.objects.filter(
+        models.Q(author=request.user) | models.Q(is_public=True)
+    ).select_related('author').order_by('title')
+
+    context = {
+        'form': form,
+        'title': f'Editar Lección: {lesson.title}',
+        'lesson': lesson,
+        'has_structured_content': bool(lesson.structured_content),
+        'structured_content_count': len(lesson.structured_content) if lesson.structured_content else 0,
+        'lesson_types': LessonTypeChoices.choices,
+        'available_content_blocks': available_content_blocks,
+        'is_standalone': True,
+    }
+
+    return render(request, 'courses/standalone_lesson_form.html', context)
+
+@login_required
+def delete_standalone_lesson(request, slug):
+    """Eliminar una lección independiente"""
+    lesson = get_object_or_404(
+        Lesson,
+        slug=slug,
+        author=request.user,
+        module__isnull=True
+    )
+
+    if request.method == 'POST':
+        title = lesson.title
+        lesson.delete()
+        messages.success(request, f'Lección independiente "{title}" eliminada exitosamente')
+        return redirect('courses:my_standalone_lessons')
+
+    return render(request, 'courses/delete_standalone_lesson.html', {
+        'lesson': lesson,
+    })
+
+@login_required
+def preview_lesson(request, course_slug, module_id, lesson_id):
+    """Vista previa de una lección para tutores - modo solo lectura"""
+    course = get_object_or_404(Course, slug=course_slug, tutor=request.user)
+    module = get_object_or_404(Module, id=module_id, course=course)
+    lesson = get_object_or_404(Lesson, id=lesson_id, module=module)
+
+    context = {
+        'course': course,
+        'current_lesson': lesson,
+        'preview_mode': True,  # Flag para indicar que estamos en modo vista previa
+        'title': f'Vista Previa - {lesson.title}',
+    }
+
+    return render(request, 'courses/lesson_preview.html', context)
+
+@require_POST
+@login_required
+def toggle_lesson_published(request, slug):
+    """Alternar estado de publicación de una lección independiente"""
+    lesson = get_object_or_404(
+        Lesson,
+        slug=slug,
+        author=request.user,
+        module__isnull=True
+    )
+
+    lesson.is_published = not lesson.is_published
+    lesson.save()
+
+    status = "publicada" if lesson.is_published else "ocultada"
+    messages.success(request, f'Lección "{lesson.title}" {status} exitosamente')
+
+    return JsonResponse({
+        'success': True,
+        'is_published': lesson.is_published
     })

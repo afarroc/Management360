@@ -1,0 +1,253 @@
+{% extends "courses/base.html" %}
+{% load static %}
+
+{% block title %}Eliminar Lección - Management360{% endblock %}
+
+{% block extra_head %}
+<style>
+.delete-lesson-container {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.delete-header {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.delete-header h1 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.delete-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.delete-content {
+    padding: 2rem;
+}
+
+.lesson-info {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.lesson-title-display {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.lesson-meta-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.meta-item-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.meta-label-display {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.meta-value-display {
+    color: #718096;
+}
+
+.warning-section {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.warning-icon {
+    color: #856404;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.warning-title {
+    color: #856404;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.warning-text {
+    color: #856404;
+    margin: 0;
+}
+
+.actions-section {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.btn-delete-confirm {
+    background: #dc3545;
+    border-color: #dc3545;
+    padding: 0.75rem 2rem;
+    font-weight: 500;
+}
+
+.btn-delete-confirm:hover {
+    background: #c82333;
+    border-color: #bd2130;
+}
+
+.btn-cancel {
+    background: #6c757d;
+    border-color: #6c757d;
+    padding: 0.75rem 2rem;
+    font-weight: 500;
+}
+
+.btn-cancel:hover {
+    background: #5a6268;
+    border-color: #545b62;
+}
+
+@media (max-width: 768px) {
+    .delete-header {
+        padding: 1.5rem 0;
+    }
+
+    .delete-header h1 {
+        font-size: 1.75rem;
+    }
+
+    .delete-content {
+        padding: 1.5rem;
+    }
+
+    .lesson-info {
+        padding: 1rem;
+    }
+
+    .actions-section {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .btn-delete-confirm,
+    .btn-cancel {
+        width: 100%;
+        text-align: center;
+    }
+
+    .lesson-meta-display {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block course_content %}
+<div class="delete-lesson-container">
+    <!-- Header -->
+    <div class="delete-header">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <h1><i class="bi bi-exclamation-triangle me-3"></i>Eliminar Lección Independiente</h1>
+                    <p class="lead mb-0 mt-2">
+                        ¿Estás seguro de que deseas eliminar esta lección? Esta acción no se puede deshacer.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <div class="mt-4">
+                        <i class="bi bi-trash fs-1 text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="delete-card">
+            <div class="delete-content">
+                <!-- Información de la lección -->
+                <div class="lesson-info">
+                    <h3 class="lesson-title-display">{{ lesson.title }}</h3>
+
+                    {% if lesson.description %}
+                    <p class="text-muted mb-3">{{ lesson.description }}</p>
+                    {% endif %}
+
+                    <div class="lesson-meta-display">
+                        <div class="meta-item-display">
+                            <span class="meta-label-display">Tipo:</span>
+                            <span class="meta-value-display">{{ lesson.get_lesson_type_display }}</span>
+                        </div>
+                        <div class="meta-item-display">
+                            <span class="meta-label-display">Estado:</span>
+                            <span class="meta-value-display">
+                                {% if lesson.is_published %}Publicado{% else %}Borrador{% endif %}
+                            </span>
+                        </div>
+                        {% if lesson.duration_minutes %}
+                        <div class="meta-item-display">
+                            <span class="meta-label-display">Duración:</span>
+                            <span class="meta-value-display">{{ lesson.duration_minutes }} minutos</span>
+                        </div>
+                        {% endif %}
+                        <div class="meta-item-display">
+                            <span class="meta-label-display">Creada:</span>
+                            <span class="meta-value-display">{{ lesson.created_at|date:"d M Y H:i" }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advertencia -->
+                <div class="warning-section">
+                    <div class="text-center">
+                        <div class="warning-icon">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                        </div>
+                        <h4 class="warning-title">¡Atención!</h4>
+                        <p class="warning-text">
+                            Al eliminar esta lección, se perderá permanentemente todo su contenido,
+                            incluyendo texto, archivos adjuntos y configuraciones. Los estudiantes
+                            que hayan accedido a esta lección ya no podrán verla.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Acciones -->
+                <div class="actions-section">
+                    <a href="{% url 'courses:my_standalone_lessons' %}" class="btn btn-cancel">
+                        <i class="bi bi-arrow-left me-1"></i>Cancelar
+                    </a>
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-delete-confirm"
+                                onclick="return confirm('¿Estás completamente seguro de que deseas eliminar esta lección? Esta acción no se puede deshacer.')">
+                            <i class="bi bi-trash me-1"></i>Sí, Eliminar Lección
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -137,6 +137,102 @@
         </div>
 
         <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-warning shadow-sm hover-card">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <i class="fas fa-pencil-alt fa-2x text-warning me-3"></i>
+                        <div>
+                            <h5 class="card-title mb-1">Editar Lecciones</h5>
+                            <small class="text-muted">Modificar contenido de lecciones</small>
+                        </div>
+                    </div>
+                    <small class="text-muted mb-2">Acceso directo a edición de lecciones</small>
+                    <a href="{% url 'courses:manage_courses' %}" class="btn btn-warning btn-sm mt-auto">
+                        <i class="fas fa-edit me-2"></i>Editar Lecciones
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edición rápida de lecciones (solo para tutores) -->
+    {% if taught_courses %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h3 class="mb-3">
+                <i class="fas fa-bolt me-2"></i>
+                Edición Rápida de Lecciones
+            </h3>
+            <p class="text-muted small">Acceso directo a las últimas lecciones de tus cursos para edición rápida</p>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for course in taught_courses %}
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-book me-2 text-primary"></i>
+                        {{ course.title }}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% with course.modules.all as modules %}
+                    {% if modules %}
+                        {% for module in modules %}
+                        {% with module.lessons.all|slice:":3" as recent_lessons %}
+                        {% if recent_lessons %}
+                        <div class="mb-3">
+                            <small class="text-muted fw-bold">{{ module.title }}</small>
+                            <div class="list-group list-group-flush">
+                                {% for lesson in recent_lessons %}
+                                <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        {% if lesson.lesson_type == 'video' %}
+                                        <i class="fas fa-play-circle text-danger me-2"></i>
+                                        {% elif lesson.lesson_type == 'quiz' %}
+                                        <i class="fas fa-question-circle text-warning me-2"></i>
+                                        {% elif lesson.lesson_type == 'assignment' %}
+                                        <i class="fas fa-pencil-square text-info me-2"></i>
+                                        {% else %}
+                                        <i class="fas fa-file-text text-secondary me-2"></i>
+                                        {% endif %}
+                                        <small class="fw-medium">{{ lesson.title }}</small>
+                                    </div>
+                                    <a href="{% url 'courses:edit_lesson' course.slug module.id lesson.id %}"
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-3">
+                            <small class="text-muted">No hay módulos en este curso</small>
+                        </div>
+                    {% endif %}
+                    {% endwith %}
+
+                    <div class="text-center mt-3">
+                        <a href="{% url 'courses:manage_content' course.slug %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-cog me-1"></i>Gestionar Todo
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Categorías (solo para administradores) -->
+    <div class="row mb-4">
+        <div class="col-lg-4 col-md-6 mb-4">
             <div class="card h-100 border-info shadow-sm hover-card">
                 <div class="card-body d-flex flex-column">
                     <div class="d-flex align-items-center mb-3">
@@ -340,18 +436,18 @@
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{% url 'courses:create_course' %}" class="btn btn-outline-success w-100">
+                            <a href="{% url 'courses:standalone_lessons_list' %}" class="btn btn-outline-success w-100">
+                                <i class="fas fa-collection me-2"></i>Contenido Educativo
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <a href="{% url 'courses:create_course' %}" class="btn btn-outline-info w-100">
                                 <i class="fas fa-plus me-2"></i>Crear Curso
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{% url 'courses:manage_courses' %}" class="btn btn-outline-info w-100">
+                            <a href="{% url 'courses:manage_courses' %}" class="btn btn-outline-warning w-100">
                                 <i class="fas fa-cog me-2"></i>Gestionar Cursos
-                            </a>
-                        </div>
-                        <div class="col-md-3 mb-2">
-                            <a href="{% url 'courses:manage_categories' %}" class="btn btn-outline-warning w-100">
-                                <i class="fas fa-tags me-2"></i>Categorías
                             </a>
                         </div>
                     </div>
@@ -362,13 +458,13 @@
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{% url 'courses:admin_dashboard' %}" class="btn btn-outline-danger w-100">
-                                <i class="fas fa-user-shield me-2"></i>Admin
+                            <a href="{% url 'courses:content_manager' %}" class="btn btn-outline-dark w-100">
+                                <i class="fas fa-cubes me-2"></i>Gestor de Contenido
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">
-                            <a href="{% url 'courses:admin_users' %}" class="btn btn-outline-dark w-100">
-                                <i class="fas fa-users-cog me-2"></i>Usuarios
+                            <a href="{% url 'courses:manage_categories' %}" class="btn btn-outline-info w-100">
+                                <i class="fas fa-tags me-2"></i>Categorías
                             </a>
                         </div>
                         <div class="col-md-3 mb-2">

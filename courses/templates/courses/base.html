@@ -38,38 +38,55 @@
                             </li>
                         </ul>
 
-                        <!-- Mi Aprendizaje (solo para usuarios autenticados) -->
-                        {% if user.is_authenticated %}
-                        <ul class="navbar-nav mb-2 mb-lg-0">
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="learningDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-graduation-cap me-1"></i>Mi Aprendizaje
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="learningDropdown">
-                                    <li><a class="dropdown-item" href="{% url 'courses:dashboard' %}">
-                                        <i class="fas fa-tachometer-alt me-2"></i>Mi Dashboard
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="{% url 'courses:manage_courses' %}">
-                                        <i class="fas fa-chalkboard-teacher me-2"></i>Mis Cursos (Tutor)
-                                    </a></li>
-                                </ul>
-                            </li>
-                        </ul>
-                        {% endif %}
-
-                        <!-- Acciones rápidas -->
+                        <!-- Acciones principales -->
                         <ul class="navbar-nav mb-2 mb-lg-0">
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'courses:courses_list' %}">
-                                    <i class="fas fa-search me-1"></i>Explorar
+                                    <i class="fas fa-search me-1"></i>Explorar Cursos
                                 </a>
                             </li>
                             {% if user.is_authenticated %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'courses:create_course_wizard' %}">
-                                    <i class="fas fa-plus me-1"></i>Crear Curso
+                                <a class="nav-link" href="{% url 'courses:dashboard' %}">
+                                    <i class="fas fa-tachometer-alt me-1"></i>Mi Dashboard
                                 </a>
                             </li>
+                            {% if user.cv %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="contentDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-edit me-1"></i>Gestión
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="contentDropdown">
+                                    <li><a class="dropdown-item" href="{% url 'courses:manage_courses' %}">
+                                        <i class="fas fa-folder-fill me-2"></i>Mis Cursos
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'courses:create_course_wizard' %}">
+                                        <i class="fas fa-plus-circle me-2"></i>Crear Curso
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'courses:modules_overview' %}">
+                                        <i class="fas fa-diagram-3 me-2"></i>Módulos
+                                    </a></li>
+                                </ul>
+                            </li>
+                            {% endif %}
+                            {% if user.is_staff %}
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-shield-alt me-1"></i>Admin
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                    <li><a class="dropdown-item" href="{% url 'courses:admin_dashboard' %}">
+                                        <i class="fas fa-tachometer-alt me-2"></i>Panel Admin
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'courses:admin_users' %}">
+                                        <i class="fas fa-users me-2"></i>Usuarios
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'courses:manage_categories' %}">
+                                        <i class="fas fa-tags me-2"></i>Categorías
+                                    </a></li>
+                                </ul>
+                            </li>
+                            {% endif %}
                             {% endif %}
                         </ul>
                     </div>

@@ -359,6 +359,9 @@
                             </div>
 
                             <div class="lesson-actions">
+                                <a href="{% url 'courses:preview_lesson' course.slug module.id lesson.id %}" class="btn btn-outline-info btn-lesson-action">
+                                    <i class="bi bi-eye me-1"></i>Vista Previa
+                                </a>
                                 <a href="{% url 'courses:edit_lesson' course.slug module.id lesson.id %}" class="btn btn-outline-primary btn-lesson-action">
                                     <i class="bi bi-pencil me-1"></i>Editar
                                 </a>
