@@ -1,0 +1,421 @@
+{% extends "courses/base.html" %}
+{% load static %}
+
+{% block title %}Contenido Educativo Disponible - Management360{% endblock %}
+
+{% block extra_head %}
+<style>
+.standalone-lessons-container {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.lessons-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.lessons-header h1 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.filters-section {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.lessons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.lesson-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    border: 1px solid #e9ecef;
+}
+
+.lesson-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.lesson-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.lesson-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+    flex: 1;
+}
+
+.lesson-type-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.lesson-type-video { background: #e3f2fd; color: #1565c0; }
+.lesson-type-text { background: #e8f5e8; color: #2e7d32; }
+.lesson-type-quiz { background: #fff3e0; color: #ef6c00; }
+.lesson-type-assignment { background: #f3e5f5; color: #7b1fa2; }
+
+.lesson-meta {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.lesson-author {
+    font-size: 0.875rem;
+    color: #718096;
+}
+
+.lesson-stats {
+    font-size: 0.875rem;
+    color: #718096;
+}
+
+.lesson-description {
+    font-size: 0.9rem;
+    color: #4a5568;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.lesson-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.btn-lesson-action {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 6px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-text {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+    .lessons-header {
+        padding: 1.5rem 0;
+    }
+
+    .lessons-header h1 {
+        font-size: 1.75rem;
+    }
+
+    .filters-section {
+        padding: 1.5rem;
+    }
+
+    .lessons-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .lesson-card {
+        padding: 1rem;
+    }
+
+    .lesson-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .lesson-actions {
+        justify-content: center;
+    }
+}
+</style>
+{% endblock %}
+
+{% block course_content %}
+<!-- Header -->
+<div class="standalone-lessons-container">
+    <div class="lessons-header">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <h1><i class="bi bi-collection me-3"></i>{{ title }}</h1>
+                    <p class="lead mb-0 mt-2">
+                        Explora lecciones independientes, bloques de contenido reutilizable y lecciones gratuitas de cursos publicados
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <div class="mt-4">
+                        <i class="bi bi-mortarboard fs-1 text-white-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Filtros -->
+        <div class="filters-section">
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="content_type" class="form-label">Tipo de Contenido</label>
+                    <select id="content_type" name="content_type" class="form-select">
+                        <option value="all" {% if content_type == 'all' %}selected{% endif %}>Todo el contenido</option>
+                        <option value="lessons" {% if content_type == 'lessons' %}selected{% endif %}>Solo lecciones</option>
+                        <option value="blocks" {% if content_type == 'blocks' %}selected{% endif %}>Solo bloques</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="search" class="form-label">Buscar</label>
+                    <input type="text" id="search" name="search" class="form-control"
+                           placeholder="Buscar por título o descripción..."
+                           value="{{ request.GET.search }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="author" class="form-label">Autor</label>
+                    <select id="author" name="author" class="form-select">
+                        <option value="">Todos los autores</option>
+                        {% for author_data in authors %}
+                        <option value="{{ author_data.0 }}" {% if request.GET.author == author_data.0 %}selected{% endif %}>
+                            {{ author_data.1|default:author_data.0 }} {{ author_data.2|default:'' }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-primary w-100" onclick="applyFilters()">
+                        <i class="bi bi-search me-1"></i>Buscar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card border-primary">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-primary">{{ total_lessons }}</h5>
+                        <p class="card-text">Lecciones Disponibles</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-success">
+                    <div class="card-body text-center">
+                        <h5 class="card-title text-success">{{ total_blocks }}</h5>
+                        <p class="card-text">Bloques de Contenido</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lecciones -->
+        {% if lessons %}
+        <h3 class="mb-3"><i class="bi bi-book me-2"></i>Lecciones Disponibles</h3>
+        <div class="lessons-grid">
+            {% for lesson in lessons %}
+            <div class="lesson-card">
+                <div class="lesson-header">
+                    <h3 class="lesson-title">{{ lesson.title }}</h3>
+                    <span class="lesson-type-badge lesson-type-{{ lesson.lesson_type }}">
+                        {% if lesson.is_standalone %}Independiente{% else %}Gratuita{% endif %} - {{ lesson.get_lesson_type_display }}
+                    </span>
+                </div>
+
+                <div class="lesson-meta">
+                    {% if lesson.author %}
+                    <span class="lesson-author">
+                        <i class="bi bi-person me-1"></i>{{ lesson.author.get_full_name|default:lesson.author.username }}
+                    </span>
+                    {% endif %}
+                    {% if lesson.duration_minutes %}
+                    <span class="lesson-stats">
+                        <i class="bi bi-clock me-1"></i>{{ lesson.duration_minutes }} min
+                    </span>
+                    {% endif %}
+                    {% if not lesson.is_standalone %}
+                    <span class="lesson-stats">
+                        <i class="bi bi-journal me-1"></i>{{ lesson.module.course.title }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                {% if lesson.description %}
+                <div class="lesson-description">
+                    {{ lesson.description|truncatechars:120 }}
+                </div>
+                {% endif %}
+
+                <div class="lesson-actions">
+                    {% if lesson.is_standalone %}
+                    <a href="{% url 'courses:standalone_lesson_detail' lesson.slug %}"
+                       class="btn btn-primary btn-lesson-action">
+                        <i class="bi bi-eye me-1"></i>Ver Lección
+                    </a>
+                    {% else %}
+                    <a href="{% url 'courses:course_learning_lesson' lesson.module.course.slug lesson.id %}"
+                       class="btn btn-primary btn-lesson-action">
+                        <i class="bi bi-eye me-1"></i>Ver Lección
+                    </a>
+                    {% endif %}
+                    {% if lesson.is_featured %}
+                    <span class="badge bg-warning">
+                        <i class="bi bi-star-fill me-1"></i>Destacada
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Bloques de Contenido -->
+        {% if content_blocks %}
+        <h3 class="mb-3 mt-5"><i class="bi bi-puzzle me-2"></i>Bloques de Contenido</h3>
+        <div class="lessons-grid">
+            {% for block in content_blocks %}
+            <div class="lesson-card">
+                <div class="lesson-header">
+                    <h3 class="lesson-title">{{ block.title }}</h3>
+                    <span class="lesson-type-badge lesson-type-text">
+                        {{ block.get_content_type_display }}
+                    </span>
+                </div>
+
+                <div class="lesson-meta">
+                    <span class="lesson-author">
+                        <i class="bi bi-person me-1"></i>{{ block.author.get_full_name|default:block.author.username }}
+                    </span>
+                    {% if block.category %}
+                    <span class="lesson-stats">
+                        <i class="bi bi-tag me-1"></i>{{ block.category }}
+                    </span>
+                    {% endif %}
+                    {% if block.usage_count %}
+                    <span class="lesson-stats">
+                        <i class="bi bi-eye me-1"></i>{{ block.usage_count }} usos
+                    </span>
+                    {% endif %}
+                </div>
+
+                {% if block.description %}
+                <div class="lesson-description">
+                    {{ block.description|truncatechars:120 }}
+                </div>
+                {% endif %}
+
+                <div class="lesson-actions">
+                    <a href="{% url 'courses:preview_content_block' block.slug %}"
+                       class="btn btn-success btn-lesson-action">
+                        <i class="bi bi-eye me-1"></i>Vista Previa
+                    </a>
+                    {% if block.is_featured %}
+                    <span class="badge bg-warning">
+                        <i class="bi bi-star-fill me-1"></i>Destacado
+                    </span>
+                    {% endif %}
+                    {% if block.is_public %}
+                    <span class="badge bg-info">
+                        <i class="bi bi-globe me-1"></i>Público
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if not lessons and not content_blocks %}
+        <!-- Estado vacío -->
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="bi bi-book"></i>
+            </div>
+            <h2 class="empty-state-title">No hay contenido disponible</h2>
+            <p class="empty-state-text">
+                Aún no hay lecciones independientes o bloques de contenido publicados. ¡Sé el primero en crear contenido educativo!
+            </p>
+            {% if user.is_authenticated %}
+            <div class="d-flex gap-2 justify-content-center">
+                <a href="{% url 'courses:create_standalone_lesson' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-plus-circle me-2"></i>Crear Lección
+                </a>
+                <a href="{% url 'courses:create_content_block' %}" class="btn btn-success btn-lg">
+                    <i class="bi bi-puzzle-piece me-2"></i>Crear Bloque
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Función para aplicar filtros
+function applyFilters() {
+    const content_type = document.getElementById('content_type').value;
+    const search = document.getElementById('search').value;
+    const author = document.getElementById('author').value;
+
+    let url = window.location.pathname + '?';
+    const params = [];
+
+    if (content_type && content_type !== 'all') params.push('content_type=' + encodeURIComponent(content_type));
+    if (search) params.push('search=' + encodeURIComponent(search));
+    if (author) params.push('author=' + encodeURIComponent(author));
+
+    url += params.join('&');
+    window.location.href = url;
+}
+
+// Permitir búsqueda con Enter
+document.getElementById('search').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        applyFilters();
+    }
+});
+</script>
+{% endblock %}

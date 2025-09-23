@@ -14,9 +14,56 @@
         {% include 'layouts/includes/nav-content/tools.html' %}
         {% include 'layouts/includes/nav-content/configuration.html' %}
         {% include 'layouts/includes/nav-content/chat.html' %}
-    {% include 'layouts/includes/nav-content/courses.html' %}
+        {% include 'layouts/includes/nav-content/courses.html' %}
         {% endif %}
         {% include 'layouts/includes/nav-content/account.html' %}
         {% include 'layouts/includes/nav-content/pages.html' %}
     </ul>
+
+    <style>
+    /* Estilos para los encabezados de sección en la navegación */
+    .nav-heading {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #6c757d;
+        padding: 0.75rem 1rem 0.25rem 1rem;
+        margin: 0.5rem 0 0.25rem 0;
+        border-bottom: 1px solid rgba(108, 117, 125, 0.2);
+    }
+
+    .nav-heading:first-child {
+        margin-top: 0;
+    }
+
+    /* Mejorar el espaciado de los elementos de navegación */
+    .sidebar-nav .nav-item .nav-content li {
+        margin-bottom: 0.125rem;
+    }
+
+    .sidebar-nav .nav-item .nav-content li a {
+        padding: 0.5rem 1rem 0.5rem 2.5rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+    }
+
+    .sidebar-nav .nav-item .nav-content li a:hover {
+        background-color: rgba(13, 110, 253, 0.1);
+        color: #0d6efd;
+    }
+
+    /* Iconos más prominentes */
+    .sidebar-nav .nav-item .nav-content li a i {
+        font-size: 0.8rem;
+        width: 16px;
+        text-align: center;
+        margin-right: 0.5rem;
+        opacity: 0.8;
+    }
+
+    .sidebar-nav .nav-item .nav-content li a:hover i {
+        opacity: 1;
+    }
+    </style>
 </aside><!-- End Sidebar-->

@@ -1,0 +1,1341 @@
+{% extends "courses/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} - CMS{% endblock %}
+
+{% block extra_head %}
+<style>
+.content-form-container {
+    background: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.content-form-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+    overflow: hidden;
+}
+
+.content-form-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+}
+
+.content-form-header h2 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.content-form-body {
+    padding: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.form-control {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #718096;
+    margin-top: 0.25rem;
+}
+
+/* Editor de código */
+.code-editor {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    min-height: 300px;
+    resize: vertical;
+}
+
+/* Preview panel */
+.preview-panel {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    background: #f8f9fa;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.preview-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.preview-title {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+/* Bootstrap components library */
+.components-library {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.component-card {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.component-card:hover {
+    border-color: #0d6efd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.1);
+}
+
+.component-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: #6c757d;
+}
+
+.component-title {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 0.9rem;
+}
+
+/* Content type selector */
+.content-type-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.content-type-card {
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.content-type-card.selected {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.content-type-card:hover {
+    border-color: #667eea;
+    transform: translateY(-2px);
+}
+
+.content-type-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.content-type-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+}
+
+.content-type-desc {
+    font-size: 0.875rem;
+    color: #718096;
+}
+
+/* Content fields */
+.content-fields {
+    display: none;
+}
+
+.content-fields.active {
+    display: block;
+}
+
+/* Tags input */
+.tags-input {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    padding: 0.5rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+}
+
+.tag-item {
+    background: #e3f2fd;
+    color: #1565c0;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.tag-remove {
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.tag-remove:hover {
+    opacity: 1;
+}
+
+/* Buttons */
+.btn-submit {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.btn-cancel {
+    border: 2px solid #e2e8f0;
+    background: white;
+    color: #718096;
+    border-radius: 8px;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+    border-color: #cbd5e0;
+    background: #f8f9fa;
+    color: #4a5568;
+    text-decoration: none;
+}
+
+/* JSON Editor */
+.json-editor-container {
+    position: relative;
+}
+
+.json-error {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    color: #dc3545;
+    font-size: 0.875rem;
+    background: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid #dc3545;
+}
+
+@media (max-width: 768px) {
+    .content-form-header {
+        padding: 1.5rem;
+    }
+
+    .content-form-body {
+        padding: 1.5rem;
+    }
+
+    .content-type-selector {
+        grid-template-columns: 1fr;
+    }
+
+    .components-library {
+        grid-template-columns: 1fr;
+    }
+
+    .btn-submit,
+    .btn-cancel {
+        width: 100%;
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block course_content %}
+<div class="content-form-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <!-- Información del bloque existente -->
+                {% if content_block %}
+                <div class="alert alert-info mb-4">
+                    <h5><i class="bi bi-info-circle me-2"></i>Editando Bloque</h5>
+                    <p class="mb-1"><strong>Título:</strong> {{ content_block.title }}</p>
+                    <p class="mb-1"><strong>Tipo:</strong> {{ content_block.get_content_type_display }}</p>
+                    <p class="mb-1"><strong>Autor:</strong> {{ content_block.author.get_full_name|default:content_block.author.username }}</p>
+                    <p class="mb-0"><strong>Última modificación:</strong> {{ content_block.updated_at|date:"d M Y H:i" }}</p>
+                </div>
+                {% endif %}
+
+                <!-- Formulario -->
+                <div class="content-form-card">
+                    <div class="content-form-header">
+                        <h2><i class="bi bi-pencil-square me-2"></i>{{ title }}</h2>
+                    </div>
+
+                    <div class="content-form-body">
+                        <form method="post" id="contentBlockForm">
+                            {% csrf_token %}
+
+                            <!-- Tipo de contenido (solo en creación) -->
+                            {% if not block %}
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="bi bi-diagram-3 me-1"></i>Tipo de Contenido *
+                                </label>
+                                <div class="content-type-selector">
+                                    <div class="content-type-card" data-type="html">
+                                        <i class="bi bi-code-slash content-type-icon text-primary"></i>
+                                        <div class="content-type-title">HTML Personalizado</div>
+                                        <div class="content-type-desc">Código HTML completo</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="bootstrap">
+                                        <i class="bi bi-bootstrap content-type-icon text-info"></i>
+                                        <div class="content-type-title">Componente Bootstrap</div>
+                                        <div class="content-type-desc">Elementos Bootstrap</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="markdown">
+                                        <i class="bi bi-markdown content-type-icon text-success"></i>
+                                        <div class="content-type-title">Markdown</div>
+                                        <div class="content-type-desc">Sintaxis Markdown</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="json">
+                                        <i class="bi bi-braces content-type-icon text-warning"></i>
+                                        <div class="content-type-title">JSON Estructurado</div>
+                                        <div class="content-type-desc">Datos JSON</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="text">
+                                        <i class="bi bi-textarea content-type-icon text-secondary"></i>
+                                        <div class="content-type-title">Texto Simple</div>
+                                        <div class="content-type-desc">Contenido de texto</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="image">
+                                        <i class="bi bi-image content-type-icon text-info"></i>
+                                        <div class="content-type-title">Imagen</div>
+                                        <div class="content-type-desc">Imagen con configuración</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="video">
+                                        <i class="bi bi-play-circle content-type-icon text-danger"></i>
+                                        <div class="content-type-title">Video</div>
+                                        <div class="content-type-desc">Video embebido</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="quote">
+                                        <i class="bi bi-quote content-type-icon text-warning"></i>
+                                        <div class="content-type-title">Cita</div>
+                                        <div class="content-type-desc">Cita destacada</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="code">
+                                        <i class="bi bi-code content-type-icon text-dark"></i>
+                                        <div class="content-type-title">Código</div>
+                                        <div class="content-type-desc">Bloque de código</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="list">
+                                        <i class="bi bi-list-check content-type-icon text-success"></i>
+                                        <div class="content-type-title">Lista</div>
+                                        <div class="content-type-desc">Lista ordenada/desordenada</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="table">
+                                        <i class="bi bi-table content-type-icon text-primary"></i>
+                                        <div class="content-type-title">Tabla</div>
+                                        <div class="content-type-desc">Tabla de datos</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="card">
+                                        <i class="bi bi-card-text content-type-icon text-info"></i>
+                                        <div class="content-type-title">Tarjeta</div>
+                                        <div class="content-type-desc">Componente de tarjeta</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="alert">
+                                        <i class="bi bi-exclamation-triangle content-type-icon text-warning"></i>
+                                        <div class="content-type-title">Alerta</div>
+                                        <div class="content-type-desc">Mensaje de alerta</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="button">
+                                        <i class="bi bi-hand-index content-type-icon text-success"></i>
+                                        <div class="content-type-title">Botón</div>
+                                        <div class="content-type-desc">Botón interactivo</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="form">
+                                        <i class="bi bi-ui-checks content-type-icon text-secondary"></i>
+                                        <div class="content-type-title">Formulario</div>
+                                        <div class="content-type-desc">Formulario simple</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="divider">
+                                        <i class="bi bi-dash content-type-icon text-muted"></i>
+                                        <div class="content-type-title">Separador</div>
+                                        <div class="content-type-desc">Línea divisoria</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="icon">
+                                        <i class="bi bi-star content-type-icon text-primary"></i>
+                                        <div class="content-type-title">Ícono</div>
+                                        <div class="content-type-desc">Ícono con texto</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="progress">
+                                        <i class="bi bi-bar-chart content-type-icon text-info"></i>
+                                        <div class="content-type-title">Progreso</div>
+                                        <div class="content-type-desc">Barra de progreso</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="badge">
+                                        <i class="bi bi-tag content-type-icon text-warning"></i>
+                                        <div class="content-type-title">Insignia</div>
+                                        <div class="content-type-desc">Etiqueta/insignia</div>
+                                    </div>
+                                    <div class="content-type-card" data-type="timeline">
+                                        <i class="bi bi-clock content-type-icon text-dark"></i>
+                                        <div class="content-type-title">Línea de Tiempo</div>
+                                        <div class="content-type-desc">Cronología de eventos</div>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="content_type" id="id_content_type" value="{{ content_block.content_type|default:'html' }}">
+                            </div>
+                            {% endif %}
+
+                            <!-- Información básica -->
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="form-group">
+                                        <label for="id_title" class="form-label">
+                                            <i class="bi bi-tag me-1"></i>Título *
+                                        </label>
+                                        <input type="text" name="title" id="id_title" class="form-control"
+                                               value="{{ content_block.title|default:'' }}" required
+                                               placeholder="Título descriptivo del bloque">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="id_category" class="form-label">
+                                            <i class="bi bi-folder me-1"></i>Categoría
+                                        </label>
+                                        <input type="text" name="category" id="id_category" class="form-control"
+                                               value="{{ content_block.category|default:'' }}"
+                                               placeholder="Ej: Introducción, Ejercicios, Teoría">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="id_description" class="form-label">
+                                    <i class="bi bi-textarea me-1"></i>Descripción
+                                </label>
+                                <textarea name="description" id="id_description" class="form-control" rows="3"
+                                          placeholder="Describe el propósito y contenido de este bloque">{{ content_block.description|default:'' }}</textarea>
+                            </div>
+
+                            <!-- Etiquetas -->
+                            <div class="form-group">
+                                <label for="id_tags" class="form-label">
+                                    <i class="bi bi-tags me-1"></i>Etiquetas
+                                </label>
+                                <input type="text" name="tags" id="id_tags" class="form-control"
+                                       value="{{ content_block.tags|default:'' }}"
+                                       placeholder="Etiquetas separadas por comas (ej: matemáticas, álgebra, ejercicios)">
+                                <div class="form-text">Separa las etiquetas con comas para una mejor organización</div>
+                            </div>
+
+                            <!-- Contenido según el tipo -->
+                            <div id="html-fields" class="content-fields {% if not block or content_block.content_type == 'html' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label for="id_html_content" class="form-label">
+                                        <i class="bi bi-code-slash me-1"></i>Contenido HTML
+                                    </label>
+                                    <textarea name="html_content" id="id_html_content" class="form-control code-editor"
+                                              placeholder="<div class='alert alert-info'>
+    <h4>¡Bienvenido!</h4>
+    <p>Este es un ejemplo de contenido HTML.</p>
+</div>">{{ content_block.html_content|default:'' }}</textarea>
+                                    <div class="form-text">
+                                        Escribe código HTML válido. Puedes incluir clases de Bootstrap para estilos.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="bootstrap-fields" class="content-fields {% if block and content_block.content_type == 'bootstrap' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-bootstrap me-1"></i>Componente Bootstrap
+                                    </label>
+
+                                    <!-- Biblioteca de componentes -->
+                                    <div class="components-library mb-3">
+                                        <div class="component-card" data-component="alert">
+                                            <div class="component-icon text-info">📢</div>
+                                            <div class="component-title">Alert</div>
+                                        </div>
+                                        <div class="component-card" data-component="card">
+                                            <div class="component-icon text-primary">🃏</div>
+                                            <div class="component-title">Card</div>
+                                        </div>
+                                        <div class="component-card" data-component="badge">
+                                            <div class="component-icon text-warning">🏷️</div>
+                                            <div class="component-title">Badge</div>
+                                        </div>
+                                        <div class="component-card" data-component="button">
+                                            <div class="component-icon text-success">🔘</div>
+                                            <div class="component-title">Button</div>
+                                        </div>
+                                        <div class="component-card" data-component="modal">
+                                            <div class="component-icon text-secondary">📋</div>
+                                            <div class="component-title">Modal</div>
+                                        </div>
+                                        <div class="component-card" data-component="accordion">
+                                            <div class="component-icon text-info">📚</div>
+                                            <div class="component-title">Accordion</div>
+                                        </div>
+                                    </div>
+
+                                    <textarea name="html_content" id="id_bootstrap_content" class="form-control code-editor"
+                                              placeholder="<div class='card'>
+    <div class='card-body'>
+        <h5 class='card-title'>Título de la Card</h5>
+        <p class='card-text'>Contenido de la card.</p>
+        <a href='#' class='btn btn-primary'>Botón</a>
+    </div>
+</div>">{{ content_block.html_content|default:'' }}</textarea>
+                                    <div class="form-text">
+                                        Crea componentes usando clases de Bootstrap. Haz clic en los componentes arriba para ejemplos.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="markdown-fields" class="content-fields {% if block and content_block.content_type == 'markdown' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label for="id_markdown_content" class="form-label">
+                                        <i class="bi bi-markdown me-1"></i>Contenido Markdown
+                                    </label>
+                                    <textarea name="markdown_content" id="id_markdown_content" class="form-control code-editor"
+                                              placeholder="# Título Principal
+
+## Subtítulo
+
+Este es un párrafo con **texto en negrita** e *itálica*.
+
+- Elemento de lista 1
+- Elemento de lista 2
+
+[Enlace](https://example.com)">{{ content_block.markdown_content|default:'' }}</textarea>
+                                    <div class="form-text">
+                                        Usa sintaxis Markdown para crear contenido formateado.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="json-fields" class="content-fields {% if block and content_block.content_type == 'json' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label for="id_json_content" class="form-label">
+                                        <i class="bi bi-braces me-1"></i>Contenido JSON
+                                    </label>
+                                    <div class="json-editor-container">
+                                        <textarea name="json_content" id="id_json_content" class="form-control code-editor"
+                                                  placeholder="{
+    'type': 'text',
+    'title': 'Título del elemento',
+    'content': 'Contenido del elemento'
+}">{{ content_block.json_content|default:'{}' }}</textarea>
+                                        <div id="json-error" class="json-error" style="display: none;"></div>
+                                    </div>
+                                    <div class="form-text">
+                                        Estructura JSON válida para contenido estructurado.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="text-fields" class="content-fields {% if block and content_block.content_type == 'text' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label for="id_text_content" class="form-label">
+                                        <i class="bi bi-textarea me-1"></i>Contenido de Texto
+                                    </label>
+                                    <textarea name="text_content" id="id_text_content" class="form-control"
+                                              rows="6" placeholder="Contenido de texto simple...">{{ content_block.html_content|default:'' }}</textarea>
+                                    <div class="form-text">
+                                        Texto plano sin formato HTML.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="image-fields" class="content-fields {% if block and content_block.content_type == 'image' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-image me-1"></i>Configuración de Imagen
+                                    </label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input type="url" name="image_url" class="form-control mb-2"
+                                                   placeholder="URL de la imagen" value="{{ content_block.json_content.url|default:'' }}">
+                                            <input type="text" name="image_alt" class="form-control mb-2"
+                                                   placeholder="Texto alternativo" value="{{ content_block.json_content.alt|default:'' }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" name="image_caption" class="form-control"
+                                                   placeholder="Pie de foto (opcional)" value="{{ content_block.json_content.caption|default:'' }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="video-fields" class="content-fields {% if block and content_block.content_type == 'video' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label for="id_video_url" class="form-label">
+                                        <i class="bi bi-play-circle me-1"></i>URL del Video
+                                    </label>
+                                    <input type="url" name="video_url" id="id_video_url" class="form-control"
+                                           placeholder="https://www.youtube.com/embed/..." value="{{ content_block.json_content.url|default:'' }}">
+                                    <div class="form-text">
+                                        URL de embed de YouTube, Vimeo, etc.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="quote-fields" class="content-fields {% if block and content_block.content_type == 'quote' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-quote me-1"></i>Configuración de Cita
+                                    </label>
+                                    <textarea name="quote_text" class="form-control mb-2" rows="3"
+                                              placeholder="Texto de la cita">{{ content_block.json_content.text|default:'' }}</textarea>
+                                    <input type="text" name="quote_author" class="form-control"
+                                           placeholder="Autor de la cita (opcional)" value="{{ content_block.json_content.author|default:'' }}">
+                                </div>
+                            </div>
+
+                            <div id="code-fields" class="content-fields {% if block and content_block.content_type == 'code' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-code me-1"></i>Configuración de Código
+                                    </label>
+                                    <div class="row mb-2">
+                                        <div class="col-md-4">
+                                            <select name="code_language" class="form-select">
+                                                <option value="text" {% if content_block.json_content.language == 'text' %}selected{% endif %}>Texto</option>
+                                                <option value="python" {% if content_block.json_content.language == 'python' %}selected{% endif %}>Python</option>
+                                                <option value="javascript" {% if content_block.json_content.language == 'javascript' %}selected{% endif %}>JavaScript</option>
+                                                <option value="html" {% if content_block.json_content.language == 'html' %}selected{% endif %}>HTML</option>
+                                                <option value="css" {% if content_block.json_content.language == 'css' %}selected{% endif %}>CSS</option>
+                                                <option value="json" {% if content_block.json_content.language == 'json' %}selected{% endif %}>JSON</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <textarea name="code_content" class="form-control code-editor"
+                                              placeholder="Código aquí...">{{ content_block.json_content.code|default:'' }}</textarea>
+                                </div>
+                            </div>
+
+                            <div id="list-fields" class="content-fields {% if block and content_block.content_type == 'list' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-list-check me-1"></i>Configuración de Lista
+                                    </label>
+                                    <div class="mb-2">
+                                        <select name="list_type" class="form-select">
+                                            <option value="unordered" {% if content_block.json_content.type == 'unordered' %}selected{% endif %}>Lista sin orden</option>
+                                            <option value="ordered" {% if content_block.json_content.type == 'ordered' %}selected{% endif %}>Lista ordenada</option>
+                                        </select>
+                                    </div>
+                                    <textarea name="list_items" class="form-control" rows="6"
+                                              placeholder="Cada línea será un elemento de la lista">{{ content_block.json_content.items|join:'\n'|default:'' }}</textarea>
+                                    <div class="form-text">
+                                        Una línea por elemento de la lista.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="table-fields" class="content-fields {% if block and content_block.content_type == 'table' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-table me-1"></i>Configuración de Tabla
+                                    </label>
+                                    <div class="row mb-2">
+                                        <div class="col-md-6">
+                                            <input type="text" name="table_headers" class="form-control"
+                                                   placeholder="Encabezados separados por comas" value="{{ content_block.json_content.headers|join:', '|default:'' }}">
+                                        </div>
+                                    </div>
+                                    <textarea name="table_rows" class="form-control" rows="6"
+                                              placeholder="Filas de la tabla (una por línea, celdas separadas por comas)">{{ content_block.json_content.rows|default:'' }}</textarea>
+                                    <div class="form-text">
+                                        Cada línea es una fila, celdas separadas por comas.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="card-fields" class="content-fields {% if block and content_block.content_type == 'card' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-card-text me-1"></i>Configuración de Tarjeta
+                                    </label>
+                                    <input type="text" name="card_header" class="form-control mb-2"
+                                           placeholder="Encabezado de la tarjeta (opcional)" value="{{ content_block.json_content.header|default:'' }}">
+                                    <input type="text" name="card_title" class="form-control mb-2"
+                                           placeholder="Título de la tarjeta" value="{{ content_block.json_content.title|default:'' }}">
+                                    <textarea name="card_text" class="form-control mb-2" rows="3"
+                                              placeholder="Contenido de la tarjeta">{{ content_block.json_content.text|default:'' }}</textarea>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input type="url" name="card_button_url" class="form-control"
+                                                   placeholder="URL del botón (opcional)" value="{{ content_block.json_content.button.url|default:'' }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" name="card_button_text" class="form-control"
+                                                   placeholder="Texto del botón" value="{{ content_block.json_content.button.text|default:'Ver más' }}">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="alert-fields" class="content-fields {% if block and content_block.content_type == 'alert' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>Configuración de Alerta
+                                    </label>
+                                    <div class="row mb-2">
+                                        <div class="col-md-4">
+                                            <select name="alert_type" class="form-select">
+                                                <option value="primary" {% if content_block.json_content.type == 'primary' %}selected{% endif %}>Primario</option>
+                                                <option value="secondary" {% if content_block.json_content.type == 'secondary' %}selected{% endif %}>Secundario</option>
+                                                <option value="success" {% if content_block.json_content.type == 'success' %}selected{% endif %}>Éxito</option>
+                                                <option value="danger" {% if content_block.json_content.type == 'danger' %}selected{% endif %}>Peligro</option>
+                                                <option value="warning" {% if content_block.json_content.type == 'warning' %}selected{% endif %}>Advertencia</option>
+                                                <option value="info" {% if content_block.json_content.type == 'info' %}selected{% endif %}>Información</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <textarea name="alert_message" class="form-control" rows="3"
+                                              placeholder="Mensaje de la alerta">{{ content_block.json_content.message|default:'' }}</textarea>
+                                </div>
+                            </div>
+
+                            <div id="button-fields" class="content-fields {% if block and content_block.content_type == 'button' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-hand-index me-1"></i>Configuración de Botón
+                                    </label>
+                                    <div class="row mb-2">
+                                        <div class="col-md-4">
+                                            <select name="button_style" class="form-select">
+                                                <option value="primary" {% if content_block.json_content.style == 'primary' %}selected{% endif %}>Primario</option>
+                                                <option value="secondary" {% if content_block.json_content.style == 'secondary' %}selected{% endif %}>Secundario</option>
+                                                <option value="success" {% if content_block.json_content.style == 'success' %}selected{% endif %}>Éxito</option>
+                                                <option value="danger" {% if content_block.json_content.style == 'danger' %}selected{% endif %}>Peligro</option>
+                                                <option value="warning" {% if content_block.json_content.style == 'warning' %}selected{% endif %}>Advertencia</option>
+                                                <option value="info" {% if content_block.json_content.style == 'info' %}selected{% endif %}>Información</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select name="button_size" class="form-select">
+                                                <option value="sm" {% if content_block.json_content.size == 'sm' %}selected{% endif %}>Pequeño</option>
+                                                <option value="md" {% if content_block.json_content.size == 'md' %}selected{% endif %}>Mediano</option>
+                                                <option value="lg" {% if content_block.json_content.size == 'lg' %}selected{% endif %}>Grande</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-6">
+                                            <input type="url" name="button_url" class="form-control"
+                                                   placeholder="URL del botón" value="{{ content_block.json_content.url|default:'' }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" name="button_text" class="form-control"
+                                                   placeholder="Texto del botón" value="{{ content_block.json_content.text|default:'' }}">
+                                        </div>
+                                    </div>
+                                    <input type="text" name="button_icon" class="form-control"
+                                           placeholder="Ícono Bootstrap (ej: bi-star)" value="{{ content_block.json_content.icon|default:'' }}">
+                                </div>
+                            </div>
+
+                            <div id="form-fields" class="content-fields {% if block and content_block.content_type == 'form' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-ui-checks me-1"></i>Configuración de Formulario
+                                    </label>
+                                    <input type="url" name="form_action" class="form-control mb-2"
+                                           placeholder="URL de acción del formulario" value="{{ content_block.json_content.action|default:'' }}">
+                                    <textarea name="form_fields" class="form-control mb-2" rows="6"
+                                              placeholder='[{"label": "Nombre", "name": "name", "type": "text"}, {"label": "Email", "name": "email", "type": "email"}]'>{{ content_block.json_content.fields|default:'[]' }}</textarea>
+                                    <input type="text" name="form_submit_text" class="form-control"
+                                           placeholder="Texto del botón enviar" value="{{ content_block.json_content.submit_text|default:'Enviar' }}">
+                                    <div class="form-text">
+                                        Campos del formulario en formato JSON.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="divider-fields" class="content-fields {% if block and content_block.content_type == 'divider' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-dash me-1"></i>Separador
+                                    </label>
+                                    <div class="form-text">
+                                        Este bloque crea una línea divisoria horizontal.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="icon-fields" class="content-fields {% if block and content_block.content_type == 'icon' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-star me-1"></i>Configuración de Ícono
+                                    </label>
+                                    <div class="row mb-2">
+                                        <div class="col-md-6">
+                                            <input type="text" name="icon_name" class="form-control"
+                                                   placeholder="Nombre del ícono (ej: star)" value="{{ content_block.json_content.icon|default:'' }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <select name="icon_color" class="form-select">
+                                                <option value="primary" {% if content_block.json_content.color == 'primary' %}selected{% endif %}>Primario</option>
+                                                <option value="secondary" {% if content_block.json_content.color == 'secondary' %}selected{% endif %}>Secundario</option>
+                                                <option value="success" {% if content_block.json_content.color == 'success' %}selected{% endif %}>Éxito</option>
+                                                <option value="danger" {% if content_block.json_content.color == 'danger' %}selected{% endif %}>Peligro</option>
+                                                <option value="warning" {% if content_block.json_content.color == 'warning' %}selected{% endif %}>Advertencia</option>
+                                                <option value="info" {% if content_block.json_content.color == 'info' %}selected{% endif %}>Información</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <input type="text" name="icon_text" class="form-control"
+                                           placeholder="Texto opcional junto al ícono" value="{{ content_block.json_content.text|default:'' }}">
+                                </div>
+                            </div>
+
+                            <div id="progress-fields" class="content-fields {% if block and content_block.content_type == 'progress' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-bar-chart me-1"></i>Configuración de Barra de Progreso
+                                    </label>
+                                    <div class="row mb-2">
+                                        <div class="col-md-6">
+                                            <input type="number" name="progress_value" class="form-control" min="0" max="100"
+                                                   placeholder="Valor (0-100)" value="{{ content_block.json_content.value|default:50 }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <select name="progress_color" class="form-select">
+                                                <option value="primary" {% if content_block.json_content.color == 'primary' %}selected{% endif %}>Primario</option>
+                                                <option value="secondary" {% if content_block.json_content.color == 'secondary' %}selected{% endif %}>Secundario</option>
+                                                <option value="success" {% if content_block.json_content.color == 'success' %}selected{% endif %}>Éxito</option>
+                                                <option value="danger" {% if content_block.json_content.color == 'danger' %}selected{% endif %}>Peligro</option>
+                                                <option value="warning" {% if content_block.json_content.color == 'warning' %}selected{% endif %}>Advertencia</option>
+                                                <option value="info" {% if content_block.json_content.color == 'info' %}selected{% endif %}>Información</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="badge-fields" class="content-fields {% if block and content_block.content_type == 'badge' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-tag me-1"></i>Configuración de Insignia
+                                    </label>
+                                    <div class="row mb-2">
+                                        <div class="col-md-6">
+                                            <input type="text" name="badge_text" class="form-control"
+                                                   placeholder="Texto de la insignia" value="{{ content_block.json_content.text|default:'' }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <select name="badge_color" class="form-select">
+                                                <option value="primary" {% if content_block.json_content.color == 'primary' %}selected{% endif %}>Primario</option>
+                                                <option value="secondary" {% if content_block.json_content.color == 'secondary' %}selected{% endif %}>Secundario</option>
+                                                <option value="success" {% if content_block.json_content.color == 'success' %}selected{% endif %}>Éxito</option>
+                                                <option value="danger" {% if content_block.json_content.color == 'danger' %}selected{% endif %}>Peligro</option>
+                                                <option value="warning" {% if content_block.json_content.color == 'warning' %}selected{% endif %}>Advertencia</option>
+                                                <option value="info" {% if content_block.json_content.color == 'info' %}selected{% endif %}>Información</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <input type="text" name="badge_icon" class="form-control"
+                                           placeholder="Ícono opcional (ej: bi-star)" value="{{ content_block.json_content.icon|default:'' }}">
+                                </div>
+                            </div>
+
+                            <div id="timeline-fields" class="content-fields {% if block and content_block.content_type == 'timeline' %}active{% endif %}">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        <i class="bi bi-clock me-1"></i>Configuración de Línea de Tiempo
+                                    </label>
+                                    <textarea name="timeline_items" class="form-control" rows="8"
+                                              placeholder='[{"title": "Evento 1", "description": "Descripción del evento", "date": "2024-01-01"}, {"title": "Evento 2", "description": "Otra descripción", "date": "2024-02-01"}]'>{{ content_block.json_content.items|default:'[]' }}</textarea>
+                                    <div class="form-text">
+                                        Elementos de la línea de tiempo en formato JSON.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Vista previa -->
+                            <div class="form-group">
+                                <label class="form-label">
+                                    <i class="bi bi-eye me-1"></i>Vista Previa
+                                </label>
+                                <div class="preview-panel">
+                                    <div class="preview-header">
+                                        <div class="preview-title">Vista Previa del Contenido</div>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="updatePreview()">
+                                            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+                                        </button>
+                                    </div>
+                                    <div id="content-preview">
+                                        <div class="text-center text-muted">
+                                            <i class="bi bi-eye-slash fs-1 mb-2"></i>
+                                            <p>Haz clic en "Actualizar" para ver la vista previa</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Configuración -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" name="is_public" id="id_is_public" class="form-check-input"
+                                               {% if block and content_block.is_public %}checked{% endif %}>
+                                        <label class="form-check-label" for="id_is_public">
+                                            <i class="bi bi-globe me-1"></i>Bloque público
+                                        </label>
+                                        <div class="form-text">
+                                            Permitir que otros tutores usen este bloque
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        <input type="checkbox" name="is_featured" id="id_is_featured" class="form-check-input"
+                                               {% if block and content_block.is_featured %}checked{% endif %}>
+                                        <label class="form-check-label" for="id_is_featured">
+                                            <i class="bi bi-star me-1"></i>Bloque destacado
+                                        </label>
+                                        <div class="form-text">
+                                            Mostrar en la sección de bloques destacados
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="d-flex justify-content-between mt-4">
+                                <a href="{% url 'courses:content_manager' %}" class="btn-cancel">
+                                    <i class="bi bi-arrow-left me-1"></i>Cancelar
+                                </a>
+                                <button type="submit" class="btn-submit">
+                                    <i class="bi bi-check-circle me-1"></i>
+                                    {% if block %}Actualizar{% else %}Crear{% endif %} Bloque
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales
+let selectedContentType = '{{ content_block.content_type|default:"html" }}';
+
+// Inicialización
+document.addEventListener('DOMContentLoaded', function() {
+    initializeContentTypeSelector();
+    initializeComponentLibrary();
+    initializeJsonValidation();
+});
+
+// Selector de tipo de contenido
+function initializeContentTypeSelector() {
+    const typeCards = document.querySelectorAll('.content-type-card');
+
+    typeCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const type = this.dataset.type;
+
+            // Remover selección previa
+            typeCards.forEach(c => c.classList.remove('selected'));
+            // Agregar selección actual
+            this.classList.add('selected');
+
+            // Actualizar campo oculto
+            document.getElementById('id_content_type').value = type;
+
+            // Mostrar campos correspondientes
+            showContentFields(type);
+            selectedContentType = type;
+        });
+    });
+
+    // Mostrar campos del tipo seleccionado inicialmente
+    showContentFields(selectedContentType);
+}
+
+function showContentFields(type) {
+    // Ocultar todos los campos
+    document.querySelectorAll('.content-fields').forEach(field => {
+        field.classList.remove('active');
+    });
+
+    // Mostrar campos del tipo seleccionado
+    const targetField = document.getElementById(`${type}-fields`);
+    if (targetField) {
+        targetField.classList.add('active');
+    }
+}
+
+// Biblioteca de componentes Bootstrap
+function initializeComponentLibrary() {
+    const componentCards = document.querySelectorAll('.component-card');
+
+    componentCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const component = this.dataset.component;
+            insertBootstrapComponent(component);
+        });
+    });
+}
+
+function insertBootstrapComponent(component) {
+    const textarea = document.getElementById('id_bootstrap_content');
+    let componentCode = '';
+
+    switch(component) {
+        case 'alert':
+            componentCode = `<div class="alert alert-info alert-dismissible fade show" role="alert">
+    <strong>¡Información!</strong> Este es un mensaje de alerta.
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>`;
+            break;
+
+        case 'card':
+            componentCode = `<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Título de la Card</h5>
+        <p class="card-text">Contenido de la card con descripción.</p>
+        <a href="#" class="btn btn-primary">Botón de Acción</a>
+    </div>
+</div>`;
+            break;
+
+        case 'badge':
+            componentCode = `<span class="badge bg-primary">Primario</span>
+<span class="badge bg-secondary">Secundario</span>
+<span class="badge bg-success">Éxito</span>
+<span class="badge bg-danger">Peligro</span>
+<span class="badge bg-warning text-dark">Advertencia</span>
+<span class="badge bg-info text-dark">Info</span>`;
+            break;
+
+        case 'button':
+            componentCode = `<button type="button" class="btn btn-primary">Botón Primario</button>
+<button type="button" class="btn btn-secondary">Botón Secundario</button>
+<button type="button" class="btn btn-success">Botón de Éxito</button>`;
+            break;
+
+        case 'modal':
+            componentCode = `<!-- Botón para abrir modal -->
+<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+    Abrir Modal
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Título del Modal</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Contenido del modal aquí.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary">Guardar cambios</button>
+            </div>
+        </div>
+    </div>
+</div>`;
+            break;
+
+        case 'accordion':
+            componentCode = `<div class="accordion" id="accordionExample">
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                Elemento #1
+            </button>
+        </h2>
+        <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#accordionExample">
+            <div class="accordion-body">
+                Contenido del primer elemento del accordion.
+            </div>
+        </div>
+    </div>
+    <div class="accordion-item">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo">
+                Elemento #2
+            </button>
+        </h2>
+        <div id="collapseTwo" class="accordion-collapse collapse" data-bs-parent="#accordionExample">
+            <div class="accordion-body">
+                Contenido del segundo elemento del accordion.
+            </div>
+        </div>
+    </div>
+</div>`;
+            break;
+    }
+
+    if (textarea && componentCode) {
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        const before = text.substring(0, start);
+        const after = text.substring(end);
+
+        textarea.value = before + componentCode + after;
+        textarea.focus();
+        textarea.setSelectionRange(start + componentCode.length, start + componentCode.length);
+    }
+}
+
+// Validación JSON
+function initializeJsonValidation() {
+    const jsonTextarea = document.getElementById('id_json_content');
+    const errorDiv = document.getElementById('json-error');
+
+    if (jsonTextarea && errorDiv) {
+        jsonTextarea.addEventListener('input', function() {
+            const jsonText = this.value.trim();
+
+            if (!jsonText) {
+                errorDiv.style.display = 'none';
+                return;
+            }
+
+            try {
+                JSON.parse(jsonText);
+                errorDiv.style.display = 'none';
+            } catch (e) {
+                errorDiv.textContent = 'JSON inválido: ' + e.message;
+                errorDiv.style.display = 'block';
+            }
+        });
+    }
+}
+
+// Vista previa
+function updatePreview() {
+    const formData = new FormData(document.getElementById('contentBlockForm'));
+    const previewDiv = document.getElementById('content-preview');
+
+    // Obtener datos del formulario
+    const contentType = formData.get('content_type') || selectedContentType;
+    let content = '';
+
+    switch(contentType) {
+        case 'html':
+        case 'bootstrap':
+            content = formData.get('html_content') || '';
+            break;
+        case 'markdown':
+            content = formData.get('markdown_content') || '';
+            break;
+        case 'json':
+            content = formData.get('json_content') || '{}';
+            break;
+        case 'text':
+            content = formData.get('text_content') || '';
+            break;
+        case 'image':
+            content = JSON.stringify({
+                url: formData.get('image_url') || '',
+                alt: formData.get('image_alt') || '',
+                caption: formData.get('image_caption') || ''
+            });
+            break;
+        case 'video':
+            content = JSON.stringify({
+                url: formData.get('video_url') || ''
+            });
+            break;
+        case 'quote':
+            content = JSON.stringify({
+                text: formData.get('quote_text') || '',
+                author: formData.get('quote_author') || ''
+            });
+            break;
+        case 'code':
+            content = JSON.stringify({
+                language: formData.get('code_language') || 'text',
+                code: formData.get('code_content') || ''
+            });
+            break;
+        case 'list':
+            content = JSON.stringify({
+                type: formData.get('list_type') || 'unordered',
+                items: (formData.get('list_items') || '').split('\n').filter(item => item.trim())
+            });
+            break;
+        case 'table':
+            const headers = (formData.get('table_headers') || '').split(',').map(h => h.trim()).filter(h => h);
+            const rows = (formData.get('table_rows') || '').split('\n').map(row =>
+                row.split(',').map(cell => cell.trim()).filter(cell => cell)
+            ).filter(row => row.length > 0);
+            content = JSON.stringify({
+                headers: headers,
+                rows: rows
+            });
+            break;
+        case 'card':
+            content = JSON.stringify({
+                header: formData.get('card_header') || '',
+                title: formData.get('card_title') || '',
+                text: formData.get('card_text') || '',
+                button: {
+                    url: formData.get('card_button_url') || '',
+                    text: formData.get('card_button_text') || 'Ver más'
+                }
+            });
+            break;
+        case 'alert':
+            content = JSON.stringify({
+                type: formData.get('alert_type') || 'info',
+                message: formData.get('alert_message') || ''
+            });
+            break;
+        case 'button':
+            content = JSON.stringify({
+                url: formData.get('button_url') || '',
+                text: formData.get('button_text') || '',
+                style: formData.get('button_style') || 'primary',
+                size: formData.get('button_size') || 'md',
+                icon: formData.get('button_icon') || ''
+            });
+            break;
+        case 'form':
+            content = JSON.stringify({
+                action: formData.get('form_action') || '',
+                fields: JSON.parse(formData.get('form_fields') || '[]'),
+                submit_text: formData.get('form_submit_text') || 'Enviar'
+            });
+            break;
+        case 'divider':
+            content = JSON.stringify({});
+            break;
+        case 'icon':
+            content = JSON.stringify({
+                icon: formData.get('icon_name') || '',
+                color: formData.get('icon_color') || 'primary',
+                text: formData.get('icon_text') || ''
+            });
+            break;
+        case 'progress':
+            content = JSON.stringify({
+                value: parseInt(formData.get('progress_value') || '50'),
+                color: formData.get('progress_color') || 'primary'
+            });
+            break;
+        case 'badge':
+            content = JSON.stringify({
+                text: formData.get('badge_text') || '',
+                color: formData.get('badge_color') || 'primary',
+                icon: formData.get('badge_icon') || ''
+            });
+            break;
+        case 'timeline':
+            content = JSON.stringify({
+                items: JSON.parse(formData.get('timeline_items') || '[]')
+            });
+            break;
+    }
+
+    if (!content.trim()) {
+        previewDiv.innerHTML = '<div class="text-center text-muted"><i class="bi bi-eye-slash fs-1 mb-2"></i><p>No hay contenido para mostrar</p></div>';
+        return;
+    }
+
+    // Mostrar contenido según el tipo
+    switch(contentType) {
+        case 'html':
+        case 'bootstrap':
+            previewDiv.innerHTML = content;
+            break;
+        case 'markdown':
+            // Simular conversión básica de Markdown
+            let html = content
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+                .replace(/\*(.*)\*/gim, '<em>$1</em>')
+                .replace(/^- (.*$)/gim, '<li>$1</li>')
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+            if (!html.startsWith('<')) {
+                html = '<p>' + html + '</p>';
+            }
+            previewDiv.innerHTML = html;
+            break;
+        case 'json':
+            try {
+                const jsonData = JSON.parse(content);
+                previewDiv.innerHTML = '<pre><code>' + JSON.stringify(jsonData, null, 2) + '</code></pre>';
+            } catch (e) {
+                previewDiv.innerHTML = '<div class="text-danger">JSON inválido: ' + e.message + '</div>';
+            }
+            break;
+        case 'text':
+            previewDiv.innerHTML = '<p>' + content.replace(/\n/g, '</p><p>') + '</p>';
+            break;
+    }
+}
+
+// Actualizar vista previa automáticamente
+document.addEventListener('input', function(e) {
+    if (e.target.matches('textarea, input')) {
+        // Debounce para no actualizar demasiado frecuentemente
+        clearTimeout(window.previewTimeout);
+        window.previewTimeout = setTimeout(updatePreview, 500);
+    }
+});
+</script>
+{% endblock %}

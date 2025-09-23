@@ -15,6 +15,13 @@ Uso: {% include "courses/partials/_quick_actions.html" %}
             <div class="quick-action-title">Vista General de Módulos</div>
             <div class="quick-action-desc">Administra todos tus módulos en un solo lugar</div>
         </a>
+        <a href="{% url 'courses:content_manager' %}" class="quick-action-item">
+            <div class="quick-action-icon">
+                <i class="bi bi-cubes"></i>
+            </div>
+            <div class="quick-action-title">Gestor de Contenido</div>
+            <div class="quick-action-desc">Crea y administra bloques de contenido reutilizable</div>
+        </a>
         <a href="{% url 'courses:manage_categories' %}" class="quick-action-item">
             <div class="quick-action-icon">
                 <i class="bi bi-tags"></i>

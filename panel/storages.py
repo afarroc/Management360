@@ -26,6 +26,11 @@ class RemoteMediaStorage(Storage):
             print("ERROR: File name is None or empty, cannot upload")
             raise Exception("Upload failed: No filename provided")
 
+        # Normalize file path - replace backslashes with forward slashes
+        # This prevents URL encoding issues with %5C
+        name = name.replace('\\', '/')
+        print(f"Normalized file name: {name}")
+
         # Get file content
         print("Reading file content...")
         if hasattr(content, 'read'):
@@ -89,15 +94,19 @@ class RemoteMediaStorage(Storage):
             else:
                 print(f"FAILED: Upload failed: {response.status_code} {response.text}")
                 print("=== UPLOAD FAILED - FALLING BACK TO LOCAL STORAGE ===")
-                # Let Django handle the failure by raising an exception
-                # This will cause Django to fall back to local storage
-                raise Exception(f"Upload failed: {response.status_code} {response.text}")
+                # Log the failure but don't raise exception - let Django fall back to local storage
+                print(f"no se ha subido la imagen al servidor, se guardara localmente")
+                raise Exception(f"Remote upload failed: {response.status_code} - {response.text}")
+        except requests.exceptions.RequestException as e:
+            print(f"NETWORK EXCEPTION: Could not connect to remote server: {e}")
+            print("=== NETWORK ERROR - FALLING BACK TO LOCAL STORAGE ===")
+            print(f"no se ha subido la imagen al servidor, se guardara localmente")
+            raise Exception(f"Network error: Could not connect to remote media server - {str(e)}")
         except Exception as e:
             print(f"EXCEPTION: Upload failed: {e}")
             print(f"Exception type: {type(e)}")
             print("=== UPLOAD EXCEPTION - FALLING BACK TO LOCAL STORAGE ===")
-            # Let Django handle the exception by re-raising it
-            # This will cause Django to fall back to local storage
+            print(f"no se ha subido la imagen al servidor, se guardara localmente")
             raise Exception(f"Upload failed: {str(e)}")
 
     def _open(self, name, mode='rb'):
