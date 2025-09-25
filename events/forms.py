@@ -1,7 +1,9 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.forms import inlineformset_factory
-from .models import Task, Event, Status, ProjectStatus, TaskStatus, Classification, Project, ProjectTemplate, TemplateTask, Tag
+from django.db.models import Q
+from django.utils import timezone
+from .models import Task, Event, Status, ProjectStatus, TaskStatus, Classification, Project, ProjectTemplate, TemplateTask, Tag, TaskSchedule, Reminder
 
 class CreateNewEvent(forms.ModelForm):
 
@@ -210,7 +212,7 @@ TemplateTaskFormSet = inlineformset_factory(
 # Formulario para recordatorios
 class ReminderForm(forms.ModelForm):
     class Meta:
-        model = None  # Se asignará dinámicamente
+        model = Reminder
         fields = ['title', 'description', 'remind_at', 'task', 'project', 'event', 'reminder_type']
         widgets = {
             'title': forms.TextInput(attrs={
@@ -258,10 +260,7 @@ class ReminderForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # Importar aquí para evitar circular imports
-        from .models import Reminder
-
-        # Asignar el modelo
-        self.Meta.model = Reminder
+        from .models import Task, Project, Event
 
         # Filtrar querysets por usuario si es necesario
         if self.user:
@@ -289,3 +288,250 @@ class ReminderForm(forms.ModelForm):
         if remind_at and remind_at <= timezone.now():
             raise forms.ValidationError('La fecha del recordatorio debe ser futura.')
         return remind_at
+
+    def save(self, user=None):
+        """Crear un recordatorio desde el formulario"""
+        from .models import Reminder
+
+        reminder = Reminder.objects.create(
+            title=self.cleaned_data['title'],
+            description=self.cleaned_data.get('description', ''),
+            remind_at=self.cleaned_data['remind_at'],
+            task=self.cleaned_data.get('task'),
+            project=self.cleaned_data.get('project'),
+            event=self.cleaned_data.get('event'),
+            reminder_type=self.cleaned_data['reminder_type'],
+            created_by=user
+        )
+        return reminder
+
+
+# Formulario para programaciones recurrentes de tareas
+class TaskScheduleForm(forms.ModelForm):
+    """
+    Formulario para crear y editar programaciones recurrentes de tareas
+    """
+    # Campo adicional para duración en horas
+    duration_hours = forms.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        min_value=0.25,
+        max_value=24,
+        initial=1.0,
+        help_text="Duración en horas (ej: 1.5 para 1 hora y 30 minutos)",
+        error_messages={
+            'required': 'La duración es obligatoria.',
+            'min_value': 'La duración mínima permitida es de 15 minutos (0.25 horas).',
+            'max_value': 'La duración máxima permitida es de 24 horas.',
+            'invalid': 'Ingrese una duración válida en horas (ej: 1.5).'
+        }
+    )
+
+    class Meta:
+        model = TaskSchedule
+        fields = [
+            'task', 'recurrence_type', 'monday', 'tuesday', 'wednesday',
+            'thursday', 'friday', 'saturday', 'sunday', 'start_time',
+            'start_date', 'end_date', 'is_active'
+        ]
+        widgets = {
+            'task': forms.Select(attrs={
+                'class': 'form-select',
+                'required': True
+            }),
+            'recurrence_type': forms.Select(attrs={
+                'class': 'form-select',
+                'id': 'id_recurrence_type'
+            }),
+            'monday': forms.CheckboxInput(attrs={
+                'class': 'form-check-input day-checkbox'
+            }),
+            'tuesday': forms.CheckboxInput(attrs={
+                'class': 'form-check-input day-checkbox'
+            }),
+            'wednesday': forms.CheckboxInput(attrs={
+                'class': 'form-check-input day-checkbox'
+            }),
+            'thursday': forms.CheckboxInput(attrs={
+                'class': 'form-check-input day-checkbox'
+            }),
+            'friday': forms.CheckboxInput(attrs={
+                'class': 'form-check-input day-checkbox'
+            }),
+            'saturday': forms.CheckboxInput(attrs={
+                'class': 'form-check-input day-checkbox'
+            }),
+            'sunday': forms.CheckboxInput(attrs={
+                'class': 'form-check-input day-checkbox'
+            }),
+            'start_time': forms.TimeInput(attrs={
+                'class': 'form-control',
+                'type': 'time',
+                'required': True
+            }),
+            'start_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date',
+                'required': True
+            }),
+            'end_date': forms.DateInput(attrs={
+                'class': 'form-control',
+                'type': 'date'
+            }),
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+        },
+        error_messages = {
+            'task': {
+                'required': 'Debes seleccionar una tarea para programar.',
+                'invalid_choice': 'La tarea seleccionada no es válida.'
+            },
+            'recurrence_type': {
+                'required': 'Debes seleccionar un tipo de recurrencia.',
+                'invalid_choice': 'El tipo de recurrencia seleccionado no es válido.'
+            },
+            'start_time': {
+                'required': 'La hora de inicio es obligatoria.',
+                'invalid': 'Ingresa una hora válida en formato HH:MM.'
+            },
+            'start_date': {
+                'required': 'La fecha de inicio es obligatoria.',
+                'invalid': 'Ingresa una fecha válida en formato YYYY-MM-DD.'
+            },
+            'end_date': {
+                'invalid': 'Ingresa una fecha válida en formato YYYY-MM-DD.'
+            }
+        }
+        labels = {
+            'task': 'Tarea a Programar',
+            'recurrence_type': 'Tipo de Recurrencia',
+            'monday': 'Lunes',
+            'tuesday': 'Martes',
+            'wednesday': 'Miércoles',
+            'thursday': 'Jueves',
+            'friday': 'Viernes',
+            'saturday': 'Sábado',
+            'sunday': 'Domingo',
+            'start_time': 'Hora de Inicio',
+            'start_date': 'Fecha de Inicio',
+            'end_date': 'Fecha de Fin (Opcional)',
+            'is_active': 'Programación Activa',
+        }
+        help_texts = {
+            'recurrence_type': 'Selecciona cómo se repetirá esta tarea',
+            'start_date': 'Fecha desde la que comenzarán las programaciones',
+            'end_date': 'Fecha hasta la que se repetirán las programaciones (deja vacío para indefinido)',
+            'is_active': 'Desmarca para pausar temporalmente esta programación',
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+
+        # Importar aquí para evitar circular imports
+        from .models import Task
+
+        # Filtrar tareas por usuario
+        if self.user:
+            self.fields['task'].queryset = Task.objects.filter(
+                Q(host=self.user) | Q(assigned_to=self.user)
+            ).distinct().order_by('title')
+
+        # Configurar campos condicionales
+        if self.instance and self.instance.pk:
+            # Si es edición, poblar el campo duration_hours
+            if hasattr(self.instance, 'duration'):
+                self.fields['duration_hours'].initial = self.instance.duration.total_seconds() / 3600
+
+        # Configurar tipos de datos específicos para mejor UX
+        self.fields['start_date'].widget.attrs.update({
+            'type': 'date',
+            'min': timezone.now().date().isoformat()
+        })
+        self.fields['end_date'].widget.attrs.update({
+            'type': 'date'
+        })
+        self.fields['start_time'].widget.attrs.update({
+            'type': 'time'
+        })
+
+    def clean(self):
+        cleaned_data = super().clean()
+        recurrence_type = cleaned_data.get('recurrence_type')
+        start_date = cleaned_data.get('start_date')
+        end_date = cleaned_data.get('end_date')
+        start_time = cleaned_data.get('start_time')
+        duration_hours = cleaned_data.get('duration_hours')
+
+        # Validar fecha de inicio no sea en el pasado
+        if start_date and start_date < timezone.now().date():
+            raise forms.ValidationError({
+                'start_date': 'La fecha de inicio debe ser hoy o una fecha futura. No se permiten fechas pasadas.'
+            })
+
+        # Validar fechas
+        if start_date and end_date and start_date > end_date:
+            raise forms.ValidationError({
+                'end_date': 'La fecha de fin debe ser posterior a la fecha de inicio. Corrige las fechas para continuar.'
+            })
+
+        # Validar duración razonable
+        if duration_hours and (duration_hours < 0.25 or duration_hours > 24):
+            raise forms.ValidationError({
+                'duration_hours': 'La duración debe estar entre 15 minutos (0.25 horas) y 24 horas. Ajusta el tiempo estimado.'
+            })
+
+        # Validar que al menos un día esté seleccionado para recurrencia semanal
+        if recurrence_type == 'weekly':
+            days_selected = [
+                cleaned_data.get('monday', False),
+                cleaned_data.get('tuesday', False),
+                cleaned_data.get('wednesday', False),
+                cleaned_data.get('thursday', False),
+                cleaned_data.get('friday', False),
+                cleaned_data.get('saturday', False),
+                cleaned_data.get('sunday', False)
+            ]
+            if not any(days_selected):
+                raise forms.ValidationError({
+                    'monday': 'Para la recurrencia semanal, debes seleccionar al menos un día de la semana.',
+                    'tuesday': 'Marca al menos un día para que la tarea se repita semanalmente.',
+                    'wednesday': 'Selecciona los días en que quieres que se ejecute esta tarea.',
+                    'thursday': 'Es obligatorio elegir al menos un día de la semana.',
+                    'friday': 'Por favor, indica qué días debe repetirse la tarea.',
+                    'saturday': 'Selecciona al menos un día para continuar con la configuración.',
+                    'sunday': 'Debes marcar al menos un día para la programación semanal.'
+                })
+
+        # Validar que la tarea no tenga ya una programación activa
+        task = cleaned_data.get('task')
+        if task:
+            from .models import TaskSchedule
+            existing_schedule = TaskSchedule.objects.filter(
+                task=task,
+                is_active=True
+            ).exclude(pk=self.instance.pk if self.instance else None)
+            if existing_schedule.exists():
+                raise forms.ValidationError({
+                    'task': f'La tarea "{task.title}" ya tiene una programación activa. Para crear una nueva, primero desactiva la programación existente.'
+                })
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+
+        # Asignar el usuario host
+        if self.user:
+            instance.host = self.user
+
+        # Convertir duration_hours a DurationField
+        duration_hours = self.cleaned_data.get('duration_hours', 1.0)
+        from datetime import timedelta
+        instance.duration = timedelta(hours=float(duration_hours))
+
+        if commit:
+            instance.save()
+
+        return instance

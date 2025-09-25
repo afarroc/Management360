@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CourseCategory, Course, Module, Lesson, Enrollment, Progress, Review, LessonAttachment
+from .models import CourseCategory, Course, Module, Lesson, Enrollment, Progress, Review, LessonAttachment, ContentBlock
 
 @admin.register(CourseCategory)
 class CourseCategoryAdmin(admin.ModelAdmin):
@@ -151,3 +151,38 @@ class LessonAttachmentAdmin(admin.ModelAdmin):
     def get_file_size_display(self, obj):
         return obj.get_file_size_display()
     get_file_size_display.short_description = 'Tamaño del Archivo'
+@admin.register(ContentBlock)
+class ContentBlockAdmin(admin.ModelAdmin):
+    list_display = ['title', 'content_type', 'author', 'category', 'is_public', 'is_featured', 'usage_count', 'created_at']
+    list_filter = ['content_type', 'is_public', 'is_featured', 'author', 'category', 'created_at']
+    search_fields = ['title', 'description', 'tags', 'author__username']
+    prepopulated_fields = {'slug': ('title',)}
+    readonly_fields = ['usage_count', 'created_at', 'updated_at']
+    ordering = ['-updated_at']
+
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('title', 'slug', 'description', 'content_type', 'category', 'tags')
+        }),
+        ('Contenido', {
+            'fields': ('html_content', 'json_content', 'markdown_content'),
+            'classes': ('collapse',)
+        }),
+        ('Configuración', {
+            'fields': ('author', 'is_public', 'is_featured')
+        }),
+        ('Estadísticas', {
+            'fields': ('usage_count', 'created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def get_tags_display(self, obj):
+        """Muestra las etiquetas como lista legible"""
+        tags = obj.get_tags_list()
+        return ', '.join(tags) if tags else 'Sin etiquetas'
+    get_tags_display.short_description = 'Etiquetas'
+
+    def get_queryset(self, request):
+        """Optimizar consultas incluyendo autor"""
+        return super().get_queryset(request).select_related('author')

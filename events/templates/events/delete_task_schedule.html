@@ -1,0 +1,93 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Eliminar Programación{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="card-title">
+                        <i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación
+                    </h3>
+                </div>
+
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-warning"></i>
+                        <strong>¡Atención!</strong> Esta acción no se puede deshacer.
+                    </div>
+
+                    <p>¿Estás seguro de que quieres eliminar la siguiente programación recurrente?</p>
+
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ schedule.task.title }}</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Tipo:</strong> {{ schedule.get_recurrence_type_display }}</li>
+                                <li><strong>Días:</strong> {{ schedule.get_selected_days_display }}</li>
+                                <li><strong>Hora:</strong> {{ schedule.start_time|time:"H:i" }}</li>
+                                <li><strong>Duración:</strong> {{ schedule.duration|time:"H:i" }} horas</li>
+                                <li><strong>Inicio:</strong> {{ schedule.start_date|date:"d/m/Y" }}</li>
+                                <li><strong>Fin:</strong>
+                                    {% if schedule.end_date %}
+                                        {{ schedule.end_date|date:"d/m/Y" }}
+                                    {% else %}
+                                        Indefinido
+                                    {% endif %}
+                                </li>
+                                <li><strong>Estado:</strong>
+                                    {% if schedule.is_active %}
+                                        <span class="badge badge-success">Activa</span>
+                                    {% else %}
+                                        <span class="badge badge-secondary">Inactiva</span>
+                                    {% endif %}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <p class="text-muted">
+                            <small>
+                                <i class="fas fa-info-circle"></i>
+                                Al eliminar esta programación, no se eliminarán las programaciones individuales (TaskProgram)
+                                que ya hayan sido creadas. Solo se detendrá la generación automática de nuevas ocurrencias.
+                            </small>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Sí, Eliminar Programación
+                        </button>
+                    </form>
+                    <a href="{% url 'task_schedule_detail' schedule.id %}" class="btn btn-secondary ml-2">
+                        <i class="fas fa-times"></i> Cancelar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Confirmación adicional antes de eliminar
+    $('form').on('submit', function(e) {
+        if (!confirm('¿Estás completamente seguro de que quieres eliminar esta programación recurrente? Esta acción no se puede deshacer.')) {
+            e.preventDefault();
+            return false;
+        }
+        return true;
+    });
+});
+</script>
+{% endblock %}

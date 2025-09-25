@@ -421,6 +421,33 @@
     box-shadow: 0 2px 4px rgba(13, 110, 253, 0.2);
 }
 
+/* Estilos para imágenes incrustadas en lecciones */
+.lesson-image-container {
+    margin: 1.5rem 0;
+    text-align: center;
+}
+
+.lesson-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.lesson-image:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.lesson-image-caption {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+}
+
 /* Estilos responsivos */
 @media (max-width: 768px) {
     .attached-files-grid {
@@ -445,6 +472,26 @@
 
     .file-actions {
         justify-content: center;
+    }
+
+    .lesson-image-container {
+        margin: 1rem 0;
+    }
+
+    .lesson-image {
+        border-radius: 6px;
+    }
+}
+
+/* Para pantallas muy pequeñas */
+@media (max-width: 480px) {
+    .lesson-image-container {
+        margin: 0.75rem 0;
+    }
+
+    .lesson-image-caption {
+        font-size: 0.8rem;
+        margin-top: 0.5rem;
     }
 }
 </style>

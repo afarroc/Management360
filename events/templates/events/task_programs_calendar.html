@@ -1,0 +1,186 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        <i class="bi bi-calendar-week me-2"></i>{{ title }}
+                    </h3>
+                    <div class="btn-group" role="group">
+                        <a href="{{ urls.today }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-calendar-today"></i> Hoy
+                        </a>
+                        <a href="{{ urls.this_week }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-calendar-week"></i> Esta Semana
+                        </a>
+                        <a href="?start_date={{ prev_week|date:'Y-m-d' }}&weeks={{ weeks_param }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-chevron-left"></i> Anterior
+                        </a>
+                        <a href="?start_date={{ next_week|date:'Y-m-d' }}&weeks={{ weeks_param }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-chevron-right"></i> Siguiente
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Estadísticas -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h4 class="card-title mb-0">{{ total_programs }}</h4>
+                                    <small>Programas Totales</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h4 class="card-title mb-0">{{ total_hours|floatformat:1 }}</h4>
+                                    <small>Horas Programadas</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h4 class="card-title mb-0">{{ calendar_data|length }}</h4>
+                                    <small>Días Mostrados</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-white">
+                                <div class="card-body text-center">
+                                    <h4 class="card-title mb-0">{{ weeks_param }}</h4>
+                                    <small>Semanas</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calendario semanal -->
+                    <div class="calendar-container">
+                        <div class="row">
+                            {% for date, day_data in calendar_data.items %}
+                            <div class="col-md-12 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-header {% if date == today %}bg-primary text-white{% else %}bg-light{% endif %}">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-calendar-day me-2"></i>
+                                            {{ date|date:"l, d/m/Y" }}
+                                            {% if date == today %}
+                                                <span class="badge bg-light text-primary ms-2">Hoy</span>
+                                            {% endif %}
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if day_data.programs %}
+                                            <div class="row">
+                                                {% for program_data in day_data.programs %}
+                                                <div class="col-md-6 col-lg-4 mb-3">
+                                                    <div class="card border-left-primary h-100">
+                                                        <div class="card-body">
+                                                            <h6 class="card-title">
+                                                                <i class="bi bi-clock me-1"></i>
+                                                                {{ program_data.start_time|time:"H:i" }}
+                                                                {% if program_data.end_time %}
+                                                                    - {{ program_data.end_time|time:"H:i" }}
+                                                                {% endif %}
+                                                            </h6>
+                                                            <p class="card-text mb-2">
+                                                                <strong>{{ program_data.task_title }}</strong>
+                                                            </p>
+                                                            {% if program_data.duration %}
+                                                            <p class="card-text">
+                                                                <small class="text-muted">
+                                                                    <i class="bi bi-hourglass me-1"></i>
+                                                                    Duración: {{ program_data.duration }}
+                                                                </small>
+                                                            </p>
+                                                            {% endif %}
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <span class="badge bg-secondary">
+                                                                    {{ program_data.task_status }}
+                                                                </span>
+                                                                {% if program_data.program.task.schedule %}
+                                                                <a href="{% url 'task_schedule_detail' program_data.program.task.schedule.id %}"
+                                                                   class="btn btn-sm btn-outline-primary">
+                                                                    <i class="bi bi-eye"></i> Ver
+                                                                </a>
+                                                                {% else %}
+                                                                <span class="text-muted small">Sin programación</span>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <div class="text-center text-muted py-4">
+                                                <i class="bi bi-calendar-x display-4"></i>
+                                                <p class="mt-2">No hay programas para este día</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Mostrando del {{ start_date|date:"d/m/Y" }} al {{ end_date|date:"d/m/Y" }}
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="{% url 'task_schedules' %}" class="btn btn-outline-secondary btn-sm">
+                                <i class="bi bi-arrow-left me-1"></i> Volver a Programaciones
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.calendar-container {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.card.border-left-primary {
+    border-left: 4px solid #007bff !important;
+}
+
+@media (max-width: 768px) {
+    .calendar-container {
+        max-height: none;
+        overflow-y: visible;
+    }
+
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-group .btn {
+        margin-bottom: 0.25rem;
+    }
+}
+</style>
+{% endblock %}

@@ -29,8 +29,36 @@
 
       <div class="card">
         <div class="card-body">
-          <h5 class="card-title">Example Card</h5>
-          <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.</p>
+          <h5 class="card-title">
+            <i class="bi bi-info-circle text-primary me-2"></i>
+            Acerca de Management360
+          </h5>
+          <p>Management360 es una plataforma integral de gestión de proyectos y productividad que combina múltiples herramientas especializadas para optimizar el flujo de trabajo.</p>
+          <p>Nuestra plataforma incluye módulos para gestión de eventos, tareas, proyectos, cursos en línea, análisis de KPIs, y mucho más.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">
+            <i class="bi bi-book text-success me-2"></i>
+            Documentación y Recursos
+          </h5>
+          <p>Accede a la documentación completa de nuestras aplicaciones y herramientas:</p>
+          <div class="d-grid gap-2">
+            <a href="{% static 'courses/README.md' %}" class="btn btn-success btn-sm" target="_blank">
+              <i class="bi bi-file-earmark-text me-2"></i>
+              Documentación App Courses
+            </a>
+            <a href="{% url 'faq' %}" class="btn btn-primary btn-sm">
+              <i class="bi bi-question-circle me-2"></i>
+              Preguntas Frecuentes
+            </a>
+            <a href="/docs/faq/gtd_inbox_processing_guide.md" class="btn btn-info btn-sm" target="_blank">
+              <i class="bi bi-lightbulb me-2"></i>
+              Guía GTD Inbox
+            </a>
+          </div>
         </div>
       </div>
 
@@ -40,8 +68,41 @@
 
       <div class="card">
         <div class="card-body">
-          <h5 class="card-title">Example Card</h5>
-          <p>This is an examle page with no contrnt. You can use it as a starter for your custom pages.</p>
+          <h5 class="card-title">
+            <i class="bi bi-gear text-warning me-2"></i>
+            Aplicaciones Disponibles
+          </h5>
+          <div class="row">
+            <div class="col-6">
+              <ul class="list-unstyled">
+                <li><i class="bi bi-check-circle text-success me-2"></i>Gestión de Eventos</li>
+                <li><i class="bi bi-check-circle text-success me-2"></i>Proyectos y Tareas</li>
+                <li><i class="bi bi-check-circle text-success me-2"></i>Cursos en Línea</li>
+                <li><i class="bi bi-check-circle text-success me-2"></i>Análisis KPIs</li>
+              </ul>
+            </div>
+            <div class="col-6">
+              <ul class="list-unstyled">
+                <li><i class="bi bi-check-circle text-success me-2"></i>Generador de CVs</li>
+                <li><i class="bi bi-check-circle text-success me-2"></i>Chat y Comunicación</li>
+                <li><i class="bi bi-check-circle text-success me-2"></i>Gestión de Salas</li>
+                <li><i class="bi bi-check-circle text-success me-2"></i>Herramientas</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">
+            <i class="bi bi-code-slash text-info me-2"></i>
+            Información Técnica
+          </h5>
+          <p><strong>Framework:</strong> Django 5.2.3</p>
+          <p><strong>Base de datos:</strong> PostgreSQL/SQLite</p>
+          <p><strong>Frontend:</strong> Bootstrap 5, JavaScript</p>
+          <p><strong>Arquitectura:</strong> MVC con apps modulares</p>
         </div>
       </div>
 

@@ -104,6 +104,21 @@ urlpatterns = [
     path('tasks/bulk-action/', views.task_bulk_action, name='task_bulk_action'),
     path('tasks/status/ajax/', views.task_change_status_ajax, name='task_change_status_ajax'),
 
+    # Task Scheduling (Programaciones recurrentes)
+    path('tasks/schedules/', views.task_schedules, name='task_schedules'),
+    path('tasks/schedules/create/', views.create_task_schedule, name='create_task_schedule'),
+    path('tasks/schedules/<int:schedule_id>/', views.task_schedule_detail, name='task_schedule_detail'),
+    path('tasks/schedules/<int:pk>/edit/', views.TaskScheduleEditView.as_view(), name='edit_task_schedule'),
+    path('tasks/schedules/<int:schedule_id>/edit/enhanced/', views.edit_task_schedule, name='edit_task_schedule_enhanced'),
+    path('tasks/schedules/<int:schedule_id>/preview/', views.task_schedule_preview, name='task_schedule_preview'),
+    path('tasks/schedules/<int:schedule_id>/delete/', views.delete_task_schedule, name='delete_task_schedule'),
+    path('tasks/schedules/<int:schedule_id>/generate/', views.generate_schedule_occurrences, name='generate_schedule_occurrences'),
+    path('tasks/schedules/admin/', views.schedule_admin_dashboard, name='schedule_admin_dashboard'),
+    path('tasks/schedules/admin/bulk-action/', views.schedule_admin_bulk_action, name='schedule_admin_bulk_action'),
+    path('schedules/users/', views.user_schedules_panel, name='user_schedules_panel'),
+    path('planning/', views.planning_task, name='planning_task'),
+    path('task_programs_calendar/', views.task_programs_calendar, name='task_programs_calendar'),
+
     # ============================================================================
     # GTD (GETTING THINGS DONE) SYSTEM
     # ============================================================================

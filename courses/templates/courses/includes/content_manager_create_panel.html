@@ -1,0 +1,97 @@
+<!-- Panel Lateral para Crear Bloques -->
+<div class="create-panel">
+    <div class="panel-header">
+        <h6 class="panel-title">
+            <i class="bi bi-plus-circle me-2"></i>
+            Crear Nuevo Bloque
+        </h6>
+        <button class="btn-close" onclick="closeCreatePanel()" aria-label="Cerrar"></button>
+    </div>
+
+    <div class="panel-content">
+        <!-- Selector de Tipo -->
+        <div class="mb-3">
+            <label class="form-label">Tipo de Contenido</label>
+            <select class="form-select" id="panelContentType" onchange="changePanelContentType()">
+                <option value="">Seleccionar tipo...</option>
+                <option value="html">HTML/Bootstrap</option>
+                <option value="markdown">Markdown</option>
+                <option value="json">Estructurado JSON</option>
+                <option value="text">Texto Simple</option>
+                <option value="image">Imagen</option>
+                <option value="video">Video</option>
+                <option value="code">Código</option>
+                <option value="list">Lista</option>
+                <option value="table">Tabla</option>
+                <option value="card">Tarjeta</option>
+                <option value="alert">Alerta</option>
+                <option value="button">Botón</option>
+                <option value="form">Formulario</option>
+                <option value="quote">Cita</option>
+                <option value="divider">Separador</option>
+                <option value="icon">Ícono</option>
+                <option value="progress">Barra de Progreso</option>
+                <option value="badge">Insignia</option>
+                <option value="timeline">Línea de Tiempo</option>
+            </select>
+        </div>
+
+        <!-- Formulario de Creación -->
+        <form id="panelCreateForm" method="post" action="{% url 'courses:create_content_block_default' %}" style="display: none;">
+            {% csrf_token %}
+            <input type="hidden" name="block_type" id="panelBlockType">
+
+            <!-- Campos Básicos -->
+            <div class="mb-3">
+                <label class="form-label">Título *</label>
+                <input type="text" class="form-control" name="title" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Descripción</label>
+                <textarea class="form-control" name="description" rows="2"></textarea>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Categoría</label>
+                    <input type="text" class="form-control" name="category" placeholder="ej: Introducción, Avanzado">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Etiquetas</label>
+                    <input type="text" class="form-control" name="tags" placeholder="separadas por coma">
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="is_public" id="panelIsPublic">
+                    <label class="form-check-label" for="panelIsPublic">
+                        Bloque público (visible para otros tutores)
+                    </label>
+                </div>
+            </div>
+
+            <!-- Campos Dinámicos por Tipo -->
+            <div id="panelDynamicFields"></div>
+
+            <!-- Botones de Acción -->
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle me-1"></i>
+                    Crear Bloque
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="closeCreatePanel()">
+                    <i class="bi bi-x-circle me-1"></i>
+                    Cancelar
+                </button>
+            </div>
+        </form>
+
+        <!-- Mensaje Inicial -->
+        <div id="panelInitialMessage" class="text-center py-4">
+            <i class="bi bi-arrow-up-circle fs-1 text-muted mb-3"></i>
+            <p class="text-muted">Selecciona un tipo de contenido para comenzar</p>
+        </div>
+    </div>
+</div>

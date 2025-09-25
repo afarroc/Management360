@@ -5,6 +5,8 @@ from .views import (
     FileDeleteView, DocumentListView
 )
 
+app_name = 'cv'
+
 urlpatterns = [
     path('', CurriculumDetailView.as_view(), name='cv_detail'),
     path('editar/', CurriculumUpdateView.as_view(), name='cv_edit'),

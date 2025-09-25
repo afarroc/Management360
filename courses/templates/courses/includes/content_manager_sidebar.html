@@ -1,0 +1,65 @@
+<!-- Sidebar de Navegación -->
+<div class="sidebar-nav">
+    <div class="sidebar-header">
+        <h5 class="sidebar-title">
+            <i class="bi bi-grid-3x3-gap me-2"></i>
+            CMS
+        </h5>
+    </div>
+
+    <nav class="sidebar-menu">
+        <a href="#dashboard" class="sidebar-link active" data-section="dashboard">
+            <i class="bi bi-house-door me-2"></i>
+            Dashboard
+        </a>
+
+        <a href="{% url 'courses:my_content_blocks' %}" class="sidebar-link">
+            <i class="bi bi-folder me-2"></i>
+            Mis Bloques
+            <span class="badge bg-primary ms-auto">{{ user_own_blocks }}</span>
+        </a>
+
+        <a href="{% url 'courses:public_content_blocks' %}" class="sidebar-link">
+            <i class="bi bi-globe me-2"></i>
+            Biblioteca
+        </a>
+
+        <a href="{% url 'courses:featured_content_blocks' %}" class="sidebar-link">
+            <i class="bi bi-star me-2"></i>
+            Destacados
+        </a>
+
+        <div class="sidebar-divider"></div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">Crear Bloque</div>
+            <a href="#" class="sidebar-link" onclick="openCreatePanel('html')">
+                <i class="bi bi-code-slash me-2"></i>
+                HTML/Bootstrap
+            </a>
+            <a href="#" class="sidebar-link" onclick="openCreatePanel('markdown')">
+                <i class="bi bi-markdown me-2"></i>
+                Markdown
+            </a>
+            <a href="#" class="sidebar-link" onclick="openCreatePanel('json')">
+                <i class="bi bi-braces me-2"></i>
+                Estructurado
+            </a>
+            <a href="#" class="sidebar-link" onclick="openCreatePanel('text')">
+                <i class="bi bi-textarea-t me-2"></i>
+                Texto Simple
+            </a>
+            <a href="#" class="sidebar-link" onclick="showCreateOptions()">
+                <i class="bi bi-plus-circle me-2"></i>
+                Más tipos...
+            </a>
+        </div>
+
+        <div class="sidebar-divider"></div>
+
+        <a href="{% url 'courses:dashboard' %}" class="sidebar-link">
+            <i class="bi bi-arrow-left me-2"></i>
+            Volver al Dashboard
+        </a>
+    </nav>
+</div>

@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from django.db import models
 from django.db.models import Q, Avg, Count, Prefetch
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 from .models import (
     Course, Module, Lesson, Enrollment,
     Progress, Review, CourseCategory, ContentBlock,
@@ -897,7 +897,7 @@ def modules_overview(request):
     """Vista general de todos los módulos del tutor"""
     if not hasattr(request.user, 'cv'):
         messages.error(request, 'Necesitas un perfil de tutor')
-        return redirect('cv:detail')
+        return redirect('home')
 
     # Obtener todos los cursos del tutor
     courses = Course.objects.filter(tutor=request.user).prefetch_related('modules__lessons')
@@ -1442,7 +1442,7 @@ def content_manager(request):
     """Panel principal de gestión de contenido - CMS integrado"""
     if not hasattr(request.user, 'cv'):
         messages.error(request, 'Necesitas un perfil de tutor para acceder al gestor de contenido')
-        return redirect('cv:detail')
+        return redirect('home')
 
     # Obtener bloques del usuario y públicos
     user_blocks = ContentBlock.objects.filter(
@@ -1528,7 +1528,7 @@ def create_content_block(request, block_type='html'):
     """Crear un nuevo bloque de contenido"""
     if not hasattr(request.user, 'cv'):
         messages.error(request, 'Necesitas un perfil de tutor para crear contenido')
-        return redirect('cv:detail')
+        return redirect('cv:cv_detail')
 
     if request.method == 'POST':
         title = request.POST.get('title')
@@ -1571,7 +1571,9 @@ def create_content_block(request, block_type='html'):
             }
         elif block_type == 'video':
             block.json_content = {
-                'url': request.POST.get('video_url', '')
+                'url': request.POST.get('video_url', ''),
+                'description': request.POST.get('video_description', ''),
+                'duration': request.POST.get('video_duration', '')
             }
         elif block_type == 'quote':
             block.json_content = {
@@ -1581,6 +1583,7 @@ def create_content_block(request, block_type='html'):
         elif block_type == 'code':
             block.json_content = {
                 'language': request.POST.get('code_language', 'text'),
+                'title': request.POST.get('code_title', ''),
                 'code': request.POST.get('code_content', '')
             }
         elif block_type == 'list':
@@ -1718,7 +1721,9 @@ def edit_content_block(request, slug):
             }
         elif block.content_type == 'video':
             block.json_content = {
-                'url': request.POST.get('video_url', '')
+                'url': request.POST.get('video_url', ''),
+                'description': request.POST.get('video_description', ''),
+                'duration': request.POST.get('video_duration', '')
             }
         elif block.content_type == 'quote':
             block.json_content = {
@@ -1728,6 +1733,7 @@ def edit_content_block(request, slug):
         elif block.content_type == 'code':
             block.json_content = {
                 'language': request.POST.get('code_language', 'text'),
+                'title': request.POST.get('code_title', ''),
                 'code': request.POST.get('code_content', '')
             }
         elif block.content_type == 'list':
@@ -1964,7 +1970,7 @@ def duplicate_content_block(request, slug):
         return redirect('courses:edit_content_block', slug=new_block.slug)
 
     return render(request, 'courses/duplicate_content_block.html', {
-        'block': original_block,
+        'content_block': original_block,
     })
 
 @require_POST
@@ -2267,3 +2273,28 @@ def toggle_lesson_published(request, slug):
         'success': True,
         'is_published': lesson.is_published
     })
+
+
+@require_GET
+def courses_docs(request):
+    """Vista para mostrar la documentación de la app courses (README.md)"""
+    try:
+        # Leer el archivo README.md
+        readme_path = os.path.join(os.path.dirname(__file__), 'README.md')
+        with open(readme_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        context = {
+            'title': 'Documentación - App Courses',
+            'content': content,
+            'page_title': 'Documentación de la App Courses'
+        }
+
+        return render(request, 'courses/docs.html', context)
+
+    except FileNotFoundError:
+        messages.error(request, 'Archivo de documentación no encontrado')
+        return redirect('courses:index')
+    except Exception as e:
+        messages.error(request, f'Error al cargar la documentación: {str(e)}')
+        return redirect('courses:index')

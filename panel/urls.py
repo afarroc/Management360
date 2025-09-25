@@ -20,7 +20,7 @@ urlpatterns = [
     path('campaigns/', include('campaigns.urls')),
     path('chat/', include('chat.urls', namespace='chat')),
     path('courses/', include('courses.urls')),
-    path('cv/', include('cv.urls')),
+    path('cv/', include('cv.urls', namespace='cv')),
     path('events/', include('events.urls')),
     path('kpis/', include('kpis.urls')),
     path('memento/', include('memento.urls')),
