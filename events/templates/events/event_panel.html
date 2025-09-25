@@ -134,6 +134,46 @@
                 </div>
             </div>
 
+            <!-- Task Scheduling System Panel -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="bi bi-calendar-check me-2"></i>Task Scheduling System</h5>
+                        <p class="text-muted small mb-3">Create and manage recurring task schedules with automatic program generation</p>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <a href="{% url 'task_schedules' %}" class="btn btn-outline-primary btn-sm w-100">
+                                    <i class="bi bi-list-check me-1"></i> My Schedules
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="{% url 'create_task_schedule' %}" class="btn btn-outline-success btn-sm w-100">
+                                    <i class="bi bi-plus-circle me-1"></i> Create Schedule
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="{% url 'task_programs_calendar' %}" class="btn btn-outline-info btn-sm w-100">
+                                    <i class="bi bi-calendar-week me-1"></i> Weekly Calendar
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="{% url 'task_panel' %}" class="btn btn-outline-secondary btn-sm w-100">
+                                    <i class="bi bi-kanban me-1"></i> Task Panel
+                                </a>
+                            </div>
+                        </div>
+                        {% if user.is_superuser %}
+                        <hr class="my-3">
+                        <div class="text-center">
+                            <a href="{% url 'schedule_admin_dashboard' %}" class="btn btn-outline-dark btn-sm">
+                                <i class="bi bi-shield-check me-1"></i> Admin Dashboard
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
             {% include 'events/control/control.html' %}
             {% include 'events/includes/event_top.html' %}
 

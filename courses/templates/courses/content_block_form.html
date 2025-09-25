@@ -620,10 +620,20 @@ Este es un párrafo con **texto en negrita** e *itálica*.
                                     <label for="id_video_url" class="form-label">
                                         <i class="bi bi-play-circle me-1"></i>URL del Video
                                     </label>
-                                    <input type="url" name="video_url" id="id_video_url" class="form-control"
+                                    <input type="url" name="video_url" id="id_video_url" class="form-control mb-2"
                                            placeholder="https://www.youtube.com/embed/..." value="{{ content_block.json_content.url|default:'' }}">
-                                    <div class="form-text">
+                                    <div class="form-text mb-3">
                                         URL de embed de YouTube, Vimeo, etc.
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <input type="text" name="video_description" class="form-control"
+                                                   placeholder="Descripción del video" value="{{ content_block.json_content.description|default:'' }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="number" name="video_duration" class="form-control"
+                                                   placeholder="Duración en minutos" min="1" value="{{ content_block.json_content.duration|default:'' }}">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -646,7 +656,7 @@ Este es un párrafo con **texto en negrita** e *itálica*.
                                         <i class="bi bi-code me-1"></i>Configuración de Código
                                     </label>
                                     <div class="row mb-2">
-                                        <div class="col-md-4">
+                                        <div class="col-md-6">
                                             <select name="code_language" class="form-select">
                                                 <option value="text" {% if content_block.json_content.language == 'text' %}selected{% endif %}>Texto</option>
                                                 <option value="python" {% if content_block.json_content.language == 'python' %}selected{% endif %}>Python</option>
@@ -655,6 +665,10 @@ Este es un párrafo con **texto en negrita** e *itálica*.
                                                 <option value="css" {% if content_block.json_content.language == 'css' %}selected{% endif %}>CSS</option>
                                                 <option value="json" {% if content_block.json_content.language == 'json' %}selected{% endif %}>JSON</option>
                                             </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="text" name="code_title" class="form-control"
+                                                   placeholder="Título del código (opcional)" value="{{ content_block.json_content.title|default:'' }}">
                                         </div>
                                     </div>
                                     <textarea name="code_content" class="form-control code-editor"
@@ -1194,7 +1208,9 @@ function updatePreview() {
             break;
         case 'video':
             content = JSON.stringify({
-                url: formData.get('video_url') || ''
+                url: formData.get('video_url') || '',
+                description: formData.get('video_description') || '',
+                duration: formData.get('video_duration') || ''
             });
             break;
         case 'quote':
@@ -1206,6 +1222,7 @@ function updatePreview() {
         case 'code':
             content = JSON.stringify({
                 language: formData.get('code_language') || 'text',
+                title: formData.get('code_title') || '',
                 code: formData.get('code_content') || ''
             });
             break;

@@ -4,321 +4,259 @@
 {% block title %}{{ title }} - Management360{% endblock %}
 
 {% block extra_head %}
-<style>
-.content-manager-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 2rem 0;
-    margin-bottom: 2rem;
-}
+<!-- CSS para el Gestor de Contenido -->
+<link rel="stylesheet" href="{% static 'css/content_manager.css' %}">
+{% endblock %}
 
-.cms-stats {
-    background: white;
-    border-radius: 15px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.cms-functions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.cms-function-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    text-decoration: none;
-    color: inherit;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-}
-
-.cms-function-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    text-decoration: none;
-    color: inherit;
-}
-
-.cms-function-card.bg-primary {
-    border-color: rgba(13, 110, 253, 0.2);
-}
-
-.cms-function-card.bg-info {
-    border-color: rgba(13, 202, 240, 0.2);
-}
-
-.cms-function-card.bg-success {
-    border-color: rgba(25, 135, 84, 0.2);
-}
-
-.cms-function-card.bg-warning {
-    border-color: rgba(255, 193, 7, 0.2);
-}
-
-.cms-function-card.bg-secondary {
-    border-color: rgba(108, 117, 125, 0.2);
-}
-
-.cms-function-card.bg-dark {
-    border-color: rgba(33, 37, 41, 0.2);
-}
-
-.function-icon {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    opacity: 0.8;
-}
-
-.function-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-}
-
-.function-description {
-    font-size: 0.9rem;
-    opacity: 0.8;
-    margin-bottom: 1rem;
-}
-
-.recent-blocks {
-    background: white;
-    border-radius: 15px;
-    padding: 2rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-
-.block-card {
-    border: 1px solid #e9ecef;
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    transition: all 0.3s ease;
-}
-
-.block-card:hover {
-    border-color: #0d6efd;
-    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.1);
-}
-
-.block-title {
-    font-weight: 600;
-    color: #2d3748;
-    margin-bottom: 0.5rem;
-}
-
-.block-meta {
-    font-size: 0.875rem;
-    color: #718096;
-    margin-bottom: 0.5rem;
-}
-
-.block-description {
-    font-size: 0.9rem;
-    color: #4a5568;
-    margin-bottom: 1rem;
-}
-
-.block-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.btn-sm-custom {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.875rem;
-    border-radius: 6px;
-}
-
-.stats-number {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #2d3748;
-}
-
-.stats-label {
-    font-size: 0.875rem;
-    color: #718096;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-@media (max-width: 768px) {
-    .cms-functions-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .content-manager-header {
-        padding: 1.5rem 0;
-    }
-
-    .cms-stats {
-        padding: 1.5rem;
-    }
-
-    .recent-blocks {
-        padding: 1.5rem;
-    }
-}
-</style>
+{% block extra_js %}
+<!-- JavaScript para el Gestor de Contenido -->
+<script src="{% static 'js/content_manager.js' %}"></script>
+<script src="{% static 'js/content_manager_forms.js' %}"></script>
 {% endblock %}
 
 {% block course_content %}
-<!-- Header -->
-<div class="content-manager-header">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-8">
-                <h1 class="display-4 fw-bold mb-3">
-                    <i class="bi bi-grid-3x3-gap me-3"></i>
-                    Gestor de Contenido
-                </h1>
-                <p class="lead mb-0">
-                    Crea, gestiona y reutiliza bloques de contenido HTML, Bootstrap y Markdown para tus cursos
-                </p>
+<div class="content-manager-layout">
+    <!-- Sidebar de Navegación -->
+    <div class="content-sidebar">
+        {% include "courses/includes/content_manager_sidebar.html" %}
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="content-main">
+        <!-- Header Compacto -->
+        <div class="content-header">
+            {% include "courses/includes/content_manager_header_compact.html" %}
+        </div>
+
+        <!-- Dashboard Principal -->
+        <div class="content-dashboard">
+            <!-- Estadísticas Rápidas -->
+            <div class="stats-overview">
+                {% include "courses/includes/content_manager_stats.html" %}
             </div>
-            <div class="col-lg-4 text-lg-end">
-                <div class="mt-4">
-                    <i class="bi bi-blockquote-left fs-1 text-white-50"></i>
+
+            <!-- Sistema de Creación Simplificado -->
+            <div class="creation-system">
+                <div class="creation-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-plus-circle me-2 text-primary"></i>
+                        Crear Nuevo Bloque de Contenido
+                    </h4>
+                    <p class="text-muted mb-0">Selecciona una categoría y tipo de contenido</p>
                 </div>
+
+                <!-- Selector de Categorías -->
+                <div class="categories-selector">
+                    <div class="categories-grid">
+                        <div class="category-card" data-category="text">
+                            <div class="category-icon">
+                                <i class="bi bi-textarea-t text-info"></i>
+                            </div>
+                            <div class="category-info">
+                                <div class="category-name">Contenido de Texto</div>
+                                <div class="category-desc">Texto, Markdown, citas</div>
+                            </div>
+                        </div>
+
+                        <div class="category-card" data-category="media">
+                            <div class="category-icon">
+                                <i class="bi bi-play-circle text-success"></i>
+                            </div>
+                            <div class="category-info">
+                                <div class="category-name">Multimedia</div>
+                                <div class="category-desc">Imágenes y videos</div>
+                            </div>
+                        </div>
+
+                        <div class="category-card" data-category="interactive">
+                            <div class="category-icon">
+                                <i class="bi bi-hand-index-thumb text-warning"></i>
+                            </div>
+                            <div class="category-info">
+                                <div class="category-name">Interactivos</div>
+                                <div class="category-desc">Botones, alertas, formularios</div>
+                            </div>
+                        </div>
+
+                        <div class="category-card" data-category="structural">
+                            <div class="category-icon">
+                                <i class="bi bi-grid-3x3-gap text-primary"></i>
+                            </div>
+                            <div class="category-info">
+                                <div class="category-name">Estructural</div>
+                                <div class="category-desc">HTML, listas, tablas, tarjetas</div>
+                            </div>
+                        </div>
+
+                        <div class="category-card" data-category="utility">
+                            <div class="category-icon">
+                                <i class="bi bi-gear text-secondary"></i>
+                            </div>
+                            <div class="category-info">
+                                <div class="category-name">Utilidades</div>
+                                <div class="category-desc">Código, íconos, separadores</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contenedor de Tipos de Contenido -->
+                <div id="contentTypesContainer" class="content-types-container" style="display: none;">
+                    <!-- Los tipos se cargarán dinámicamente aquí -->
+                </div>
+
+                <!-- Contenedor del Formulario -->
+                <div id="contentFormContainer" class="content-form-container" style="display: none;">
+                    <!-- El formulario se cargará dinámicamente aquí -->
+                </div>
+            </div>
+
+            <!-- Bloques Recientes -->
+            <div class="recent-blocks-section">
+                {% include "courses/includes/content_manager_recent_blocks.html" %}
             </div>
         </div>
     </div>
+
+    <!-- Panel Lateral Derecho (Crear Bloque) -->
+    <div class="content-panel" id="createPanel">
+        {% include "courses/includes/content_manager_create_panel.html" %}
+    </div>
+
+    <!-- Modal de Vista Previa -->
+    {% include "courses/includes/content_manager_modal.html" %}
 </div>
+<script>
+// Funciones legacy simplificadas para compatibilidad
+function previewBlock(slug) {
+    fetch(`/courses/content/${slug}/preview/`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('previewContent').innerHTML = html;
+            new bootstrap.Modal(document.getElementById('previewModal')).show();
+        })
+        .catch(error => {
+            console.error('Error loading preview:', error);
+            document.getElementById('previewContent').innerHTML = '<div class="alert alert-danger">Error al cargar la vista previa</div>';
+            new bootstrap.Modal(document.getElementById('previewModal')).show();
+        });
+}
 
-<div class="container">
-    <!-- Estadísticas -->
-    <div class="cms-stats">
-        <div class="row text-center">
-            <div class="col-md-3 col-6 mb-3">
-                <div class="stats-number">{{ total_blocks }}</div>
-                <div class="stats-label">Total de Bloques</div>
-            </div>
-            <div class="col-md-3 col-6 mb-3">
-                <div class="stats-number">{{ user_own_blocks }}</div>
-                <div class="stats-label">Mis Bloques</div>
-            </div>
-            <div class="col-md-3 col-6 mb-3">
-                <div class="stats-number">{{ featured_blocks }}</div>
-                <div class="stats-label">Destacados</div>
-            </div>
-            <div class="col-md-3 col-6 mb-3">
-                <div class="stats-number">{{ categories|length }}</div>
-                <div class="stats-label">Categorías</div>
-            </div>
-        </div>
-    </div>
+function duplicateBlock(slug) {
+    if (confirm('¿Estás seguro de que quieres duplicar este bloque?')) {
+        fetch(`/courses/content/${slug}/duplicate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error al duplicar el bloque');
+            }
+        });
+    }
+}
 
-    <!-- Funciones del CMS -->
-    <div class="cms-functions-grid">
-        {% for function in cms_functions %}
-        <a href="{% if function.params %}{% url function.url block_type=function.params.block_type %}{% else %}{% url function.url %}{% endif %}"
-           class="cms-function-card bg-{{ function.color }}">
-            <div class="text-center">
-                <div class="function-icon">
-                    <i class="{{ function.icon }}"></i>
-                </div>
-                <div class="function-title">{{ function.name }}</div>
-                <div class="function-description">{{ function.description }}</div>
-                <div class="btn btn-outline-light btn-sm">
-                    <i class="bi bi-arrow-right me-1"></i>Ir
-                </div>
-            </div>
-        </a>
-        {% endfor %}
-    </div>
+function deleteBlock(slug, title) {
+    if (confirm(`¿Estás seguro de que quieres eliminar el bloque "${title}"?`)) {
+        fetch(`/courses/content/${slug}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error al eliminar el bloque');
+            }
+        });
+    }
+}
 
-    <!-- Bloques recientes -->
-    {% if user_blocks %}
-    <div class="recent-blocks">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h3 class="mb-0">
-                <i class="bi bi-clock-history me-2 text-primary"></i>
-                Bloques Recientes
-            </h3>
-            <a href="{% url 'courses:my_content_blocks' %}" class="btn btn-outline-primary">
-                <i class="bi bi-arrow-right me-1"></i>Ver Todos
-            </a>
-        </div>
+// Funciones legacy del panel lateral (mantenidas por compatibilidad)
+function openCreatePanel(type) {
+    // Redirigir al nuevo sistema de categorías
+    if (window.contentManagerForms) {
+        // Si es un tipo simple, seleccionar la categoría correspondiente
+        const categoryMap = {
+            'html': 'structural', 'bootstrap': 'structural', 'text': 'text',
+            'markdown': 'text', 'image': 'media', 'video': 'media',
+            'json': 'structural'
+        };
+        const category = categoryMap[type] || 'utility';
+        window.contentManagerForms.selectCategory(category);
+        // Scroll to form
+        document.querySelector('.creation-system').scrollIntoView({ behavior: 'smooth' });
+    }
+}
 
-        <div class="row">
-            {% for block in user_blocks %}
-            <div class="col-lg-6 col-xl-4 mb-3">
-                <div class="block-card">
-                    <div class="block-title">
-                        <i class="bi bi-blockquote-left me-2 text-primary"></i>
-                        {{ block.title }}
-                    </div>
-                    <div class="block-meta">
-                        <span class="badge bg-{% if block.content_type == 'html' %}primary{% elif block.content_type == 'bootstrap' %}info{% elif block.content_type == 'markdown' %}success{% else %}secondary{% endif %} me-2">
-                            {{ block.get_content_type_display }}
-                        </span>
-                        {% if block.is_featured %}
-                        <span class="badge bg-warning me-2">
-                            <i class="bi bi-star-fill me-1"></i>Destacado
-                        </span>
-                        {% endif %}
-                        {% if block.is_public %}
-                        <span class="badge bg-success">
-                            <i class="bi bi-globe me-1"></i>Público
-                        </span>
-                        {% else %}
-                        <span class="badge bg-secondary">
-                            <i class="bi bi-lock me-1"></i>Privado
-                        </span>
-                        {% endif %}
-                    </div>
-                    {% if block.description %}
-                    <div class="block-description">
-                        {{ block.description|truncatechars:100 }}
-                    </div>
-                    {% endif %}
-                    <div class="block-actions">
-                        <a href="{% url 'courses:edit_content_block' block.slug %}" class="btn btn-primary btn-sm-custom">
-                            <i class="bi bi-pencil me-1"></i>Editar
-                        </a>
-                        <a href="{% url 'courses:preview_content_block' block.slug %}" class="btn btn-info btn-sm-custom">
-                            <i class="bi bi-eye me-1"></i>Vista Previa
-                        </a>
-                        <a href="{% url 'courses:duplicate_content_block' block.slug %}" class="btn btn-warning btn-sm-custom">
-                            <i class="bi bi-copy me-1"></i>Duplicar
-                        </a>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
+function closeCreatePanel() {
+    // Legacy function - no longer needed
+}
 
-    <!-- Información adicional -->
-    <div class="row mt-4">
-        <div class="col-lg-8">
-            <div class="alert alert-info">
-                <h5><i class="bi bi-info-circle me-2"></i>¿Qué es el Gestor de Contenido?</h5>
-                <p class="mb-0">
-                    El CMS integrado te permite crear bloques de contenido reutilizable que puedes incrustar
-                    en tus lecciones. Crea componentes HTML, elementos Bootstrap, contenido Markdown o
-                    estructuras JSON que se pueden reutilizar en múltiples cursos.
-                </p>
-            </div>
-        </div>
-        <div class="col-lg-4">
-            <div class="alert alert-success">
-                <h6><i class="bi bi-lightbulb me-2"></i>Consejo</h6>
-                <p class="mb-0 small">
-                    Los bloques públicos pueden ser usados por otros tutores,
-                    ayudando a crear una comunidad de contenido educativo.
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
+function showCreateOptions() {
+    // Redirigir al formulario completo
+    window.location.href = "{% url 'courses:create_content_block_default' %}";
+}
+
+function showTemplates() {
+    alert('Funcionalidad de plantillas próximamente disponible');
+}
+
+function exportBlocks() {
+    alert('Funcionalidad de exportación próximamente disponible');
+}
+
+// Filtros de búsqueda (si existen)
+const searchInput = document.getElementById('searchBlocks');
+const typeFilter = document.getElementById('filterType');
+const visibilityFilter = document.getElementById('filterVisibility');
+
+if (searchInput) searchInput.addEventListener('input', filterBlocks);
+if (typeFilter) typeFilter.addEventListener('change', filterBlocks);
+if (visibilityFilter) visibilityFilter.addEventListener('change', filterBlocks);
+
+function filterBlocks() {
+    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
+    const typeFilterValue = typeFilter ? typeFilter.value : '';
+    const visibilityFilterValue = visibilityFilter ? visibilityFilter.value : '';
+
+    const blocks = document.querySelectorAll('.block-card');
+
+    blocks.forEach(block => {
+        const title = block.querySelector('.block-title').textContent.toLowerCase();
+        const type = block.dataset.type;
+        const visibility = block.dataset.visibility;
+
+        const matchesSearch = title.includes(searchTerm);
+        const matchesType = !typeFilterValue || type === typeFilterValue;
+        const matchesVisibility = !visibilityFilterValue || visibility === visibilityFilterValue;
+
+        if (matchesSearch && matchesType && matchesVisibility) {
+            block.style.display = '';
+        } else {
+            block.style.display = 'none';
+        }
+    });
+}
+
+// Navegación de sidebar
+document.addEventListener('DOMContentLoaded', function() {
+    // Manejar navegación de sidebar
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            // Remover clase active de todos
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            // Agregar clase active al actual
+            this.classList.add('active');
+        });
+    });
+});
+</script>
+
 {% endblock %}

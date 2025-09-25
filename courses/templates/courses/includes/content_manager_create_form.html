@@ -1,0 +1,277 @@
+<!-- Crear Nuevo Bloque -->
+<div class="recent-blocks">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0">
+            <i class="bi bi-plus-circle me-2 text-success"></i>
+            Crear Nuevo Bloque de Contenido
+        </h3>
+    </div>
+
+    <form id="createBlockForm" method="post">
+        {% csrf_token %}
+
+        <!-- Información básica -->
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Título del Bloque *</label>
+                <input type="text" class="form-control" name="title" required>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Categoría</label>
+                <input type="text" class="form-control" name="category" placeholder="Ej: Introducción, Avanzado, etc.">
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Descripción</label>
+                <textarea class="form-control" name="description" rows="2" placeholder="Breve descripción del bloque"></textarea>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Etiquetas</label>
+                <input type="text" class="form-control" name="tags" placeholder="html, tutorial, ejemplo">
+                <div class="form-text">Separadas por comas</div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Visibilidad</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="is_public" id="is_public">
+                    <label class="form-check-label" for="is_public">
+                        Bloque público (visible para otros tutores)
+                    </label>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Destacado</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="is_featured" id="is_featured">
+                    <label class="form-check-label" for="is_featured">
+                        Marcar como destacado
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selector de tipos de contenido -->
+        <div class="mb-4">
+            <h5 class="mb-3">Tipo de Contenido</h5>
+            <div class="content-type-selector">
+                <div class="content-type-card" data-type="html">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-code-slash"></i>
+                        </div>
+                        <div class="content-type-title">HTML/Bootstrap</div>
+                        <div class="content-type-description">Código HTML personalizado con clases Bootstrap</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="markdown">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-markdown"></i>
+                        </div>
+                        <div class="content-type-title">Markdown</div>
+                        <div class="content-type-description">Sintaxis Markdown para texto formateado</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="json">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-braces"></i>
+                        </div>
+                        <div class="content-type-title">Contenido Estructurado</div>
+                        <div class="content-type-description">Elementos estructurados para lecciones complejas</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="text">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-textarea-t"></i>
+                        </div>
+                        <div class="content-type-title">Texto Simple</div>
+                        <div class="content-type-description">Contenido de texto plano sin formato</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="image">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-image"></i>
+                        </div>
+                        <div class="content-type-title">Imagen</div>
+                        <div class="content-type-description">Imagen con URL externa</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="video">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-play-circle"></i>
+                        </div>
+                        <div class="content-type-title">Video</div>
+                        <div class="content-type-description">Video desde YouTube, Vimeo u otras plataformas</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="code">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-terminal"></i>
+                        </div>
+                        <div class="content-type-title">Código</div>
+                        <div class="content-type-description">Bloques de código con resaltado de sintaxis</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="list">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-list-ul"></i>
+                        </div>
+                        <div class="content-type-title">Lista</div>
+                        <div class="content-type-description">Listas ordenadas o no ordenadas</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="table">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-table"></i>
+                        </div>
+                        <div class="content-type-title">Tabla</div>
+                        <div class="content-type-description">Datos tabulares con encabezados</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="card">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-card-text"></i>
+                        </div>
+                        <div class="content-type-title">Tarjeta</div>
+                        <div class="content-type-description">Componente tipo tarjeta con título y contenido</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="alert">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-exclamation-triangle"></i>
+                        </div>
+                        <div class="content-type-title">Alerta</div>
+                        <div class="content-type-description">Mensaje de alerta o notificación</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="button">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-hand-index-thumb"></i>
+                        </div>
+                        <div class="content-type-title">Botón</div>
+                        <div class="content-type-description">Botón interactivo con enlace</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="form">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-ui-checks"></i>
+                        </div>
+                        <div class="content-type-title">Formulario</div>
+                        <div class="content-type-description">Formulario personalizado con campos</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="divider">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-dash"></i>
+                        </div>
+                        <div class="content-type-title">Separador</div>
+                        <div class="content-type-description">Línea divisoria visual</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="icon">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-star"></i>
+                        </div>
+                        <div class="content-type-title">Ícono</div>
+                        <div class="content-type-description">Ícono de Bootstrap con texto opcional</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="progress">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-bar-chart"></i>
+                        </div>
+                        <div class="content-type-title">Barra de Progreso</div>
+                        <div class="content-type-description">Indicador de progreso visual</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="badge">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-tag"></i>
+                        </div>
+                        <div class="content-type-title">Insignia</div>
+                        <div class="content-type-description">Etiqueta o badge con colores</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="timeline">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-timeline"></i>
+                        </div>
+                        <div class="content-type-title">Línea de Tiempo</div>
+                        <div class="content-type-description">Cronología de eventos</div>
+                    </div>
+                </div>
+
+                <div class="content-type-card" data-type="quote">
+                    <div class="text-center">
+                        <div class="content-type-icon">
+                            <i class="bi bi-quote"></i>
+                        </div>
+                        <div class="content-type-title">Cita</div>
+                        <div class="content-type-description">Cita textual con autor</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Campos dinámicos del contenido -->
+        <div id="contentFields" style="display: none;">
+            <div class="dynamic-form-container">
+                <h5 id="contentSectionTitle" class="mb-3">Selecciona un tipo de contenido</h5>
+                <div id="dynamicFields">
+                    <!-- Los campos específicos se cargarán aquí dinámicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Campo oculto para el tipo seleccionado -->
+        <input type="hidden" name="content_type" id="selectedContentType">
+
+        <!-- Botones de acción -->
+        <div class="d-flex justify-content-end gap-2 mt-4">
+            <button type="button" class="btn btn-secondary" onclick="location.reload()">
+                <i class="bi bi-x-circle me-1"></i>Cancelar
+            </button>
+            <button type="submit" class="btn btn-success" id="createButton" disabled>
+                <i class="bi bi-check-circle me-1"></i>Crear Bloque
+            </button>
+        </div>
+    </form>
+</div>

@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     Status, ProjectStatus, TaskStatus,
     Classification, Project, ProjectState, ProjectHistory, ProjectAttendee,
-    Task, TaskState, TaskHistory, TaskProgram,
+    Task, TaskState, TaskHistory, TaskProgram, TaskSchedule,
     Event, EventState, EventHistory, EventAttendee,
     Tag, TagCategory, Room, Message, CreditAccount,
     TaskDependency, ProjectTemplate, TemplateTask, InboxItem, Reminder
@@ -67,10 +67,135 @@ class TaskAdmin(admin.ModelAdmin):
 
 @admin.register(TaskProgram)
 class TaskProgramAdmin(admin.ModelAdmin):
-    list_display = ('title', 'task', 'start_time', 'end_time', 'host')
+    list_display = ('title', 'task', 'start_time', 'end_time', 'host', 'get_duration', 'get_status')
     list_filter = ('start_time', 'end_time', 'host')
     search_fields = ('title', 'task__title', 'host__username')
     date_hierarchy = 'start_time'
+    readonly_fields = ('created_at',)
+
+    def get_duration(self, obj):
+        """Calcular y mostrar la duración del programa"""
+        if obj.start_time and obj.end_time:
+            duration = obj.end_time - obj.start_time
+            hours, remainder = divmod(duration.seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        return "N/A"
+    get_duration.short_description = 'Duración'
+
+    def get_status(self, obj):
+        """Mostrar el estado de la tarea asociada"""
+        return obj.task.task_status.status_name
+    get_status.short_description = 'Estado de Tarea'
+
+    def get_queryset(self, request):
+        """Optimizar las consultas para incluir las relaciones necesarias"""
+        return super().get_queryset(request).select_related('task', 'host', 'task__task_status')
+
+    actions = ['mark_completed', 'mark_in_progress', 'bulk_delete']
+
+    def mark_completed(self, request, queryset):
+        """Marcar las tareas asociadas como completadas"""
+        updated = 0
+        completed_status = TaskStatus.objects.get(status_name='Completed')
+        for program in queryset:
+            if program.task.task_status.status_name != 'Completed':
+                program.task.task_status = completed_status
+                program.task.save()
+                updated += 1
+        self.message_user(request, f'{updated} tareas marcadas como completadas.')
+    mark_completed.short_description = 'Marcar tareas como completadas'
+
+    def mark_in_progress(self, request, queryset):
+        """Marcar las tareas asociadas como en progreso"""
+        updated = 0
+        in_progress_status = TaskStatus.objects.get(status_name='In Progress')
+        for program in queryset:
+            if program.task.task_status.status_name != 'In Progress':
+                program.task.task_status = in_progress_status
+                program.task.save()
+                updated += 1
+        self.message_user(request, f'{updated} tareas marcadas como en progreso.')
+    mark_in_progress.short_description = 'Marcar tareas como en progreso'
+
+    def bulk_delete(self, request, queryset):
+        """Eliminar programas seleccionados"""
+        count = queryset.count()
+        queryset.delete()
+        self.message_user(request, f'{count} programas eliminados exitosamente.')
+    bulk_delete.short_description = 'Eliminar programas seleccionados'
+
+@admin.register(TaskSchedule)
+class TaskScheduleAdmin(admin.ModelAdmin):
+    list_display = ('task', 'host', 'recurrence_type', 'get_selected_days_display', 'start_time', 'duration', 'is_active', 'get_next_occurrence', 'get_programs_count', 'created_at')
+    list_filter = ('recurrence_type', 'is_active', 'start_date', 'end_date', 'created_at', 'host')
+    search_fields = ('task__title', 'host__username')
+    list_editable = ('is_active',)
+    date_hierarchy = 'created_at'
+    readonly_fields = ('created_at', 'updated_at')
+
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('task', 'host', 'is_active')
+        }),
+        ('Configuración de Recurrencia', {
+            'fields': ('recurrence_type', 'start_time', 'duration', 'start_date', 'end_date')
+        }),
+        ('Días de la Semana', {
+            'fields': ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'),
+            'classes': ('collapse',)
+        }),
+        ('Metadatos', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def get_selected_days_display(self, obj):
+        """Mostrar los días seleccionados de manera legible"""
+        return obj.get_selected_days_display()
+    get_selected_days_display.short_description = 'Días Seleccionados'
+
+    def get_next_occurrence(self, obj):
+        """Mostrar la próxima ocurrencia"""
+        next_occ = obj.get_next_occurrence()
+        if next_occ:
+            return f"{next_occ['date']} {next_occ['start_time'].strftime('%H:%M')}"
+        return "Sin ocurrencias futuras"
+    get_next_occurrence.short_description = 'Próxima Ocurrencia'
+
+    def get_programs_count(self, obj):
+        """Mostrar el número de programas generados"""
+        from .models import TaskProgram
+        return TaskProgram.objects.filter(task=obj.task, host=obj.host).count()
+    get_programs_count.short_description = 'Programas Generados'
+
+    def get_queryset(self, request):
+        """Optimizar las consultas para incluir las relaciones necesarias"""
+        return super().get_queryset(request).select_related('task', 'host')
+
+    actions = ['activate_schedules', 'deactivate_schedules', 'generate_programs']
+
+    def activate_schedules(self, request, queryset):
+        """Activar programaciones seleccionadas"""
+        updated = queryset.update(is_active=True)
+        self.message_user(request, f'{updated} programaciones activadas exitosamente.')
+    activate_schedules.short_description = 'Activar programaciones seleccionadas'
+
+    def deactivate_schedules(self, request, queryset):
+        """Desactivar programaciones seleccionadas"""
+        updated = queryset.update(is_active=False)
+        self.message_user(request, f'{updated} programaciones desactivadas exitosamente.')
+    deactivate_schedules.short_description = 'Desactivar programaciones seleccionadas'
+
+    def generate_programs(self, request, queryset):
+        """Generar programas para las programaciones seleccionadas"""
+        total_created = 0
+        for schedule in queryset.filter(is_active=True):
+            created_programs = schedule.create_task_programs()
+            total_created += len(created_programs)
+        self.message_user(request, f'Se generaron {total_created} programas para las programaciones seleccionadas.')
+    generate_programs.short_description = 'Generar programas para programaciones activas'
 
 # Evento
 @admin.register(Event)

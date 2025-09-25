@@ -1,0 +1,667 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Editar Programación: {{ schedule.task.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10 col-xl-8">
+            <!-- Header Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">
+                                <i class="bi bi-pencil-square me-2"></i>
+                                Editar Programación Recurrente
+                            </h4>
+                            <small class="opacity-75">Modifica la configuración de tu programación</small>
+                        </div>
+                        <a href="{% url 'task_schedule_detail' schedule.id %}" class="btn btn-dark btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>
+                            Volver al Detalle
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Form Card -->
+            <div class="card shadow-sm">
+                <form method="post" id="editScheduleForm" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Form Errors Alert -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger border-0 rounded-0">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                <div>
+                                    <strong>Errores en el formulario:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        {% for error in form.non_field_errors %}
+                                            <li>{{ error }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="card-body p-4">
+                        <!-- Task Info (Read-only) -->
+                        <div class="form-section mb-5">
+                            <h5 class="section-title mb-3">
+                                <i class="bi bi-info-circle-fill text-info me-2"></i>
+                                Información de la Tarea
+                            </h5>
+
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="form-floating mb-3">
+                                        <input type="text"
+                                               class="form-control bg-light"
+                                               id="task_title"
+                                               value="{{ schedule.task.title }}"
+                                               readonly
+                                               placeholder="Tarea">
+                                        <label for="task_title">
+                                            <i class="bi bi-list-task me-1"></i>
+                                            Tarea a Programar
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        La tarea no puede cambiarse. Crea una nueva programación si necesitas cambiar de tarea.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step Indicator -->
+                        <div class="mb-4">
+                            <div class="row text-center">
+                                <div class="col-4">
+                                    <div class="step-indicator active">
+                                        <div class="step-number">1</div>
+                                        <div class="step-label">Tarea</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="step-indicator">
+                                        <div class="step-number">2</div>
+                                        <div class="step-label">Horario</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="step-indicator">
+                                        <div class="step-number">3</div>
+                                        <div class="step-label">Confirmar</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 2: Recurrence Configuration -->
+                        <div class="form-section mb-5">
+                            <h5 class="section-title mb-3">
+                                <i class="bi bi-repeat text-primary me-2"></i>
+                                Configuración de Recurrencia
+                            </h5>
+
+                            <div class="row">
+                                <!-- Recurrence Type -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-floating">
+                                        <select class="form-select {% if form.recurrence_type.errors %}is-invalid{% endif %}"
+                                                id="{{ form.recurrence_type.id_for_label }}"
+                                                name="{{ form.recurrence_type.html_name }}"
+                                                required>
+                                            {% for value, label in form.recurrence_type.field.choices %}
+                                                <option value="{{ value }}" {% if form.recurrence_type.value == value %}selected{% endif %}>
+                                                    {{ label }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                        <label for="{{ form.recurrence_type.id_for_label }}">
+                                            <i class="bi bi-arrow-repeat me-1"></i>
+                                            {{ form.recurrence_type.label }}
+                                        </label>
+                                        {% if form.recurrence_type.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.recurrence_type.errors %}
+                                                    <div>{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Start Time -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-floating">
+                                        <input type="time"
+                                               class="form-control {% if form.start_time.errors %}is-invalid{% endif %}"
+                                               id="{{ form.start_time.id_for_label }}"
+                                               name="{{ form.start_time.html_name }}"
+                                               value="{{ form.start_time.value|default:'' }}"
+                                               required>
+                                        <label for="{{ form.start_time.id_for_label }}">
+                                            <i class="bi bi-clock me-1"></i>
+                                            {{ form.start_time.label }}
+                                        </label>
+                                        {% if form.start_time.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.start_time.errors %}
+                                                    <div>{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Days Selection (Weekly only) -->
+                            <div class="days-selection" id="daysGroup" style="display: none;">
+                                <label class="form-label fw-bold mb-3">
+                                    <i class="bi bi-calendar-week me-1"></i>
+                                    Días de la semana
+                                </label>
+                                <div class="row g-2">
+                                    <!-- Monday -->
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check form-check-inline w-100">
+                                            <input class="form-check-input day-checkbox"
+                                                   type="checkbox"
+                                                   id="{{ form.monday.id_for_label }}"
+                                                   name="{{ form.monday.html_name }}"
+                                                   {% if form.monday.value %}checked{% endif %}>
+                                            <label class="form-check-label w-100" for="{{ form.monday.id_for_label }}">
+                                                <span class="badge bg-light text-dark w-100 py-2">
+                                                    {{ form.monday.label }}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <!-- Tuesday -->
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check form-check-inline w-100">
+                                            <input class="form-check-input day-checkbox"
+                                                   type="checkbox"
+                                                   id="{{ form.tuesday.id_for_label }}"
+                                                   name="{{ form.tuesday.html_name }}"
+                                                   {% if form.tuesday.value %}checked{% endif %}>
+                                            <label class="form-check-label w-100" for="{{ form.tuesday.id_for_label }}">
+                                                <span class="badge bg-light text-dark w-100 py-2">
+                                                    {{ form.tuesday.label }}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <!-- Wednesday -->
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check form-check-inline w-100">
+                                            <input class="form-check-input day-checkbox"
+                                                   type="checkbox"
+                                                   id="{{ form.wednesday.id_for_label }}"
+                                                   name="{{ form.wednesday.html_name }}"
+                                                   {% if form.wednesday.value %}checked{% endif %}>
+                                            <label class="form-check-label w-100" for="{{ form.wednesday.id_for_label }}">
+                                                <span class="badge bg-light text-dark w-100 py-2">
+                                                    {{ form.wednesday.label }}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <!-- Thursday -->
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check form-check-inline w-100">
+                                            <input class="form-check-input day-checkbox"
+                                                   type="checkbox"
+                                                   id="{{ form.thursday.id_for_label }}"
+                                                   name="{{ form.thursday.html_name }}"
+                                                   {% if form.thursday.value %}checked{% endif %}>
+                                            <label class="form-check-label w-100" for="{{ form.thursday.id_for_label }}">
+                                                <span class="badge bg-light text-dark w-100 py-2">
+                                                    {{ form.thursday.label }}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <!-- Friday -->
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check form-check-inline w-100">
+                                            <input class="form-check-input day-checkbox"
+                                                   type="checkbox"
+                                                   id="{{ form.friday.id_for_label }}"
+                                                   name="{{ form.friday.html_name }}"
+                                                   {% if form.friday.value %}checked{% endif %}>
+                                            <label class="form-check-label w-100" for="{{ form.friday.id_for_label }}">
+                                                <span class="badge bg-light text-dark w-100 py-2">
+                                                    {{ form.friday.label }}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <!-- Saturday -->
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check form-check-inline w-100">
+                                            <input class="form-check-input day-checkbox"
+                                                   type="checkbox"
+                                                   id="{{ form.saturday.id_for_label }}"
+                                                   name="{{ form.saturday.html_name }}"
+                                                   {% if form.saturday.value %}checked{% endif %}>
+                                            <label class="form-check-label w-100" for="{{ form.saturday.id_for_label }}">
+                                                <span class="badge bg-light text-dark w-100 py-2">
+                                                    {{ form.saturday.label }}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <!-- Sunday -->
+                                    <div class="col-6 col-md-3">
+                                        <div class="form-check form-check-inline w-100">
+                                            <input class="form-check-input day-checkbox"
+                                                   type="checkbox"
+                                                   id="{{ form.sunday.id_for_label }}"
+                                                   name="{{ form.sunday.html_name }}"
+                                                   {% if form.sunday.value %}checked{% endif %}>
+                                            <label class="form-check-label w-100" for="{{ form.sunday.id_for_label }}">
+                                                <span class="badge bg-light text-dark w-100 py-2">
+                                                    {{ form.sunday.label }}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% if form.monday.errors or form.tuesday.errors or form.wednesday.errors or form.thursday.errors or form.friday.errors or form.saturday.errors or form.sunday.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        Debes seleccionar al menos un día de la semana.
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Selecciona los días en que quieres que se repita la tarea.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section 3: Duration and Dates -->
+                        <div class="form-section mb-5">
+                            <h5 class="section-title mb-3">
+                                <i class="bi bi-calendar-event text-primary me-2"></i>
+                                Duración y Fechas
+                            </h5>
+
+                            <div class="row">
+                                <!-- Duration -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-floating">
+                                        <input type="number"
+                                               class="form-control {% if form.duration_hours.errors %}is-invalid{% endif %}"
+                                               id="id_duration_hours"
+                                               name="duration_hours"
+                                               value="{% widthratio schedule.duration.total_seconds 3600 1 %}"
+                                               min="0.25"
+                                               max="24"
+                                               step="0.25"
+                                               placeholder="1.5"
+                                               required>
+                                        <label for="id_duration_hours">
+                                            <i class="bi bi-hourglass me-1"></i>
+                                            Duración (horas)
+                                        </label>
+                                        {% if form.duration_hours.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.duration_hours.errors %}
+                                                    <div>{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Ejemplo: 1.5 = 1 hora y 30 minutos
+                                    </div>
+                                </div>
+
+                                <!-- Start Date -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-floating">
+                                        <input type="date"
+                                               class="form-control {% if form.start_date.errors %}is-invalid{% endif %}"
+                                               id="{{ form.start_date.id_for_label }}"
+                                               name="{{ form.start_date.html_name }}"
+                                               value="{{ form.start_date.value|default:'' }}"
+                                               min="{% now 'Y-m-d' %}"
+                                               required>
+                                        <label for="{{ form.start_date.id_for_label }}">
+                                            <i class="bi bi-calendar-date me-1"></i>
+                                            {{ form.start_date.label }}
+                                        </label>
+                                        {% if form.start_date.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.start_date.errors %}
+                                                    <div>{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- End Date -->
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-floating">
+                                        <input type="date"
+                                               class="form-control"
+                                               id="{{ form.end_date.id_for_label }}"
+                                               name="{{ form.end_date.html_name }}"
+                                               value="{{ form.end_date.value|default:'' }}"
+                                               min="{% now 'Y-m-d' %}">
+                                        <label for="{{ form.end_date.id_for_label }}">
+                                            <i class="bi bi-calendar-x me-1"></i>
+                                            {{ form.end_date.label }}
+                                        </label>
+                                        {% if form.end_date.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.end_date.errors %}
+                                                    <div>{{ error }}</div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Opcional. Si no se especifica, la programación será indefinida.
+                                    </div>
+                                </div>
+
+                                <!-- Active Status -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input"
+                                               type="checkbox"
+                                               id="{{ form.is_active.id_for_label }}"
+                                               name="{{ form.is_active.html_name }}"
+                                               {% if form.is_active.value|default:True %}checked{% endif %}>
+                                        <label class="form-check-label fw-bold" for="{{ form.is_active.id_for_label }}">
+                                            <i class="bi bi-toggle-on me-1"></i>
+                                            {{ form.is_active.label }}
+                                        </label>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Desmarca para pausar temporalmente esta programación.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Footer -->
+                    <div class="card-footer bg-light">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="form-text">
+                                <i class="bi bi-shield-check me-1 text-success"></i>
+                                Todos los campos marcados con <span class="text-danger">*</span> son obligatorios
+                            </div>
+                            <div class="btn-group">
+                                <a href="{% url 'task_schedule_detail' schedule.id %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle me-1"></i>
+                                    Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-check-circle-fill me-1"></i>
+                                    Guardar Cambios
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Custom styles for the form */
+.step-indicator {
+    position: relative;
+}
+
+.step-indicator .step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e9ecef;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px;
+    font-weight: bold;
+    border: 2px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+.step-indicator.active .step-number {
+    background: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+}
+
+.step-indicator .step-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.step-indicator.active .step-label {
+    color: #0d6efd;
+    font-weight: 600;
+}
+
+.section-title {
+    color: #495057;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-floating > .form-control:focus,
+.form-floating > .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.days-selection {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #dee2e6;
+    margin-top: 1rem;
+}
+
+.badge:hover {
+    background-color: #0d6efd !important;
+    color: white !important;
+    cursor: pointer;
+}
+
+.card-header {
+    border-bottom: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .step-indicator .step-label {
+        font-size: 0.75rem;
+    }
+
+    .btn-group {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-group .btn {
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const recurrenceTypeSelect = document.getElementById('{{ form.recurrence_type.id_for_label }}');
+    const daysGroup = document.getElementById('daysGroup');
+    const form = document.getElementById('editScheduleForm');
+
+    // Toggle days visibility based on recurrence type
+    function toggleDaysVisibility() {
+        const recurrenceType = recurrenceTypeSelect.value;
+        if (recurrenceType === 'weekly') {
+            daysGroup.style.display = 'block';
+        } else {
+            daysGroup.style.display = 'none';
+        }
+    }
+
+    // Event listener for recurrence type change
+    recurrenceTypeSelect.addEventListener('change', toggleDaysVisibility);
+
+    // Initialize visibility
+    toggleDaysVisibility();
+
+    // Enhanced form validation
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        const errors = [];
+
+        // Clear previous errors
+        document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+
+        // Validate recurrence type
+        if (!recurrenceTypeSelect.value) {
+            isValid = false;
+            recurrenceTypeSelect.classList.add('is-invalid');
+            showFieldError(recurrenceTypeSelect, 'Debes seleccionar un tipo de recurrencia.');
+        }
+
+        // Validate days for weekly recurrence
+        if (recurrenceTypeSelect.value === 'weekly') {
+            const dayCheckboxes = document.querySelectorAll('.day-checkbox');
+            const hasSelectedDay = Array.from(dayCheckboxes).some(cb => cb.checked);
+
+            if (!hasSelectedDay) {
+                isValid = false;
+                dayCheckboxes.forEach(cb => cb.classList.add('is-invalid'));
+                showFieldError(daysGroup, 'Debes seleccionar al menos un día de la semana.');
+            }
+        }
+
+        // Validate start time
+        const startTimeInput = document.getElementById('{{ form.start_time.id_for_label }}');
+        if (!startTimeInput.value) {
+            isValid = false;
+            startTimeInput.classList.add('is-invalid');
+            showFieldError(startTimeInput, 'Debes especificar la hora de inicio.');
+        }
+
+        // Validate duration
+        const durationInput = document.getElementById('id_duration_hours');
+        const duration = parseFloat(durationInput.value);
+        if (!duration || duration < 0.25 || duration > 24) {
+            isValid = false;
+            durationInput.classList.add('is-invalid');
+            showFieldError(durationInput, 'La duración debe estar entre 0.25 y 24 horas.');
+        }
+
+        // Validate start date
+        const startDateInput = document.getElementById('{{ form.start_date.id_for_label }}');
+        if (!startDateInput.value) {
+            isValid = false;
+            startDateInput.classList.add('is-invalid');
+            showFieldError(startDateInput, 'Debes especificar la fecha de inicio.');
+        } else {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const selectedDate = new Date(startDateInput.value);
+            if (selectedDate < today) {
+                isValid = false;
+                startDateInput.classList.add('is-invalid');
+                showFieldError(startDateInput, 'La fecha de inicio no puede ser anterior a hoy.');
+            }
+        }
+
+        // Validate end date if provided
+        const endDateInput = document.getElementById('{{ form.end_date.id_for_label }}');
+        if (endDateInput.value && startDateInput.value) {
+            const startDate = new Date(startDateInput.value);
+            const endDate = new Date(endDateInput.value);
+            if (endDate <= startDate) {
+                isValid = false;
+                endDateInput.classList.add('is-invalid');
+                showFieldError(endDateInput, 'La fecha de fin debe ser posterior a la fecha de inicio.');
+            }
+        }
+
+        if (!isValid) {
+            e.preventDefault();
+
+            // Scroll to first error
+            const firstError = document.querySelector('.is-invalid');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            return false;
+        }
+
+        return true;
+    });
+
+    function showFieldError(element, message) {
+        const feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback d-block';
+        feedback.textContent = message;
+
+        const formFloating = element.closest('.form-floating');
+        if (formFloating) {
+            formFloating.appendChild(feedback);
+        } else {
+            element.parentNode.appendChild(feedback);
+        }
+    }
+
+    // Enhanced UX for day selection
+    document.querySelectorAll('.day-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const badge = this.nextElementSibling.querySelector('.badge');
+            if (this.checked) {
+                badge.classList.remove('bg-light', 'text-dark');
+                badge.classList.add('bg-primary', 'text-white');
+            } else {
+                badge.classList.remove('bg-primary', 'text-white');
+                badge.classList.add('bg-light', 'text-dark');
+            }
+        });
+
+        // Initialize state
+        const badge = checkbox.nextElementSibling.querySelector('.badge');
+        if (checkbox.checked) {
+            badge.classList.remove('bg-light', 'text-dark');
+            badge.classList.add('bg-primary', 'text-white');
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,105 @@
+<!-- Bloques Recientes -->
+<div class="recent-blocks">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0">
+            <i class="bi bi-clock-history me-2 text-primary"></i>
+            Bloques Recientes
+        </h3>
+        <div class="d-flex gap-2">
+            <input type="text" class="form-control form-control-sm" id="searchBlocks" placeholder="Buscar bloques..." style="width: 200px;">
+            <select class="form-select form-select-sm" id="filterType" style="width: 150px;">
+                <option value="">Todos los tipos</option>
+                <option value="html">HTML</option>
+                <option value="markdown">Markdown</option>
+                <option value="json">Estructurado</option>
+                <option value="text">Texto</option>
+                <option value="image">Imagen</option>
+                <option value="video">Video</option>
+                <option value="code">Código</option>
+                <option value="list">Lista</option>
+                <option value="table">Tabla</option>
+                <option value="card">Tarjeta</option>
+                <option value="alert">Alerta</option>
+                <option value="button">Botón</option>
+                <option value="form">Formulario</option>
+                <option value="divider">Separador</option>
+                <option value="icon">Ícono</option>
+                <option value="progress">Progreso</option>
+                <option value="badge">Insignia</option>
+                <option value="timeline">Línea de Tiempo</option>
+                <option value="quote">Cita</option>
+            </select>
+            <select class="form-select form-select-sm" id="filterVisibility" style="width: 120px;">
+                <option value="">Todos</option>
+                <option value="public">Públicos</option>
+                <option value="private">Privados</option>
+                <option value="featured">Destacados</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for block in user_blocks %}
+        <div class="col-lg-6 col-xl-4 mb-4">
+            <div class="block-card" data-type="{{ block.content_type }}" data-visibility="{% if block.is_featured %}featured{% elif block.is_public %}public{% else %}private{% endif %}">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="block-title">{{ block.title }}</div>
+                    <div class="d-flex gap-1">
+                        {% if block.is_featured %}
+                        <span class="badge bg-warning text-dark">
+                            <i class="bi bi-star-fill me-1"></i>Destacado
+                        </span>
+                        {% endif %}
+                        {% if block.is_public %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-globe me-1"></i>Público
+                        </span>
+                        {% else %}
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-lock me-1"></i>Privado
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="block-meta mb-2">
+                    <small class="text-muted">
+                        <i class="bi bi-tag me-1"></i>{{ block.get_content_type_display }}
+                        {% if block.category %} • {{ block.category }}{% endif %}
+                        • {{ block.created_at|date:"d/m/Y" }}
+                    </small>
+                </div>
+
+                {% if block.description %}
+                <div class="block-description mb-3">
+                    {{ block.description|truncatechars:100 }}
+                </div>
+                {% endif %}
+
+                <div class="block-actions">
+                    <button class="btn btn-sm btn-outline-primary" onclick="previewBlock('{{ block.slug }}')">
+                        <i class="bi bi-eye me-1"></i>Vista Previa
+                    </button>
+                    <a href="{% url 'courses:edit_content_block' block.slug %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-pencil me-1"></i>Editar
+                    </a>
+                    <button class="btn btn-sm btn-outline-info" onclick="duplicateBlock('{{ block.slug }}')">
+                        <i class="bi bi-copy me-1"></i>Duplicar
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteBlock('{{ block.slug }}', '{{ block.title|escapejs }}')">
+                        <i class="bi bi-trash me-1"></i>Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+                <h5 class="text-muted">No hay bloques de contenido</h5>
+                <p class="text-muted">Crea tu primer bloque usando el formulario de arriba</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>

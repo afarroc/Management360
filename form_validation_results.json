@@ -1,0 +1,121 @@
+[
+  {
+    "test": "task - Campo requerido - valor vacío",
+    "status": "PASS",
+    "errors": [
+      "Debes seleccionar una tarea para programar.",
+      "La fecha de inicio debe ser hoy o una fecha futura. No se permiten fechas pasadas."
+    ]
+  },
+  {
+    "test": "task - Campo requerido - valor inválido",
+    "status": "PASS",
+    "errors": [
+      "La tarea seleccionada no es válida.",
+      "La fecha de inicio debe ser hoy o una fecha futura. No se permiten fechas pasadas."
+    ]
+  },
+  {
+    "test": "recurrence_type - Valor inválido",
+    "status": "PASS",
+    "errors": [
+      "La tarea seleccionada no es válida.",
+      "El tipo de recurrencia seleccionado no es válido.",
+      "La fecha de inicio debe ser hoy o una fecha futura. No se permiten fechas pasadas."
+    ]
+  },
+  {
+    "test": "start_time - Formato inválido",
+    "status": "PASS",
+    "errors": [
+      "La tarea seleccionada no es válida.",
+      "Ingresa una hora válida en formato HH:MM.",
+      "La fecha de inicio debe ser hoy o una fecha futura. No se permiten fechas pasadas."
+    ]
+  },
+  {
+    "test": "start_time - Valor vacío",
+    "status": "PASS",
+    "errors": [
+      "La tarea seleccionada no es válida.",
+      "La hora de inicio es obligatoria.",
+      "La fecha de inicio debe ser hoy o una fecha futura. No se permiten fechas pasadas."
+    ]
+  },
+  {
+    "test": "start_date - Fecha en el pasado",
+    "status": "PASS",
+    "errors": [
+      "La tarea seleccionada no es válida.",
+      "La fecha de inicio debe ser hoy o una fecha futura. No se permiten fechas pasadas."
+    ]
+  },
+  {
+    "test": "start_date - Formato inválido",
+    "status": "PASS",
+    "errors": [
+      "La tarea seleccionada no es válida.",
+      "Ingresa una fecha válida en formato YYYY-MM-DD."
+    ]
+  },
+  {
+    "test": "start_date - Valor vacío",
+    "status": "PASS",
+    "errors": [
+      "La tarea seleccionada no es válida.",
+      "La fecha de inicio es obligatoria."
+    ]
+  },
+  {
+    "test": "end_date - Fecha anterior a start_date",
+    "status": "PASS",
+    "errors": [
+      "La tarea seleccionada no es válida.",
+      "La fecha de fin debe ser posterior a la fecha de inicio. Corrige las fechas para continuar."
+    ]
+  },
+  {
+    "test": "duration_hours - Valor negativo",
+    "status": "PASS",
+    "errors": [
+      "La tarea seleccionada no es válida.",
+      "La duración mínima permitida es de 15 minutos (0.25 horas).",
+      "La fecha de inicio debe ser hoy o una fecha futura. No se permiten fechas pasadas."
+    ]
+  },
+  {
+    "test": "duration_hours - Valor mayor a 24",
+    "status": "PASS",
+    "errors": [
+      "La tarea seleccionada no es válida.",
+      "La duración máxima permitida es de 24 horas.",
+      "La fecha de inicio debe ser hoy o una fecha futura. No se permiten fechas pasadas."
+    ]
+  },
+  {
+    "test": "duration_hours - Valor no numérico",
+    "status": "PASS",
+    "errors": [
+      "La tarea seleccionada no es válida.",
+      "Ingrese una duración válida en horas (ej: 1.5).",
+      "La fecha de inicio debe ser hoy o una fecha futura. No se permiten fechas pasadas."
+    ]
+  },
+  {
+    "test": "duration_hours - Valor vacío",
+    "status": "PASS",
+    "errors": [
+      "La tarea seleccionada no es válida.",
+      "La duración es obligatoria.",
+      "La fecha de inicio debe ser hoy o una fecha futura. No se permiten fechas pasadas."
+    ]
+  },
+  {
+    "test": "recurrence_weekly_validation - Recurrencia semanal sin días seleccionados",
+    "status": "PASS",
+    "errors": [
+      "La tarea seleccionada no es válida.",
+      "La fecha de inicio debe ser hoy o una fecha futura. No se permiten fechas pasadas."
+    ]
+  }
+]
