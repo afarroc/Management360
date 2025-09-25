@@ -74,4 +74,5 @@ urlpatterns = [
     path('<slug:slug>/learn/<int:lesson_id>/', views.course_learning, name='course_learning_lesson'),
     path('lesson/<int:lesson_id>/complete/', views.mark_lesson_complete, name='mark_lesson_complete'),
     path('<int:course_id>/review/', views.add_review, name='add_review'),
+    path('docs/', views.courses_docs, name='courses_docs'),
 ]

@@ -240,6 +240,175 @@ class TaskProgram(models.Model):
         verbose_name = "Task Program"
         verbose_name_plural = "Task Programs"
 
+# Modelo para programaciones recurrentes de tareas
+class TaskSchedule(models.Model):
+    """Modelo para programaciones recurrentes de tareas"""
+    task = models.ForeignKey('Task', on_delete=models.CASCADE)
+    host = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # Configuración de recurrencia
+    recurrence_type = models.CharField(max_length=20, choices=[
+        ('weekly', 'Semanal'),
+        ('daily', 'Diaria'),
+        ('custom', 'Personalizada')
+    ], default='weekly')
+
+    # Días de la semana (para recurrencia semanal)
+    monday = models.BooleanField(default=False)
+    tuesday = models.BooleanField(default=False)
+    wednesday = models.BooleanField(default=False)
+    thursday = models.BooleanField(default=False)
+    friday = models.BooleanField(default=False)
+    saturday = models.BooleanField(default=False)
+    sunday = models.BooleanField(default=False)
+
+    # Horarios
+    start_time = models.TimeField()  # Hora de inicio
+    duration = models.DurationField(default='01:00:00')  # Duración por defecto 1 hora
+
+    # Período de validez
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)  # Null = indefinido
+
+    # Metadatos
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    def get_next_occurrences(self, limit=10):
+        """Genera las próximas ocurrencias basadas en la configuración"""
+        from datetime import datetime, timedelta
+        occurrences = []
+        current_date = max(self.start_date, timezone.now().date())
+
+        while len(occurrences) < limit:
+            if self.end_date and current_date > self.end_date:
+                break
+
+            if self._should_schedule_on_date(current_date):
+                start_datetime = datetime.combine(current_date, self.start_time)
+                end_datetime = start_datetime + self.duration
+                occurrences.append({
+                    'date': current_date,
+                    'start_time': start_datetime,
+                    'end_time': end_datetime
+                })
+
+            current_date += timedelta(days=1)
+
+        return occurrences
+
+    def _should_schedule_on_date(self, date):
+        """Determina si la tarea debe programarse en una fecha específica"""
+        if self.recurrence_type == 'daily':
+            return True
+
+        weekday = date.weekday()  # 0=lunes, 6=domingo
+        weekday_map = {
+            0: self.monday,
+            1: self.tuesday,
+            2: self.wednesday,
+            3: self.thursday,
+            4: self.friday,
+            5: self.saturday,
+            6: self.sunday
+        }
+
+        return weekday_map.get(weekday, False)
+
+    def get_selected_days_display(self):
+        """Retorna una representación legible de los días seleccionados"""
+        days = []
+        if self.monday: days.append('Lun')
+        if self.tuesday: days.append('Mar')
+        if self.wednesday: days.append('Mié')
+        if self.thursday: days.append('Jue')
+        if self.friday: days.append('Vie')
+        if self.saturday: days.append('Sáb')
+        if self.sunday: days.append('Dom')
+
+        if not days:
+            return "Ningún día seleccionado"
+
+        return ", ".join(days)
+
+    def generate_occurrences(self, limit=10):
+        """
+        Genera una lista de ocurrencias futuras basadas en la configuración recurrente
+        """
+        from datetime import datetime, timedelta
+        occurrences = []
+        current_date = max(self.start_date, timezone.now().date())
+
+        while len(occurrences) < limit:
+            if self.end_date and current_date > self.end_date:
+                break
+
+            if self._should_schedule_on_date(current_date):
+                start_datetime = datetime.combine(current_date, self.start_time)
+                end_datetime = start_datetime + self.duration
+                occurrences.append({
+                    'date': current_date,
+                    'start_time': start_datetime,
+                    'end_time': end_datetime
+                })
+
+            current_date += timedelta(days=1)
+
+        return occurrences
+
+    def create_task_programs(self, occurrences=None):
+        """
+        Crea instancias de TaskProgram para las ocurrencias especificadas
+        """
+        if occurrences is None:
+            occurrences = self.generate_occurrences()
+
+        created_programs = []
+        for occurrence in occurrences:
+            # Crear TaskProgram
+            program, created = TaskProgram.objects.get_or_create(
+                task=self.task,
+                host=self.task.host,
+                start_time=occurrence['start_time'],
+                defaults={
+                    'title': f"{self.task.title} - {occurrence['start_time'].strftime('%d/%m/%Y %H:%M')}",
+                    'end_time': occurrence['end_time'],
+                }
+            )
+
+            if created:
+                created_programs.append(program)
+
+        return created_programs
+
+    def get_next_occurrence(self):
+        """
+        Obtiene la próxima ocurrencia futura
+        """
+        occurrences = self.generate_occurrences(limit=1)
+        return occurrences[0] if occurrences else None
+
+    def is_active_schedule(self):
+        """
+        Verifica si la programación está activa (no ha expirado)
+        """
+        if not self.is_active:
+            return False
+
+        if self.end_date and timezone.now().date() > self.end_date:
+            return False
+
+        return True
+
+    def __str__(self):
+        return f"{self.task.title} - {self.get_recurrence_type_display()} a las {self.start_time}"
+
+    class Meta:
+        verbose_name = "Programación de Tarea"
+        verbose_name_plural = "Programaciones de Tareas"
+        ordering = ['start_time']
+
 # Modelo para registrar los estados por los que pasa cada evento
 class EventState(models.Model):
     event = models.ForeignKey('Event', on_delete=models.CASCADE)

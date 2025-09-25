@@ -1,0 +1,109 @@
+{% extends "courses/base.html" %}
+{% load static %}
+
+{% block title %}Duplicar Bloque - {{ block.title }} - Management360{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/content_manager.css' %}">
+{% endblock %}
+
+{% block course_content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0">
+                        <i class="bi bi-copy me-2"></i>
+                        Duplicar Bloque de Contenido
+                    </h4>
+                </div>
+
+                <div class="card-body">
+                    <!-- Información del bloque original -->
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Información del Bloque Original
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Título:</strong> {{ content_block.title }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Tipo:</strong>
+                                <span class="badge bg-{% if content_block.content_type == 'html' %}primary{% elif content_block.content_type == 'bootstrap' %}info{% elif content_block.content_type == 'markdown' %}success{% else %}secondary{% endif %}">
+                                    {{ content_block.get_content_type_display }}
+                                </span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Autor:</strong> {{ content_block.author.get_full_name|default:content_block.author.username }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Visibilidad:</strong>
+                                {% if content_block.is_public %}
+                                    <span class="badge bg-success">Público</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Privado</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if content_block.description %}
+                        <div class="mt-2">
+                            <strong>Descripción:</strong> {{ content_block.description }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Información sobre la duplicación -->
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            ¿Qué sucederá al duplicar?
+                        </h6>
+                        <ul class="mb-0">
+                            <li>Se creará una copia exacta del bloque con el título "<strong>{{ content_block.title }} (Copia)</strong>"</li>
+                            <li>La copia será <strong>privada</strong> por defecto (puedes cambiarlo después)</li>
+                            <li>Podrás editar la copia sin afectar el bloque original</li>
+                            <li>El autor de la copia serás tú</li>
+                        </ul>
+                    </div>
+
+                    <!-- Formulario de confirmación -->
+                    <form method="post" class="text-center">
+                        {% csrf_token %}
+
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="{% url 'courses:content_manager' %}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle me-1"></i>
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-copy me-1"></i>
+                                Duplicar Bloque
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Navegación -->
+            <div class="mt-4 text-center">
+                <a href="{% url 'courses:edit_content_block' content_block.slug %}" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-pencil me-1"></i>
+                    Editar Original
+                </a>
+                <a href="{% url 'courses:preview_content_block' content_block.slug %}" class="btn btn-outline-info me-2">
+                    <i class="bi bi-eye me-1"></i>
+                    Vista Previa
+                </a>
+                <a href="{% url 'courses:content_manager' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i>
+                    Volver al Gestor
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

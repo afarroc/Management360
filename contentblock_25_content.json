@@ -1,0 +1,231 @@
+[
+  {
+    "type": "ad_banner",
+    "title": "🚀 ¡Lleva tu Álgebra al Siguiente Nivel!",
+    "content": {
+      "header": "¿Te está gustando el curso?",
+      "subheader": "Descubre todas las ventajas de la versión PREMIUM",
+      "features": [
+        "💻 **Acceso ilimitado** a todos los módulos y lecciones",
+        "🎯 **Ejercicios personalizados** con inteligencia artificial",
+        "📊 **Certificado oficial** al completar el curso",
+        "👨‍🏫 **Soporte prioritario** de tutores especializados",
+        "📱 **Descarga offline** para estudiar sin conexión",
+        "⚡ **Simuladores interactivos** y herramientas avanzadas"
+      ],
+      "offer": "**OFERTA ESPECIAL:** 40% de descuento por tiempo limitado",
+      "price": {
+        "original": "$99.000",
+        "discounted": "$59.400",
+        "period": "acceso vitalicio"
+      },
+      "cta": {
+        "text": "¡QUIERO SER PREMIUM!",
+        "url": "#premium-upgrade",
+        "color": "success"
+      },
+      "secondary_cta": {
+        "text": "Ver planes y características",
+        "url": "#premium-features"
+      }
+    }
+  },
+  {
+    "type": "ad_card",
+    "title": "📚 ¿Necesitas Más Práctica?",
+    "content": {
+      "header": "Kit de Ejercicios Premium de Álgebra",
+      "description": "Pack exclusivo con 500+ ejercicios resueltos paso a paso, organizados por dificultad y tema.",
+      "highlights": [
+        "✅ **Ejercicios adicionales** para cada lección",
+        "✅ **Soluciones detalladas** con explicaciones",
+        "✅ **Exámenes por módulo** con retroalimentación",
+        "✅ **Problemas del mundo real** aplicados",
+        "✅ **Acceso inmediato** y descargable"
+      ],
+      "price": "$19.900",
+      "badge": "MÁS VENDIDO",
+      "cta": {
+        "text": "DESCARGAR KIT",
+        "url": "#exercise-kit"
+      }
+    }
+  },
+  {
+    "type": "ad_alert",
+    "variant": "info",
+    "content": {
+      "icon": "👥",
+      "title": "¿Estudiar en Grupo?",
+      "message": "**Únete a nuestra comunidad de aprendizaje:** Comparte dudas, resuelve problemas en equipo y participa en sesiones en vivo semanales.",
+      "features": [
+        "📅 **Sesiones en vivo** cada sábado",
+        "💬 **Foro comunitario** activo 24/7",
+        "👥 **Grupos de estudio** por nivel",
+        "🏆 **Retos y competencias** mensuales"
+      ],
+      "cta": {
+        "text": "UNIRME A LA COMUNIDAD",
+        "url": "#community-join"
+      }
+    }
+  },
+  {
+    "type": "ad_testimonial",
+    "content": {
+      "quote": "«Gracias a este curso pasé de tener miedo al álgebra a amar las matemáticas. Los ejercicios interactivos y las explicaciones claras hicieron toda la diferencia.»",
+      "author": {
+        "name": "María González",
+        "role": "Estudiante de Ingeniería",
+        "avatar": "https://images.unsplash.com/photo-1494790108755-2616b612b786?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80",
+        "rating": 5
+      },
+      "achievement": "Completó el curso en 3 semanas • Calificación: 9.8/10"
+    }
+  },
+  {
+    "type": "ad_countdown",
+    "content": {
+      "title": "⏰ ¡Oferta Termina Pronto!",
+      "message": "El descuento del 40% en la versión Premium finaliza en:",
+      "countdown": {
+        "days": 2,
+        "hours": 12,
+        "minutes": 30
+      },
+      "offer_details": [
+        "🔓 Acceso completo a todos los módulos",
+        "📱 App premium sin anuncios",
+        "🎓 Certificado digital incluido",
+        "👨‍🏫 Soporte prioritario 24/7"
+      ],
+      "cta": {
+        "text": "OBTENER OFERTA",
+        "url": "#limited-offer"
+      }
+    }
+  },
+  {
+    "type": "ad_feature",
+    "content": {
+      "title": "✨ Características Exclusivas Premium",
+      "features": [
+        {
+          "icon": "🤖",
+          "title": "Tutor IA Personalizado",
+          "description": "Asistente de inteligencia artificial que se adapta a tu estilo de aprendizaje"
+        },
+        {
+          "icon": "📈",
+          "title": "Panel de Progreso Avanzado",
+          "description": "Seguimiento detallado de tu avance con métricas y recomendaciones"
+        },
+        {
+          "icon": "🎮",
+          "title": "Modo Juego",
+          "description": "Aprende álgebra jugando con desafíos gamificados y recompensas"
+        },
+        {
+          "icon": "📋",
+          "title": "Generador de Exámenes",
+          "description": "Crea exámenes personalizados según tus necesidades específicas"
+        }
+      ],
+      "cta": {
+        "text": "VER DEMO",
+        "url": "#premium-demo"
+      }
+    }
+  },
+  {
+    "type": "ad_comparison",
+    "content": {
+      "title": "📊 ¿Cuál Plan es para Ti?",
+      "plans": [
+        {
+          "name": "BÁSICO",
+          "price": "Gratis",
+          "features": [
+            "✓ Acceso a primeras 3 lecciones",
+            "✓ Ejercicios limitados",
+            "✗ Sin certificado",
+            "✗ Soporte estándar (48h)",
+            "✗ Contenido descargable",
+            "✗ Herramientas avanzadas"
+          ],
+          "cta": {
+            "text": "COMENZAR GRATIS",
+            "variant": "outline"
+          }
+        },
+        {
+          "name": "PREMIUM",
+          "price": "$59.400",
+          "original_price": "$99.000",
+          "popular": true,
+          "features": [
+            "✓ Acceso completo ILIMITADO",
+            "✓ 500+ ejercicios premium",
+            "✓ Certificado oficial",
+            "✓ Soporte prioritario 24/7",
+            "✓ Todo el contenido descargable",
+            "✓ Todas las herramientas IA"
+          ],
+          "cta": {
+            "text": "ELEGIR PREMIUM",
+            "variant": "primary"
+          }
+        },
+        {
+          "name": "GRUPAL",
+          "price": "$199.000",
+          "features": [
+            "✓ Licencias para 5 personas",
+            "✓ Panel de gestión grupal",
+            "✓ Reportes de progreso grupal",
+            "✓ Sesiones personalizadas",
+            "✓ Descuento por volumen",
+            "✓ Ideal para empresas/colegios"
+          ],
+          "cta": {
+            "text": "SOLICITAR COTIZACIÓN",
+            "variant": "outline"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "type": "ad_achievement",
+    "content": {
+      "title": "🏆 Logros que Puedes Alcanzar",
+      "badges": [
+        {
+          "icon": "⭐",
+          "title": "Dominio de Fundamentos",
+          "description": "Completa el módulo 1 con 90%+ de calificación"
+        },
+        {
+          "icon": "🔥",
+          "title": "Experto en Ecuaciones",
+          "description": "Resuelve 100+ ecuaciones correctamente"
+        },
+        {
+          "icon": "💎",
+          "title": "Maestro del Álgebra",
+          "description": "Termina todo el curso con excelencia"
+        },
+        {
+          "icon": "🚀",
+          "title": "Speed Learner",
+          "description": "Completa el curso en menos de 4 semanas"
+        }
+      ],
+      "progress": {
+        "current": 3,
+        "total": 12,
+        "message": "Has desbloqueado 3 de 12 logros posibles"
+      }
+    }
+  }
+]

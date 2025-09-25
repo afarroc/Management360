@@ -262,6 +262,59 @@
         width: 100%;
         text-align: center;
     }
+
+    .lesson-image-container {
+        margin: 1rem 0;
+        padding: 0.75rem;
+    }
+
+    .lesson-image {
+        max-height: 250px;
+    }
+}
+
+/* Para pantallas muy pequeñas */
+@media (max-width: 480px) {
+    .lesson-image-container {
+        margin: 0.75rem 0;
+        padding: 0.5rem;
+    }
+
+    .lesson-image-caption {
+        font-size: 0.8rem;
+        margin-top: 0.5rem;
+    }
+}
+
+/* Estilos para imágenes incrustadas en content blocks */
+.lesson-image-container {
+    text-align: center;
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+}
+
+.lesson-image {
+    max-width: 100%;
+    height: auto;
+    max-height: 400px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    object-fit: contain;
+    transition: transform 0.3s ease;
+}
+
+.lesson-image:hover {
+    transform: scale(1.02);
+}
+
+.lesson-image-caption {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-style: italic;
 }
 </style>
 {% endblock %}
@@ -350,161 +403,10 @@
                             </div>
 
                             <div class="rendered-content">
-                                {% if content_block.content_type == 'html' or content_block.content_type == 'bootstrap' %}
-                                    {{ content_block.html_content|safe }}
-                                {% elif content_block.content_type == 'markdown' %}
-                                     {{ content_block.markdown_content|markdown|safe }}
-                                {% elif content_block.content_type == 'json' %}
-                                    <pre><code>{{ content_block.json_content|safe }}</code></pre>
-                                {% elif content_block.content_type == 'text' %}
-                                    <p>{{ content_block.html_content|linebreaks }}</p>
-                                {% elif content_block.content_type == 'image' %}
-                                    {% if content_block.json_content.url %}
-                                        <img src="{{ content_block.json_content.url }}" alt="{{ content_block.json_content.alt|default:content_block.title }}" class="img-fluid rounded">
-                                        {% if content_block.json_content.caption %}
-                                            <p class="text-muted mt-2"><small>{{ content_block.json_content.caption }}</small></p>
-                                        {% endif %}
-                                    {% else %}
-                                        <div class="text-center text-muted">
-                                            <i class="bi bi-image fs-1"></i>
-                                            <p>Imagen no configurada</p>
-                                        </div>
-                                    {% endif %}
-                                {% elif content_block.content_type == 'video' %}
-                                    {% if content_block.json_content.url %}
-                                        <div class="ratio ratio-16x9">
-                                            <iframe src="{{ content_block.json_content.url }}" frameborder="0" allowfullscreen></iframe>
-                                        </div>
-                                    {% else %}
-                                        <div class="text-center text-muted">
-                                            <i class="bi bi-play-circle fs-1"></i>
-                                            <p>Video no configurado</p>
-                                        </div>
-                                    {% endif %}
-                                {% elif content_block.content_type == 'quote' %}
-                                    <blockquote class="blockquote">
-                                        <p class="mb-0">{{ content_block.json_content.text|default:"Cita no especificada" }}</p>
-                                        {% if content_block.json_content.author %}
-                                            <footer class="blockquote-footer">{{ content_block.json_content.author }}</footer>
-                                        {% endif %}
-                                    </blockquote>
-                                {% elif content_block.content_type == 'code' %}
-                                    <pre><code class="language-{{ content_block.json_content.language|default:'text' }}">{{ content_block.json_content.code|default:"Código no especificado" }}</code></pre>
-                                {% elif content_block.content_type == 'list' %}
-                                    {% if content_block.json_content.type == 'ordered' %}
-                                        <ol>
-                                            {% for item in content_block.json_content.items %}
-                                                <li>{{ item }}</li>
-                                            {% endfor %}
-                                        </ol>
-                                    {% else %}
-                                        <ul>
-                                            {% for item in content_block.json_content.items %}
-                                                <li>{{ item }}</li>
-                                            {% endfor %}
-                                        </ul>
-                                    {% endif %}
-                                {% elif content_block.content_type == 'table' %}
-                                    <table class="table table-striped">
-                                        {% if content_block.json_content.headers %}
-                                            <thead>
-                                                <tr>
-                                                    {% for header in content_block.json_content.headers %}
-                                                        <th>{{ header }}</th>
-                                                    {% endfor %}
-                                                </tr>
-                                            </thead>
-                                        {% endif %}
-                                        <tbody>
-                                            {% for row in content_block.json_content.rows %}
-                                                <tr>
-                                                    {% for cell in row %}
-                                                        <td>{{ cell }}</td>
-                                                    {% endfor %}
-                                                </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                {% elif content_block.content_type == 'card' %}
-                                    <div class="card">
-                                        {% if content_block.json_content.header %}
-                                            <div class="card-header">{{ content_block.json_content.header }}</div>
-                                        {% endif %}
-                                        <div class="card-body">
-                                            {% if content_block.json_content.title %}
-                                                <h5 class="card-title">{{ content_block.json_content.title }}</h5>
-                                            {% endif %}
-                                            {% if content_block.json_content.text %}
-                                                <p class="card-text">{{ content_block.json_content.text }}</p>
-                                            {% endif %}
-                                            {% if content_block.json_content.button %}
-                                                <a href="{{ content_block.json_content.button.url|default:'#' }}" class="btn btn-primary">{{ content_block.json_content.button.text|default:'Ver más' }}</a>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                {% elif content_block.content_type == 'alert' %}
-                                    <div class="alert alert-{{ content_block.json_content.type|default:'info' }} alert-dismissible fade show" role="alert">
-                                        {{ content_block.json_content.message|default:"Mensaje de alerta" }}
-                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                    </div>
-                                {% elif content_block.content_type == 'button' %}
-                                    <a href="{{ content_block.json_content.url|default:'#' }}" class="btn btn-{{ content_block.json_content.style|default:'primary' }} btn-{{ content_block.json_content.size|default:'md' }}">
-                                        {% if content_block.json_content.icon %}
-                                            <i class="bi bi-{{ content_block.json_content.icon }}"></i>
-                                        {% endif %}
-                                        {{ content_block.json_content.text|default:'Botón' }}
-                                    </a>
-                                {% elif content_block.content_type == 'form' %}
-                                    <form method="post" action="{{ content_block.json_content.action|default:'#' }}">
-                                        {% csrf_token %}
-                                        {% for field in content_block.json_content.fields %}
-                                            <div class="mb-3">
-                                                <label class="form-label">{{ field.label }}</label>
-                                                {% if field.type == 'textarea' %}
-                                                    <textarea class="form-control" name="{{ field.name }}" placeholder="{{ field.placeholder }}"></textarea>
-                                                {% else %}
-                                                    <input type="{{ field.type|default:'text' }}" class="form-control" name="{{ field.name }}" placeholder="{{ field.placeholder }}">
-                                                {% endif %}
-                                            </div>
-                                        {% endfor %}
-                                        <button type="submit" class="btn btn-primary">{{ content_block.json_content.submit_text|default:'Enviar' }}</button>
-                                    </form>
-                                {% elif content_block.content_type == 'divider' %}
-                                    <hr class="my-4">
-                                {% elif content_block.content_type == 'icon' %}
-                                    <div class="text-center">
-                                        <i class="bi bi-{{ content_block.json_content.icon|default:'star' }} fs-1 text-{{ content_block.json_content.color|default:'primary' }}"></i>
-                                        {% if content_block.json_content.text %}
-                                            <p class="mt-2">{{ content_block.json_content.text }}</p>
-                                        {% endif %}
-                                    </div>
-                                {% elif content_block.content_type == 'progress' %}
-                                    <div class="progress mb-3">
-                                        <div class="progress-bar bg-{{ content_block.json_content.color|default:'primary' }}" role="progressbar" style="width: {{ content_block.json_content.value|default:50 }}%" aria-valuenow="{{ content_block.json_content.value|default:50 }}" aria-valuemin="0" aria-valuemax="100">
-                                            {{ content_block.json_content.value|default:50 }}%
-                                        </div>
-                                    </div>
-                                {% elif content_block.content_type == 'badge' %}
-                                    <span class="badge bg-{{ content_block.json_content.color|default:'primary' }} fs-6">
-                                        {% if content_block.json_content.icon %}
-                                            <i class="bi bi-{{ content_block.json_content.icon }}"></i>
-                                        {% endif %}
-                                        {{ content_block.json_content.text|default:'Insignia' }}
-                                    </span>
-                                {% elif content_block.content_type == 'timeline' %}
-                                    <div class="timeline">
-                                        {% for item in content_block.json_content.items %}
-                                            <div class="timeline-item">
-                                                <div class="timeline-marker bg-{{ item.color|default:'primary' }}"></div>
-                                                <div class="timeline-content">
-                                                    <h6>{{ item.title }}</h6>
-                                                    <p>{{ item.description }}</p>
-                                                    <small class="text-muted">{{ item.date }}</small>
-                                                </div>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
+                                {% load lesson_tags %}
+                                {% with structured_content=content_block|get_structured_content %}
+                                    {{ structured_content|render_structured_content }}
+                                {% endwith %}
                             </div>
                         </div>
 

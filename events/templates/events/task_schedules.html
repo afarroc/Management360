@@ -1,0 +1,466 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Programaciones Recurrentes{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-12">
+
+            <!-- Header Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h4 class="mb-0">
+                                <i class="bi bi-calendar-check me-2"></i>
+                                Programaciones Recurrentes
+                            </h4>
+                            <small class="opacity-75">Gestiona tus tareas automatizadas</small>
+                        </div>
+                        <a href="{% url 'create_task_schedule' %}" class="btn btn-light btn-sm">
+                            <i class="bi bi-plus-circle me-1"></i>
+                            Nueva Programación
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="row mb-4">
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="card border-left-primary shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Total Programaciones
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_schedules }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-calendar-check fa-2x text-primary"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="card border-left-success shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                        Activas
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ active_schedules }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-play-circle fa-2x text-success"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="card border-left-secondary shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
+                                        Inactivas
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ inactive_schedules }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-pause-circle fa-2x text-secondary"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-3 col-md-6 mb-3">
+                    <div class="card border-left-warning shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="row no-gutters align-items-center">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                        Próximas Ejecuciones
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">{{ schedules|length }}</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="bi bi-clock fa-2x text-warning"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters and Search -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="searchInput" placeholder="Buscar por tarea o proyecto...">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-end gap-2">
+                                <select class="form-select form-select-sm" id="statusFilter" style="width: auto;">
+                                    <option value="all">Todos los estados</option>
+                                    <option value="active">Solo activas</option>
+                                    <option value="inactive">Solo inactivas</option>
+                                </select>
+                                <select class="form-select form-select-sm" id="recurrenceFilter" style="width: auto;">
+                                    <option value="all">Todos los tipos</option>
+                                    <option value="daily">Diarias</option>
+                                    <option value="weekly">Semanales</option>
+                                    <option value="custom">Personalizadas</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedules List -->
+            {% if schedules %}
+                <div class="row" id="schedulesContainer">
+                    {% for item in schedules %}
+                        <div class="col-xl-4 col-lg-6 col-md-6 mb-4 schedule-card"
+                             data-status="{% if item.schedule.is_active %}active{% else %}inactive{% endif %}"
+                             data-recurrence="{{ item.schedule.recurrence_type }}">
+                            <div class="card shadow-sm h-100 border-left-{% if item.schedule.is_active %}success{% else %}secondary{% endif %}">
+                                <div class="card-header bg-light">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="card-title mb-1">
+                                                <i class="bi bi-list-task me-1 text-primary"></i>
+                                                {{ item.schedule.task.title }}
+                                            </h6>
+                                            {% if item.schedule.task.project %}
+                                                <small class="text-muted">
+                                                    <i class="bi bi-folder me-1"></i>
+                                                    {{ item.schedule.task.project.title }}
+                                                </small>
+                                            {% endif %}
+                                        </div>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                <i class="bi bi-three-dots"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li><a class="dropdown-item" href="{% url 'task_schedule_detail' item.schedule.id %}">
+                                                    <i class="bi bi-eye me-2"></i>Ver Detalles
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="{% url 'edit_task_schedule' item.schedule.id %}">
+                                                    <i class="bi bi-pencil me-2"></i>Editar
+                                                </a></li>
+                                                <li><a class="dropdown-item" href="{% url 'generate_schedule_occurrences' item.schedule.id %}">
+                                                    <i class="bi bi-play me-2"></i>Generar Ocurrencias
+                                                </a></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><a class="dropdown-item text-danger" href="{% url 'delete_task_schedule' item.schedule.id %}">
+                                                    <i class="bi bi-trash me-2"></i>Eliminar
+                                                </a></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card-body">
+                                    <!-- Recurrence Info -->
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Tipo</small>
+                                            <span class="badge bg-primary">{{ item.schedule.get_recurrence_type_display }}</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Estado</small>
+                                            {% if item.schedule.is_active %}
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-play-fill me-1"></i>Activa
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="bi bi-pause-fill me-1"></i>Inactiva
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <!-- Days (only for weekly) -->
+                                    {% if item.schedule.recurrence_type == 'weekly' %}
+                                        <div class="mb-3">
+                                            <small class="text-muted d-block">Días de la semana</small>
+                                            <div class="d-flex flex-wrap gap-1">
+                                                {% if item.schedule.monday %}<span class="badge bg-light text-dark">Lun</span>{% endif %}
+                                                {% if item.schedule.tuesday %}<span class="badge bg-light text-dark">Mar</span>{% endif %}
+                                                {% if item.schedule.wednesday %}<span class="badge bg-light text-dark">Mié</span>{% endif %}
+                                                {% if item.schedule.thursday %}<span class="badge bg-light text-dark">Jue</span>{% endif %}
+                                                {% if item.schedule.friday %}<span class="badge bg-light text-dark">Vie</span>{% endif %}
+                                                {% if item.schedule.saturday %}<span class="badge bg-light text-dark">Sáb</span>{% endif %}
+                                                {% if item.schedule.sunday %}<span class="badge bg-light text-dark">Dom</span>{% endif %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- Time and Duration -->
+                                    <div class="row mb-3">
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Hora de inicio</small>
+                                            <i class="bi bi-clock me-1"></i>
+                                            <strong>{{ item.schedule.start_time|time:"H:i" }}</strong>
+                                        </div>
+                                        <div class="col-6">
+                                            <small class="text-muted d-block">Duración</small>
+                                            <i class="bi bi-hourglass me-1"></i>
+                                            {{ item.schedule.duration|time:"H:i" }} hs
+                                        </div>
+                                    </div>
+
+                                    <!-- Next Occurrence -->
+                                    <div class="mb-3">
+                                        <small class="text-muted d-block">Próxima ejecución</small>
+                                        {% if item.next_occurrence %}
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-calendar-event me-2 text-warning"></i>
+                                                <div>
+                                                    <strong>{{ item.next_occurrence.date|date:"d/m/Y" }}</strong>
+                                                    <br>
+                                                    <small class="text-muted">{{ item.next_occurrence.start_time|time:"H:i" }}</small>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">
+                                                <i class="bi bi-dash-circle me-1"></i>
+                                                Sin próximas ejecuciones
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <div class="card-footer bg-transparent">
+                                    <div class="d-flex justify-content-between">
+                                        <small class="text-muted">
+                                            Creada: {{ item.schedule.created_at|date:"d/m/Y" }}
+                                        </small>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'task_schedule_detail' item.schedule.id %}"
+                                               class="btn btn-outline-info btn-sm"
+                                               title="Ver detalles">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'edit_task_schedule' item.schedule.id %}"
+                                               class="btn btn-outline-warning btn-sm"
+                                               title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{% url 'generate_schedule_occurrences' item.schedule.id %}"
+                                               class="btn btn-outline-success btn-sm"
+                                               title="Generar ocurrencias">
+                                                <i class="bi bi-play"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <!-- Empty State -->
+                <div class="card shadow-sm">
+                    <div class="card-body text-center py-5">
+                        <div class="empty-state">
+                            <i class="bi bi-calendar-x display-1 text-muted mb-3"></i>
+                            <h4 class="text-muted">No hay programaciones recurrentes</h4>
+                            <p class="text-muted mb-4">
+                                Crea tu primera programación para automatizar tareas recurrentes y mejorar tu productividad.
+                            </p>
+                            <a href="{% url 'create_task_schedule' %}" class="btn btn-primary btn-lg">
+                                <i class="bi bi-plus-circle me-2"></i>
+                                Crear Primera Programación
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Custom styles for the schedules list */
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df !important;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a !important;
+}
+
+.border-left-secondary {
+    border-left: 0.25rem solid #6c757d !important;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+}
+
+.text-xs {
+    font-size: 0.7rem;
+}
+
+.font-weight-bold {
+    font-weight: 700 !important;
+}
+
+.text-gray-800 {
+    color: #5a5c69 !important;
+}
+
+.card-title {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.empty-state {
+    padding: 3rem 1rem;
+}
+
+.schedule-card {
+    transition: transform 0.2s ease-in-out;
+}
+
+.schedule-card:hover {
+    transform: translateY(-2px);
+}
+
+.dropdown-menu {
+    min-width: 180px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-header .d-flex {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+
+    .card-header .d-flex > div:first-child {
+        margin-bottom: 1rem;
+    }
+
+    .btn-group-sm .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .badge {
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .col-xl-4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
+    .d-flex.justify-content-end.gap-2 {
+        flex-direction: column;
+    }
+
+    .d-flex.justify-content-end.gap-2 > * {
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const recurrenceFilter = document.getElementById('recurrenceFilter');
+    const scheduleCards = document.querySelectorAll('.schedule-card');
+
+    // Función para filtrar programaciones
+    function filterSchedules() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const statusValue = statusFilter.value;
+        const recurrenceValue = recurrenceFilter.value;
+
+        scheduleCards.forEach(card => {
+            const taskTitle = card.querySelector('.card-title').textContent.toLowerCase();
+            const projectTitle = card.querySelector('.text-muted') ?
+                card.querySelector('.text-muted').textContent.toLowerCase() : '';
+            const cardStatus = card.dataset.status;
+            const cardRecurrence = card.dataset.recurrence;
+
+            const matchesSearch = taskTitle.includes(searchTerm) || projectTitle.includes(searchTerm);
+            const matchesStatus = statusValue === 'all' || cardStatus === statusValue;
+            const matchesRecurrence = recurrenceValue === 'all' || cardRecurrence === recurrenceValue;
+
+            if (matchesSearch && matchesStatus && matchesRecurrence) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        // Actualizar contador de resultados visibles
+        updateVisibleCount();
+    }
+
+    // Función para actualizar el contador de resultados
+    function updateVisibleCount() {
+        const visibleCards = document.querySelectorAll('.schedule-card[style*="display: block"], .schedule-card:not([style*="display"])');
+        const totalCards = scheduleCards.length;
+
+        // Podríamos agregar un indicador visual aquí si es necesario
+        console.log(`Mostrando ${visibleCards.length} de ${totalCards} programaciones`);
+    }
+
+    // Event listeners para filtros
+    searchInput.addEventListener('input', filterSchedules);
+    statusFilter.addEventListener('change', filterSchedules);
+    recurrenceFilter.addEventListener('change', filterSchedules);
+
+    // Confirmación para eliminar
+    document.querySelectorAll('a[href*="delete_task_schedule"]').forEach(link => {
+        link.addEventListener('click', function(e) {
+            if (!confirm('¿Estás seguro de que quieres eliminar esta programación recurrente? Esta acción no se puede deshacer.')) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    // Animación de hover en cards
+    scheduleCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px)';
+            this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+        });
+
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '';
+        });
+    });
+
+    // Inicializar filtros
+    updateVisibleCount();
+});
+</script>
+{% endblock %}

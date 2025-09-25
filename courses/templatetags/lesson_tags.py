@@ -282,7 +282,9 @@ def render_structured_content(structured_content):
             html.append('<span class="exercise-title">Ejercicio Práctico</span>')
             html.append('</div>')
             if content:
-                html.append(f'<p class="lesson-exercise-content">{content}</p>')
+                # Procesar formato Markdown completo para exercises
+                processed_content = process_markdown(content)
+                html.append(f'<div class="lesson-exercise-content">{processed_content}</div>')
             html.append('</div>')
 
         elif element_type == 'markdown':
@@ -292,9 +294,9 @@ def render_structured_content(structured_content):
             html.append('<span class="markdown-title">Contenido Formateado</span>')
             html.append('</div>')
             if content:
-                # Convertir saltos de línea simples a <br> para simular markdown básico
-                formatted_content = content.replace('\n', '<br>')
-                html.append(f'<div class="lesson-markdown-content">{formatted_content}</div>')
+                # Procesar formato Markdown completo
+                processed_content = process_markdown(content)
+                html.append(f'<div class="lesson-markdown-content">{processed_content}</div>')
             html.append('</div>')
 
         elif element_type == 'link':
@@ -429,6 +431,541 @@ def render_structured_content(structured_content):
                 html.append(f'<p class="lesson-quiz-description">{content}</p>')
             html.append('</div>')
 
+        # ===========================================
+        # ADVERTISEMENT ELEMENTS
+        # ===========================================
+
+        elif element_type == 'ad_banner':
+            html.append('<div class="ad-banner-container bg-primary text-white p-4 rounded mb-4">')
+            if title:
+                html.append(f'<h3 class="ad-banner-title mb-3">{title}</h3>')
+            if content and isinstance(content, dict):
+                header = content.get('header', '')
+                subheader = content.get('subheader', '')
+                features = content.get('features', [])
+                offer = content.get('offer', '')
+                price = content.get('price', {})
+                cta = content.get('cta', {})
+                secondary_cta = content.get('secondary_cta', {})
+
+                if header:
+                    html.append(f'<h4 class="ad-banner-header">{header}</h4>')
+                if subheader:
+                    html.append(f'<p class="ad-banner-subheader mb-3">{subheader}</p>')
+
+                if features:
+                    html.append('<ul class="ad-features list-unstyled">')
+                    for feature in features:
+                        html.append(f'<li class="mb-2"><i class="bi bi-check-circle-fill me-2"></i>{feature}</li>')
+                    html.append('</ul>')
+
+                if offer:
+                    html.append(f'<div class="ad-offer bg-warning text-dark p-2 rounded my-3"><strong>{offer}</strong></div>')
+
+                if price:
+                    original = price.get('original', '')
+                    discounted = price.get('discounted', '')
+                    period = price.get('period', '')
+                    html.append('<div class="ad-price mb-3">')
+                    if original:
+                        html.append(f'<span class="original-price text-decoration-line-through me-2">{original}</span>')
+                    if discounted:
+                        html.append(f'<span class="discounted-price fw-bold fs-4 text-success">{discounted}</span>')
+                    if period:
+                        html.append(f'<small class="text-muted d-block">{period}</small>')
+                    html.append('</div>')
+
+                if cta:
+                    text = cta.get('text', 'Ver más')
+                    url = cta.get('url', '#')
+                    color = cta.get('color', 'primary')
+                    html.append(f'<a href="{url}" class="btn btn-{color} btn-lg me-2">{text}</a>')
+
+                if secondary_cta:
+                    text = secondary_cta.get('text', '')
+                    url = secondary_cta.get('url', '#')
+                    if text:
+                        html.append(f'<a href="{url}" class="btn btn-outline-light">{text}</a>')
+            html.append('</div>')
+
+        elif element_type == 'ad_card':
+            html.append('<div class="ad-card-container card border-primary mb-4">')
+            html.append('<div class="card-body">')
+            if title:
+                html.append(f'<h5 class="card-title text-primary">{title}</h5>')
+            if content and isinstance(content, dict):
+                header = content.get('header', '')
+                description = content.get('description', '')
+                highlights = content.get('highlights', [])
+                price = content.get('price', '')
+                badge = content.get('badge', '')
+                cta = content.get('cta', {})
+
+                if header:
+                    html.append(f'<h6 class="card-subtitle mb-2 text-muted">{header}</h6>')
+                if description:
+                    html.append(f'<p class="card-text">{description}</p>')
+
+                if highlights:
+                    html.append('<ul class="ad-highlights">')
+                    for highlight in highlights:
+                        html.append(f'<li>{highlight}</li>')
+                    html.append('</ul>')
+
+                if price:
+                    html.append(f'<div class="ad-price fw-bold text-success fs-5 my-2">{price}</div>')
+                if badge:
+                    html.append(f'<span class="badge bg-warning text-dark mb-2">{badge}</span>')
+
+                if cta:
+                    text = cta.get('text', 'Ver más')
+                    url = cta.get('url', '#')
+                    html.append(f'<a href="{url}" class="btn btn-primary">{text}</a>')
+            html.append('</div>')
+            html.append('</div>')
+
+        elif element_type == 'ad_alert':
+            variant = 'info'
+            if content and isinstance(content, dict):
+                variant = content.get('variant', 'info')
+            html.append(f'<div class="ad-alert-container alert alert-{variant} mb-4">')
+            if content and isinstance(content, dict):
+                icon = content.get('icon', '')
+                title_alert = content.get('title', '')
+                message = content.get('message', '')
+                features = content.get('features', [])
+                cta = content.get('cta', {})
+
+                if icon:
+                    html.append(f'<i class="bi bi-{icon} me-2"></i>')
+                if title_alert:
+                    html.append(f'<strong>{title_alert}</strong>')
+                if message:
+                    html.append(f'<br>{message}')
+
+                if features:
+                    html.append('<ul class="mb-2 mt-2">')
+                    for feature in features:
+                        html.append(f'<li>{feature}</li>')
+                    html.append('</ul>')
+
+                if cta:
+                    text = cta.get('text', 'Ver más')
+                    url = cta.get('url', '#')
+                    html.append(f'<br><a href="{url}" class="btn btn-sm btn-{variant}">{text}</a>')
+            html.append('</div>')
+
+        elif element_type == 'ad_testimonial':
+            html.append('<div class="ad-testimonial-container card mb-4">')
+            html.append('<div class="card-body">')
+            html.append('<blockquote class="blockquote mb-0">')
+            if content and isinstance(content, dict):
+                quote = content.get('quote', '')
+                author = content.get('author', {})
+                achievement = content.get('achievement', '')
+
+                if quote:
+                    html.append(f'<p class="mb-2">{quote}</p>')
+                html.append('<footer class="blockquote-footer">')
+                if author:
+                    name = author.get('name', '')
+                    role = author.get('role', '')
+                    rating = author.get('rating', 0)
+                    if name:
+                        html.append(f'<cite title="Source Title">{name}</cite>')
+                    if role:
+                        html.append(f'<br><small class="text-muted">{role}</small>')
+                    if rating:
+                        stars = '⭐' * rating
+                        html.append(f'<br><small class="text-warning">{stars}</small>')
+                html.append('</footer>')
+                if achievement:
+                    html.append(f'<div class="text-muted small mt-2">{achievement}</div>')
+            html.append('</blockquote>')
+            html.append('</div>')
+            html.append('</div>')
+
+        elif element_type == 'ad_countdown':
+            html.append('<div class="ad-countdown-container bg-dark text-white p-4 rounded mb-4 text-center">')
+            if content and isinstance(content, dict):
+                title_cd = content.get('title', '')
+                message = content.get('message', '')
+                countdown = content.get('countdown', {})
+                offer_details = content.get('offer_details', [])
+                cta = content.get('cta', {})
+
+                if title_cd:
+                    html.append(f'<h4 class="mb-3">{title_cd}</h4>')
+                if message:
+                    html.append(f'<p class="mb-3">{message}</p>')
+
+                if countdown:
+                    days = countdown.get('days', 0)
+                    hours = countdown.get('hours', 0)
+                    minutes = countdown.get('minutes', 0)
+                    html.append('<div class="countdown-timer d-flex justify-content-center mb-3">')
+                    html.append(f'<div class="countdown-item mx-2"><span class="fs-2 fw-bold">{days}</span><br><small>Días</small></div>')
+                    html.append(f'<div class="countdown-item mx-2"><span class="fs-2 fw-bold">{hours}</span><br><small>Horas</small></div>')
+                    html.append(f'<div class="countdown-item mx-2"><span class="fs-2 fw-bold">{minutes}</span><br><small>Min</small></div>')
+                    html.append('</div>')
+
+                if offer_details:
+                    html.append('<ul class="offer-details text-start d-inline-block mb-3">')
+                    for detail in offer_details:
+                        html.append(f'<li class="mb-1">{detail}</li>')
+                    html.append('</ul>')
+
+                if cta:
+                    text = cta.get('text', 'Ver más')
+                    url = cta.get('url', '#')
+                    html.append(f'<a href="{url}" class="btn btn-warning btn-lg">{text}</a>')
+            html.append('</div>')
+
+        elif element_type == 'ad_feature':
+            html.append('<div class="ad-feature-container mb-4">')
+            if content and isinstance(content, dict):
+                title_feat = content.get('title', '')
+                features = content.get('features', [])
+                cta = content.get('cta', {})
+
+                if title_feat:
+                    html.append(f'<h4 class="text-center mb-4">{title_feat}</h4>')
+
+                if features:
+                    html.append('<div class="row">')
+                    for feature in features:
+                        icon = feature.get('icon', '🤖')
+                        title_f = feature.get('title', '')
+                        description = feature.get('description', '')
+                        html.append('<div class="col-md-6 col-lg-3 mb-3">')
+                        html.append('<div class="feature-item text-center p-3 border rounded">')
+                        html.append(f'<i class="bi bi-{icon} fs-1 text-primary mb-2"></i>')
+                        if title_f:
+                            html.append(f'<h6 class="mb-2">{title_f}</h6>')
+                        if description:
+                            html.append(f'<p class="small text-muted">{description}</p>')
+                        html.append('</div>')
+                        html.append('</div>')
+                    html.append('</div>')
+
+                if cta:
+                    text = cta.get('text', 'Ver más')
+                    url = cta.get('url', '#')
+                    html.append(f'<div class="text-center mt-4"><a href="{url}" class="btn btn-primary">{text}</a></div>')
+            html.append('</div>')
+
+        elif element_type == 'ad_comparison':
+            html.append('<div class="ad-comparison-container mb-4">')
+            if content and isinstance(content, dict):
+                title_comp = content.get('title', '')
+                plans = content.get('plans', [])
+
+                if title_comp:
+                    html.append(f'<h4 class="text-center mb-4">{title_comp}</h4>')
+
+                if plans:
+                    html.append('<div class="row">')
+                    for plan in plans:
+                        name = plan.get('name', '')
+                        price = plan.get('price', '')
+                        original_price = plan.get('original_price', '')
+                        popular = plan.get('popular', False)
+                        features = plan.get('features', [])
+                        cta = plan.get('cta', {})
+
+                        col_class = "col-md-4 mb-3"
+                        card_class = "plan-card card h-100 border-secondary"
+                        if popular:
+                            card_class += " popular-plan"
+
+                        html.append(f'<div class="{col_class}">')
+                        html.append(f'<div class="{card_class}">')
+                        if popular:
+                            html.append('<div class="popular-badge bg-primary text-white text-center py-1">MÁS POPULAR</div>')
+                        html.append('<div class="card-body text-center">')
+                        if name:
+                            html.append(f'<h5 class="card-title">{name}</h5>')
+                        if price:
+                            html.append(f'<div class="plan-price fs-3 fw-bold text-primary mb-3">{price}</div>')
+                        if original_price:
+                            html.append(f'<small class="text-decoration-line-through text-muted">{original_price}</small>')
+                        if features:
+                            html.append('<ul class="list-unstyled">')
+                            for feature in features:
+                                if feature.startswith('✓'):
+                                    html.append(f'<li class="text-success"><small>{feature}</small></li>')
+                                elif feature.startswith('✗'):
+                                    html.append(f'<li class="text-danger"><small>{feature}</small></li>')
+                                else:
+                                    html.append(f'<li><small>{feature}</small></li>')
+                            html.append('</ul>')
+                        if cta:
+                            text = cta.get('text', 'Seleccionar')
+                            variant = cta.get('variant', 'primary')
+                            html.append(f'<a href="#" class="btn btn-{variant} mt-3">{text}</a>')
+                        html.append('</div>')
+                        html.append('</div>')
+                        html.append('</div>')
+                    html.append('</div>')
+            html.append('</div>')
+
+        elif element_type == 'ad_achievement':
+            html.append('<div class="ad-achievement-container mb-4">')
+            if content and isinstance(content, dict):
+                title_ach = content.get('title', '')
+                badges = content.get('badges', [])
+                progress = content.get('progress', {})
+
+                if title_ach:
+                    html.append(f'<h4 class="text-center mb-4">{title_ach}</h4>')
+
+                if badges:
+                    html.append('<div class="row">')
+                    for badge in badges:
+                        icon = badge.get('icon', '⭐')
+                        title_b = badge.get('title', '')
+                        description = badge.get('description', '')
+                        html.append('<div class="col-md-3 mb-3">')
+                        html.append('<div class="badge-item text-center p-3 border rounded">')
+                        html.append(f'<i class="bi bi-{icon} fs-2 text-warning mb-2"></i>')
+                        if title_b:
+                            html.append(f'<h6 class="mb-2">{title_b}</h6>')
+                        if description:
+                            html.append(f'<p class="small text-muted">{description}</p>')
+                        html.append('</div>')
+                        html.append('</div>')
+                    html.append('</div>')
+
+                if progress:
+                    current = progress.get('current', 0)
+                    total = progress.get('total', 12)
+                    message = progress.get('message', '')
+                    percentage = (current / total * 100) if total > 0 else 0
+                    html.append('<div class="progress-container mt-4">')
+                    html.append(f'<div class="progress mb-2"><div class="progress-bar bg-success" role="progressbar" style="width: {percentage}%" aria-valuenow="{percentage}" aria-valuemin="0" aria-valuemax="100"></div></div>')
+                    if message:
+                        html.append(f'<small class="text-muted">{message}</small>')
+                    html.append('</div>')
+            html.append('</div>')
+
+        elif element_type == 'ad_banner':
+            # Banner publicitario
+            html.append('<div class="ad-banner-container bg-primary text-white p-4 rounded mb-4">')
+            if title:
+                html.append(f'<h3 class="ad-banner-title mb-3">{title}</h3>')
+            if content:
+                if content.get('header'):
+                    html.append(f'<h4 class="ad-banner-header">{content["header"]}</h4>')
+                if content.get('subheader'):
+                    html.append(f'<p class="ad-banner-subheader mb-3">{content["subheader"]}</p>')
+                if content.get('features'):
+                    html.append('<ul class="ad-features list-unstyled">')
+                    for feature in content['features']:
+                        html.append(f'<li class="mb-2"><i class="bi bi-check-circle-fill me-2"></i>{feature}</li>')
+                    html.append('</ul>')
+                if content.get('offer'):
+                    html.append(f'<div class="ad-offer bg-warning text-dark p-2 rounded my-3"><strong>{content["offer"]}</strong></div>')
+                if content.get('price'):
+                    price = content['price']
+                    html.append('<div class="ad-price mb-3">')
+                    html.append(f'<span class="original-price text-decoration-line-through me-2">{price.get("original", "")}</span>')
+                    html.append(f'<span class="discounted-price fw-bold fs-4 text-success">{price.get("discounted", "")}</span>')
+                    html.append(f'<small class="text-muted d-block">{price.get("period", "")}</small>')
+                    html.append('</div>')
+                if content.get('cta'):
+                    cta = content['cta']
+                    html.append(f'<a href="{cta.get("url", "#")}" class="btn btn-{cta.get("color", "light")} btn-lg me-2">{cta.get("text", "Ver más")}</a>')
+                if content.get('secondary_cta'):
+                    secondary_cta = content['secondary_cta']
+                    html.append(f'<a href="{secondary_cta.get("url", "#")}" class="btn btn-outline-light">{secondary_cta.get("text", "Más información")}</a>')
+            html.append('</div>')
+
+        elif element_type == 'ad_card':
+            # Tarjeta publicitaria
+            html.append('<div class="ad-card-container card border-primary mb-4">')
+            html.append('<div class="card-body">')
+            if title:
+                html.append(f'<h5 class="card-title text-primary">{title}</h5>')
+            if content:
+                if content.get('header'):
+                    html.append(f'<h6 class="card-subtitle mb-2 text-muted">{content["header"]}</h6>')
+                if content.get('description'):
+                    html.append(f'<p class="card-text">{content["description"]}</p>')
+                if content.get('highlights'):
+                    html.append('<ul class="ad-highlights">')
+                    for highlight in content['highlights']:
+                        html.append(f'<li>{highlight}</li>')
+                    html.append('</ul>')
+                if content.get('price'):
+                    html.append(f'<div class="ad-price fw-bold text-success fs-5 my-2">{content["price"]}</div>')
+                if content.get('badge'):
+                    html.append(f'<span class="badge bg-warning text-dark mb-2">{content["badge"]}</span>')
+                if content.get('cta'):
+                    cta = content['cta']
+                    html.append(f'<a href="{cta.get("url", "#")}" class="btn btn-primary">{cta.get("text", "Ver más")}</a>')
+            html.append('</div>')
+            html.append('</div>')
+
+        elif element_type == 'ad_alert':
+            # Alerta publicitaria
+            variant = content.get('variant', 'info') if content else 'info'
+            html.append(f'<div class="ad-alert-container alert alert-{variant} mb-4">')
+            if content:
+                if content.get('icon'):
+                    html.append(f'<i class="bi bi-{content["icon"]} me-2"></i>')
+                if content.get('title'):
+                    html.append(f'<strong>{content["title"]}</strong><br>')
+                if content.get('message'):
+                    html.append(f'{content["message"]}')
+                if content.get('features'):
+                    html.append('<ul class="mb-2 mt-2">')
+                    for feature in content['features']:
+                        html.append(f'<li>{feature}</li>')
+                    html.append('</ul>')
+                if content.get('cta'):
+                    cta = content['cta']
+                    html.append(f'<br><a href="{cta.get("url", "#")}" class="btn btn-sm btn-{variant}">{cta.get("text", "Ver más")}</a>')
+            html.append('</div>')
+
+        elif element_type == 'ad_testimonial':
+            # Testimonial publicitario
+            html.append('<div class="ad-testimonial-container card mb-4">')
+            html.append('<div class="card-body">')
+            if content:
+                html.append('<blockquote class="blockquote mb-0">')
+                if content.get('quote'):
+                    html.append(f'<p class="mb-2">"{content["quote"]}"</p>')
+                if content.get('author'):
+                    author = content['author']
+                    html.append('<footer class="blockquote-footer">')
+                    html.append(f'<cite title="Source Title">{author.get("name", "")}</cite>')
+                    if author.get('role'):
+                        html.append(f'<br><small class="text-muted">{author["role"]}</small>')
+                    if author.get('rating'):
+                        stars = '⭐' * author['rating']
+                        html.append(f'<br><small class="text-warning">{stars}</small>')
+                    html.append('</footer>')
+                if content.get('achievement'):
+                    html.append(f'<div class="text-muted small mt-2">{content["achievement"]}</div>')
+                html.append('</blockquote>')
+            html.append('</div>')
+            html.append('</div>')
+
+        elif element_type == 'ad_countdown':
+            # Contador regresivo publicitario
+            html.append('<div class="ad-countdown-container bg-dark text-white p-4 rounded mb-4 text-center">')
+            if content:
+                if content.get('title'):
+                    html.append(f'<h4 class="mb-3">{content["title"]}</h4>')
+                if content.get('message'):
+                    html.append(f'<p class="mb-3">{content["message"]}</p>')
+                if content.get('countdown'):
+                    countdown = content['countdown']
+                    html.append('<div class="countdown-timer d-flex justify-content-center mb-3">')
+                    html.append(f'<div class="countdown-item mx-2"><span class="fs-2 fw-bold">{countdown.get("days", 0)}</span><br><small>Días</small></div>')
+                    html.append(f'<div class="countdown-item mx-2"><span class="fs-2 fw-bold">{countdown.get("hours", 0)}</span><br><small>Horas</small></div>')
+                    html.append(f'<div class="countdown-item mx-2"><span class="fs-2 fw-bold">{countdown.get("minutes", 0)}</span><br><small>Min</small></div>')
+                    html.append('</div>')
+                if content.get('offer_details'):
+                    html.append('<ul class="offer-details text-start d-inline-block mb-3">')
+                    for detail in content['offer_details']:
+                        html.append(f'<li class="mb-1">{detail}</li>')
+                    html.append('</ul>')
+                if content.get('cta'):
+                    cta = content['cta']
+                    html.append(f'<a href="{cta.get("url", "#")}" class="btn btn-warning btn-lg">{cta.get("text", "Comprar ahora")}</a>')
+            html.append('</div>')
+
+        elif element_type == 'ad_feature':
+            # Características destacadas
+            html.append('<div class="ad-feature-container mb-4">')
+            if content:
+                if content.get('title'):
+                    html.append(f'<h4 class="text-center mb-4">{content["title"]}</h4>')
+                if content.get('features'):
+                    html.append('<div class="row">')
+                    for feature in content['features']:
+                        html.append('<div class="col-md-6 col-lg-3 mb-3">')
+                        html.append('<div class="feature-item text-center p-3 border rounded">')
+                        if feature.get('icon'):
+                            html.append(f'<i class="bi bi-{feature["icon"]} fs-1 text-primary mb-2"></i>')
+                        if feature.get('title'):
+                            html.append(f'<h6 class="mb-2">{feature["title"]}</h6>')
+                        if feature.get('description'):
+                            html.append(f'<p class="small text-muted">{feature["description"]}</p>')
+                        html.append('</div>')
+                        html.append('</div>')
+                    html.append('</div>')
+                if content.get('cta'):
+                    cta = content['cta']
+                    html.append(f'<div class="text-center mt-4"><a href="{cta.get("url", "#")}" class="btn btn-primary">{cta.get("text", "Ver más")}</a></div>')
+            html.append('</div>')
+
+        elif element_type == 'ad_comparison':
+            # Tabla de comparación
+            html.append('<div class="ad-comparison-container mb-4">')
+            if content:
+                if content.get('title'):
+                    html.append(f'<h4 class="text-center mb-4">{content["title"]}</h4>')
+                if content.get('plans'):
+                    html.append('<div class="row">')
+                    for plan in content['plans']:
+                        popular_class = 'border-primary popular-plan' if plan.get('popular') else 'border-secondary'
+                        html.append(f'<div class="col-md-4 mb-3">')
+                        html.append(f'<div class="plan-card card h-100 {popular_class}">')
+                        if plan.get('popular'):
+                            html.append('<div class="popular-badge bg-primary text-white text-center py-1">MÁS POPULAR</div>')
+                        html.append('<div class="card-body text-center">')
+                        html.append(f'<h5 class="card-title">{plan.get("name", "")}</h5>')
+                        html.append(f'<div class="plan-price fs-3 fw-bold text-primary mb-3">{plan.get("price", "")}</div>')
+                        if plan.get('original_price'):
+                            html.append(f'<small class="text-decoration-line-through text-muted">{plan["original_price"]}</small>')
+                        if plan.get('features'):
+                            html.append('<ul class="list-unstyled">')
+                            for feature in plan['features']:
+                                icon = '✓' if not feature.startswith('✗') else '✗'
+                                css_class = 'text-success' if not feature.startswith('✗') else 'text-danger'
+                                html.append(f'<li class="{css_class}"><small>{feature}</small></li>')
+                            html.append('</ul>')
+                        if plan.get('cta'):
+                            cta = plan['cta']
+                            variant = cta.get('variant', 'primary')
+                            html.append(f'<a href="#" class="btn btn-{variant} mt-3">{cta.get("text", "Seleccionar")}</a>')
+                        html.append('</div>')
+                        html.append('</div>')
+                        html.append('</div>')
+                    html.append('</div>')
+            html.append('</div>')
+
+        elif element_type == 'ad_achievement':
+            # Logros y badges
+            html.append('<div class="ad-achievement-container mb-4">')
+            if content:
+                if content.get('title'):
+                    html.append(f'<h4 class="text-center mb-4">{content["title"]}</h4>')
+                if content.get('badges'):
+                    html.append('<div class="row">')
+                    for badge in content['badges']:
+                        html.append('<div class="col-md-3 mb-3">')
+                        html.append('<div class="badge-item text-center p-3 border rounded">')
+                        if badge.get('icon'):
+                            html.append(f'<i class="bi bi-{badge["icon"]} fs-2 text-warning mb-2"></i>')
+                        if badge.get('title'):
+                            html.append(f'<h6 class="mb-2">{badge["title"]}</h6>')
+                        if badge.get('description'):
+                            html.append(f'<p class="small text-muted">{badge["description"]}</p>')
+                        html.append('</div>')
+                        html.append('</div>')
+                    html.append('</div>')
+                if content.get('progress'):
+                    progress = content['progress']
+                    percentage = int((progress.get('current', 0) / progress.get('total', 1)) * 100)
+                    html.append('<div class="progress-container mt-4">')
+                    html.append(f'<div class="progress mb-2"><div class="progress-bar bg-success" role="progressbar" style="width: {percentage}%" aria-valuenow="{percentage}" aria-valuemin="0" aria-valuemax="100"></div></div>')
+                    html.append(f'<small class="text-muted">{progress.get("message", "")}</small>')
+                    html.append('</div>')
+            html.append('</div>')
+
         elif element_type == 'content_block':
             # Renderizar un bloque de contenido reutilizable
             block_id = element.get('content')
@@ -436,28 +973,55 @@ def render_structured_content(structured_content):
                 try:
                     from courses.models import ContentBlock
                     block = ContentBlock.objects.get(id=block_id, is_public=True)
-                    html.append('<div class="lesson-content-block-container">')
-                    html.append('<div class="lesson-content-block-header">')
-                    html.append('<i class="bi bi-blockquote-left text-primary me-2"></i>')
-                    html.append(f'<span class="content-block-title">Bloque: {block.title}</span>')
-                    html.append('</div>')
 
-                    # Renderizar el contenido del bloque según su tipo
-                    if block.content_type == 'html' or block.content_type == 'bootstrap':
-                        html.append(block.html_content)
-                    elif block.content_type == 'markdown':
-                        # Usar la función de procesamiento de markdown
-                        processed_markdown = process_markdown(block.markdown_content)
-                        html.append(processed_markdown)
-                    elif block.content_type == 'json':
-                        # Para JSON, mostrar como código formateado
-                        import json
-                        formatted_json = json.dumps(block.json_content, indent=2, ensure_ascii=False)
-                        html.append(f'<pre><code>{formatted_json}</code></pre>')
-                    elif block.content_type == 'text':
-                        html.append(f'<p>{block.html_content}</p>')
+                    # Obtener elementos estructurados del ContentBlock
+                    structured_elements = get_structured_content(block)
 
-                    html.append('</div>')
+                    # Si el ContentBlock se convierte en múltiples elementos, renderizarlos recursivamente
+                    if structured_elements:
+                        html.append('<div class="lesson-content-block-container">')
+                        html.append('<div class="lesson-content-block-header">')
+                        html.append('<i class="bi bi-blockquote-left text-primary me-2"></i>')
+                        html.append(f'<span class="content-block-title">Bloque: {block.title}</span>')
+                        html.append('</div>')
+
+                        # Renderizar recursivamente los elementos estructurados
+                        for structured_element in structured_elements:
+                            # Crear una copia del elemento con el título del bloque si no tiene título
+                            element_copy = structured_element.copy()
+                            if not element_copy.get('title') and block.title:
+                                element_copy['title'] = block.title
+
+                            # Renderizar el elemento usando la lógica recursiva
+                            element_html = render_structured_content([element_copy])
+                            html.append(element_html)
+
+                        html.append('</div>')
+                    else:
+                        # Fallback: renderizar directamente si no hay elementos estructurados
+                        html.append('<div class="lesson-content-block-container">')
+                        html.append('<div class="lesson-content-block-header">')
+                        html.append('<i class="bi bi-blockquote-left text-primary me-2"></i>')
+                        html.append(f'<span class="content-block-title">Bloque: {block.title}</span>')
+                        html.append('</div>')
+
+                        # Renderizar el contenido del bloque según su tipo
+                        if block.content_type == 'html' or block.content_type == 'bootstrap':
+                            html.append(block.html_content)
+                        elif block.content_type == 'markdown':
+                            # Usar la función de procesamiento de markdown
+                            processed_markdown = process_markdown(block.markdown_content)
+                            html.append(processed_markdown)
+                        elif block.content_type == 'json':
+                            # Para JSON, mostrar como código formateado
+                            import json
+                            formatted_json = json.dumps(block.json_content, indent=2, ensure_ascii=False)
+                            html.append(f'<pre><code>{formatted_json}</code></pre>')
+                        elif block.content_type == 'text':
+                            html.append(f'<p>{block.html_content}</p>')
+
+                        html.append('</div>')
+
                 except ContentBlock.DoesNotExist:
                     html.append('<div class="alert alert-warning">')
                     html.append('<i class="bi bi-exclamation-triangle me-2"></i>')
@@ -716,3 +1280,283 @@ def is_external_url(url):
         return True
     except:
         return False
+
+@register.filter
+def get_structured_content(content_block):
+    """
+    Convierte un ContentBlock en elementos estructurados para renderizar como lección
+    """
+    if not content_block:
+        return []
+
+    structured_content = []
+
+    try:
+        # Mapeo de tipos de content block a tipos de elementos estructurados
+        if content_block.content_type == 'html' or content_block.content_type == 'bootstrap':
+            # HTML/Bootstrap se convierte en elemento 'text' con contenido HTML
+            structured_content.append({
+                'type': 'text',
+                'title': content_block.title,
+                'content': content_block.html_content
+            })
+
+        elif content_block.content_type == 'markdown':
+            # Markdown se convierte en elemento 'markdown'
+            structured_content.append({
+                'type': 'markdown',
+                'title': content_block.title,
+                'content': content_block.markdown_content
+            })
+
+        elif content_block.content_type == 'json':
+            # JSON puede contener elementos estructurados directamente
+            if isinstance(content_block.json_content, list):
+                # Si es una lista de elementos estructurados, devolverla directamente
+                structured_content.extend(content_block.json_content)
+            else:
+                # Si es un objeto JSON simple, mostrarlo como código
+                import json
+                formatted_json = json.dumps(content_block.json_content, indent=2, ensure_ascii=False)
+                structured_content.append({
+                    'type': 'text',
+                    'title': content_block.title,
+                    'content': f'<pre><code class="language-json">{formatted_json}</code></pre>'
+                })
+
+        elif content_block.content_type == 'text':
+            # Texto simple
+            structured_content.append({
+                'type': 'text',
+                'title': content_block.title,
+                'content': content_block.html_content
+            })
+
+        elif content_block.content_type == 'image':
+            # Imagen
+            structured_content.append({
+                'type': 'image',
+                'title': content_block.title,
+                'content': content_block.json_content.get('url', ''),
+                'items': []  # No aplica para imagen
+            })
+
+        elif content_block.content_type == 'video':
+            # Video
+            structured_content.append({
+                'type': 'video',
+                'title': content_block.title,
+                'content': {
+                    'url': content_block.json_content.get('url', ''),
+                    'description': content_block.title,
+                    'duration': 0
+                }
+            })
+
+        elif content_block.content_type == 'quote':
+            # Cita se convierte en texto con formato especial
+            quote_text = content_block.json_content.get('text', 'Cita no especificada')
+            author = content_block.json_content.get('author', '')
+            formatted_quote = f'<blockquote>"{quote_text}"'
+            if author:
+                formatted_quote += f'<footer class="blockquote-footer">{author}</footer>'
+            formatted_quote += '</blockquote>'
+
+            structured_content.append({
+                'type': 'text',
+                'title': content_block.title,
+                'content': formatted_quote
+            })
+
+        elif content_block.content_type == 'code':
+            # Código se muestra como bloque de código
+            code_content = content_block.json_content.get('code', 'Código no especificado')
+            language = content_block.json_content.get('language', 'text')
+            formatted_code = f'<pre><code class="language-{language}">{code_content}</code></pre>'
+
+            structured_content.append({
+                'type': 'text',
+                'title': content_block.title,
+                'content': formatted_code
+            })
+
+        elif content_block.content_type == 'list':
+            # Lista
+            list_type = content_block.json_content.get('type', 'unordered')
+            items = content_block.json_content.get('items', [])
+
+            structured_content.append({
+                'type': 'list',
+                'title': content_block.title,
+                'content': '',
+                'items': items
+            })
+
+        elif content_block.content_type == 'table':
+            # Tabla se convierte en HTML de tabla
+            headers = content_block.json_content.get('headers', [])
+            rows = content_block.json_content.get('rows', [])
+
+            table_html = '<table class="table table-striped">'
+            if headers:
+                table_html += '<thead><tr>'
+                for header in headers:
+                    table_html += f'<th>{header}</th>'
+                table_html += '</tr></thead>'
+
+            table_html += '<tbody>'
+            for row in rows:
+                table_html += '<tr>'
+                for cell in row:
+                    table_html += f'<td>{cell}</td>'
+                table_html += '</tr>'
+            table_html += '</tbody></table>'
+
+            structured_content.append({
+                'type': 'text',
+                'title': content_block.title,
+                'content': table_html
+            })
+
+        elif content_block.content_type == 'card':
+            # Tarjeta se convierte en HTML de card
+            card_html = '<div class="card">'
+            if content_block.json_content.get('header'):
+                card_html += f'<div class="card-header">{content_block.json_content["header"]}</div>'
+
+            card_html += '<div class="card-body">'
+            if content_block.json_content.get('title'):
+                card_html += f'<h5 class="card-title">{content_block.json_content["title"]}</h5>'
+            if content_block.json_content.get('text'):
+                card_html += f'<p class="card-text">{content_block.json_content["text"]}</p>'
+            if content_block.json_content.get('button'):
+                button = content_block.json_content['button']
+                card_html += f'<a href="{button.get("url", "#")}" class="btn btn-primary">{button.get("text", "Ver más")}</a>'
+            card_html += '</div></div>'
+
+            structured_content.append({
+                'type': 'text',
+                'title': content_block.title,
+                'content': card_html
+            })
+
+        elif content_block.content_type == 'alert':
+            # Alerta
+            alert_type = content_block.json_content.get('type', 'info')
+            message = content_block.json_content.get('message', 'Mensaje de alerta')
+            alert_html = f'<div class="alert alert-{alert_type}" role="alert">{message}</div>'
+
+            structured_content.append({
+                'type': 'text',
+                'title': content_block.title,
+                'content': alert_html
+            })
+
+        elif content_block.content_type == 'button':
+            # Botón
+            button_html = f'<a href="{content_block.json_content.get("url", "#")}" class="btn btn-{content_block.json_content.get("style", "primary")} btn-{content_block.json_content.get("size", "md")}">'
+            if content_block.json_content.get('icon'):
+                button_html += f'<i class="bi bi-{content_block.json_content["icon"]}></i> '
+            button_html += f'{content_block.json_content.get("text", "Botón")}</a>'
+
+            structured_content.append({
+                'type': 'text',
+                'title': content_block.title,
+                'content': button_html
+            })
+
+        elif content_block.content_type == 'form':
+            # Formulario se convierte en HTML básico
+            form_html = f'<form method="post" action="{content_block.json_content.get("action", "#")}">'
+            for field in content_block.json_content.get('fields', []):
+                form_html += f'<div class="mb-3"><label class="form-label">{field.get("label", "")}</label>'
+                if field.get('type') == 'textarea':
+                    form_html += f'<textarea class="form-control" name="{field.get("name", "")}" placeholder="{field.get("placeholder", "")}"></textarea>'
+                else:
+                    form_html += f'<input type="{field.get("type", "text")}" class="form-control" name="{field.get("name", "")}" placeholder="{field.get("placeholder", "")}">'
+                form_html += '</div>'
+            form_html += f'<button type="submit" class="btn btn-primary">{content_block.json_content.get("submit_text", "Enviar")}</button></form>'
+
+            structured_content.append({
+                'type': 'text',
+                'title': content_block.title,
+                'content': form_html
+            })
+
+        elif content_block.content_type == 'divider':
+            # Separador
+            structured_content.append({
+                'type': 'text',
+                'title': '',
+                'content': '<hr class="my-4">'
+            })
+
+        elif content_block.content_type == 'icon':
+            # Ícono
+            icon_html = f'<div class="text-center"><i class="bi bi-{content_block.json_content.get("icon", "star")} fs-1 text-{content_block.json_content.get("color", "primary")}"></i>'
+            if content_block.json_content.get('text'):
+                icon_html += f'<p class="mt-2">{content_block.json_content["text"]}</p>'
+            icon_html += '</div>'
+
+            structured_content.append({
+                'type': 'text',
+                'title': content_block.title,
+                'content': icon_html
+            })
+
+        elif content_block.content_type == 'progress':
+            # Barra de progreso
+            value = content_block.json_content.get('value', 50)
+            color = content_block.json_content.get('color', 'primary')
+            progress_html = f'<div class="progress mb-3"><div class="progress-bar bg-{color}" role="progressbar" style="width: {value}%" aria-valuenow="{value}" aria-valuemin="0" aria-valuemax="100">{value}%</div></div>'
+
+            structured_content.append({
+                'type': 'text',
+                'title': content_block.title,
+                'content': progress_html
+            })
+
+        elif content_block.content_type == 'badge':
+            # Insignia
+            badge_html = f'<span class="badge bg-{content_block.json_content.get("color", "primary")} fs-6">'
+            if content_block.json_content.get('icon'):
+                badge_html += f'<i class="bi bi-{content_block.json_content["icon"]}></i> '
+            badge_html += f'{content_block.json_content.get("text", "Insignia")}</span>'
+
+            structured_content.append({
+                'type': 'text',
+                'title': content_block.title,
+                'content': badge_html
+            })
+
+        elif content_block.content_type == 'timeline':
+            # Línea de tiempo se convierte en lista
+            items = content_block.json_content.get('items', [])
+            timeline_html = '<div class="timeline">'
+            for item in items:
+                timeline_html += f'<div class="timeline-item"><div class="timeline-marker bg-{item.get("color", "primary")}"></div><div class="timeline-content"><h6>{item.get("title", "")}</h6><p>{item.get("description", "")}</p><small class="text-muted">{item.get("date", "")}</small></div></div>'
+            timeline_html += '</div>'
+
+            structured_content.append({
+                'type': 'text',
+                'title': content_block.title,
+                'content': timeline_html
+            })
+
+        else:
+            # Tipo desconocido - mostrar como texto plano
+            structured_content.append({
+                'type': 'text',
+                'title': content_block.title,
+                'content': f'<p>Tipo de contenido no soportado: {content_block.content_type}</p>'
+            })
+
+    except Exception as e:
+        # En caso de error, mostrar mensaje de error
+        structured_content.append({
+            'type': 'text',
+            'title': 'Error',
+            'content': f'<div class="alert alert-danger">Error al procesar el bloque de contenido: {str(e)}</div>'
+        })
+
+    return structured_content
