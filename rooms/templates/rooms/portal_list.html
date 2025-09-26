@@ -4,7 +4,7 @@
     <h1>Lista de Portales</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'lobby' %}">Lobby</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rooms:lobby' %}">Lobby</a></li>
             <li class="breadcrumb-item active">Portales</li>
         </ol>
     </nav>
@@ -30,7 +30,7 @@
                             <td>{{ portal.destination }}</td>
                             <td>{{ portal.last_used|date:"d/m/Y H:i" }}</td>
                             <td>
-                                <a href="{% url 'portal_detail' portal.pk %}" class="btn btn-sm btn-primary">Ver</a>
+                                <a href="{% url 'rooms:portal_detail' portal.pk %}" class="btn btn-sm btn-primary">Ver</a>
                             </td>
                         </tr>
                         {% endfor %}

@@ -17,7 +17,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'room_list' %}">Rooms</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rooms:room_list' %}">Rooms</a></li>
             <li class="breadcrumb-item active">{{ room.name }}</li>
         </ol>
     </nav>
@@ -25,115 +25,252 @@
 
 <section class="section">
     <div class="row">
-        <!-- Room Details Card -->
-        <div class="col-xl-8">
+        <!-- Información Principal -->
+        <div class="col-xl-12">
             <div class="card">
-                <div class="card-body pt-3">
-                    <ul class="nav nav-tabs nav-tabs-bordered">
-                        <li class="nav-item">
-                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#details">Details</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#entrances">Entrances</button>
-                        </li>
-                        <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#portals">Portals</button>
-                        </li>
-                    </ul>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Imagen y descripción básica -->
+                        <div class="col-lg-4">
+                            <div class="text-center mb-3">
+                                <img src="{{ room_image_url }}" alt="{{ room.name }}" class="img-fluid rounded shadow" style="max-height: 250px;">
+                            </div>
+                            <div class="text-center">
+                                <h4 class="card-title mb-2">{{ room.name }}</h4>
+                                <span class="badge bg-primary fs-6">{{ room.get_room_type_display }}</span>
+                            </div>
+                        </div>
 
-                    <div class="tab-content pt-3">
-                        <!-- Details Tab -->
-                        <div class="tab-pane fade show active" id="details">
-                            <div class="row">
-                                <div class="col-lg-3">
-                                    <img src="{{ room_image_url }}" alt="{{ room.name }}" class="img-fluid rounded">
-                                </div>
-                                <div class="col-lg-9">
-                                    <h5 class="card-title">{{ room.title }}</h5>
-                                    <p>{{ room.description }}</p>
-                                    
-                                    <div class="row">
-                                        <div class="col-lg-6">
-                                            <ul class="list-unstyled">
-                                                <li><strong>Position:</strong> ({{ room.x }}, {{ room.y }}, {{ room.z }})</li>
-                                                <li><strong>Dimensions:</strong> ({{ room.longitud }}, {{ room.anchura }}, {{ room.altura }})</li>
-                                                <li><strong>Rotation:</strong> ({{ room.pitch }}, {{ room.yaw }}, {{ room.roll }})</li>
-                                            </ul>
-                                        </div>
-                                        <div class="col-lg-6">
-                                            <ul class="list-unstyled">
-                                                <li><strong>Type:</strong> {{ room.type }}</li>
-                                                <li><strong>Surface:</strong> {{ room.surface }} m²</li>
-                                                <li><strong>Price:</strong> {{ room.price }}</li>
-                                                <li><strong>Available:</strong> {{ room.available|yesno:"Yes,No" }}</li>
-                                            </ul>
+                        <!-- Información detallada -->
+                        <div class="col-lg-8">
+                            <div class="row g-3">
+                                <!-- Descripción -->
+                                <div class="col-12">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6 class="card-title"><i class="bi bi-info-circle"></i> Descripción</h6>
+                                            <p class="mb-0">{{ room.description|default:"Sin descripción disponible" }}</p>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- Entrances Tab -->
-                        <div class="tab-pane fade" id="entrances">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="card-title">Entrances & Exits</h5>
-                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createEntranceExit">
-                                    <i class="bi bi-plus"></i> Add New
-                                </button>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Type</th>
-                                            <th>Face</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for entrance_exit in entrance_exits %}
-                                        <tr>
-                                            <td>{{ entrance_exit.name }}</td>
-                                            <td>{{ entrance_exit.type }}</td>
-                                            <td>{{ entrance_exit.face }}</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                                <!-- Propiedades físicas -->
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="bi bi-gear"></i> Propiedades Físicas</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <small class="text-muted">Dimensiones</small>
+                                                    <div class="fw-bold">{{ room.length }}×{{ room.width }}×{{ room.height }}</div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">Masa</small>
+                                                    <div class="fw-bold">{{ room.mass }} kg</div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">Densidad</small>
+                                                    <div class="fw-bold">{{ room.density }} g/cm³</div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">Material</small>
+                                                    <div class="fw-bold">{{ room.get_material_type_display }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <!-- Portals Tab -->
-                        <div class="tab-pane fade" id="portals">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h5 class="card-title">Portals</h5>
-                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createPortal">
-                                    <i class="bi bi-plus"></i> Add New
-                                </button>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>Name</th>
-                                            <th>Connection</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for portal in portals %}
-                                        <tr>
-                                            <td>{{ portal.name }}</td>
-                                            <td>{{ portal.entrance }} ⟶ {{ portal.exit }}</td>
-                                        </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
+                                <!-- Estado y ambiente -->
+                                <div class="col-md-6">
+                                    <div class="card h-100">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="bi bi-thermometer"></i> Ambiente</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <small class="text-muted">Temperatura</small>
+                                                    <div class="fw-bold">{{ room.temperature }}°C</div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">Iluminación</small>
+                                                    <div class="fw-bold">{{ room.lighting_intensity }}%</div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">Salud</small>
+                                                    <div class="fw-bold">{{ room.health }}%</div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <small class="text-muted">Estado</small>
+                                                    <div class="fw-bold">
+                                                        {% if room.is_active %}
+                                                            <span class="text-success">Activa</span>
+                                                        {% else %}
+                                                            <span class="text-danger">Inactiva</span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Colores -->
+                                <div class="col-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h6 class="mb-0"><i class="bi bi-palette"></i> Apariencia</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div>
+                                                    <small class="text-muted">Color Primario</small>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <div style="width: 20px; height: 20px; background-color: {{ room.color_primary }}; border-radius: 3px; border: 1px solid #ccc;"></div>
+                                                        <code>{{ room.color_primary }}</code>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted">Color Secundario</small>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <div style="width: 20px; height: 20px; background-color: {{ room.color_secondary }}; border-radius: 3px; border: 1px solid #ccc;"></div>
+                                                        <code>{{ room.color_secondary }}</code>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <small class="text-muted">Opacidad</small>
+                                                    <div class="fw-bold">{{ room.opacity|floatformat:1 }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Secciones adicionales -->
+    <div class="row mt-4">
+        <!-- Conexiones y navegación -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-diagram-3"></i> Conexiones</h6>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#entrances-section">
+                            Entradas/Salidas
+                        </button>
+                        <button class="btn btn-sm btn-outline-info" type="button" data-bs-toggle="collapse" data-bs-target="#portals-section">
+                            Portales
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Entradas/Salidas colapsable -->
+                    <div class="collapse show" id="entrances-section">
+                        <h6 class="text-primary">Entradas y Salidas</h6>
+                        {% if entrance_exits %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Dirección</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for entrance in entrance_exits %}
+                                        <tr>
+                                            <td>{{ entrance.name }}</td>
+                                            <td><span class="badge bg-secondary">{{ entrance.face }}</span></td>
+                                            <td>
+                                                {% if entrance.enabled %}
+                                                    <span class="text-success">● Activa</span>
+                                                {% else %}
+                                                    <span class="text-muted">○ Inactiva</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0">No hay entradas/salidas definidas</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Portales colapsable -->
+                    <div class="collapse" id="portals-section">
+                        <h6 class="text-info">Portales</h6>
+                        {% if portals %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Conexión</th>
+                                            <th>Costo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for portal in portals %}
+                                        <tr>
+                                            <td>{{ portal.name }}</td>
+                                            <td>{{ portal.entrance.room.name }} → {{ portal.exit.room.name }}</td>
+                                            <td>{{ portal.energy_cost }} energía</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted mb-0">No hay portales definidos</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones rápidas -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-lightning"></i> Acciones Rápidas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if user == room.owner or user in room.administrators.all %}
+                        <a href="{% url 'rooms:room_edit' room.pk %}" class="btn btn-warning">
+                            <i class="bi bi-pencil"></i> Editar Habitación
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'rooms:room_3d' room.pk %}" class="btn btn-primary">
+                            <i class="bi bi-box"></i> Ver en 3D
+                        </a>
+                        <a href="{% url 'rooms:room_comments' room.pk %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-chat"></i> Comentarios ({{ room.comments.count }})
+                        </a>
+                        <a href="{% url 'rooms:room_evaluations' room.pk %}" class="btn btn-outline-warning">
+                            <i class="bi bi-star"></i> Evaluaciones ({{ room.evaluations.count }})
+                        </a>
+                        <div class="border-top pt-2 mt-2">
+                            <small class="text-muted">Creada: {{ room.created_at|date:"d M Y" }}</small><br>
+                            <small class="text-muted">Actualizada: {{ room.updated_at|date:"d M Y H:i" }}</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
         <!-- Right Sidebar -->
         <div class="col-xl-4">
@@ -142,10 +279,10 @@
                 <div class="card-body">
                     <h5 class="card-title">Quick Actions</h5>
                     <div class="d-grid gap-2">
-                        <a href="{% url 'room_create' %}" class="btn btn-primary">
+                        <a href="{% url 'rooms:room_create' %}" class="btn btn-primary">
                             <i class="bi bi-plus-circle"></i> Create Room
                         </a>
-                        <a href="{% url 'room_list' %}" class="btn btn-outline-primary">
+                        <a href="{% url 'rooms:room_list' %}" class="btn btn-outline-primary">
                             <i class="bi bi-list"></i> View All Rooms
                         </a>
                     </div>
@@ -181,7 +318,7 @@
                     {% if room.parent_room %}
                     <div class="mb-3">
                         <h6 class="fw-bold">Parent Room</h6>
-                        <a href="{% url 'room_detail' room.parent_room.id %}" class="text-primary">
+                        <a href="{% url 'rooms:room_detail' room.parent_room.id %}" class="text-primary">
                             {{ room.parent_room.title }}
                         </a>
                     </div>
@@ -193,7 +330,7 @@
                         <ul class="list-unstyled">
                             {% for child_room in room.room_set.all %}
                             <li>
-                                <a href="{% url 'room_detail' child_room.id %}" class="text-primary">
+                                <a href="{% url 'rooms:room_detail' child_room.id %}" class="text-primary">
                                     {{ child_room.title }}
                                 </a>
                             </li>
