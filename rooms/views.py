@@ -24,8 +24,8 @@ def lobby(request):
     sections = [
         {
             'title': 'Recent Rooms',
-            'url_name': 'room_list',
-            'detail_url_name': 'room_detail',
+            'url_name': 'rooms:room_list',
+            'detail_url_name': 'rooms:room_detail',
             'icon': 'bi-house',
             'items': Room.objects.all().order_by('-created_at')[:5]
         },
@@ -96,7 +96,7 @@ def register_presence(request):
     player_profile.save()
 
     messages.success(request, f'Te has registrado como disponible y entrado al {initial_room.name}')
-    return redirect('room_detail', pk=initial_room.pk)
+    return redirect('rooms:room_detail', pk=initial_room.pk)
 
 # Vista para crear una nueva sala
 @login_required
@@ -113,8 +113,13 @@ def create_room(request):
             return HttpResponseRedirect(reverse_lazy('lobby'))  # Redirect to the lobby
     else:
         form = RoomForm()
-    # Asegurarse de que la plantilla 'rooms/create_room.html' exista
-    return render(request, 'rooms/create_room.html', {'form': form})
+    context = {
+        'form': form,
+        'page_title': 'Crear Nueva Habitación',
+        'is_edit': False
+    }
+
+    return render(request, 'rooms/room_form.html', context)
 
 # Vista para mostrar los detalles de una sala
 def room_detail(request, pk):
@@ -133,7 +138,7 @@ def room_detail(request, pk):
             room_image_url = '/static/images/default-room.jpg'  # Path to the default image
 
         # Debugging URL generation
-        detail_url = reverse_lazy('room_detail', kwargs={'pk': pk})
+        detail_url = reverse_lazy('rooms:room_detail', kwargs={'pk': pk})
         logger.debug(f"Generated URL for room_detail: {detail_url}")
 
         # Verificar si la sala tiene entradas/salidas y portales asociados
@@ -148,7 +153,7 @@ def room_detail(request, pk):
                     entrance_exit.room = room
                     entrance_exit.save()
                     messages.success(request, 'Entrada/Salida creada con éxito')
-                    return HttpResponseRedirect(reverse_lazy('room_detail', kwargs={'pk': pk}))
+                    return HttpResponseRedirect(reverse_lazy('rooms:room_detail', kwargs={'pk': pk}))
             elif 'create_portal' in request.POST:
                 form = PortalForm(request.POST)
                 if form.is_valid():
@@ -156,10 +161,10 @@ def room_detail(request, pk):
                     portal.room = room
                     portal.save()
                     messages.success(request, 'Portal creado con éxito')
-                    return HttpResponseRedirect(reverse_lazy('room_detail', kwargs={'pk': pk}))
+                    return HttpResponseRedirect(reverse_lazy('rooms:room_detail', kwargs={'pk': pk}))
             elif 'enter_room' in request.POST:
                 room_id = request.POST['room_id']
-                return HttpResponseRedirect(reverse_lazy('room_detail', kwargs={'pk': room_id}))
+                return HttpResponseRedirect(reverse_lazy('rooms:room_detail', kwargs={'pk': room_id}))
 
         entrance_exit_form = EntranceExitForm()
         portal_form = PortalForm()
@@ -182,6 +187,139 @@ def room_detail(request, pk):
         logger.error(f"Unexpected error in room_detail: {str(e)}", exc_info=True)
         return JsonResponse({'detail': 'An unexpected error occurred.'}, status=500)
 
+# Vista para renderizar habitación en 3D
+def room_3d_view(request, pk):
+    """
+    Vista para mostrar una habitación renderizada en 3D isométrico
+    """
+    room = get_object_or_404(Room, pk=pk)
+
+    # Generar SVG del renderizado 3D
+    svg_content = generate_room_3d_svg(room)
+
+    context = {
+        'room': room,
+        'svg_content': svg_content,
+        'page_title': f'Vista 3D - {room.name}'
+    }
+
+    return render(request, 'rooms/room_3d.html', context)
+
+@login_required
+def edit_room(request, pk):
+    """Vista para editar una habitación existente"""
+    import logging
+    logger = logging.getLogger(__name__)
+
+    logger.info(f"=== INICIO EDIT_ROOM: pk={pk}, user={request.user.username}, method={request.method} ===")
+
+    try:
+        room = get_object_or_404(Room, pk=pk)
+        logger.info(f"Room encontrada: {room.name} (owner: {room.owner.username})")
+    except Exception as e:
+        logger.error(f"Error obteniendo room: {e}")
+        raise
+
+    # Verificar permisos - solo el owner o administradores pueden editar
+    has_permission = request.user == room.owner or request.user in room.administrators.all()
+    logger.info(f"Permisos: user={request.user.username}, owner={room.owner.username}, administrators={[admin.username for admin in room.administrators.all()]}, has_permission={has_permission}")
+
+    if not has_permission:
+        logger.warning(f"Usuario {request.user.username} no tiene permisos para editar room {room.name}")
+        messages.error(request, 'No tienes permisos para editar esta habitación.')
+        return redirect('rooms:room_detail', pk=pk)
+
+    if request.method == 'POST':
+        logger.info("=== PROCESANDO POST REQUEST ===")
+        logger.info(f"POST data keys: {list(request.POST.keys())}")
+        logger.info(f"FILES data keys: {list(request.FILES.keys())}")
+
+        try:
+            form = RoomForm(request.POST, request.FILES, instance=room, user=request.user)
+            logger.info(f"Formulario creado. Campos: {list(form.fields.keys())}")
+            logger.info(f"Formulario inicial válido: {form.is_bound and not form.errors}")
+
+            # Verificar validación del formulario
+            is_valid = form.is_valid()
+            logger.info(f"form.is_valid(): {is_valid}")
+
+            if not is_valid:
+                logger.error("=== ERRORES DE VALIDACIÓN ===")
+                logger.error(f"form.errors: {dict(form.errors)}")
+                logger.error(f"form.non_field_errors: {form.non_field_errors()}")
+
+                # Log detallado de cada campo con error
+                for field_name, field_errors in form.errors.items():
+                    logger.error(f"Campo '{field_name}': {field_errors}")
+                    if field_name in form.fields:
+                        field_value = form.data.get(field_name, 'NO_VALUE')
+                        logger.error(f"  Valor enviado: {field_value}")
+                        logger.error(f"  Tipo de campo: {type(form.fields[field_name])}")
+
+            if is_valid:
+                logger.info("=== INTENTANDO GUARDAR ===")
+                try:
+                    # Intentar guardar sin commit primero para ver si hay errores de modelo
+                    room_instance = form.save(commit=False)
+                    logger.info(f"save(commit=False) exitoso. Room instance: {room_instance}")
+
+                    # Verificar campos del modelo antes de guardar
+                    logger.info("=== VERIFICANDO CAMPOS DEL MODELO ===")
+                    for field in room_instance._meta.fields:
+                        value = getattr(room_instance, field.name, None)
+                        logger.info(f"  {field.name}: {value} (tipo: {type(value)})")
+
+                    # Ahora guardar realmente
+                    room_saved = form.save()
+                    logger.info(f"form.save() exitoso. Room guardada: {room_saved.name}")
+
+                    # Limpiar cache si existe
+                    from django.core.cache import cache
+                    cache_key = f'room_{room_saved.pk}'
+                    cache.delete(cache_key)
+                    logger.info(f"Cache limpiado para key: {cache_key}")
+
+                    messages.success(request, f'Habitación "{room_saved.name}" actualizada exitosamente.')
+                    logger.info("=== REDIRECCIÓN EXITOSA ===")
+                    return redirect('rooms:room_detail', pk=pk)
+
+                except Exception as save_error:
+                    logger.error(f"=== ERROR DURANTE GUARDADO ===")
+                    logger.error(f"Error: {save_error}")
+                    logger.error(f"Error type: {type(save_error)}")
+                    import traceback
+                    logger.error(f"Traceback: {traceback.format_exc()}")
+
+                    # Agregar error al formulario para mostrar al usuario
+                    form.add_error(None, f"Error al guardar: {str(save_error)}")
+
+            else:
+                logger.warning("Formulario no válido, mostrando errores al usuario")
+
+        except Exception as form_error:
+            logger.error(f"=== ERROR CREANDO FORMULARIO ===")
+            logger.error(f"Error: {form_error}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            form = RoomForm(instance=room, user=request.user)
+
+    else:
+        logger.info("=== CREANDO FORMULARIO GET ===")
+        form = RoomForm(instance=room, user=request.user)
+        logger.info(f"Formulario GET creado exitosamente")
+
+    context = {
+        'form': form,
+        'room': room,
+        'page_title': f'Editar - {room.name}',
+        'is_edit': True,
+        'room_count': Room.objects.count(),
+        'active_rooms': Room.objects.filter(is_active=True).count()
+    }
+
+    logger.info(f"=== RENDERIZANDO TEMPLATE: rooms/room_edit_alerts.html ===")
+    return render(request, 'rooms/room_edit_alerts.html', context)
+
 # Vista para agregar comentarios a una sala
 def room_comments(request, pk):
     room = get_object_or_404(Room, pk=pk)
@@ -189,7 +327,7 @@ def room_comments(request, pk):
         comment = request.POST['comment']
         room.comments.create(text=comment, user=request.user)
         messages.success(request, 'Comentario agregado con éxito')
-        return HttpResponseRedirect(reverse_lazy('room_detail', kwargs={'pk': pk}))
+        return HttpResponseRedirect(reverse_lazy('rooms:room_detail', kwargs={'pk': pk}))
     # Asegurarse de que la plantilla 'rooms/room_comments.html' exista
     return render(request, 'rooms/room_comments.html', {'room': room})
 
@@ -205,7 +343,7 @@ def room_evaluations(request, pk):
             evaluation.room = room
             evaluation.save()
             messages.success(request, 'Evaluación agregada con éxito')
-            return HttpResponseRedirect(reverse_lazy('room_detail', kwargs={'pk': pk}))
+            return HttpResponseRedirect(reverse_lazy('rooms:room_detail', kwargs={'pk': pk}))
     # Asegurarse de que la plantilla 'rooms/room_evaluations.html' exista
     return render(request, 'rooms/room_evaluations.html', {'room': room, 'evaluation_form': evaluation_form})
 
@@ -303,6 +441,7 @@ def room_search(request):
 import json
 import logging
 import requests
+import math
 from requests.adapters import HTTPAdapter, Retry
 from django.conf import settings
 from django.db import transaction
@@ -377,6 +516,119 @@ def process_message_command(content, user):
 
     else:
         return f"Comando desconocido: {cmd}. Comandos disponibles: /work, /rest, /social, /disconnect, /move <direction>, /status"
+
+
+def project_isometric(x, y, z, scale=10):
+    """
+    Proyecta coordenadas 3D a 2D usando proyección isométrica (perspectiva caballero)
+    """
+    # Ángulos isométricos: 30 grados
+    cos30 = math.cos(math.radians(30))
+    sin30 = math.sin(math.radians(30))
+
+    # Proyección isométrica
+    screen_x = (x - y) * cos30 * scale
+    screen_y = ((x + y) * sin30 - z) * scale
+
+    return screen_x, screen_y
+
+
+def generate_room_3d_svg(room, canvas_width=800, canvas_height=600):
+    """
+    Genera SVG para renderizar una habitación en 3D isométrico
+    """
+    scale = 8  # Escala para ajustar el tamaño
+
+    # Calcular el centro del canvas
+    center_x = canvas_width // 2
+    center_y = canvas_height // 2
+
+    # Proyectar los 8 vértices del cuboide
+    vertices = []
+    for dx in [0, room.length]:
+        for dy in [0, room.width]:
+            for dz in [0, room.height]:
+                x, y = project_isometric(dx, dy, dz, scale)
+                vertices.append((x, y))
+
+    # Ajustar posición al centro del canvas
+    min_x = min(v[0] for v in vertices)
+    max_x = max(v[0] for v in vertices)
+    min_y = min(v[1] for v in vertices)
+    max_y = max(v[1] for v in vertices)
+
+    offset_x = center_x - (min_x + max_x) // 2
+    offset_y = center_y - (min_y + max_y) // 2
+
+    # Aplicar offset
+    vertices = [(x + offset_x, y + offset_y) for x, y in vertices]
+
+    # Definir las caras del cuboide (índices de vértices)
+    faces = [
+        # Frente (z=0)
+        [0, 1, 3, 2],
+        # Derecha (y=width)
+        [1, 5, 7, 3],
+        # Atrás (x=length)
+        [4, 5, 7, 6],
+        # Izquierda (y=0)
+        [0, 2, 6, 4],
+        # Superior (z=height)
+        [2, 3, 7, 6],
+        # Inferior (z=0, pero desde arriba)
+        [0, 1, 5, 4]
+    ]
+
+    # Usar colores del objeto habitación con variaciones para cada cara
+    base_color = room.color_primary
+    accent_color = room.color_secondary
+
+    # Crear variaciones de color para diferentes caras
+    colors = [
+        base_color,  # Frente
+        accent_color,  # Derecha
+        base_color,  # Atrás
+        accent_color,  # Izquierda
+        base_color,  # Superior
+        accent_color,  # Inferior
+    ]
+
+    svg_parts = []
+    svg_parts.append(f'<svg width="{canvas_width}" height="{canvas_height}" xmlns="http://www.w3.org/2000/svg">')
+
+    # Dibujar fondo
+    svg_parts.append(f'<rect width="100%" height="100%" fill="#f5f5f5"/>')
+
+    # Dibujar caras (ordenadas por profundidad para efecto 3D)
+    for i, face_indices in enumerate(faces):
+        points = []
+        for idx in face_indices:
+            vx, vy = vertices[idx]
+            points.append(f"{vx},{vy}")
+        points_str = " ".join(points)
+
+        svg_parts.append(f'<polygon points="{points_str}" fill="{colors[i]}" stroke="#1976d2" stroke-width="1"/>')
+
+    # Dibujar aristas
+    edges = [
+        (0, 1), (1, 3), (3, 2), (2, 0),  # Base inferior
+        (4, 5), (5, 7), (7, 6), (6, 4),  # Base superior
+        (0, 4), (1, 5), (2, 6), (3, 7)   # Aristas verticales
+    ]
+
+    for edge in edges:
+        x1, y1 = vertices[edge[0]]
+        x2, y2 = vertices[edge[1]]
+        svg_parts.append(f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="#0d47a1" stroke-width="2"/>')
+
+    # Agregar texto con información de la habitación
+    svg_parts.append(f'<text x="20" y="30" font-family="Arial" font-size="16" fill="#000">Habitación: {room.name}</text>')
+    svg_parts.append(f'<text x="20" y="50" font-family="Arial" font-size="12" fill="#666">Dimensiones: {room.length}×{room.width}×{room.height}</text>')
+    svg_parts.append(f'<text x="20" y="70" font-family="Arial" font-size="12" fill="#666">Posición: ({room.x}, {room.y}, {room.z})</text>')
+
+    svg_parts.append('</svg>')
+
+    return '\n'.join(svg_parts)
 
 class RoomListViewSet(ListModelMixin, GenericViewSet):
     serializer_class = RoomSerializer
@@ -646,13 +898,14 @@ def get_recent_activities(limit=5):
     ).select_related('creator')[:limit]
 
     for room in recent_rooms:
-        activities.append({
-            'user': room.creator.username,
-            'action': f'created room "{room.name}"',
-            'timestamp': room.created_at,
-            'icon': 'bi-house-add',
-            'color': 'success'
-        })
+        if room.creator:  # Check if creator exists
+            activities.append({
+                'user': room.creator.username,
+                'action': f'created room "{room.name}"',
+                'timestamp': room.created_at,
+                'icon': 'bi-house-add',
+                'color': 'success'
+            })
 
     # Only add portal activities if Portal has created_at field
     if hasattr(Portal, 'created_at'):
@@ -796,3 +1049,77 @@ def navigate(request):
             'success': False,
             'error': 'No se puede usar esta salida'
         }, status=400)
+
+@login_required
+def room_delete(request, pk):
+    """Vista para eliminar una habitación"""
+    room = get_object_or_404(Room, pk=pk)
+
+    # Verificar permisos
+    if not room.can_user_manage(request.user):
+        messages.error(request, 'No tienes permisos para eliminar esta habitación.')
+        return redirect('rooms:room_detail', pk=pk)
+
+    if request.method == 'POST':
+        room_name = room.name
+        room.delete()
+        messages.success(request, f'La habitación "{room_name}" ha sido eliminada exitosamente.')
+        return redirect('rooms:room_list')
+
+    # Si es GET, mostrar confirmación
+    return render(request, 'rooms/room_confirm_delete.html', {'room': room})
+
+@login_required
+def create_room_complete(request):
+    """Vista para crear una habitación completa con todas las opciones"""
+    if request.method == 'POST':
+        form = RoomForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+            room = form.save(commit=False)
+            room.owner = request.user
+            room.creator = request.user
+            room.save()
+            messages.success(request, f'Habitación "{room.name}" creada exitosamente.')
+            return redirect('rooms:room_detail', pk=room.pk)
+    else:
+        form = RoomForm(user=request.user)
+
+    context = {
+        'form': form,
+        'page_title': 'Crear Habitación Completa',
+        'is_edit': False,
+        'room_count': Room.objects.count(),
+        'active_rooms': Room.objects.filter(is_active=True).count()
+    }
+
+    return render(request, 'rooms/room_form_complete.html', context)
+
+@login_required
+def edit_room_complete(request, pk):
+    """Vista para editar una habitación completa con todas las opciones"""
+    room = get_object_or_404(Room, pk=pk)
+
+    # Verificar permisos
+    if not room.can_user_manage(request.user):
+        messages.error(request, 'No tienes permisos para editar esta habitación.')
+        return redirect('rooms:room_detail', pk=pk)
+
+    if request.method == 'POST':
+        form = RoomForm(request.POST, request.FILES, instance=room, user=request.user)
+        if form.is_valid():
+            room = form.save()
+            messages.success(request, f'Habitación "{room.name}" actualizada exitosamente.')
+            return redirect('rooms:room_detail', pk=pk)
+    else:
+        form = RoomForm(instance=room, user=request.user)
+
+    context = {
+        'form': form,
+        'room': room,
+        'page_title': f'Editar Completo - {room.name}',
+        'is_edit': True,
+        'room_count': Room.objects.count(),
+        'active_rooms': Room.objects.filter(is_active=True).count()
+    }
+
+    return render(request, 'rooms/room_form_complete.html', context)

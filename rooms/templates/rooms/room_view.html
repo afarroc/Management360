@@ -15,8 +15,8 @@
     <h1>{{ room.name }}</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'lobby' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'room_list' %}">Habitaciones</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rooms:lobby' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rooms:room_list' %}">Habitaciones</a></li>
             <li class="breadcrumb-item active">{{ room.name }}</li>
         </ol>
     </nav>
@@ -119,7 +119,7 @@
                             <div class="row">
                                 {% for exit in available_exits %}
                                 <div class="col-md-3 mb-2">
-                                    <a href="{% url 'navigate_room' exit.direction %}" 
+                                    <a href="{% url 'rooms:navigate_room' exit.direction %}"
                                        class="btn btn-outline-primary w-100 direction-btn" 
                                        data-direction="{{ exit.direction }}">
                                         <i class="bi bi-arrow-{{ exit.direction|lower }}-circle"></i>
