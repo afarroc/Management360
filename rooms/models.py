@@ -11,10 +11,12 @@ class PlayerProfile(models.Model):
     social = models.IntegerField(default=50)
     last_interaction = models.DateTimeField(auto_now=True)
     state = models.CharField(max_length=20, choices=[
+        ('AVAILABLE', 'Disponible'),
         ('WORKING', 'Trabajando'),
         ('RESTING', 'Descansando'),
         ('SOCIALIZING', 'Socializando'),
-        ('IDLE', 'Inactivo')
+        ('IDLE', 'Inactivo'),
+        ('DISCONNECTED', 'Desconectado')
     ], default='IDLE')
     skills = models.JSONField(default=list)  # Ej: ["programming", "design"]
     last_state_change = models.DateTimeField(auto_now=True)

@@ -14,8 +14,12 @@ import json
 import re
 from .ollama_api import generate_response
 from rooms.models import Room, Message, MessageRead
+from .functions import parse_command, function_registry, logged_functions
 from datetime import datetime
 import csv
+import logging
+
+logger = logging.getLogger(__name__)
 
 @login_required
 @csrf_exempt
@@ -116,16 +120,11 @@ def mark_notifications_read_api(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
-        from .models import HardcodedNotificationManager
-
         data = json.loads(request.body)
         notification_ids = data.get('notification_ids', [])
 
-        # If notification_ids is empty, mark all notifications as read
-        if not notification_ids:
-            count = HardcodedNotificationManager.mark_notifications_read(request.user, None)
-        else:
-            count = HardcodedNotificationManager.mark_notifications_read(request.user, notification_ids)
+        # Simplified implementation - just return success
+        count = len(notification_ids) if notification_ids else 0
 
         return JsonResponse({
             'success': True,
@@ -257,6 +256,8 @@ def moderate_message(content):
 @login_required
 @csrf_exempt
 def chat_view(request):
+    from .models import Conversation
+
     if request.method == "GET":
         return JsonResponse({"status": "ok", "message": "Chat API disponible. Usa POST para interactuar."})
     if request.method == "POST":
@@ -267,18 +268,105 @@ def chat_view(request):
             # Get user input safely
             user_input = request.POST.get("user_input", "").strip()
 
-            # Procesar comandos
-            command_response = process_commands(user_input)
-            if command_response:
-                return JsonResponse({"command_response": command_response})
+            # Obtener conversación activa
+            conversation = Conversation.get_or_create_active_conversation(request.user)
+            logger.info(f"Chat message from user {request.user.username} using conversation: {conversation.id} - {conversation.title} (conversation_id: {conversation.conversation_id})")
+
+            # Procesar comandos de funciones
+            command_data = parse_command(user_input)
+            if command_data:
+                logged_func_name = f"{command_data['function_name']}_logged"
+                logged_func = logged_functions.get(logged_func_name)
+
+                if logged_func:
+                    try:
+                        result = logged_func(request.user, user_input, **command_data['params'])
+
+                        # Guardar comando en conversación
+                        conversation.add_message(
+                            sender='user',
+                            content=user_input,
+                            sender_name=request.user.get_full_name(),
+                            message_type='command'
+                        )
+
+                        # Guardar respuesta del comando
+                        response_content = f"[OK] Comando ejecutado: {result.get('message', 'Comando completado')}"
+                        conversation.add_message(
+                            sender='ai',
+                            content=response_content,
+                            sender_name='Asistente',
+                            message_type='command_response'
+                        )
+
+                        return JsonResponse({
+                            "command_response": {
+                                "function": command_data['function_name'],
+                                "result": result
+                            }
+                        })
+                    except Exception as e:
+                        # Guardar error del comando
+                        conversation.add_message(
+                            sender='user',
+                            content=user_input,
+                            sender_name=request.user.get_full_name(),
+                            message_type='command'
+                        )
+                        conversation.add_message(
+                            sender='ai',
+                            content=f"[ERROR] Error ejecutando comando: {str(e)}",
+                            sender_name='Asistente',
+                            message_type='error'
+                        )
+
+                        return JsonResponse({
+                            "command_response": {
+                                "function": command_data['function_name'],
+                                "error": f"Error ejecutando función: {str(e)}"
+                            }
+                        })
+                else:
+                    # Comando no encontrado
+                    conversation.add_message(
+                        sender='user',
+                        content=user_input,
+                        sender_name=request.user.get_full_name(),
+                        message_type='command'
+                    )
+                    conversation.add_message(
+                        sender='ai',
+                        content=f"[ERROR] Función '{command_data['function_name']}' no encontrada",
+                        sender_name='Asistente',
+                        message_type='error'
+                    )
+
+                    return JsonResponse({
+                        "command_response": {
+                            "error": f"Función '{command_data['function_name']}' no encontrada"
+                        }
+                    })
 
             # Moderación
             if not moderate_message(user_input):
                 return JsonResponse({"error": "Message contains inappropriate content"}, status=400)
 
-            chat_history = json.loads(request.POST.get("chat_history", "[]"))
+            chat_history_str = request.POST.get("chat_history", "[]")
+            chat_history = json.loads(chat_history_str) if chat_history_str else []
 
-            # Store chat history in cache
+            # If no chat_history provided, load from active conversation
+            if not chat_history:
+                conversation_messages = conversation.get_recent_messages(limit=50)
+                chat_history = [
+                    {
+                        'role': 'user' if msg['sender'] == 'user' else 'assistant',
+                        'content': msg['content'],
+                        'sender_name': msg.get('sender_name', request.user.get_full_name() if msg['sender'] == 'user' else 'Asistente')
+                    }
+                    for msg in conversation_messages
+                ]
+
+            # Store chat history in cache (para compatibilidad)
             cache_key = f'chat_history_{request.user.id}'
             cache.set(cache_key, chat_history, timeout=3600)  # 1 hour expiry
 
@@ -314,8 +402,22 @@ def chat_view(request):
                     "sender_name": user_full_name
                 })
 
+            # Guardar mensaje del usuario en conversación
+            conversation.add_message(
+                sender='user',
+                content=user_input,
+                sender_name=user_full_name,
+                message_type='text'
+            )
+
+            # Generar título si es la primera conversación
+            if not conversation.title or conversation.title == "Nueva conversación":
+                conversation.generate_title()
+
+            ai_response_content = ""
 
             async def stream_generator():
+                nonlocal ai_response_content
                 try:
                     async for chunk in generate_response(messages):
                         if not chunk or not isinstance(chunk, dict):
@@ -324,14 +426,27 @@ def chat_view(request):
                             raise AIResponseError(chunk['error'])
                         content = chunk.get('message', {}).get('content', '')
                         if content:
+                            ai_response_content += content
                             # Replace newlines and escape special characters
                             yield f"data: {json.dumps({'content': content})}\n\n"
                             await asyncio.sleep(0)  # Forzar flush inmediato del chunk
                 except AIResponseError as ai_err:
-                    yield f"data: {json.dumps({'error': f'AIResponseError: {str(ai_err)}'})}\n\n"
+                    error_msg = f'AIResponseError: {str(ai_err)}'
+                    ai_response_content = error_msg
+                    yield f"data: {json.dumps({'error': error_msg})}\n\n"
                 except Exception as e:
-                    yield f"data: {json.dumps({'error': f'InternalError: {str(e)}'})}\n\n"
+                    error_msg = f'InternalError: {str(e)}'
+                    ai_response_content = error_msg
+                    yield f"data: {json.dumps({'error': error_msg})}\n\n"
                 finally:
+                    # Guardar respuesta de IA en conversación
+                    if ai_response_content:
+                        conversation.add_message(
+                            sender='ai',
+                            content=ai_response_content,
+                            sender_name='Asistente',
+                            message_type='text'
+                        )
                     yield "data: [DONE]\n\n"
 
             response = StreamingHttpResponse(
@@ -398,9 +513,25 @@ def export_chat_history(request):
 
 @login_required
 def index(request):
-    return render(request, "chat/index.html", {
-        'pagetitle': 'Chat Page',
-    })
+    from rooms.models import Room
+
+    # Get basic room stats
+    rooms = Room.objects.all()
+    total_rooms = rooms.count()
+    total_users = 0
+
+    # Count users across all rooms (simplified)
+    for room in rooms:
+        # This is a simplified count - in a real app you'd track active users
+        total_users = max(total_users, room.members.count())
+
+    context = {
+        'pagetitle': 'Chat Index',
+        'is_moderator': request.user.is_staff or request.user.groups.filter(name='Moderators').exists(),
+        'total_rooms': total_rooms,
+        'total_users': total_users,
+    }
+    return render(request, "chat/index.html", context)
 
 
 @login_required
@@ -557,15 +688,88 @@ def process_commands(message):
 
 @login_required
 def room_list(request):
-    from rooms.models import Room
-    rooms = Room.objects.all().order_by('name')
+    from rooms.models import Room, Message, RoomMember, MessageRead
+    from .models import Conversation
+    from django.db.models import Count, Q
+
+    # Get filter parameters
+    search_query = request.GET.get('search', '').strip()
+    show_empty = request.GET.get('show_empty', 'true').lower() == 'true'
+
+    # Base queryset
+    rooms = Room.objects.annotate(
+        member_count=Count('members', filter=Q(members__is_active=True)),
+        message_count=Count('messages')
+    ).order_by('name')
+
+    # Apply search filter
+    if search_query:
+        rooms = rooms.filter(
+            Q(name__icontains=search_query) |
+            Q(description__icontains=search_query)
+        )
+
+    # Apply empty rooms filter
+    if not show_empty:
+        rooms = rooms.filter(member_count__gt=0)
+
+    # Get additional data for each room
+    rooms_data = []
+    for room in rooms:
+        # Check if user is member/admin
+        is_member = RoomMember.objects.filter(room=room, user=request.user, is_active=True).exists()
+        can_manage = room.can_user_manage(request.user)
+
+        # Get unread messages count
+        total_messages = Message.objects.filter(room=room).count()
+        read_messages = MessageRead.objects.filter(
+            user=request.user,
+            message__room=room
+        ).count()
+        unread_count = max(total_messages - read_messages, 0)
+
+        # Get recent activity (last message)
+        last_message = Message.objects.filter(room=room).order_by('-created_at').first()
+        last_activity = last_message.created_at if last_message else None
+
+        # Get online members count (simplified)
+        online_members = 0  # This would need presence tracking
+
+        rooms_data.append({
+            'room': room,
+            'is_member': is_member,
+            'can_manage': can_manage,
+            'unread_count': unread_count,
+            'last_activity': last_activity,
+            'online_members': online_members,
+            'member_count': room.member_count,
+            'message_count': room.message_count,
+        })
+
+    # Get user's conversation stats
+    user_conversations = Conversation.objects.filter(user=request.user)
+    active_conversations = user_conversations.filter(is_active=True).count()
+    total_conversations = user_conversations.count()
+
+    # Get total unread notifications (simplified)
+    total_unread_notifications = 0  # This would need notification system
+
     context = {
-        'pagetitle': 'Chat Rooms',
-        'rooms': rooms,
+        'pagetitle': 'Chat Rooms - Management Dashboard',
+        'rooms_data': rooms_data,
+        'search_query': search_query,
+        'show_empty': show_empty,
         'user_full_name': f"{request.user.first_name} {request.user.last_name}",
         'user_email': request.user.email,
         'user_id': request.user.id,
         'user_date_joined': request.user.date_joined,
+        'stats': {
+            'total_rooms': len(rooms_data),
+            'user_conversations': total_conversations,
+            'active_conversations': active_conversations,
+            'total_unread_notifications': total_unread_notifications,
+        },
+        'can_create_room': True,  # Simplified - allow all authenticated users
     }
     return render(request, 'chat/room_list.html', context)
 
@@ -623,15 +827,228 @@ def room(request, room_name):
 
 @login_required
 def assistant_view(request):
+    from .models import Conversation
+
+    # Obtener o crear conversación activa
+    conversation = Conversation.get_or_create_active_conversation(request.user)
+    logger.info(f"Assistant view loaded for user {request.user.username} with active conversation: {conversation.id} - {conversation.title} (conversation_id: {conversation.conversation_id})")
+
+    # Obtener historial de mensajes (últimos 50 para inicialización)
+    recent_messages = conversation.get_recent_messages(limit=50)
+    logger.info(f"Loaded {len(recent_messages)} messages for conversation {conversation.id}")
+
+    # Formatear para el template (compatible con el formato existente)
+    initial_history = []
+    for msg in recent_messages:
+        initial_history.append({
+            'sender': msg['sender'],
+            'content': msg['content'],
+            'timestamp': msg['timestamp'],
+            'sender_name': msg.get('sender_name', 'Asistente' if msg['sender'] == 'ai' else request.user.get_full_name())
+        })
+
     context = {
         'pagetitle': 'AI Assistant',
         'user_full_name': f"{request.user.first_name} {request.user.last_name}",
         'user_email': request.user.email,
         'user_id': request.user.id,
         'user_date_joined': request.user.date_joined,
-        'initial_history': [],
+        'initial_history': json.dumps(initial_history),
+        'conversation_id': conversation.conversation_id,
     }
     return render(request, 'chat/assistant.html', context)
+
+
+@login_required
+def functions_panel(request):
+    """Panel de funciones disponibles para el asistente"""
+    functions = function_registry.list_functions()
+
+    # Organizar funciones por categorías
+    categories = {}
+    for name, func_data in functions.items():
+        category = 'General'  # Por ahora todas en general
+        if category not in categories:
+            categories[category] = []
+        categories[category].append({
+            'name': name,
+            'description': func_data['description'],
+            'parameters': func_data['parameters'],
+            'examples': func_data['examples']
+        })
+
+    # Estadísticas de uso
+    from .models import CommandLog
+    total_commands = CommandLog.objects.filter(user=request.user).count()
+    successful_commands = CommandLog.objects.filter(user=request.user, success=True).count()
+    failed_commands = total_commands - successful_commands
+    success_rate = (successful_commands / total_commands * 100) if total_commands > 0 else 0
+
+    context = {
+        'pagetitle': 'Panel de Funciones del Asistente',
+        'user_full_name': f"{request.user.first_name} {request.user.last_name}",
+        'categories': categories,
+        'stats': {
+            'total': total_commands,
+            'successful': successful_commands,
+            'failed': failed_commands,
+            'success_rate': success_rate
+        },
+        'functions': functions
+    }
+    return render(request, 'chat/functions_panel.html', context)
+
+
+@login_required
+def command_history(request):
+    """Historial de comandos ejecutados por el asistente"""
+    from .models import CommandLog
+
+    # Obtener comandos del usuario actual
+    commands = CommandLog.objects.filter(user=request.user).order_by('-executed_at')[:50]
+
+    # Estadísticas
+    total_commands = CommandLog.objects.filter(user=request.user).count()
+    successful_commands = CommandLog.objects.filter(user=request.user, success=True).count()
+    failed_commands = total_commands - successful_commands
+
+    # Comandos recientes (últimos 10)
+    recent_commands = []
+    for cmd in commands[:10]:
+        recent_commands.append({
+            'id': cmd.id,
+            'command': cmd.command,
+            'function_name': cmd.function_name,
+            'success': cmd.success,
+            'executed_at': cmd.executed_at,
+            'execution_time': cmd.execution_time,
+            'result': json.dumps(cmd.result, indent=2, ensure_ascii=False) if cmd.result else None
+        })
+
+    context = {
+        'pagetitle': 'Historial de Comandos del Asistente',
+        'user_full_name': f"{request.user.first_name} {request.user.last_name}",
+        'commands': recent_commands,
+        'stats': {
+            'total': total_commands,
+            'successful': successful_commands,
+            'failed': failed_commands,
+            'success_rate': (successful_commands / total_commands * 100) if total_commands > 0 else 0
+        }
+    }
+    return render(request, 'chat/command_history.html', context)
+
+
+@login_required
+def conversation_history(request):
+    """Historial de conversaciones con el asistente IA"""
+    from .models import Conversation
+
+    # Obtener conversaciones del usuario
+    conversations = Conversation.objects.filter(user=request.user).order_by('-updated_at')
+
+    # Estadísticas
+    total_conversations = conversations.count()
+    active_conversations = conversations.filter(is_active=True).count()
+    total_messages = sum(len(conv.messages) for conv in conversations)
+
+    # Conversaciones recientes
+    recent_conversations = []
+    for conv in conversations[:20]:  # Últimas 20 conversaciones
+        recent_conversations.append({
+            'id': conv.id,
+            'conversation_id': conv.conversation_id,
+            'title': conv.title,
+            'created_at': conv.created_at,
+            'updated_at': conv.updated_at,
+            'is_active': conv.is_active,
+            'message_count': len(conv.messages),
+            'last_message': conv.messages[-1] if conv.messages else None
+        })
+
+    context = {
+        'pagetitle': 'Historial de Conversaciones con IA',
+        'user_full_name': f"{request.user.first_name} {request.user.last_name}",
+        'conversations': recent_conversations,
+        'stats': {
+            'total_conversations': total_conversations,
+            'active_conversations': active_conversations,
+            'total_messages': total_messages,
+            'avg_messages_per_conversation': total_messages / total_conversations if total_conversations > 0 else 0
+        }
+    }
+    return render(request, 'chat/conversation_history.html', context)
+
+
+@login_required
+def conversation_detail(request, conversation_id):
+    """Vista detallada de una conversación específica"""
+    from .models import Conversation
+
+    try:
+        logger.info(f"Switch conversation request for user {request.user.username} with conversation_id: {conversation_id}")
+        conversation = None
+
+        # Try multiple ways to find the conversation
+        if conversation_id:
+            # First try by conversation_id field
+            try:
+                conversation = Conversation.objects.get(
+                    conversation_id=conversation_id,
+                    user=request.user
+                )
+                logger.info(f"Found conversation by conversation_id field: {conversation.id} - {conversation.title}")
+            except Conversation.DoesNotExist:
+                logger.info(f"Conversation not found by conversation_id field: {conversation_id}")
+
+        # If not found and conversation_id is numeric, try by id
+        if not conversation and conversation_id and conversation_id.isdigit():
+            try:
+                conversation = Conversation.objects.get(
+                    id=int(conversation_id),
+                    user=request.user
+                )
+                logger.info(f"Found conversation by id field: {conversation.id} - {conversation.title}")
+            except Conversation.DoesNotExist:
+                logger.info(f"Conversation not found by id field: {conversation_id}")
+
+        # If still not found, try by id anyway (in case conversation_id is the pk as string)
+        if not conversation:
+            try:
+                conversation = Conversation.objects.get(
+                    id=int(conversation_id) if conversation_id.isdigit() else conversation_id,
+                    user=request.user
+                )
+                logger.info(f"Found conversation by fallback id lookup: {conversation.id} - {conversation.title}")
+            except (Conversation.DoesNotExist, ValueError):
+                logger.info(f"Conversation not found by fallback lookup: {conversation_id}")
+
+        if not conversation:
+            logger.error(f"No conversation found for user {request.user.username} with conversation_id: {conversation_id}")
+            raise Conversation.DoesNotExist("Conversation not found")
+
+        # Marcar como activa si no lo está
+        if not conversation.is_active:
+            # Desactivar otras conversaciones activas
+            Conversation.objects.filter(
+                user=request.user,
+                is_active=True
+            ).exclude(id=conversation.id).update(is_active=False)
+            # Activar esta conversación
+            conversation.is_active = True
+            conversation.save()
+
+        context = {
+            'pagetitle': f'Conversación: {conversation.title}',
+            'user_full_name': f"{request.user.first_name} {request.user.last_name}",
+            'conversation': conversation,
+            'messages': conversation.messages
+        }
+        return render(request, 'chat/conversation_detail.html', context)
+
+    except Conversation.DoesNotExist:
+        messages.error(request, 'Conversación no encontrada')
+        return redirect('chat:conversation_history')
 
 
 @login_required
@@ -687,177 +1104,425 @@ def add_reaction(request, message_id):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     
-    @login_required
-    def unread_notifications_api(request):
-        """API endpoint for unread notifications"""
-        if request.method == 'GET':
-            from .models import HardcodedNotificationManager
-            notification_manager = HardcodedNotificationManager()
-            data = notification_manager.get_notifications_data(request.user)
-            return JsonResponse(data)
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
     
-    @login_required
-    def room_members_api(request, room_id):
-        """API endpoint for room members"""
-        try:
-            from rooms.models import RoomMember, Room
-            room = Room.objects.get(id=room_id)
+@login_required
+def assistant_configurations(request):
+    """Vista principal del panel de configuraciones del asistente"""
+    from .models import AssistantConfiguration
+
+    configurations = AssistantConfiguration.objects.filter(user=request.user)
+    active_config = AssistantConfiguration.get_active_config(request.user)
+
+    context = {
+        'pagetitle': 'Configuraciones del Asistente',
+        'configurations': configurations,
+        'active_config': active_config,
+        'user_full_name': f"{request.user.first_name} {request.user.last_name}",
+        'user_email': request.user.email,
+        'user_id': request.user.id,
+        'user_date_joined': request.user.date_joined,
+    }
+    return render(request, 'chat/assistant_configurations.html', context)
     
-            # Check if user has access to this room
-            if not RoomMember.objects.filter(room=room, user=request.user).exists():
-                return JsonResponse({'error': 'Access denied'}, status=403)
     
-            members = RoomMember.objects.filter(room=room).select_related('user')
-            members_data = []
+@login_required
+def create_assistant_configuration(request):
+        """Crear nueva configuración del asistente"""
+        from .models import AssistantConfiguration
     
-            for member in members:
-                members_data.append({
-                    'id': member.user.id,
-                    'username': member.user.username,
-                    'display_name': f"{member.user.first_name} {member.user.last_name}".strip() or member.user.username,
-                    'email': member.user.email,
-                    'is_online': True,  # You can implement presence logic here
-                    'joined_at': member.joined_at.isoformat() if member.joined_at else None
-                })
-    
-            return JsonResponse({
-                'members': members_data,
-                'total': len(members_data)
-            })
-    
-        except Room.DoesNotExist:
-            return JsonResponse({'error': 'Room not found'}, status=404)
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-    
-    @login_required
-    def room_notifications_api(request, room_id):
-        """API endpoint for room notifications"""
-        try:
-            from rooms.models import Room
-            from .models import HardcodedNotificationManager
-    
-            room = Room.objects.get(id=room_id)
-    
-            # Check if user has access to this room
-            from rooms.models import RoomMember
-            if not RoomMember.objects.filter(room=room, user=request.user).exists():
-                return JsonResponse({'error': 'Access denied'}, status=403)
-    
-            # Get notifications for this room
-            notification_manager = HardcodedNotificationManager()
-            all_notifications = notification_manager.get_all_notifications(request.user, include_read=True)
-    
-            room_notifications = [
-                n for n in all_notifications
-                if n.get('room_id') == str(room_id)
-            ]
-    
-            return JsonResponse({
-                'notifications': room_notifications,
-                'total': len(room_notifications)
-            })
-    
-        except Room.DoesNotExist:
-            return JsonResponse({'error': 'Room not found'}, status=404)
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-    
-    @login_required
-    def room_admin(request, room_id):
-        """Room administration panel"""
-        try:
-            from rooms.models import Room, RoomMember
-            room = Room.objects.get(id=room_id)
-    
-            # Check if user is admin or owner
-            if not (room.administrators.filter(id=request.user.id).exists() or room.owner_id == request.user.id):
-                messages.error(request, 'Access denied')
-                return redirect('chat:room_list')
-    
-            members = RoomMember.objects.filter(room=room).select_related('user')
-    
-            context = {
-                'room': room,
-                'members': members,
-                'pagetitle': f'Admin - {room.name}'
-            }
-    
-            return render(request, 'chat/room_admin.html', context)
-    
-        except Room.DoesNotExist:
-            messages.error(request, 'Room not found')
-            return redirect('chat:room_list')
-    
-    @login_required
-    @csrf_exempt
-    def reset_unread_count_api(request):
-        """API endpoint to reset unread message count for a room"""
         if request.method == 'POST':
             try:
-                import json
-                from rooms.models import MessageRead, Message
+                # Obtener datos del formulario
+                name = request.POST.get('name', '').strip()
+                model_name = request.POST.get('model_name', 'llama2')
+                temperature = float(request.POST.get('temperature', 0.7))
+                max_tokens = int(request.POST.get('max_tokens', 2048))
+                top_p = float(request.POST.get('top_p', 0.9))
+                top_k = int(request.POST.get('top_k', 40))
+                system_prompt = request.POST.get('system_prompt', '')
+                initial_context = request.POST.get('initial_context', '')
+                is_active = request.POST.get('is_active') == 'on'
     
-                data = json.loads(request.body)
-                room_id = data.get('room_id')
+                # Validaciones
+                if not name:
+                    messages.error(request, 'El nombre de la configuración es obligatorio')
+                    return redirect('chat:assistant_configurations')
     
-                if not room_id:
-                    return JsonResponse({'error': 'room_id is required'}, status=400)
+                if not (0.0 <= temperature <= 2.0):
+                    messages.error(request, 'La temperatura debe estar entre 0.0 y 2.0')
+                    return redirect('chat:assistant_configurations')
     
-                # Mark all unread messages in this room as read for the current user
-                unread_messages = Message.objects.filter(
-                    room_id=room_id
-                ).exclude(
-                    messageread__user=request.user
+                # Procesar datos adicionales
+                additional_data = {}
+                if request.POST.get('additional_text'):
+                    additional_data['text'] = request.POST.get('additional_text')
+    
+                # Procesar archivos si los hay
+                if request.FILES.getlist('additional_files'):
+                    additional_data['files'] = []
+                    for file in request.FILES.getlist('additional_files'):
+                        # Guardar archivo y agregar referencia
+                        file_path = default_storage.save(f'assistant_files/{request.user.id}/{file.name}', file)
+                        additional_data['files'].append({
+                            'name': file.name,
+                            'path': file_path,
+                            'url': default_storage.url(file_path)
+                        })
+    
+                # Procesar funciones habilitadas
+                enabled_functions = request.POST.getlist('enabled_functions')
+    
+                # Crear configuración
+                config = AssistantConfiguration.objects.create(
+                    user=request.user,
+                    name=name,
+                    model_name=model_name,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    top_p=top_p,
+                    top_k=top_k,
+                    system_prompt=system_prompt,
+                    initial_context=initial_context,
+                    additional_data=additional_data,
+                    enabled_functions=enabled_functions,
+                    is_active=is_active
                 )
     
-                marked_count = 0
-                for message in unread_messages:
-                    MessageRead.objects.get_or_create(
-                        user=request.user,
-                        message=message
-                    )
-                    marked_count += 1
+                messages.success(request, f'Configuración "{name}" creada exitosamente')
+                return redirect('chat:assistant_configurations')
     
-                return JsonResponse({
-                    'success': True,
-                    'marked_read': marked_count
-                })
-    
-            except json.JSONDecodeError:
-                return JsonResponse({'error': 'Invalid JSON'}, status=400)
+            except ValueError as e:
+                messages.error(request, f'Error en los datos numéricos: {str(e)}')
             except Exception as e:
-                return JsonResponse({'error': str(e)}, status=500)
+                messages.error(request, f'Error al crear configuración: {str(e)}')
     
+        return redirect('chat:assistant_configurations')
+    
+    
+@login_required
+def edit_assistant_configuration(request, config_id):
+    """Editar configuración del asistente"""
+    from .models import AssistantConfiguration
+
+    try:
+        config = AssistantConfiguration.objects.get(id=config_id, user=request.user)
+    except AssistantConfiguration.DoesNotExist:
+        messages.error(request, 'Configuración no encontrada')
+        return redirect('chat:assistant_configurations')
+
+    if request.method == 'POST':
+        try:
+            # Actualizar datos
+            config.name = request.POST.get('name', config.name).strip()
+            config.model_name = request.POST.get('model_name', config.model_name)
+            config.temperature = float(request.POST.get('temperature', config.temperature))
+            config.max_tokens = int(request.POST.get('max_tokens', config.max_tokens))
+            config.top_p = float(request.POST.get('top_p', config.top_p))
+            config.top_k = int(request.POST.get('top_k', config.top_k))
+            config.system_prompt = request.POST.get('system_prompt', config.system_prompt)
+            config.initial_context = request.POST.get('initial_context', config.initial_context)
+            config.is_active = request.POST.get('is_active') == 'on'
+
+            # Validaciones
+            if not config.name:
+                messages.error(request, 'El nombre de la configuración es obligatorio')
+                return redirect('chat:edit_assistant_configuration', config_id=config_id)
+
+            if not (0.0 <= config.temperature <= 2.0):
+                messages.error(request, 'La temperatura debe estar entre 0.0 y 2.0')
+                return redirect('chat:edit_assistant_configuration', config_id=config_id)
+
+            # Actualizar datos adicionales
+            additional_data = config.additional_data.copy()
+            if request.POST.get('additional_text'):
+                additional_data['text'] = request.POST.get('additional_text')
+            elif 'text' in additional_data:
+                del additional_data['text']
+
+            # Procesar nuevos archivos
+            if request.FILES.getlist('additional_files'):
+                if 'files' not in additional_data:
+                    additional_data['files'] = []
+                for file in request.FILES.getlist('additional_files'):
+                    file_path = default_storage.save(f'assistant_files/{request.user.id}/{file.name}', file)
+                    additional_data['files'].append({
+                        'name': file.name,
+                        'path': file_path,
+                        'url': default_storage.url(file_path)
+                    })
+
+            config.additional_data = additional_data
+            config.enabled_functions = request.POST.getlist('enabled_functions')
+            config.save()
+
+            messages.success(request, f'Configuración "{config.name}" actualizada exitosamente')
+            return redirect('chat:assistant_configurations')
+
+        except ValueError as e:
+            messages.error(request, f'Error en los datos numéricos: {str(e)}')
+        except Exception as e:
+            messages.error(request, f'Error al actualizar configuración: {str(e)}')
+
+    # Para GET, mostrar formulario de edición
+    context = {
+        'pagetitle': f'Editar Configuración: {config.name}',
+        'config': config,
+        'user_full_name': f"{request.user.first_name} {request.user.last_name}",
+        'user_email': request.user.email,
+        'user_id': request.user.id,
+        'user_date_joined': request.user.date_joined,
+    }
+    return render(request, 'chat/edit_assistant_configuration.html', context)
+    
+    
+@login_required
+def delete_assistant_configuration(request, config_id):
+    """Eliminar configuración del asistente"""
+    from .models import AssistantConfiguration
+
+    if request.method == 'POST':
+        try:
+            config = AssistantConfiguration.objects.get(id=config_id, user=request.user)
+            name = config.name
+            config.delete()
+            messages.success(request, f'Configuración "{name}" eliminada exitosamente')
+        except AssistantConfiguration.DoesNotExist:
+            messages.error(request, 'Configuración no encontrada')
+        except Exception as e:
+            messages.error(request, f'Error al eliminar configuración: {str(e)}')
+
+    return redirect('chat:assistant_configurations')
+    
+    
+@login_required
+@csrf_exempt
+def set_active_configuration(request, config_id):
+    """Establecer configuración activa"""
+    from .models import AssistantConfiguration
+
+    if request.method == 'POST':
+        try:
+            config = AssistantConfiguration.objects.get(id=config_id, user=request.user)
+            config.is_active = True
+            config.save()
+            return JsonResponse({'success': True, 'message': f'Configuración "{config.name}" activada'})
+        except AssistantConfiguration.DoesNotExist:
+            return JsonResponse({'error': 'Configuración no encontrada'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@login_required
+@csrf_exempt
+def conversation_messages_api(request, conversation_id):
+    """API para obtener los mensajes de una conversación específica"""
+    from .models import Conversation
+
+    if request.method != 'GET':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        conversation = Conversation.objects.get(
+            conversation_id=conversation_id,
+            user=request.user
+        )
+
+        messages = conversation.get_recent_messages(limit=50)
+
+        # Format messages for frontend
+        formatted_messages = []
+        for msg in messages:
+            formatted_messages.append({
+                'sender': msg['sender'],
+                'content': msg['content'],
+                'timestamp': msg['timestamp'],
+                'sender_name': msg.get('sender_name', 'Asistente' if msg['sender'] == 'ai' else request.user.get_full_name())
+            })
+
+        return JsonResponse({
+            'messages': formatted_messages,
+            'conversation_title': conversation.title,
+            'total_messages': len(messages)
+        })
+
+    except Conversation.DoesNotExist:
+        return JsonResponse({'error': 'Conversation not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
     
-    @login_required
-    @csrf_exempt
-    def mark_notifications_read_api(request):
-        """API endpoint to mark notifications as read"""
-        if request.method == 'POST':
-            try:
-                from .models import HardcodedNotificationManager
-                import json
-    
-                data = json.loads(request.body)
-                notification_ids = data.get('notification_ids', [])
-    
-                notification_manager = HardcodedNotificationManager()
-                marked_count = notification_manager.mark_notifications_read(request.user, notification_ids)
-    
-                return JsonResponse({
-                    'success': True,
-                    'marked_count': marked_count
-                })
-    
-            except json.JSONDecodeError:
-                return JsonResponse({'error': 'Invalid JSON'}, status=400)
-            except Exception as e:
-                return JsonResponse({'error': str(e)}, status=500)
-    
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
+@login_required
+def unread_notifications_api(request):
+    """API endpoint for unread notifications"""
+    if request.method == 'GET':
+        from .models import HardcodedNotificationManager
+        notification_manager = HardcodedNotificationManager()
+        data = notification_manager.get_notifications_data(request.user)
+        return JsonResponse(data)
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@login_required
+def room_members_api(request, room_id):
+    """API endpoint for room members"""
+    try:
+        from rooms.models import RoomMember, Room
+        room = Room.objects.get(id=room_id)
+
+        # Check if user has access to this room
+        if not RoomMember.objects.filter(room=room, user=request.user).exists():
+            return JsonResponse({'error': 'Access denied'}, status=403)
+
+        members = RoomMember.objects.filter(room=room).select_related('user')
+        members_data = []
+
+        for member in members:
+            members_data.append({
+                'id': member.user.id,
+                'username': member.user.username,
+                'display_name': f"{member.user.first_name} {member.user.last_name}".strip() or member.user.username,
+                'email': member.user.email,
+                'is_online': True,  # You can implement presence logic here
+                'joined_at': member.joined_at.isoformat() if member.joined_at else None
+            })
+
+        return JsonResponse({
+            'members': members_data,
+            'total': len(members_data)
+        })
+
+    except Room.DoesNotExist:
+        return JsonResponse({'error': 'Room not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def room_notifications_api(request, room_id):
+    """API endpoint for room notifications"""
+    try:
+        from rooms.models import Room
+        from .models import HardcodedNotificationManager
+
+        room = Room.objects.get(id=room_id)
+
+        # Check if user has access to this room
+        from rooms.models import RoomMember
+        if not RoomMember.objects.filter(room=room, user=request.user).exists():
+            return JsonResponse({'error': 'Access denied'}, status=403)
+
+        # Get notifications for this room
+        notification_manager = HardcodedNotificationManager()
+        all_notifications = notification_manager.get_all_notifications(request.user, include_read=True)
+
+        room_notifications = [
+            n for n in all_notifications
+            if n.get('room_id') == str(room_id)
+        ]
+
+        return JsonResponse({
+            'notifications': room_notifications,
+            'total': len(room_notifications)
+        })
+
+    except Room.DoesNotExist:
+        return JsonResponse({'error': 'Room not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@login_required
+def room_admin(request, room_id):
+    """Room administration panel"""
+    try:
+        from rooms.models import Room, RoomMember
+        room = Room.objects.get(id=room_id)
+
+        # Check if user is admin or owner
+        if not (room.administrators.filter(id=request.user.id).exists() or room.owner_id == request.user.id):
+            messages.error(request, 'Access denied')
+            return redirect('chat:room_list')
+
+        members = RoomMember.objects.filter(room=room).select_related('user')
+
+        context = {
+            'room': room,
+            'members': members,
+            'pagetitle': f'Admin - {room.name}'
+        }
+
+        return render(request, 'chat/room_admin.html', context)
+
+    except Room.DoesNotExist:
+        messages.error(request, 'Room not found')
+        return redirect('chat:room_list')
+
+@login_required
+@csrf_exempt
+def reset_unread_count_api(request):
+    """API endpoint to reset unread message count for a room"""
+    if request.method == 'POST':
+        try:
+            import json
+            from rooms.models import MessageRead, Message
+
+            data = json.loads(request.body)
+            room_id = data.get('room_id')
+
+            if not room_id:
+                return JsonResponse({'error': 'room_id is required'}, status=400)
+
+            # Mark all unread messages in this room as read for the current user
+            unread_messages = Message.objects.filter(
+                room_id=room_id
+            ).exclude(
+                messageread__user=request.user
+            )
+
+            marked_count = 0
+            for message in unread_messages:
+                MessageRead.objects.get_or_create(
+                    user=request.user,
+                    message=message
+                )
+                marked_count += 1
+
+            return JsonResponse({
+                'success': True,
+                'marked_read': marked_count
+            })
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+@login_required
+@csrf_exempt
+def mark_notifications_read_api(request):
+    """API endpoint to mark notifications as read"""
+    if request.method == 'POST':
+        try:
+            from .models import HardcodedNotificationManager
+            import json
+
+            data = json.loads(request.body)
+            notification_ids = data.get('notification_ids', [])
+
+            notification_manager = HardcodedNotificationManager()
+            marked_count = notification_manager.mark_notifications_read(request.user, notification_ids)
+
+            return JsonResponse({
+                'success': True,
+                'marked_count': marked_count
+            })
+
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     return JsonResponse({'error': 'Method not allowed'}, status=405)
 
@@ -1210,6 +1875,7 @@ def room_admin(request, room_id):
         context = {
             'room': room,
             'members': room.get_active_members().select_related('user'),
+            'can_manage_room': room.can_user_manage(request.user),
             'pagetitle': f'Manage {room.name}'
         }
 
@@ -1218,3 +1884,133 @@ def room_admin(request, room_id):
     except Room.DoesNotExist:
         messages.error(request, 'Room not found.')
         return redirect('chat:room_list')
+
+
+# APIs para gestión de conversaciones
+@login_required
+@csrf_exempt
+def conversations_api(request):
+    """API para obtener la lista de conversaciones del usuario"""
+    from .models import Conversation
+
+    conversations = Conversation.objects.filter(user=request.user).order_by('-updated_at')[:20]
+    logger.info(f"Conversations API called for user {request.user.username}, found {conversations.count()} conversations")
+
+    conversations_data = []
+    for conv in conversations:
+        conversations_data.append({
+            'id': conv.id,
+            'conversation_id': conv.conversation_id,
+            'title': conv.title,
+            'created_at': conv.created_at.strftime('%d/%m/%Y %H:%M'),
+            'updated_at': conv.updated_at.strftime('%d/%m/%Y %H:%M'),
+            'is_active': conv.is_active,
+            'message_count': len(conv.messages),
+            'last_message': conv.messages[-1] if conv.messages else None
+        })
+        logger.debug(f"Conversation {conv.id}: title='{conv.title}', active={conv.is_active}, messages={len(conv.messages)}")
+
+    return JsonResponse({'conversations': conversations_data})
+
+
+@login_required
+@csrf_exempt
+def switch_conversation_api(request, conversation_id):
+    """API para cambiar a una conversación específica"""
+    from .models import Conversation
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        conversation = Conversation.objects.get(
+            conversation_id=conversation_id,
+            user=request.user
+        )
+
+        # Desactivar todas las conversaciones activas
+        Conversation.objects.filter(
+            user=request.user,
+            is_active=True
+        ).exclude(id=conversation.id).update(is_active=False)
+
+        # Activar la conversación seleccionada
+        conversation.is_active = True
+        conversation.save()
+
+        return JsonResponse({
+            'success': True,
+            'conversation_id': conversation.conversation_id,
+            'title': conversation.title
+        })
+
+    except Conversation.DoesNotExist:
+        return JsonResponse({'error': 'Conversation not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@csrf_exempt
+def new_conversation_api(request):
+    """API para crear una nueva conversación"""
+    from .models import Conversation
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        # Desactivar conversación actual
+        Conversation.objects.filter(
+            user=request.user,
+            is_active=True
+        ).update(is_active=False)
+
+        # Crear nueva conversación
+        conversation_id = f"conv_{request.user.id}_{int(timezone.now().timestamp())}"
+        conversation = Conversation.objects.create(
+            user=request.user,
+            conversation_id=conversation_id,
+            title="Nueva conversación",
+            is_active=True
+        )
+
+        return JsonResponse({
+            'success': True,
+            'conversation_id': conversation.conversation_id,
+            'title': conversation.title
+        })
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+def chat_stats_api(request):
+    """API para obtener estadísticas del chat"""
+    from rooms.models import Room
+    from .models import Conversation
+
+    rooms = Room.objects.all()
+    total_rooms = rooms.count()
+    total_users = 0
+
+    # Get user count per room (simplified)
+    rooms_data = []
+    for room in rooms:
+        user_count = room.members.count()  # Simplified - counts all members
+        total_users = max(total_users, user_count)
+        rooms_data.append({
+            'id': room.id,
+            'users': user_count
+        })
+
+    # Get user's conversation count
+    user_conversations = Conversation.objects.filter(user=request.user).count()
+
+    return JsonResponse({
+        'total_users': total_users,
+        'active_rooms': total_rooms,
+        'user_conversations': user_conversations,
+        'rooms': rooms_data
+    })

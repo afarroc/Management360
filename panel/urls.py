@@ -25,7 +25,7 @@ urlpatterns = [
     path('kpis/', include('kpis.urls')),
     path('memento/', include('memento.urls')),
     path('passgen/', include('passgen.urls')),
-    path('rooms/', include('rooms.urls')),
+    path('rooms/', include('rooms.urls', namespace='rooms')),
     path('tools/', include('tools.urls')),
     
     # API Endpoints (alphabetical order)

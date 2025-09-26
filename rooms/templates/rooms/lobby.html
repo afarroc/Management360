@@ -10,7 +10,7 @@
     <h1>{{ page_title }}</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'lobby' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rooms:lobby' %}">Home</a></li>
             <li class="breadcrumb-item active">Lobby</li>
         </ol>
     </nav>
@@ -109,7 +109,7 @@
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Quick Search</h5>
-                    <form method="get" action="{% url 'room_search' %}" class="mb-3">
+                    <form method="get" action="{% url 'rooms:room_search' %}" class="mb-3">
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
                             <input type="search" name="q" class="form-control" placeholder="Search rooms..." required>
@@ -130,10 +130,13 @@
                 <div class="card-body">
                     <h5 class="card-title">Quick Actions</h5>
                     <div class="d-grid gap-2">
-                        <a href="{% url 'room_create' %}" class="btn btn-primary">
+                        <a href="{% url 'rooms:register_presence' %}" class="btn btn-success">
+                            <i class="bi bi-person-check-fill"></i> Register as Available
+                        </a>
+                        <a href="{% url 'rooms:room_create' %}" class="btn btn-primary">
                             <i class="bi bi-plus-circle-fill"></i> Create New Room
                         </a>
-                        <a href="{% url 'portal_create' %}" class="btn btn-outline-primary">
+                        <a href="{% url 'rooms:portal_create' %}" class="btn btn-outline-primary">
                             <i class="bi bi-door-open-fill"></i> Create Portal
                         </a>
                         <div class="dropdown">
@@ -141,9 +144,9 @@
                                 <i class="bi bi-three-dots"></i> More Actions
                             </button>
                             <ul class="dropdown-menu w-100">
-                                <li><a class="dropdown-item" href="{% url 'room_list' %}"><i class="bi bi-grid"></i> All Rooms</a></li>
-                                <li><a class="dropdown-item" href="{% url 'portal_list' %}"><i class="bi bi-door-open"></i> All Portals</a></li>
-                                <li><a class="dropdown-item" href="{% url 'entrance_exit_list' %}"><i class="bi bi-box-arrow-in-right"></i> Entrance/Exits</a></li>
+                                <li><a class="dropdown-item" href="{% url 'rooms:room_list' %}"><i class="bi bi-grid"></i> All Rooms</a></li>
+                                <li><a class="dropdown-item" href="{% url 'rooms:portal_list' %}"><i class="bi bi-door-open"></i> All Portals</a></li>
+                                <li><a class="dropdown-item" href="{% url 'rooms:entrance_exit_list' %}"><i class="bi bi-box-arrow-in-right"></i> Entrance/Exits</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle"></i> Help</a></li>
                             </ul>

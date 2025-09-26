@@ -6,13 +6,21 @@ from . import views
 app_name = 'chat'  # Namespace definition
 
 urlpatterns = [
-    path('', views.room_list, name='room_list'),
+    path('', views.index, name='index'),
+    path('rooms/', views.room_list, name='room_list'),
     path('room/', views.redirect_to_last_room, name='redirect_to_last_room'),
     path('room/<str:room_name>/', views.room, name='room'),
     # Endpoint para procesamiento de mensajes del chat (API)
     path('assistant/', views.chat_view, name='chat_api'),
     # Endpoint para la UI del chat (solo interfaz)
     path('ui/', views.assistant_view, name='assistant_ui'),
+    # Panel de funciones del asistente
+    path('functions/', views.functions_panel, name='functions_panel'),
+    # Historial de comandos del asistente
+    path('commands/', views.command_history, name='command_history'),
+    # Historial de conversaciones con IA
+    path('conversations/', views.conversation_history, name='conversation_history'),
+    path('conversation/<str:conversation_id>/', views.conversation_detail, name='conversation_detail'),
     path('clear/', views.clear_history, name='clear_history'),
     path('clear_history/<str:room_name>/', views.clear_history_room, name='clear_history_room'),
     # API para obtener la última sala accedida por el usuario
@@ -49,6 +57,21 @@ urlpatterns = [
     path('api/room/<int:room_id>/notifications/', views.room_notifications_api, name='api_room_notifications'),
     # Panel flotante para incluir en cualquier página
     path('panel/', views.chat_panel, name='chat_panel'),
+    # Estadísticas del chat
+    path('stats/', views.chat_stats_api, name='chat_stats'),
     # Panel de administración de sala
     path('room/<int:room_id>/admin/', views.room_admin, name='room_admin'),
+
+    # APIs para gestión de conversaciones
+    path('api/conversations/', views.conversations_api, name='api_conversations'),
+    path('api/conversation/<str:conversation_id>/switch/', views.switch_conversation_api, name='api_switch_conversation'),
+    path('api/conversation/<str:conversation_id>/messages/', views.conversation_messages_api, name='api_conversation_messages'),
+    path('api/conversation/new/', views.new_conversation_api, name='api_new_conversation'),
+
+    # Panel de configuraciones del asistente
+    path('configurations/', views.assistant_configurations, name='assistant_configurations'),
+    path('configurations/create/', views.create_assistant_configuration, name='create_assistant_configuration'),
+    path('configurations/<int:config_id>/edit/', views.edit_assistant_configuration, name='edit_assistant_configuration'),
+    path('configurations/<int:config_id>/delete/', views.delete_assistant_configuration, name='delete_assistant_configuration'),
+    path('configurations/<int:config_id>/set-active/', views.set_active_configuration, name='set_active_configuration'),
 ]

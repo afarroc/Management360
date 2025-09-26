@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.urls import reverse_lazy
-from .models import Room, Comment, Evaluation, EntranceExit, Portal, RoomObject
+from .models import Room, Comment, Evaluation, EntranceExit, Portal, RoomObject, PlayerProfile
 from .forms import RoomForm, EvaluationForm, EntranceExitForm, PortalForm
 from django.contrib import messages
 from django.core.cache import cache
@@ -59,7 +59,45 @@ def lobby(request):
         'recent_activities': recent_activities,
     }
     return render(request, 'rooms/lobby.html', context)
-    
+
+@login_required
+def register_presence(request):
+    """Registra la presencia del usuario como disponible y lo ingresa a una habitación inicial"""
+    player_profile, created = PlayerProfile.objects.get_or_create(
+        user=request.user,
+        defaults={
+            'energy': 100,
+            'productivity': 50,
+            'social': 50,
+            'position_x': 0,
+            'position_y': 0
+        }
+    )
+
+    # Cambiar estado a disponible
+    player_profile.state = 'AVAILABLE'
+    player_profile.energy = 100  # Resetear energía al registrarse
+
+    # Encontrar habitación inicial (primera habitación pública disponible)
+    initial_room = Room.objects.filter(permissions='public').first()
+    if not initial_room:
+        # Si no hay habitaciones públicas, crear una habitación de lobby por defecto
+        initial_room, room_created = Room.objects.get_or_create(
+            name='Lobby Principal',
+            defaults={
+                'description': 'Habitación principal para nuevos usuarios',
+                'owner': request.user,
+                'permissions': 'public',
+                'room_type': 'LOUNGE'
+            }
+        )
+
+    player_profile.current_room = initial_room
+    player_profile.save()
+
+    messages.success(request, f'Te has registrado como disponible y entrado al {initial_room.name}')
+    return redirect('room_detail', pk=initial_room.pk)
+
 # Vista para crear una nueva sala
 @login_required
 def create_room(request):
@@ -284,6 +322,62 @@ from .serializers import MessageSerializer, RoomSearchSerializer, RoomSerializer
 
 logger = logging.getLogger(__name__)
 
+def process_message_command(content, user):
+    """Procesa comandos enviados como mensajes"""
+    if not content.startswith('/'):
+        return None
+
+    command = content[1:].strip().lower().split()
+    if not command:
+        return None
+
+    cmd = command[0]
+    args = command[1:]
+
+    try:
+        player = user.player_profile
+    except PlayerProfile.DoesNotExist:
+        return "No tienes un perfil de jugador. Regístrate primero."
+
+    if cmd == 'work':
+        player.state = 'WORKING'
+        player.productivity += 5
+        player.energy -= 10
+        player.save()
+        return f"Has empezado a trabajar. Productividad: {player.productivity}, Energía: {player.energy}"
+
+    elif cmd == 'rest':
+        player.state = 'RESTING'
+        player.energy = min(100, player.energy + 20)
+        player.save()
+        return f"Estás descansando. Energía: {player.energy}"
+
+    elif cmd == 'social':
+        player.state = 'SOCIALIZING'
+        player.social += 5
+        player.energy -= 5
+        player.save()
+        return f"Estás socializando. Social: {player.social}, Energía: {player.energy}"
+
+    elif cmd == 'disconnect':
+        player.state = 'DISCONNECTED'
+        player.save()
+        return "Te has desconectado."
+
+    elif cmd == 'move' and args:
+        direction = args[0].upper()
+        success = player.move_to_room(direction)
+        if success:
+            return f"Te has movido al {direction} hacia {player.current_room.name}"
+        else:
+            return "No puedes moverte en esa dirección."
+
+    elif cmd == 'status':
+        return f"Estado: {player.get_state_display()}, Energía: {player.energy}, Productividad: {player.productivity}, Social: {player.social}"
+
+    else:
+        return f"Comando desconocido: {cmd}. Comandos disponibles: /work, /rest, /social, /disconnect, /move <direction>, /status"
+
 class RoomListViewSet(ListModelMixin, GenericViewSet):
     serializer_class = RoomSerializer
     permission_classes = [IsAuthenticated]
@@ -416,6 +510,31 @@ class MessageListCreateAPIView(ListCreateAPIView, CentrifugoMixin):
         room.last_message = obj
         room.bumped_at = timezone.now()
         room.save()
+
+        # Procesar comandos si el mensaje es un comando
+        command_response = process_message_command(obj.content, request.user)
+        if command_response:
+            # Crear mensaje de sistema con la respuesta del comando
+            system_message = Message.objects.create(
+                room=room,
+                content=command_response,
+                message_type='system'
+            )
+            room.last_message = system_message
+            room.save()
+
+            # Broadcast del mensaje de comando
+            broadcast_payload = {
+                'channels': channels,
+                'data': {
+                    'type': 'message_added',
+                    'body': MessageSerializer(system_message).data
+                },
+                'idempotency_key': f'message_{system_message.id}'
+            }
+            self.broadcast_room(room_id, broadcast_payload)
+
+        # Broadcast del mensaje original
         broadcast_payload = {
             'channels': channels,
             'data': {
