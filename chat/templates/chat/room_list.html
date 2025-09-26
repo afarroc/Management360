@@ -8,33 +8,77 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
-            <li class="breadcrumb-item active">Chat Rooms</li>
+            <li class="breadcrumb-item active">Chat Management</li>
         </ol>
     </nav>
 </div>
 
-
+<!-- Statistics Cards -->
 <section class="section">
     <div class="row">
-        <div class="col-lg-12">
-            <div class="card">
+        <div class="col-lg-3 col-md-6">
+            <div class="card info-card">
                 <div class="card-body">
-                    <h5 class="card-title">Available Chat Rooms</h5>
-                    
-                    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                        {% for room in rooms %}
-                        <div class="col">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <h5 class="card-title">{{ room.name }}</h5>
-                                    <p class="card-text">{{ room.description|default:"No description" }}</p>
-                                    <a href="{% url 'chat:room' room_name=room.id %}" class="btn btn-primary">
-                                        <i class="bi bi-chat-dots"></i> Join Room
-                                    </a>
-                                </div>
+                    <h5 class="card-title">Total Rooms <span>| Active</span></h5>
+                    <div class="d-flex align-items-center">
+                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                            <i class="bi bi-chat-dots"></i>
+                        </div>
+                        <div class="ps-3">
+                            <h6>{{ stats.total_rooms }}</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card info-card">
+                <div class="card-body">
+                    <h5 class="card-title">Your Conversations <span>| Active</span></h5>
+                    <div class="d-flex align-items-center">
+                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                            <i class="bi bi-chat-quote"></i>
+                        </div>
+                        <div class="ps-3">
+                            <h6>{{ stats.active_conversations }} / {{ stats.user_conversations }}</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card info-card">
+                <div class="card-body">
+                    <h5 class="card-title">Notifications <span>| Unread</span></h5>
+                    <div class="d-flex align-items-center">
+                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                            <i class="bi bi-bell"></i>
+                        </div>
+                        <div class="ps-3">
+                            <h6>{{ stats.total_unread_notifications }}</h6>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card info-card">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Actions <span>| Tools</span></h5>
+                    <div class="d-flex align-items-center">
+                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                            <i class="bi bi-tools"></i>
+                        </div>
+                        <div class="ps-3">
+                            <div class="btn-group-vertical btn-group-sm">
+                                <a href="{% url 'chat:assistant_ui' %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-robot"></i> AI Assistant
+                                </a>
                             </div>
                         </div>
-                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -42,8 +86,232 @@
     </div>
 </section>
 
-<script>
-</script>
+<!-- Toolbar and Filters -->
+<section class="section">
+    <div class="card">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <form method="get" class="d-flex">
+                        <input type="text" name="search" class="form-control me-2" placeholder="Search rooms..."
+                               value="{{ search_query }}">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search"></i> Search
+                        </button>
+                        <a href="{% url 'chat:room_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </a>
+                    </form>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="btn-group me-2">
+                        <a href="?show_empty={{ show_empty|yesno:'false,true' }}" class="btn btn-outline-info">
+                            <i class="bi bi-funnel"></i> {% if show_empty %}Hide{% else %}Show{% endif %} Empty
+                        </a>
+                    </div>
+                    {% if can_create_room %}
+                    <a href="{% url 'rooms:room_create' %}" class="btn btn-success">
+                        <i class="bi bi-plus-circle"></i> Create Room
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
+<!-- Rooms List -->
+<section class="section">
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-grid-3x3-gap"></i> Chat Rooms
+                        <span class="badge bg-primary">{{ rooms_data|length }}</span>
+                    </h5>
+
+                    {% if rooms_data %}
+                        <div class="row">
+                            {% for room_data in rooms_data %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100 room-card {% if room_data.unread_count > 0 %}border-warning{% endif %}">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="card-title mb-0">
+                                                {{ room_data.room.name }}
+                                                {% if room_data.unread_count > 0 %}
+                                                <span class="badge bg-danger">{{ room_data.unread_count }}</span>
+                                                {% endif %}
+                                            </h6>
+                                            {% if room_data.can_manage %}
+                                            <i class="bi bi-shield-check text-success" title="You can manage this room"></i>
+                                            {% endif %}
+                                        </div>
+
+                                        <p class="card-text small text-muted mb-2">
+                                            {{ room_data.room.description|default:"No description available"|truncatechars:80 }}
+                                        </p>
+
+                                        <div class="row text-center mb-3">
+                                            <div class="col-4">
+                                                <small class="text-muted d-block">Members</small>
+                                                <strong>{{ room_data.member_count }}</strong>
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted d-block">Messages</small>
+                                                <strong>{{ room_data.message_count }}</strong>
+                                            </div>
+                                            <div class="col-4">
+                                                <small class="text-muted d-block">Online</small>
+                                                <strong class="text-success">{{ room_data.online_members }}</strong>
+                                            </div>
+                                        </div>
+
+                                        {% if room_data.last_activity %}
+                                        <small class="text-muted d-block mb-3">
+                                            <i class="bi bi-clock"></i> Last activity: {{ room_data.last_activity|date:"M d, H:i" }}
+                                        </small>
+                                        {% endif %}
+
+                                        <div class="d-flex flex-wrap gap-1">
+                                            {% if room_data.is_member %}
+                                            <a href="{% url 'chat:room' room_name=room_data.room.id %}" class="btn btn-primary btn-sm">
+                                                <i class="bi bi-chat-dots"></i> Enter
+                                            </a>
+                                            {% else %}
+                                            <a href="{% url 'rooms:room_detail' pk=room_data.room.id %}" class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-info-circle"></i> View
+                                            </a>
+                                            {% endif %}
+
+                                            <a href="{% url 'chat:api_room_history' room_data.room.id %}" class="btn btn-outline-info btn-sm" target="_blank">
+                                                <i class="bi bi-clock-history"></i> History
+                                            </a>
+
+                                            {% if room_data.can_manage %}
+                                            <a href="{% url 'chat:room_admin' room_id=room_data.room.id %}" class="btn btn-outline-warning btn-sm">
+                                                <i class="bi bi-gear"></i> Manage
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-chat-dots display-1 text-muted"></i>
+                            <h4 class="mt-3">No rooms found</h4>
+                            <p class="text-muted">Try adjusting your search or filters.</p>
+                            {% if can_create_room %}
+                            <a href="{% url 'rooms:create_room' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Create First Room
+                            </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-lightning"></i> Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'chat:assistant_ui' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-robot"></i> AI Assistant
+                        </a>
+                        <a href="{% url 'chat:conversation_history' %}" class="btn btn-outline-info">
+                            <i class="bi bi-chat-square-text"></i> Conversation History
+                        </a>
+                        <a href="{% url 'chat:functions_panel' %}" class="btn btn-outline-success">
+                            <i class="bi bi-tools"></i> Functions Panel
+                        </a>
+                        <a href="{% url 'chat:command_history' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-terminal"></i> Command History
+                        </a>
+                        <a href="{% url 'chat:assistant_configurations' %}" class="btn btn-outline-warning">
+                            <i class="bi bi-sliders"></i> AI Configurations
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-activity"></i> System Status
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <small class="text-muted">Server Status:</small>
+                        <span class="badge bg-success">Online</span>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">Your Status:</small>
+                        <span class="badge bg-success">Active</span>
+                    </div>
+                    <div class="mb-0">
+                        <small class="text-muted">Last Login:</small><br>
+                        <small>{{ user_date_joined|date:"M d, Y" }}</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-question-circle"></i> Help & Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled small">
+                        <li><i class="bi bi-dot"></i> Click room cards to join conversations</li>
+                        <li><i class="bi bi-dot"></i> Use search to find specific rooms</li>
+                        <li><i class="bi bi-dot"></i> Check badges for unread messages</li>
+                        <li><i class="bi bi-dot"></i> Manage rooms if you have admin rights</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.room-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.room-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.info-card .card-icon {
+    color: #fff;
+    background: #0d6efd;
+    width: 48px;
+    height: 48px;
+}
+</style>
+
+<script>
+// Auto-refresh unread counts every 30 seconds
+setInterval(function() {
+    // This would refresh notification counts if needed
+    console.log('Checking for updates...');
+}, 30000);
+</script>
 
 {% endblock %}

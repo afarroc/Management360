@@ -5,10 +5,13 @@ from .views import RoomListViewSet, RoomDetailViewSet, RoomSearchViewSet, \
     MessageListCreateAPIView, JoinRoomView, LeaveRoomView, \
     room_view, navigate_room
 
+app_name = 'rooms'
+
 
 urlpatterns = [
     # Main views
     path('', views.lobby, name='lobby'),
+    path('register-presence/', views.register_presence, name='register_presence'),
     path('search/', views.room_search, name='room_search'),
 
     # Rooms
