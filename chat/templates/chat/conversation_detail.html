@@ -1,0 +1,199 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Confirmation and success messages -->
+{% if messages %}
+{% include 'layouts/includes/alert.html' %}
+{% endif %}
+
+<div class="pagetitle">
+    <h1>{{pagetitle}}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'chat:assistant_ui' %}">Asistente IA</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'chat:conversation_history' %}">Conversaciones</a></li>
+            <li class="breadcrumb-item active">{{ conversation.title }}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<div class="row">
+    <!-- Información de la conversación -->
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title">{{ conversation.title }}</h5>
+                        <p class="text-muted mb-0">
+                            <small>
+                                Creada: {{ conversation.created_at|date:"d/m/Y H:i" }} |
+                                Última actividad: {{ conversation.updated_at|date:"d/m/Y H:i" }} |
+                                Mensajes: {{ messages|length }}
+                            </small>
+                        </p>
+                    </div>
+                    <div>
+                        {% if conversation.is_active %}
+                            <span class="badge bg-success">Conversación Activa</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Conversación Inactiva</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de mensajes -->
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Historial Completo</h5>
+
+                <div id="conversation-messages" class="chat-messages" style="max-height: 600px; overflow-y: auto;">
+                    {% for message in messages %}
+                    <div class="chat-bubble {% if message.sender == 'user' %}user-bubble{% else %}ai-bubble{% endif %} mb-3">
+                        <div class="chat-message">
+                            <span class="sender">
+                                {% if message.sender == 'user' %}
+                                    <i class="bi bi-person-circle"></i> {{ message.sender_name|default:"Tú" }}
+                                {% else %}
+                                    <i class="bi bi-robot"></i> {{ message.sender_name|default:"Asistente IA" }}
+                                {% endif %}
+                                {% if message.type == 'command' %}
+                                    <span class="badge bg-info ms-2">Comando</span>
+                                {% elif message.type == 'command_response' %}
+                                    <span class="badge bg-success ms-2">Respuesta</span>
+                                {% elif message.type == 'error' %}
+                                    <span class="badge bg-danger ms-2">Error</span>
+                                {% endif %}
+                            </span>
+                            <div class="message-content">
+                                {% if message.type == 'command_response' and message.content|slice:":4" == '[OK]' %}
+                                    <div class="alert alert-success py-2">
+                                        <i class="bi bi-check-circle"></i> {{ message.content|slice:"4:" }}
+                                    </div>
+                                {% elif message.type == 'error' %}
+                                    <div class="alert alert-danger py-2">
+                                        <i class="bi bi-exclamation-triangle"></i> {{ message.content }}
+                                    </div>
+                                {% else %}
+                                    {{ message.content|linebreaks }}
+                                {% endif %}
+                            </div>
+                            <small class="text-muted timestamp">
+                                {{ message.timestamp|date:"d/m/Y H:i:s" }}
+                            </small>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-chat-dots" style="font-size: 3rem;"></i>
+                        <p>No hay mensajes en esta conversación</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Acciones -->
+                <div class="mt-3 border-top pt-3">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <a href="{% url 'chat:conversation_history' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver al Historial
+                            </a>
+                        </div>
+                        <div>
+                            {% if conversation.is_active %}
+                                <a href="{% url 'chat:assistant_ui' %}" class="btn btn-primary">
+                                    <i class="bi bi-chat-dots"></i> Continuar esta Conversación
+                                </a>
+                            {% else %}
+                                <button class="btn btn-success" onclick="activateConversation('{{ conversation.conversation_id }}')">
+                                    <i class="bi bi-play-circle"></i> Activar y Continuar
+                                </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.chat-messages {
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.chat-bubble {
+    display: flex;
+    margin-bottom: 15px;
+}
+
+.user-bubble {
+    justify-content: flex-end;
+}
+
+.ai-bubble {
+    justify-content: flex-start;
+}
+
+.chat-message {
+    max-width: 70%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    position: relative;
+}
+
+.user-bubble .chat-message {
+    background: #007bff;
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+.ai-bubble .chat-message {
+    background: white;
+    color: #343a40;
+    border-bottom-left-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.sender {
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.timestamp {
+    display: block;
+    margin-top: 8px;
+    font-size: 0.7rem;
+}
+
+.message-content {
+    line-height: 1.4;
+}
+</style>
+
+<script>
+function activateConversation(conversationId) {
+    // Aquí podríamos hacer una llamada AJAX para activar la conversación
+    // Por ahora, redirigimos al chat
+    window.location.href = '{% url "chat:assistant_ui" %}';
+}
+
+// Auto-scroll al final de los mensajes
+document.addEventListener('DOMContentLoaded', function() {
+    const messagesContainer = document.getElementById('conversation-messages');
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+});
+</script>
+
+{% endblock %}

@@ -25,7 +25,7 @@
                                         <small>Role: {{ member.get_role_display }} | Joined: {{ member.joined_at|date:"M d, Y" }}</small>
                                     </div>
                                     <div>
-                                        {% if member.role != 'admin' and room.can_user_manage request.user %}
+                                        {% if member.role != 'admin' and can_manage_room %}
                                         <select class="form-select form-select-sm d-inline-block w-auto me-2" onchange="changeRole({{ member.user.id }}, this.value)">
                                             <option value="member" {% if member.role == 'member' %}selected{% endif %}>Member</option>
                                             <option value="moderator" {% if member.role == 'moderator' %}selected{% endif %}>Moderator</option>

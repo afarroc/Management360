@@ -219,14 +219,73 @@
         background: #a8a8a8;
     }
     
+    /* Estilos para indicaciones rápidas */
+    .quick-commands {
+        scrollbar-width: thin;
+        scrollbar-color: #c1c1c1 #f1f1f1;
+    }
+
+    .quick-commands::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .quick-commands::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .quick-commands::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 2px;
+    }
+
+    .quick-cmd-btn {
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+        border-radius: 20px;
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        color: #495057;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .quick-cmd-btn:hover {
+        background-color: #dee2e6;
+        border-color: #adb5bd;
+        color: #212529;
+    }
+
+    .quick-cmd-btn:active {
+        background-color: #ced4da;
+        transform: scale(0.98);
+    }
+
+    .quick-cmd-btn i {
+        font-size: 0.8rem;
+    }
+
     /* Responsive */
     @media (max-width: 768px) {
         .chat-container {
             height: calc(100vh - 200px);
         }
-        
+
         .chat-bubble {
             max-width: 90%;
+        }
+
+        .quick-commands {
+            padding: 8px;
+            gap: 6px;
+        }
+
+        .quick-cmd-btn {
+            font-size: 0.8rem;
+            padding: 4px 8px;
         }
     }
 </style>
@@ -235,14 +294,66 @@
 
 <section class="section dashboard">
     <div class="row">
-        <div class="col-lg-12">
+        <!-- Panel lateral de historial -->
+        <div class="col-lg-3">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-chat-dots"></i> Conversaciones
+                        <button class="btn btn-sm btn-outline-primary float-end" id="new-conversation" title="Nueva Conversación">
+                            <i class="bi bi-plus-circle"></i>
+                        </button>
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div id="conversations-list" style="max-height: 400px; overflow-y: auto;">
+                        <!-- Las conversaciones se cargarán aquí dinámicamente -->
+                        <div class="text-center p-3 text-muted">
+                            <i class="bi bi-chat-dots"></i><br>
+                            <small>Cargando conversaciones...</small>
+                        </div>
+                    </div>
+                    <div class="p-2 border-top">
+                        <a href="{% url 'chat:conversation_history' %}" class="btn btn-sm btn-outline-secondary w-100">
+                            <i class="bi bi-clock-history"></i> Ver Todo el Historial
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel de funciones rápidas -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-tools"></i> Funciones Rápidas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="quickCommand('crea un proyecto llamado \'Nuevo Proyecto\'')">
+                            <i class="bi bi-plus-circle"></i> Crear Proyecto
+                        </button>
+                        <button class="btn btn-sm btn-outline-info" onclick="quickCommand('lista mis proyectos')">
+                            <i class="bi bi-list"></i> Listar Proyectos
+                        </button>
+                        <a href="{% url 'chat:functions_panel' %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-gear"></i> Todas las Funciones
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat principal -->
+        <div class="col-lg-9">
             <div class="chat-container">
                 <div class="chat-header">
-                    <h5 class="chat-title">Chat con Ollama</h5>
-                    <button id="clear-chat" class="clear-btn" type="button" title="Limpiar chat">
-                        <i class="bi bi-trash"></i> Limpiar
-                    </button>
-                    
+                    <h5 class="chat-title" id="current-conversation-title">Chat con Ollama</h5>
+                    <div>
+                        <button id="clear-chat" class="clear-btn" type="button" title="Limpiar conversación actual">
+                            <i class="bi bi-trash"></i> Limpiar
+                        </button>
+                    </div>
                 </div>
                 
                 <div id="chat-history" class="overflow-auto">
@@ -255,11 +366,27 @@
                     {% endif %}
                 </div>
                 
+                <!-- Indicaciones rápidas -->
+                <div class="quick-commands" style="background-color: #f8f9fa; padding: 10px; border-top: 1px solid #e9ecef; display: flex; gap: 8px; overflow-x: auto;">
+                    <button class="quick-cmd-btn" data-command="crea un proyecto llamado 'Mi Proyecto'" title="Crear un nuevo proyecto">
+                        <i class="fas fa-plus-circle"></i> Crear Proyecto
+                    </button>
+                    <button class="quick-cmd-btn" data-command="lista mis proyectos" title="Ver todos mis proyectos">
+                        <i class="fas fa-list"></i> Listar Proyectos
+                    </button>
+                    <button class="quick-cmd-btn" data-command="actualiza proyecto 1 title='Nuevo Nombre'" title="Actualizar un proyecto">
+                        <i class="fas fa-edit"></i> Actualizar Proyecto
+                    </button>
+                    <button class="quick-cmd-btn" data-command="elimina proyecto 1" title="Eliminar un proyecto">
+                        <i class="fas fa-trash"></i> Eliminar Proyecto
+                    </button>
+                </div>
+
                 <div class="chat-input-area">
                     <div style="flex: 1; position: relative;">
-                        <textarea dir="ltr" autocomplete="off" maxlength="15000" 
-                                id="user-input" class="form-control" 
-                                placeholder="Escribe tu mensaje..." rows="1"></textarea>
+                        <textarea dir="ltr" autocomplete="off" maxlength="15000"
+                                id="user-input" class="form-control"
+                                placeholder="Escribe tu mensaje o usa las indicaciones rápidas arriba..." rows="1"></textarea>
                         <div id="char-counter" style="font-size: 0.75rem; color: #6c757d; text-align: right; margin-top: 4px; position: absolute; right: 10px; bottom: 5px;">0/15000</div>
                     </div>
                     <button id="send-btn" class="send-btn" type="button" title="Enviar mensaje">
@@ -519,22 +646,108 @@
                         'chat_history': JSON.stringify(filteredHistory.filter(m => m.content && m.content.trim() !== ''))
                     })
                 });
-                
+
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                
+
+                // Check if response is JSON (command response) or SSE stream
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    // Handle JSON response (command)
+                    const jsonData = await response.json();
+                    typingIndicator.remove();
+
+                    if (jsonData.command_response) {
+                        let cmdResult = jsonData.command_response;
+                        let icon = cmdResult.result && cmdResult.result.success ? '✅' : '❌';
+                        let message = cmdResult.result ? cmdResult.result.message : cmdResult.error;
+
+                        // Build detailed content for commands with additional data
+                        let detailedContent = `<strong>${icon} Comando ejecutado:</strong><br>${message}`;
+
+                        if (cmdResult.result && cmdResult.result.success && cmdResult.result.projects) {
+                            // Handle project listing
+                            detailedContent += '<br><br><strong>Proyectos encontrados:</strong><br>';
+                            cmdResult.result.projects.forEach(project => {
+                                detailedContent += `<div style="background:#fff;border:1px solid #dee2e6;border-radius:4px;padding:8px;margin:4px 0;">
+                                    <strong>ID ${project.id}:</strong> ${project.title}<br>
+                                    <small>Estado: ${project.status} | Creado: ${project.created_at}</small>
+                                    ${project.description ? `<br><em>${project.description}</em>` : ''}
+                                </div>`;
+                            });
+                        }
+
+                        const aiMsg = {
+                            sender: 'ai',
+                            content: `${icon} Comando ejecutado: ${message}`,
+                            timestamp: new Date().toISOString()
+                        };
+                        chatHistory.push(aiMsg);
+
+                        $('#chat-history').append(`
+                            <div class="chat-bubble ai-bubble">
+                                <div class="chat-message">
+                                    <span class="sender">Asistente</span>
+                                    <div class="ai-response-content">
+                                        <div style="background:#f8f9fa;border-radius:8px;padding:10px;margin:5px 0;">
+                                            ${detailedContent}
+                                        </div>
+                                    </div>
+                                    <button class="copy-btn" title="Copiar mensaje" style="position: absolute; right: 10px; top: 10px; background: rgba(0,0,0,0.1); border: none; border-radius: 4px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; cursor: pointer;">
+                                        <i class="bi bi-clipboard"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `);
+                        scrollToBottom();
+
+                        // Initialize copy button
+                        $('.copy-btn').last().click(function() {
+                            const messageText = $(this).siblings('.ai-response-content').text();
+                            navigator.clipboard.writeText(messageText).then(() => {
+                                showToast('Mensaje copiado', 'success');
+                            });
+                        });
+
+                        // Save history to localStorage
+                        localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+                        return;
+                    } else if (jsonData.error) {
+                        const aiMsg = {
+                            sender: 'ai',
+                            content: `❌ ${jsonData.error}`,
+                            timestamp: new Date().toISOString()
+                        };
+                        chatHistory.push(aiMsg);
+
+                        $('#chat-history').append(`
+                            <div class="chat-bubble ai-bubble">
+                                <div class="chat-message">
+                                    <span class="sender">Asistente</span>
+                                    <div class="ai-response-content">
+                                        <span style="color:red">❌ ${jsonData.error}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
+                        scrollToBottom();
+                        return;
+                    }
+                }
+
+                // Handle SSE stream response
                 // Remove typing indicator
                 typingIndicator.remove();
-                
+
                 // Create AI message container
                 const aiMsgId = 'ai-msg-' + Date.now();
                 const aiMsg = {
-                    sender: 'ai', 
-                    content: '', 
-                    id: aiMsgId, 
+                    sender: 'ai',
+                    content: '',
+                    id: aiMsgId,
                     timestamp: new Date().toISOString()
                 };
                 chatHistory.push(aiMsg);
-                
+
                 const aiBubble = $(`
                     <div id="${aiMsgId}" class="chat-bubble ai-bubble">
                         <div class="chat-message">
@@ -546,9 +759,9 @@
                         </div>
                     </div>
                 `).appendTo('#chat-history');
-                
+
                 scrollToBottom();
-                
+
                 // Stream response SSE-style
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
@@ -661,6 +874,13 @@
                                     if (json.error) {
                                         aiBubble.find('.ai-response-content').html('<span style=\"color:red\">❌ ' + json.error + '</span>');
                                     }
+                                    // Manejar respuestas de comandos (aunque no debería llegar aquí)
+                                    if (json.command_response) {
+                                        let cmdResult = json.command_response;
+                                        let icon = cmdResult.result && cmdResult.result.success ? '✅' : '❌';
+                                        let message = cmdResult.result ? cmdResult.result.message : cmdResult.error;
+                                        aiBubble.find('.ai-response-content').html(`<div style="background:#f8f9fa;border-radius:8px;padding:10px;margin:5px 0;"><strong>${icon} Comando ejecutado:</strong><br>${message}</div>`);
+                                    }
                                 } catch (e) {
                                     // Ignorar líneas mal formateadas
                                 }
@@ -695,7 +915,36 @@
             } catch (error) {
                 console.error('Error:', error);
                 typingIndicator.remove();
-                
+
+                // Check if it's a command response (JSON response)
+                if (error.message && error.message.includes('command_response')) {
+                    try {
+                        const commandData = JSON.parse(error.message);
+                        if (commandData.command_response) {
+                            let cmdResult = commandData.command_response;
+                            let icon = cmdResult.result && cmdResult.result.success ? '✅' : '❌';
+                            let message = cmdResult.result ? cmdResult.result.message : cmdResult.error;
+
+                            $('#chat-history').append(`
+                                <div class="chat-bubble ai-bubble">
+                                    <div class="chat-message">
+                                        <span class="sender">Asistente</span>
+                                        <div class="ai-response-content">
+                                            <div style="background:#f8f9fa;border-radius:8px;padding:10px;margin:5px 0;">
+                                                <strong>${icon} Comando ejecutado:</strong><br>${message}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `);
+                            scrollToBottom();
+                            return;
+                        }
+                    } catch (parseError) {
+                        console.error('Error parsing command response:', parseError);
+                    }
+                }
+
                 $('#chat-history').append(`
                     <div class="chat-bubble ai-bubble">
                         <div class="chat-message">
@@ -704,7 +953,7 @@
                         </div>
                     </div>
                 `);
-                
+
                 showToast('Error al enviar el mensaje', 'error');
             } finally {
                 isProcessing = false;
@@ -748,9 +997,212 @@
     // Initialize chat
     initializeChat();
 
+        // Handle quick command buttons
+        $('.quick-cmd-btn').click(function() {
+            const command = $(this).data('command');
+            $('#user-input').val(command);
+            adjustTextareaHeight();
+            $('#user-input').focus();
+            showToast('Comando insertado. Presiona Enter para enviar.', 'info');
+        });
+
+        // Conversations management
+        let currentConversationId = '{{ conversation_id|default:"" }}';
+
+        // Load conversations list
+        async function loadConversations() {
+            try {
+                const response = await fetch('/chat/api/conversations/', {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    renderConversationsList(data.conversations);
+                }
+            } catch (error) {
+                console.error('Error loading conversations:', error);
+            }
+        }
+
+        // Render conversations list
+        function renderConversationsList(conversations) {
+            const container = $('#conversations-list');
+            container.empty();
+
+            if (!conversations || conversations.length === 0) {
+                container.html(`
+                    <div class="text-center p-3 text-muted">
+                        <i class="bi bi-chat-dots"></i><br>
+                        <small>No hay conversaciones aún</small>
+                    </div>
+                `);
+                return;
+            }
+
+            conversations.slice(0, 10).forEach(conv => {
+                const isActive = conv.conversation_id === currentConversationId;
+                const activeClass = isActive ? 'bg-primary text-white' : 'text-dark';
+                const title = conv.title || 'Nueva conversación';
+                const preview = conv.last_message ? conv.last_message.content.substring(0, 40) + '...' : 'Sin mensajes';
+
+                container.append(`
+                    <div class="conversation-item p-2 border-bottom ${activeClass}"
+                         style="cursor: pointer;"
+                         data-conversation-id="${conv.conversation_id}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <strong class="d-block text-truncate" style="font-size: 0.9rem;">${title}</strong>
+                                <small class="text-muted d-block text-truncate">${preview}</small>
+                            </div>
+                            <small class="text-muted ms-2">${conv.message_count}</small>
+                        </div>
+                        <small class="text-muted d-block">${conv.updated_at}</small>
+                    </div>
+                `);
+            });
+
+            // Add click event listeners to conversation items
+            $('.conversation-item').off('click').on('click', function() {
+                const conversationId = $(this).data('conversation-id');
+                if (conversationId) {
+                    console.log('[CONSOLE] User clicked on conversation:', conversationId);
+                    switchConversation(conversationId);
+                }
+            });
+        }
+
+        // Switch to a different conversation
+        async function switchConversation(conversationId) {
+            try {
+                const response = await fetch(`/chat/api/conversation/${conversationId}/switch/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentConversationId = conversationId;
+
+                    // Load the new conversation's messages
+                    await loadConversationMessages(conversationId);
+
+                    // Update the conversation title
+                    updateConversationTitle(data.title || 'Nueva conversación');
+
+                    // Reload conversations list to update active state
+                    await loadConversations();
+
+                    showToast('Conversación cambiada correctamente', 'success');
+                } else {
+                    showToast('Error al cambiar de conversación', 'error');
+                }
+            } catch (error) {
+                console.error('Error switching conversation:', error);
+                showToast('Error al cambiar de conversación', 'error');
+            }
+        }
+
+        // Load messages for a specific conversation
+        async function loadConversationMessages(conversationId) {
+            try {
+                const response = await fetch(`/chat/api/conversation/${conversationId}/messages/`, {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    chatHistory = data.messages || [];
+
+                    // Update conversation title
+                    if (data.conversation_title) {
+                        updateConversationTitle(data.conversation_title);
+                    }
+
+                    renderChatHistory();
+
+                    // Add a system message indicating the conversation switch
+                    const systemMsg = {
+                        sender: 'ai',
+                        content: `Has cambiado a la conversación "${data.conversation_title}". Se cargaron ${data.total_messages} mensajes.`,
+                        timestamp: new Date().toISOString()
+                    };
+                    chatHistory.push(systemMsg);
+                    renderChatHistory();
+
+                    // Save to localStorage
+                    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+
+                    showToast(`Conversación cargada: ${data.total_messages} mensajes`, 'success');
+                } else {
+                    throw new Error('Failed to load conversation messages');
+                }
+
+            } catch (error) {
+                console.error('Error loading conversation messages:', error);
+                showToast('Error al cargar mensajes de la conversación', 'error');
+
+                // Fallback: clear chat and show error
+                chatHistory = [];
+                const errorMsg = {
+                    sender: 'ai',
+                    content: 'Error al cargar la conversación. Intenta recargar la página.',
+                    timestamp: new Date().toISOString()
+                };
+                chatHistory.push(errorMsg);
+                renderChatHistory();
+            }
+        }
+
+        // Create new conversation
+        async function createNewConversation() {
+            try {
+                const response = await fetch('/chat/api/conversation/new/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+
+                if (response.ok) {
+                    // Reload the page to start fresh conversation
+                    window.location.reload();
+                } else {
+                    showToast('Error al crear nueva conversación', 'error');
+                }
+            } catch (error) {
+                console.error('Error creating conversation:', error);
+                showToast('Error al crear nueva conversación', 'error');
+            }
+        }
+
+        // Quick command function
+        function quickCommand(command) {
+            $('#user-input').val(command);
+            adjustTextareaHeight();
+            $('#user-input').focus();
+            showToast('Comando insertado. Presiona Enter para enviar.', 'info');
+        }
+
+        // Update conversation title in header
+        function updateConversationTitle(title) {
+            $('#current-conversation-title').text(title || 'Chat con Ollama');
+        }
+
         // Event listeners
         $("#send-btn").click(sendMessage);
         $("#clear-chat").click(clearChat);
+        $("#new-conversation").click(createNewConversation);
 
         $("#user-input")
             .on('input', adjustTextareaHeight)
@@ -761,6 +1213,13 @@
                 }
             })
             .focus();
+
+        // Initialize conversations
+        loadConversations();
+
+        // Update conversation title
+        const conversationTitle = '{{ conversation.title|default:"Chat con Ollama"|escapejs }}';
+        updateConversationTitle(conversationTitle);
 
     });
 </script>

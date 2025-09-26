@@ -1,0 +1,78 @@
+💬 EJEMPLO DE CONVERSACIÓN CON EL ASISTENTE IA
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    CONVERSACIÓN DE EJEMPLO                              │
+├─────────────────────────────────────────────────────────────────────────┤
+
+👤 Tú: Hola, quiero crear un proyecto para desarrollar una app móvil
+
+🤖 Asistente IA: ¡Hola! Claro, puedo ayudarte a crear un proyecto. Solo escribe el comando correspondiente.
+
+👤 Tú: crea un proyecto llamado "App Móvil Fitness" con descripcion "Aplicación para seguimiento de ejercicios y nutrición"
+
+🤖 Asistente IA: ✅ Proyecto "App Móvil Fitness" creado exitosamente con ID 25
+
+👤 Tú: Perfecto, ahora quiero ver todos mis proyectos
+
+🤖 Asistente IA: Entendido. Aquí tienes el comando para listar tus proyectos.
+
+👤 Tú: lista mis proyectos
+
+🤖 Asistente IA: ✅ Encontrados 3 proyectos
+• App Móvil Fitness (ID: 25) - Aplicación para seguimiento...
+• Sitio Web Empresa (ID: 22) - Desarrollo de sitio web corporativo
+• Sistema de Inventario (ID: 18) - Control de stock y productos
+
+👤 Tú: Excelente, ahora quiero cambiar el nombre del proyecto 25
+
+🤖 Asistente IA: Claro, puedes actualizar el proyecto usando el comando correspondiente.
+
+👤 Tú: actualiza proyecto 25 title="App Fitness Pro"
+
+🤖 Asistente IA: ✅ Proyecto 25 actualizado: title
+
+👤 Tú: Genial, ahora quiero actualizar también la descripción
+
+🤖 Asistente IA: Perfecto, puedes modificar múltiples campos en un solo comando.
+
+👤 Tú: cambia proyecto 25 description="Aplicación premium para fitness con IA integrada"
+
+🤖 Asistente IA: ✅ Proyecto 25 actualizado: description
+
+👤 Tú: Perfecto, ahora quiero ver el historial de comandos que he ejecutado
+
+🤖 Asistente IA: Puedes ver el historial completo en /chat/commands/ o usar el comando correspondiente.
+
+👤 Tú: lista mis proyectos
+
+🤖 Asistente IA: ✅ Encontrados 3 proyectos
+• App Fitness Pro (ID: 25) - Aplicación premium para fitness...
+• Sitio Web Empresa (ID: 22) - Desarrollo de sitio web corporativo
+• Sistema de Inventario (ID: 18) - Control de stock y productos
+
+👤 Tú: Gracias por tu ayuda
+
+🤖 Asistente IA: ¡De nada! Recuerda que puedes usar comandos como:
+• "crea un proyecto llamado [nombre]"
+• "lista mis proyectos"
+• "actualiza proyecto [ID] [campo]=[valor]"
+• "elimina proyecto [ID]"
+
+└─────────────────────────────────────────────────────────────────────────┘
+
+📊 RESULTADO EN EL HISTORIAL (/chat/commands/):
+
+Comandos ejecutados:
+1. ✅ crea un proyecto llamado "App Móvil Fitness"... (0.015s)
+2. ✅ lista mis proyectos (0.323s)
+3. ✅ actualiza proyecto 25 title="App Fitness Pro" (0.008s)
+4. ✅ cambia proyecto 25 description="Aplicación..." (0.007s)
+5. ✅ lista mis proyectos (0.289s)
+
+Estadísticas: 5/5 comandos exitosos (100% de éxito)
+
+🎯 COMANDOS USADOS EN ESTA CONVERSACIÓN:
+• crea un proyecto llamado "X" con descripcion "Y"
+• lista mis proyectos
+• actualiza proyecto [ID] [campo]="[valor]"
+• cambia proyecto [ID] [campo]="[valor]"

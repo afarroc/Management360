@@ -1,0 +1,162 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load schedule_filters %}
+
+{% block content %}
+
+<!-- Confirmation and success messages -->
+{% if messages %}
+{% include 'layouts/includes/alert.html' %}
+{% endif %}
+
+<div class="pagetitle">
+    <h1>{{pagetitle}}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'chat:assistant_ui' %}">Asistente IA</a></li>
+            <li class="breadcrumb-item active">Historial de Conversaciones</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<div class="row">
+    <!-- Estadísticas -->
+    <div class="col-lg-12">
+        <div class="row">
+            <div class="col-xxl-3 col-md-6">
+                <div class="card info-card sales-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Conversaciones</h5>
+                        <div class="d-flex align-items-center">
+                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                <i class="bi bi-chat-dots"></i>
+                            </div>
+                            <div class="ps-3">
+                                <h6>{{ stats.total_conversations }}</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xxl-3 col-md-6">
+                <div class="card info-card revenue-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Conversaciones Activas</h5>
+                        <div class="d-flex align-items-center">
+                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                <i class="bi bi-chat-quote"></i>
+                            </div>
+                            <div class="ps-3">
+                                <h6>{{ stats.active_conversations }}</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xxl-3 col-md-6">
+                <div class="card info-card customers-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Mensajes</h5>
+                        <div class="d-flex align-items-center">
+                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                <i class="bi bi-envelope"></i>
+                            </div>
+                            <div class="ps-3">
+                                <h6>{{ stats.total_messages }}</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xxl-3 col-md-6">
+                <div class="card info-card customers-card">
+                    <div class="card-body">
+                        <h5 class="card-title">Promedio Mensajes</h5>
+                        <div class="d-flex align-items-center">
+                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                <i class="bi bi-bar-chart"></i>
+                            </div>
+                            <div class="ps-3">
+                                <h6>{{ stats.avg_messages_per_conversation|floatformat:1 }}</h6>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de conversaciones -->
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Conversaciones Recientes</h5>
+
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Título</th>
+                                <th>Estado</th>
+                                <th>Mensajes</th>
+                                <th>Última Actividad</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for conversation in conversations %}
+                            <tr>
+                                <td>
+                                    <strong>{{ conversation.title }}</strong>
+                                    <br>
+                                    <small class="text-muted">ID: {{ conversation.conversation_id }}</small>
+                                </td>
+                                <td>
+                                    {% if conversation.is_active %}
+                                        <span class="badge bg-success">Activa</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactiva</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ conversation.message_count }}</td>
+                                <td>{{ conversation.updated_at|date:"d/m/Y H:i" }}</td>
+                                <td>
+                                    <a href="{% url 'chat:conversation_detail' conversation.conversation_id %}"
+                                       class="btn btn-sm btn-primary">
+                                        <i class="bi bi-eye"></i> Ver
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    <i class="bi bi-chat-dots"></i> No hay conversaciones registradas aún.
+                                    <br>
+                                    <small>Inicia una conversación con el asistente IA para comenzar.</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if conversations %}
+                <div class="mt-3">
+                    <a href="{% url 'chat:assistant_ui' %}" class="btn btn-primary">
+                        <i class="bi bi-chat-dots"></i> Continuar Conversación Activa
+                    </a>
+                    <a href="{% url 'chat:command_history' %}" class="btn btn-outline-secondary ms-2">
+                        <i class="bi bi-terminal"></i> Ver Historial de Comandos
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,311 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Confirmation and success messages -->
+{% if messages %}
+{% include 'layouts/includes/alert.html' %}
+{% endif %}
+
+<div class="pagetitle">
+    <h1>{{pagetitle}}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'chat:assistant_ui' %}">Asistente IA</a></li>
+            <li class="breadcrumb-item active">{{pagetitle}}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<style>
+    .function-card {
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .function-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-color: #4361ee;
+    }
+
+    .function-name {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #4361ee;
+        margin-bottom: 10px;
+    }
+
+    .function-description {
+        color: #6c757d;
+        margin-bottom: 15px;
+    }
+
+    .parameters {
+        background: #f8f9fa;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+    }
+
+    .parameter-item {
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+    }
+
+    .parameter-name {
+        font-weight: bold;
+        color: #495057;
+    }
+
+    .examples {
+        margin-top: 15px;
+    }
+
+    .example-item {
+        background: #e9ecef;
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin-bottom: 5px;
+        font-family: monospace;
+        font-size: 0.9rem;
+        border-left: 3px solid #4361ee;
+    }
+
+    .copy-example {
+        float: right;
+        background: none;
+        border: none;
+        color: #6c757d;
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+
+    .copy-example:hover {
+        color: #4361ee;
+    }
+
+    .category-header {
+        border-bottom: 2px solid #4361ee;
+        padding-bottom: 10px;
+        margin-bottom: 30px;
+        margin-top: 40px;
+    }
+
+    .category-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #4361ee;
+        margin: 0;
+    }
+
+    .back-to-chat {
+        margin-bottom: 20px;
+    }
+
+    .function-stats {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: bold;
+        display: block;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+</style>
+
+<section class="section dashboard">
+    <div class="row">
+        <div class="col-lg-12">
+
+            <!-- Back to Chat Button -->
+            <div class="back-to-chat">
+                <a href="{% url 'chat:assistant_ui' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Volver al Chat con Asistente
+                </a>
+                <a href="{% url 'chat:command_history' %}" class="btn btn-outline-info ms-2">
+                    <i class="bi bi-clock-history"></i> Ver Historial de Comandos
+                </a>
+            </div>
+
+            <!-- Function Statistics -->
+            <div class="function-stats">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ functions|length }}</span>
+                            <span class="stat-label">Funciones Disponibles</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ stats.total|default:0 }}</span>
+                            <span class="stat-label">Comandos Ejecutados</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <span class="stat-number">{{ stats.successful|default:0 }}</span>
+                            <span class="stat-label">Comandos Exitosos</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <span class="stat-number">{% if stats.total %}{{ stats.success_rate|floatformat:1 }}{% else %}0{% endif %}%</span>
+                            <span class="stat-label">Tasa de Éxito</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Functions List -->
+            {% for category, funcs in categories.items %}
+            <div class="category-header">
+                <h2 class="category-title">
+                    <i class="bi bi-gear-fill me-2"></i>{{ category|title }}
+                </h2>
+            </div>
+
+            <div class="row">
+                {% for func in funcs %}
+                <div class="col-lg-6 col-xl-4">
+                    <div class="function-card">
+                        <div class="function-name">
+                            <i class="bi bi-terminal me-2"></i>{{ func.name|title|cut:"_" }}
+                        </div>
+
+                        <div class="function-description">
+                            {{ func.description }}
+                        </div>
+
+                        {% if func.parameters %}
+                        <div class="parameters">
+                            <strong>Parámetros:</strong>
+                            {% for param_name, param_desc in func.parameters.items %}
+                            <div class="parameter-item">
+                                <span class="parameter-name">{{ param_name }}:</span> {{ param_desc }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        {% if func.examples %}
+                        <div class="examples">
+                            <strong>Ejemplos de uso:</strong>
+                            {% for example in func.examples %}
+                            <div class="example-item">
+                                {{ example }}
+                                <button class="copy-example" onclick="copyToClipboard('{{ example }}')" title="Copiar ejemplo">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+
+            <!-- Help Section -->
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-question-circle me-2"></i>Ayuda
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>¿Cómo usar las funciones?</h6>
+                                    <ul>
+                                        <li>Escribe comandos naturales en el chat del asistente</li>
+                                        <li>Usa las indicaciones rápidas en la interfaz del chat</li>
+                                        <li>Todas las funciones están disponibles en español</li>
+                                        <li>Los comandos se ejecutan inmediatamente y se registran</li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Consejos</h6>
+                                    <ul>
+                                        <li>Revisa el historial de comandos para ver ejecuciones anteriores</li>
+                                        <li>Los comandos fallidos se registran para debugging</li>
+                                        <li>Usa lenguaje natural, el sistema reconoce variaciones</li>
+                                        <li>Todas las operaciones respetan permisos de usuario</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        // Show success feedback
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a745;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        `;
+        toast.textContent = 'Ejemplo copiado al portapapeles';
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.animation = 'fadeOut 0.3s';
+            setTimeout(() => document.body.removeChild(toast), 300);
+        }, 2000);
+    }).catch(function(err) {
+        console.error('Error al copiar:', err);
+    });
+}
+
+// Add fade animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeOut {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(-10px); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+
+{% endblock %}

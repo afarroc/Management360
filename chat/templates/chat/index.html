@@ -16,7 +16,7 @@
     <h1>{{pagetitle}}</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
             <li class="breadcrumb-item active">{{pagetitle}}</li>
         </ol>
     </nav>
@@ -25,100 +25,555 @@
 
 <section class="section dashboard">
     <div class="row">
+        <!-- Main Features Column -->
         <div class="col-lg-8">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Available Chat Rooms</h5>
-                    
-                    <!-- Rooms Grid -->
-                    <div class="row row-cols-1 row-cols-md-2 g-4 mb-4">
-                        <!-- Recent Rooms -->
-                        <div class="col">
-                            <div class="card h-100 border-primary">
-                                <div class="card-body">
-                                    <h5 class="card-title text-primary">
-                                        <i class="bi bi-chat-text me-2"></i>General
-                                    </h5>
-                                    <small class="text-muted">Room #1</small>
-                                    <p class="card-text mt-2">Main discussion room for general topics.</p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">
-                                            <i class="bi bi-people-fill"></i> 
-                                            <span id="users-room-1">0</span> users online
-                                        </small>
-                                        <a href="{% url 'chat:room' room_name=1 %}" class="btn btn-sm btn-primary">
-                                            Join Room <i class="bi bi-arrow-right-circle ms-1"></i>
-                                        </a>
-                                    </div>
+            <!-- Quick Access Cards -->
+            <div class="row row-cols-1 row-cols-md-2 g-4 mb-4">
+                <!-- AI Assistant -->
+                <div class="col">
+                    <div class="card h-100 border-info">
+                        <div class="card-body">
+                            <h5 class="card-title text-info">
+                                <i class="bi bi-robot me-2"></i>AI Assistant
+                            </h5>
+                            <p class="card-text">Chat with our intelligent AI assistant for help, information, and task automation.</p>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'chat:assistant_ui' %}" class="btn btn-sm btn-info">
+                                    <i class="bi bi-chat-dots me-1"></i> Start Chat
+                                </a>
+                                <a href="{% url 'chat:functions_panel' %}" class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-tools me-1"></i> Functions
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Rooms -->
+                <div class="col">
+                    <div class="card h-100 border-primary">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">
+                                <i class="bi bi-chat-text me-2"></i>Chat Rooms
+                            </h5>
+                            <p class="card-text">Join discussion rooms to connect with other users in real-time.</p>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'chat:room_list' %}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-list me-1"></i> Browse Rooms
+                                </a>
+                                <a href="{% url 'chat:room' room_name=1 %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-door-open me-1"></i> General Room
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature Sections -->
+            <div class="row">
+                <!-- Conversation Management -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-chat-square-text me-2"></i>Conversation Management
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <a href="{% url 'chat:conversation_history' %}" class="text-decoration-none">
+                                        <div class="p-3 border rounded text-center hover-card">
+                                            <i class="bi bi-clock-history text-primary fs-2 mb-2"></i>
+                                            <h6 class="mb-1">Conversation History</h6>
+                                            <small class="text-muted">View and manage your AI conversations</small>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a href="{% url 'chat:command_history' %}" class="text-decoration-none">
+                                        <div class="p-3 border rounded text-center hover-card">
+                                            <i class="bi bi-terminal text-success fs-2 mb-2"></i>
+                                            <h6 class="mb-1">Command History</h6>
+                                            <small class="text-muted">Track executed AI commands</small>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a href="{% url 'chat:assistant_configurations' %}" class="text-decoration-none">
+                                        <div class="p-3 border rounded text-center hover-card">
+                                            <i class="bi bi-gear text-warning fs-2 mb-2"></i>
+                                            <h6 class="mb-1">AI Configurations</h6>
+                                            <small class="text-muted">Customize AI behavior</small>
+                                        </div>
+                                    </a>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <!-- Support Room -->
-                        <div class="col">
-                            <div class="card h-100 border-success">
-                                <div class="card-body">
-                                    <h5 class="card-title text-success">
-                                        <i class="bi bi-headset me-2"></i>Support
-                                    </h5>
-                                    <small class="text-muted">Room #2</small>
-                                    <p class="card-text mt-2">Get help and support from our team.</p>
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <small class="text-muted">
-                                            <i class="bi bi-people-fill"></i> 
-                                            <span id="users-room-2">0</span> users online
-                                        </small>
-                                        <a href="{% url 'chat:room' room_name=2 %}" class="btn btn-sm btn-success">
-                                            Join Room <i class="bi bi-arrow-right-circle ms-1"></i>
-                                        </a>
+                <!-- Room Management -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-house-door me-2"></i>Room Management
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="card border-primary h-100">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title text-primary">
+                                                <i class="bi bi-chat-text me-2"></i>General Discussion
+                                            </h6>
+                                            <small class="text-muted">Room #1</small>
+                                            <p class="card-text mt-2">Main discussion room for general topics.</p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-people-fill"></i>
+                                                    <span id="users-room-1">0</span> users online
+                                                </small>
+                                                <a href="{% url 'chat:room' room_name=1 %}" class="btn btn-sm btn-primary">
+                                                    Join Room <i class="bi bi-arrow-right-circle ms-1"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card border-success h-100">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title text-success">
+                                                <i class="bi bi-headset me-2"></i>Support & Help
+                                            </h6>
+                                            <small class="text-muted">Room #2</small>
+                                            <p class="card-text mt-2">Get help and support from our team.</p>
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-people-fill"></i>
+                                                    <span id="users-room-2">0</span> users online
+                                                </small>
+                                                <a href="{% url 'chat:room' room_name=2 %}" class="btn btn-sm btn-success">
+                                                    Join Room <i class="bi bi-arrow-right-circle ms-1"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Create New Room -->
+                            <div class="mt-3 p-3 bg-light rounded">
+                                <h6 class="mb-2">Create or Join Room</h6>
+                                <div class="input-group">
+                                    <input id="room-name-input" type="text" class="form-control"
+                                           placeholder="Enter room number..."
+                                           aria-label="Room number">
+                                    <button class="btn btn-primary" type="button" id="room-name-submit">
+                                        <i class="bi bi-door-open me-1"></i> Enter Room
+                                    </button>
+                                </div>
+                                <small class="text-muted mt-2 d-block">
+                                    Enter a room number to create or join an existing room.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Administrative Tools -->
+                {% if is_moderator %}
+                <div class="col-12 mb-4">
+                    <div class="card border-warning">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-shield-check me-2"></i>Administrative Tools
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <a href="{% url 'admin:index' %}" class="text-decoration-none">
+                                        <div class="p-3 border rounded text-center hover-card">
+                                            <i class="bi bi-gear-fill text-danger fs-2 mb-2"></i>
+                                            <h6 class="mb-1">Admin Panel</h6>
+                                            <small class="text-muted">Full system administration</small>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <a href="{% url 'chat:clear_history' %}" class="text-decoration-none">
+                                        <div class="p-3 border rounded text-center hover-card">
+                                            <i class="bi bi-trash text-warning fs-2 mb-2"></i>
+                                            <h6 class="mb-1">Clear History</h6>
+                                            <small class="text-muted">Manage chat history</small>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-outline-secondary w-100" onclick="refreshStats()">
+                                        <i class="bi bi-arrow-clockwise me-2"></i>Refresh Statistics
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- User Manual Section -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-book me-2"></i>User Manual - How to Use Chat Features
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="accordion" id="manualAccordion">
+                                <!-- Getting Started -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#gettingStarted">
+                                            <i class="bi bi-play-circle me-2"></i>Getting Started with Chat
+                                        </button>
+                                    </h2>
+                                    <div id="gettingStarted" class="accordion-collapse collapse show" data-bs-parent="#manualAccordion">
+                                        <div class="accordion-body">
+                                            <ol>
+                                                <li><strong>Access the Chat:</strong> Navigate to the Chat section from the main menu</li>
+                                                <li><strong>Join a Room:</strong> Click on any available chat room or enter a room number to create/join one</li>
+                                                <li><strong>Start Chatting:</strong> Type your message and press Enter to send</li>
+                                                <li><strong>Use AI Assistant:</strong> Click "Start AI Chat" for intelligent conversations</li>
+                                            </ol>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- AI Assistant Guide -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#aiAssistant">
+                                            <i class="bi bi-robot me-2"></i>Using the AI Assistant
+                                        </button>
+                                    </h2>
+                                    <div id="aiAssistant" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+                                        <div class="accordion-body">
+                                            <h6>Basic Usage:</h6>
+                                            <ul>
+                                                <li>Click "Start AI Chat" to begin a conversation</li>
+                                                <li>Type your questions or requests naturally</li>
+                                                <li>The AI will respond with helpful information</li>
+                                                <li>Conversations are saved automatically</li>
+                                            </ul>
+                                            <h6>Advanced Features:</h6>
+                                            <ul>
+                                                <li><strong>Commands:</strong> Use special commands like "/help" or "/clear"</li>
+                                                <li><strong>Functions:</strong> Access specialized tools via the Functions panel</li>
+                                                <li><strong>Configurations:</strong> Customize AI behavior in Settings</li>
+                                                <li><strong>History:</strong> Review past conversations anytime</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Chat Rooms Guide -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#chatRooms">
+                                            <i class="bi bi-chat-text me-2"></i>Managing Chat Rooms
+                                        </button>
+                                    </h2>
+                                    <div id="chatRooms" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+                                        <div class="accordion-body">
+                                            <h6>Joining Rooms:</h6>
+                                            <ul>
+                                                <li><strong>General Room:</strong> Main discussion area for all users</li>
+                                                <li><strong>Support Room:</strong> Get help from moderators and staff</li>
+                                                <li><strong>Custom Rooms:</strong> Create private rooms by entering room numbers</li>
+                                            </ul>
+                                            <h6>Room Features:</h6>
+                                            <ul>
+                                                <li><strong>Real-time Chat:</strong> Messages appear instantly</li>
+                                                <li><strong>User Presence:</strong> See who's online in each room</li>
+                                                <li><strong>Message History:</strong> Scroll up to see previous messages</li>
+                                                <li><strong>Notifications:</strong> Get notified of new messages</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Advanced Features -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFeatures">
+                                            <i class="bi bi-gear me-2"></i>Advanced Features
+                                        </button>
+                                    </h2>
+                                    <div id="advancedFeatures" class="accordion-collapse collapse" data-bs-parent="#manualAccordion">
+                                        <div class="accordion-body">
+                                            <h6>Conversation Management:</h6>
+                                            <ul>
+                                                <li><strong>View History:</strong> Access all your past conversations</li>
+                                                <li><strong>Switch Conversations:</strong> Jump between different AI chats</li>
+                                                <li><strong>Delete Conversations:</strong> Remove unwanted chat history</li>
+                                            </ul>
+                                            <h6>Customization:</h6>
+                                            <ul>
+                                                <li><strong>AI Settings:</strong> Configure AI behavior and preferences</li>
+                                                <li><strong>Notification Settings:</strong> Control when you get notified</li>
+                                                <li><strong>Privacy Options:</strong> Manage your chat visibility</li>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <!-- Create New Room -->
-                    <div class="card border-primary">
+                <!-- FAQ Section -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-question-circle me-2"></i>Frequently Asked Questions (FAQ)
+                            </h5>
+                        </div>
                         <div class="card-body">
-                            <h5 class="card-title">Create or Join Room</h5>
-                            <div class="input-group">
-                                <input id="room-name-input" type="text" class="form-control" 
-                                       placeholder="Enter room number..." 
-                                       aria-label="Room number">
-                                <button class="btn btn-primary" type="button" id="room-name-submit">
-                                    <i class="bi bi-door-open me-1"></i> Enter Room
-                                </button>
+                            <div class="accordion" id="faqAccordion">
+                                <!-- Basic Questions -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faqBasics">
+                                            <i class="bi bi-info-circle me-2"></i>Basic Usage Questions
+                                        </button>
+                                    </h2>
+                                    <div id="faqBasics" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                                        <div class="accordion-body">
+                                            <div class="mb-3">
+                                                <strong>Q: How do I start using the chat?</strong>
+                                                <p class="mb-2">A: Simply click on any chat room from the main page or use the "Start AI Chat" button to begin conversing with our AI assistant.</p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <strong>Q: Can I create my own chat rooms?</strong>
+                                                <p class="mb-2">A: Yes! Enter any room number in the "Create or Join Room" section to create a new room or join an existing one.</p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <strong>Q: Are my conversations private?</strong>
+                                                <p class="mb-2">A: AI conversations are private to you. Chat rooms are public unless you create private numbered rooms.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- AI Assistant FAQ -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqAI">
+                                            <i class="bi bi-robot me-2"></i>AI Assistant Questions
+                                        </button>
+                                    </h2>
+                                    <div id="faqAI" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                        <div class="accordion-body">
+                                            <div class="mb-3">
+                                                <strong>Q: What can the AI assistant help me with?</strong>
+                                                <p class="mb-2">A: The AI can help with information, answer questions, assist with tasks, provide suggestions, and even execute special commands through the functions panel.</p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <strong>Q: How do I use special commands?</strong>
+                                                <p class="mb-2">A: Start your message with "/" followed by a command name. Use "/help" to see available commands, or check the Functions panel for detailed options.</p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <strong>Q: Can I customize the AI's behavior?</strong>
+                                                <p class="mb-2">A: Yes! Visit the AI Configurations section to adjust temperature, response length, and other AI parameters to suit your preferences.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Technical FAQ -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqTechnical">
+                                            <i class="bi bi-wrench me-2"></i>Technical Questions
+                                        </button>
+                                    </h2>
+                                    <div id="faqTechnical" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                        <div class="accordion-body">
+                                            <div class="mb-3">
+                                                <strong>Q: Why aren't my messages sending?</strong>
+                                                <p class="mb-2">A: Check your internet connection. If issues persist, try refreshing the page or contact support through the Support chat room.</p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <strong>Q: How do I clear my chat history?</strong>
+                                                <p class="mb-2">A: For AI conversations, visit the Conversation History page. For room chats, moderators can clear room history through administrative tools.</p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <strong>Q: Can I use the chat on mobile devices?</strong>
+                                                <p class="mb-2">A: Yes! The chat system is fully responsive and works on all devices including smartphones and tablets.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Privacy & Security -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqPrivacy">
+                                            <i class="bi bi-shield-check me-2"></i>Privacy & Security
+                                        </button>
+                                    </h2>
+                                    <div id="faqPrivacy" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                        <div class="accordion-body">
+                                            <div class="mb-3">
+                                                <strong>Q: Is my chat data secure?</strong>
+                                                <p class="mb-2">A: Yes, all communications are encrypted and your personal conversations are stored securely. Only you can access your AI conversation history.</p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <strong>Q: Who can see my messages in chat rooms?</strong>
+                                                <p class="mb-2">A: Messages in public rooms are visible to all room members. Private numbered rooms are only accessible to those who know the room number.</p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <strong>Q: Can I delete my conversation history?</strong>
+                                                <p class="mb-2">A: Yes, you can delete individual conversations or clear your entire history through the Conversation History management page.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Troubleshooting -->
+                                <div class="accordion-item">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faqTroubleshooting">
+                                            <i class="bi bi-tools me-2"></i>Troubleshooting
+                                        </button>
+                                    </h2>
+                                    <div id="faqTroubleshooting" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                        <div class="accordion-body">
+                                            <div class="mb-3">
+                                                <strong>Q: The AI isn't responding to my messages.</strong>
+                                                <p class="mb-2">A: Try refreshing the page or starting a new conversation. If the issue persists, check your internet connection or contact support.</p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <strong>Q: I can't join a chat room.</strong>
+                                                <p class="mb-2">A: Ensure you're logged in and try refreshing the page. If problems continue, the room might be temporarily unavailable.</p>
+                                            </div>
+                                            <div class="mb-3">
+                                                <strong>Q: Statistics aren't updating.</strong>
+                                                <p class="mb-2">A: Statistics refresh automatically every 30 seconds. Use the manual refresh button if needed, or check your internet connection.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <small class="text-muted mt-2 d-block">
-                                Enter a room number to create or join an existing room.
-                            </small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Right Side Stats -->
+        <!-- Right Side Stats & Quick Access -->
         <div class="col-lg-4">
-            <div class="card">
+            <!-- Quick Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightning-charge me-2"></i>Quick Actions
+                    </h5>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title">Chat Statistics</h5>
-                    <div class="list-group">
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'chat:assistant_ui' %}" class="btn btn-info">
+                            <i class="bi bi-robot me-2"></i>Start AI Chat
+                        </a>
+                        <a href="{% url 'chat:room_list' %}" class="btn btn-primary">
+                            <i class="bi bi-list me-2"></i>Browse Rooms
+                        </a>
+                        <a href="{% url 'chat:conversation_history' %}" class="btn btn-secondary">
+                            <i class="bi bi-clock-history me-2"></i>My Conversations
+                        </a>
+                        {% if is_moderator %}
+                        <a href="{% url 'admin:index' %}" class="btn btn-warning">
+                            <i class="bi bi-gear-fill me-2"></i>Admin Panel
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Statistics -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-bar-chart me-2"></i>Chat Statistics
+                    </h5>
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
                             Active Rooms
                             <span class="badge bg-primary rounded-pill" id="active-rooms">2</span>
                         </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
                             Total Users Online
                             <span class="badge bg-success rounded-pill" id="total-users">0</span>
                         </div>
-                        {% if is_moderator %}
-                        <div class="list-group-item">
-                            <button class="btn btn-sm btn-outline-primary w-100" id="refresh-stats">
-                                <i class="bi bi-arrow-clockwise"></i> Refresh Stats
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            Your Conversations
+                            <span class="badge bg-info rounded-pill" id="user-conversations">0</span>
+                        </div>
+                        <div class="list-group-item px-0">
+                            <button class="btn btn-sm btn-outline-primary w-100" onclick="updateStats()">
+                                <i class="bi bi-arrow-clockwise me-1"></i> Refresh Stats
                             </button>
                         </div>
-                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Help & Support -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-question-circle me-2"></i>Help & Support
+                    </h5>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-info btn-sm" onclick="scrollToSection('manualAccordion')">
+                            <i class="bi bi-book me-1"></i> User Manual
+                        </button>
+                        <button class="btn btn-outline-success btn-sm" onclick="scrollToSection('faqAccordion')">
+                            <i class="bi bi-question-circle me-1"></i> FAQ
+                        </button>
+                        <a href="{% url 'chat:room' room_name=2 %}" class="btn btn-outline-warning btn-sm">
+                            <i class="bi bi-headset me-1"></i> Live Support
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-activity me-2"></i>Recent Activity
+                    </h5>
+                    <div class="small text-muted mb-2">Last updated: <span id="last-update">Just now</span></div>
+                    <div id="recent-activity" class="small">
+                        <div class="mb-2">
+                            <i class="bi bi-circle-fill text-success me-1"></i>
+                            System online and operational
+                        </div>
+                        <div class="mb-2">
+                            <i class="bi bi-circle-fill text-primary me-1"></i>
+                            AI Assistant ready for conversations
+                        </div>
+                        <div class="mb-2">
+                            <i class="bi bi-circle-fill text-info me-1"></i>
+                            Real-time chat features active
+                        </div>
                     </div>
                 </div>
             </div>
@@ -126,41 +581,100 @@
     </div>
 </section>
 
+<style>
+.hover-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+.hover-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    background-color: #f8f9fa;
+}
+</style>
+
 <script>
-    document.querySelector('#room-name-input').focus();
-    document.querySelector('#room-name-input').onkeyup = function(e) {
-        if (e.key === 'Enter') {  // enter, return
+    // Focus on room input
+    document.querySelector('#room-name-input')?.focus();
+    document.querySelector('#room-name-input')?.addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') {
             document.querySelector('#room-name-submit').click();
         }
-    };
+    });
 
-    document.querySelector('#room-name-submit').onclick = function(e) {
-        var roomName = document.querySelector('#room-name-input').value;
-        window.location.pathname = '/chat/room/' + roomName + '/';
-    };
+    // Room navigation
+    document.querySelector('#room-name-submit')?.addEventListener('click', function(e) {
+        var roomName = document.querySelector('#room-name-input').value.trim();
+        if (roomName) {
+            window.location.pathname = '/chat/room/' + roomName + '/';
+        }
+    });
 
-    // Actualizar estadísticas
+    // Update statistics
     function updateStats() {
         fetch('/chat/stats/')
             .then(response => response.json())
             .then(data => {
-                document.getElementById('total-users').textContent = data.total_users;
-                document.getElementById('active-rooms').textContent = data.active_rooms;
+                document.getElementById('total-users').textContent = data.total_users || 0;
+                document.getElementById('active-rooms').textContent = data.active_rooms || 0;
+                document.getElementById('user-conversations').textContent = data.user_conversations || 0;
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+
                 data.rooms.forEach(room => {
                     const userCounter = document.getElementById(`users-room-${room.id}`);
                     if (userCounter) {
-                        userCounter.textContent = room.users;
+                        userCounter.textContent = room.users || 0;
                     }
                 });
+            })
+            .catch(error => {
+                console.log('Stats update failed:', error);
+                // Fallback values
+                document.getElementById('total-users').textContent = '0';
+                document.getElementById('active-rooms').textContent = '0';
+                document.getElementById('user-conversations').textContent = '0';
+                document.getElementById('last-update').textContent = 'Error';
             });
     }
 
-    // Actualizar estadísticas cada 30 segundos
+    // Initialize and auto-update stats
     updateStats();
     setInterval(updateStats, 30000);
 
-    // Botón de actualización manual
-    document.getElementById('refresh-stats')?.addEventListener('click', updateStats);
+    // Manual refresh function
+    function refreshStats() {
+        updateStats();
+    }
+
+    // Add click handlers for hover cards
+    document.querySelectorAll('.hover-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            // Let the link handle the navigation
+            const link = this.closest('a');
+            if (link) {
+                window.location.href = link.href;
+            }
+        });
+    });
+
+    // Scroll to section function
+    function scrollToSection(sectionId) {
+        const element = document.getElementById(sectionId);
+        if (element) {
+            element.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+            // Expand the first accordion item if it's collapsed
+            const firstItem = element.querySelector('.accordion-collapse');
+            if (firstItem && !firstItem.classList.contains('show')) {
+                const button = element.previousElementSibling.querySelector('.accordion-button');
+                if (button) {
+                    button.click();
+                }
+            }
+        }
+    }
 
 </script>
 
