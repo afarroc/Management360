@@ -14,7 +14,7 @@
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit" class="btn btn-primary">Crear Portal</button>
-        <a href="{% url 'portal_list' %}" class="btn btn-secondary">Cancelar</a>
+        <a href="{% url 'rooms:portal_list' %}" class="btn btn-secondary">Cancelar</a>
     </form>
 </div>
 {% endblock %}

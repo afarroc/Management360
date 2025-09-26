@@ -27,7 +27,7 @@
                         <td>{{ entrance_exit.type }}</td>
                         <td>{{ entrance_exit.face }}</td>
                         <td>
-                            <a href="{% url 'entrance_exit_detail' entrance_exit.id %}" class="btn btn-info">Ver Detalles</a>
+                            <a href="{% url 'rooms:entrance_exit_detail' entrance_exit.id %}" class="btn btn-info">Ver Detalles</a>
                         </td>
                     </tr>
                     {% endfor %}

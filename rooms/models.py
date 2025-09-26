@@ -179,6 +179,36 @@ class Room(models.Model):
     portals = models.ManyToManyField('Portal', related_name='rooms', blank=True)  # Define the relationship
     objects = RoomManager()  # Define a custom manager to avoid conflicts
 
+    # Propiedades de apariencia y material
+    color_primary = models.CharField(max_length=7, default='#2196f3', help_text='Color primario en formato hex (#RRGGBB)')
+    color_secondary = models.CharField(max_length=7, default='#1976d2', help_text='Color secundario en formato hex (#RRGGBB)')
+    material_type = models.CharField(max_length=50, choices=[
+        ('WOOD', 'Madera'),
+        ('METAL', 'Metal'),
+        ('GLASS', 'Vidrio'),
+        ('CONCRETE', 'Concreto'),
+        ('PLASTIC', 'Plástico'),
+        ('FABRIC', 'Tela'),
+        ('STONE', 'Piedra'),
+        ('SPECIAL', 'Especial')
+    ], default='CONCRETE')
+    texture_url = models.URLField(blank=True, help_text='URL de la textura/imagen')
+    opacity = models.DecimalField(max_digits=3, decimal_places=2, default=1.0, help_text='Opacidad (0.0-1.0)')
+
+    # Propiedades físicas
+    mass = models.DecimalField(max_digits=10, decimal_places=2, default=1000.0, help_text='Masa en kg')
+    density = models.DecimalField(max_digits=5, decimal_places=2, default=2.4, help_text='Densidad en g/cm³')
+    friction = models.DecimalField(max_digits=3, decimal_places=2, default=0.5, help_text='Coeficiente de fricción')
+    restitution = models.DecimalField(max_digits=3, decimal_places=2, default=0.3, help_text='Coeficiente de restitución (rebote)')
+
+    # Estado y funcionalidad
+    is_active = models.BooleanField(default=True, help_text='Si la habitación está activa')
+    health = models.IntegerField(default=100, help_text='Salud/durabilidad (0-100)')
+    temperature = models.DecimalField(max_digits=5, decimal_places=1, default=22.0, help_text='Temperatura en °C')
+    lighting_intensity = models.IntegerField(default=50, help_text='Intensidad de iluminación (0-100)')
+    sound_ambient = models.CharField(max_length=100, blank=True, help_text='Sonido ambiente')
+    special_properties = models.JSONField(default=dict, help_text='Propiedades especiales en formato JSON')
+
     def increment_version(self):
         self.version += 1
         self.save()
@@ -359,7 +389,7 @@ class Portal(models.Model):
         return (self.last_used is None or 
                 self.last_used + timedelta(seconds=self.cooldown) < timezone.now())    
     def __str__(self):
-        return f"{self.user.username}'s Profile"
+        return f"Portal: {self.name} ({self.entrance.room.name} → {self.exit.room.name})"
  
 
 class Comment(models.Model):

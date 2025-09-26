@@ -8,15 +8,29 @@ class RoomForm(forms.ModelForm):
     class Meta:
         model = Room
         fields = [
-            'name', 'description', 'room_type', 'capacity',
-            'permissions', 'image', 'parent_room',
-            'x', 'y', 'z', 'length', 'width', 'height',
-            'pitch', 'yaw', 'roll'
+            # Información básica
+            'name', 'description', 'room_type', 'capacity', 'permissions',
+            'image', 'parent_room',
+
+            # Dimensiones y posición
+            'x', 'y', 'z', 'length', 'width', 'height', 'pitch', 'yaw', 'roll',
+
+            # Apariencia y material
+            'color_primary', 'color_secondary', 'material_type', 'texture_url', 'opacity',
+
+            # Propiedades físicas
+            'mass', 'density', 'friction', 'restitution',
+
+            # Estado y funcionalidad
+            'is_active', 'health', 'temperature', 'lighting_intensity',
+            'sound_ambient', 'special_properties'
         ]
         widgets = {
+            # Información básica
             'name': forms.TextInput(attrs={
                 'placeholder': 'Nombre de la habitación',
-                'class': 'form-control'
+                'class': 'form-control',
+                'required': True
             }),
             'description': forms.Textarea(attrs={
                 'placeholder': 'Descripción detallada',
@@ -25,24 +39,142 @@ class RoomForm(forms.ModelForm):
             }),
             'room_type': forms.Select(attrs={
                 'class': 'form-select',
-                'placeholder': 'Tipo de habitación'
+                'required': True
             }),
             'capacity': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Capacidad máxima'
+                'placeholder': 'Capacidad máxima',
+                'min': 1
+            }),
+            'permissions': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+
+            # Dimensiones y posición
+            'x': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Posición X'
+            }),
+            'y': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Posición Y'
+            }),
+            'z': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Posición Z'
             }),
             'length': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Longitud (unidades)'
+                'placeholder': 'Longitud',
+                'min': 1
             }),
             'width': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Anchura (unidades)'
+                'placeholder': 'Anchura',
+                'min': 1
             }),
             'height': forms.NumberInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Altura (unidades)'
+                'placeholder': 'Altura',
+                'min': 1
             }),
+            'pitch': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Rotación X (grados)'
+            }),
+            'yaw': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Rotación Y (grados)'
+            }),
+            'roll': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Rotación Z (grados)'
+            }),
+
+            # Apariencia y material
+            'color_primary': forms.TextInput(attrs={
+                'class': 'form-control',
+                'type': 'color',
+                'placeholder': '#2196f3'
+            }),
+            'color_secondary': forms.TextInput(attrs={
+                'class': 'form-control',
+                'type': 'color',
+                'placeholder': '#1976d2'
+            }),
+            'material_type': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+            'texture_url': forms.URLInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'https://ejemplo.com/textura.jpg'
+            }),
+            'opacity': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0.0,
+                'max': 1.0,
+                'step': 0.1,
+                'placeholder': '0.0 - 1.0'
+            }),
+
+            # Propiedades físicas
+            'mass': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0.1,
+                'step': 0.1,
+                'placeholder': 'Masa en kg'
+            }),
+            'density': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0.1,
+                'step': 0.1,
+                'placeholder': 'Densidad en g/cm³'
+            }),
+            'friction': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0.0,
+                'max': 1.0,
+                'step': 0.1,
+                'placeholder': '0.0 - 1.0'
+            }),
+            'restitution': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0.0,
+                'max': 1.0,
+                'step': 0.1,
+                'placeholder': '0.0 - 1.0'
+            }),
+
+            # Estado y funcionalidad
+            'is_active': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'health': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0,
+                'max': 100,
+                'placeholder': '0-100'
+            }),
+            'temperature': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': 0.1,
+                'placeholder': 'Temperatura en °C'
+            }),
+            'lighting_intensity': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0,
+                'max': 100,
+                'placeholder': '0-100'
+            }),
+            'sound_ambient': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Sonido ambiente (opcional)'
+            }),
+            'special_properties': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Propiedades especiales en formato JSON'
+            })
         }
 
     def __init__(self, *args, **kwargs):
@@ -52,6 +184,40 @@ class RoomForm(forms.ModelForm):
             self.fields['parent_room'].queryset = Room.objects.filter(
                 Q(owner=user) | Q(administrators=user)
             ).distinct()
+
+        # Configurar initial value para special_properties
+        if self.instance and self.instance.pk and self.instance.special_properties:
+            self.fields['special_properties'].initial = json.dumps(self.instance.special_properties, indent=2)
+
+        # Configurar campos opcionales (con valores por defecto en el modelo)
+        optional_fields = [
+            'capacity', 'permissions', 'x', 'y', 'z', 'length', 'width', 'height',
+            'pitch', 'yaw', 'roll', 'color_primary', 'color_secondary', 'material_type',
+            'texture_url', 'opacity', 'mass', 'density', 'friction', 'restitution',
+            'is_active', 'health', 'temperature', 'lighting_intensity', 'sound_ambient',
+            'special_properties', 'description', 'image', 'parent_room'
+        ]
+
+        for field_name in optional_fields:
+            if field_name in self.fields:
+                self.fields[field_name].required = False
+
+    def clean_special_properties(self):
+        """Validar que special_properties sea JSON válido"""
+        special_properties = self.cleaned_data.get('special_properties')
+        if special_properties:
+            try:
+                # Si es string, intentar parsear como JSON
+                if isinstance(special_properties, str):
+                    return json.loads(special_properties)
+                # Si ya es dict, devolverlo
+                elif isinstance(special_properties, dict):
+                    return special_properties
+                else:
+                    raise forms.ValidationError("Formato JSON inválido.")
+            except json.JSONDecodeError:
+                raise forms.ValidationError("Formato JSON inválido.")
+        return {}  # Retornar dict vacío si no hay valor
 
 class RoomObjectForm(forms.ModelForm):
     class Meta:

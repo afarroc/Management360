@@ -17,7 +17,12 @@ urlpatterns = [
     # Rooms
     path('rooms/', views.room_list, name='room_list'),
     path('rooms/create/', views.create_room, name='room_create'),
+    path('rooms/create-complete/', views.create_room_complete, name='room_create_complete'),
     path('rooms/<int:pk>/', views.room_detail, name='room_detail'),
+    path('rooms/<int:pk>/edit/', views.edit_room, name='room_edit'),
+    path('rooms/<int:pk>/edit-complete/', views.edit_room_complete, name='room_edit_complete'),
+    path('rooms/<int:pk>/delete/', views.room_delete, name='room_delete'),
+    path('rooms/<int:pk>/3d/', views.room_3d_view, name='room_3d'),
     path('rooms/<int:pk>/comments/', views.room_comments, name='room_comments'),
     path('rooms/<int:pk>/evaluations/', views.room_evaluations, name='room_evaluations'),
 
