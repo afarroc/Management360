@@ -61,6 +61,7 @@ gunicorn==23.0.0
 uvicorn==0.34.2
 
 # Other utilities
+psutil==6.0.0
 python-dateutil==2.9.0.post0
 pytz==2025.2
 tzdata==2025.2
