@@ -1,0 +1,137 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+
+<div class="pagetitle">
+    <h1>{{ page_title }}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rooms:room_list' %}">Rooms</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rooms:room_detail' room.pk %}">{{ room.name }}</a></li>
+            <li class="breadcrumb-item active">Eliminar Entrada/Salida</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Confirmar Eliminación
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-question-circle"></i> ¿Estás seguro de que quieres eliminar esta entrada/salida?</h6>
+                        <p class="mb-0">Esta acción no se puede deshacer.</p>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Información de la Entrada/Salida:</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td><strong>Nombre:</strong></td>
+                                    <td>{{ entrance_exit.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Dirección:</strong></td>
+                                    <td><span class="badge bg-secondary">{{ entrance_exit.get_face_display }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Estado:</strong></td>
+                                    <td>
+                                        {% if entrance_exit.enabled %}
+                                            <span class="text-success">● Activa</span>
+                                        {% else %}
+                                            <span class="text-muted">○ Inactiva</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Habitación:</strong></td>
+                                    <td>{{ entrance_exit.room.name }}</td>
+                                </tr>
+                                {% if entrance_exit.connection %}
+                                <tr>
+                                    <td><strong>Conectada a:</strong></td>
+                                    <td>{{ entrance_exit.connection.to_room.name }}</td>
+                                </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6>Información de la Habitación:</h6>
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">{{ room.name }}</h6>
+                                    <p class="card-text small">{{ room.description|truncatechars:100 }}</p>
+                                    <div class="small">
+                                        <strong>Dimensiones:</strong> {{ room.length }}×{{ room.width }}×{{ room.height }}<br>
+                                        <strong>Tipo:</strong> {{ room.get_room_type_display }}<br>
+                                        <strong>Propietario:</strong> {{ room.owner.username }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if entrance_exit.connection %}
+                    <div class="alert alert-danger mt-3">
+                        <h6><i class="bi bi-x-circle"></i> No se puede eliminar</h6>
+                        <p class="mb-0">Esta entrada/salida tiene una conexión activa con otra habitación. Primero debes eliminar la conexión antes de poder eliminar la entrada/salida.</p>
+                        <div class="mt-2">
+                            <a href="{% url 'rooms:delete_room_connection' room.pk entrance_exit.connection.pk %}" class="btn btn-outline-danger btn-sm">
+                                <i class="bi bi-link-45deg"></i> Eliminar Conexión Primero
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="mt-4">
+                        <form method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Sí, Eliminar Entrada/Salida
+                            </button>
+                            <a href="{% url 'rooms:room_detail' room.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Información Importante</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success"></i>
+                            Solo puedes eliminar entradas/salidas sin conexiones activas
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success"></i>
+                            Esta acción no se puede deshacer
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle text-success"></i>
+                            Los usuarios ya no podrán usar esta entrada/salida
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

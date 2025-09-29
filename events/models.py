@@ -952,4 +952,57 @@ class GTDLearningEntry(models.Model):
         verbose_name = "Entrada de Aprendizaje GTD"
         verbose_name_plural = "Entradas de Aprendizaje GTD"
 
+# Configuraciones de procesamiento GTD para el panel de gestión
+class GTDProcessingSettings(models.Model):
+    """Configuraciones para el procesamiento automático de interacciones GTD"""
+
+    # Configuraciones de procesamiento automático
+    auto_email_processing = models.BooleanField(default=True, help_text="Procesamiento automático de emails")
+    auto_call_queue = models.BooleanField(default=True, help_text="Cola automática de llamadas")
+    auto_chat_routing = models.BooleanField(default=True, help_text="Enrutamiento automático de chats")
+
+    # Configuraciones de rendimiento
+    processing_interval = models.IntegerField(default=60, help_text="Intervalo de procesamiento en segundos")
+    max_concurrent_items = models.IntegerField(default=5, help_text="Máximo de items concurrentes")
+
+    # Configuraciones específicas por tipo
+    email_batch_size = models.IntegerField(default=10, help_text="Tamaño del lote de emails")
+    call_queue_timeout = models.IntegerField(default=30, help_text="Timeout de cola de llamadas en segundos")
+    chat_response_timeout = models.IntegerField(default=300, help_text="Timeout de respuesta de chat en segundos")
+
+    # Configuraciones de agentes/bot
+    enable_bot_cx = models.BooleanField(default=True, help_text="Habilitar Bot CX")
+    enable_bot_atc = models.BooleanField(default=True, help_text="Habilitar Bot ATC")
+    enable_human_agents = models.BooleanField(default=True, help_text="Habilitar agentes humanos")
+
+    # Configuraciones de prioridad
+    auto_priority_assignment = models.BooleanField(default=True, help_text="Asignación automática de prioridades")
+    priority_threshold_high = models.IntegerField(default=80, help_text="Umbral para prioridad alta")
+    priority_threshold_medium = models.IntegerField(default=50, help_text="Umbral para prioridad media")
+
+    # Metadatos
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True, help_text="Configuración activa")
+
+    def __str__(self):
+        return f"GTD Processing Settings - {self.created_by.username}"
+
+    class Meta:
+        verbose_name = "Configuración de Procesamiento GTD"
+        verbose_name_plural = "Configuraciones de Procesamiento GTD"
+        ordering = ['-updated_at']
+
+    @classmethod
+    def get_active_settings(cls):
+        """Obtiene la configuración activa actual"""
+        return cls.objects.filter(is_active=True).first()
+
+    def save(self, *args, **kwargs):
+        # Asegurar que solo haya una configuración activa por usuario
+        if self.is_active:
+            cls = self.__class__
+            cls.objects.filter(created_by=self.created_by, is_active=True).exclude(pk=self.pk).update(is_active=False)
+        super().save(*args, **kwargs)
 

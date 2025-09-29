@@ -1,0 +1,903 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="pagetitle">
+    <h1>{{ page_title }}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'rooms:lobby' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rooms:room_list' %}">Rooms</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rooms:room_detail' room.pk %}">{{ room.name }}</a></li>
+            <li class="breadcrumb-item active">Entorno 3D Interactivo</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title">Entorno 3D Interactivo</h5>
+                        <div>
+                            <a href="{% url 'rooms:room_detail' room.pk %}" class="btn btn-outline-primary">
+                                <i class="bi bi-info-circle"></i> Vista Normal
+                            </a>
+                            <a href="{% url 'rooms:room_3d' room.pk %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-image"></i> Vista 3D Estática
+                            </a>
+                            <span class="badge bg-success ms-2">Entorno 3D Interactivo Activo</span>
+                            <a href="{% url 'rooms:room_list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-list"></i> Todas las Habitaciones
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Canvas 3D -->
+                    <div class="position-relative mb-3">
+                        <div id="threejs-container" style="width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <div id="loading-indicator" class="position-absolute top-50 start-50 translate-middle text-white">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Cargando...</span>
+                                </div>
+                                <div class="mt-2">Cargando entorno 3D...</div>
+                            </div>
+                        </div>
+
+                        <!-- Controles de ayuda -->
+                        <div class="position-absolute top-0 end-0 m-3">
+                            <div class="card bg-dark text-white me-2" style="min-width: 250px;">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Controles</h6>
+                                </div>
+                                <div class="card-body">
+                                    <small>
+                                        <strong>Movimiento:</strong> WASD<br>
+                                        <strong>Cámara:</strong> Mouse<br>
+                                        <strong>Interactuar:</strong> Click en objetos<br>
+                                        <strong>Salir:</strong> ESC
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Minimapa -->
+                            <div class="card bg-dark text-white" style="width: 150px;">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Minimapa</h6>
+                                </div>
+                                <div class="card-body p-2">
+                                    <canvas id="minimap-canvas" width="120" height="120" style="width: 100%; height: auto; border: 1px solid #666;"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Información de rendimiento -->
+                        <div class="position-absolute bottom-0 end-0 m-3">
+                            <div class="card bg-dark text-white" style="min-width: 200px;">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Rendimiento</h6>
+                                </div>
+                                <div class="card-body">
+                                    <small>
+                                        <strong>FPS:</strong> <span id="fps-display">0</span><br>
+                                        <strong>Objetos:</strong> <span id="objects-count">0</span><br>
+                                        <strong>Geometrías:</strong> <span id="geometries-count">0</span><br>
+                                        <strong>Memoria:</strong> <span id="memory-usage">0 MB</span>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información del Player -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Estado del Jugador</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>Energía:</strong>
+                                            <div class="progress mt-1">
+                                                <div id="energy-bar" class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Productividad:</strong>
+                                            <div class="progress mt-1">
+                                                <div id="productivity-bar" class="progress-bar bg-info" role="progressbar" style="width: 50%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-6">
+                                            <strong>Social:</strong>
+                                            <div class="progress mt-1">
+                                                <div id="social-bar" class="progress-bar bg-warning" role="progressbar" style="width: 50%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Posición:</strong>
+                                            <span id="player-position">Cargando...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Información de la Habitación</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-1"><strong>Nombre:</strong> {{ room.name }}</p>
+                                    <p class="mb-1"><strong>Tipo:</strong> {{ room.get_room_type_display }}</p>
+                                    <p class="mb-1"><strong>Dimensiones:</strong> {{ room.length }}×{{ room.width }}×{{ room.height }}</p>
+                                    <p class="mb-1"><strong>Material:</strong> {{ room.get_material_type_display }}</p>
+                                    <p class="mb-0"><strong>Estado:</strong> <span id="room-status">Cargando...</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mensajes del sistema -->
+                    <div id="system-messages" class="mt-3">
+                        <!-- Los mensajes se agregarán aquí dinámicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Three.js desde CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+
+<!-- Configuración Django -->
+<script>
+    window.DJANGO_CONFIG = JSON.parse('{"ROOM_ID": {{ room_id }}, "API_BASE": "/rooms/api/3d/"}');
+</script>
+
+<script>
+// Configuración global
+const ROOM_ID = window.DJANGO_CONFIG.ROOM_ID;
+const API_BASE = window.DJANGO_CONFIG.API_BASE;
+
+// Variables globales de Three.js
+let scene, camera, renderer, controls;
+let roomMeshes = [];
+let interactiveObjects = [];
+let currentRoomData = null;
+let playerData = null;
+let isPointerLocked = false;
+
+// Optimizaciones de rendimiento
+let geometryPool = new Map(); // Pool de geometrías reutilizables
+let materialPool = new Map(); // Pool de materiales reutilizables
+let lastUpdateTime = 0;
+let frameCount = 0;
+let fps = 0;
+
+// Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    init3DScene();
+    loadRoomData();
+    setupEventListeners();
+});
+
+// Inicializar escena 3D
+function init3DScene() {
+    // Crear escena
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87CEEB); // Cielo azul
+
+    // Crear cámara (primera persona)
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 1.7, 0); // Altura de una persona
+
+    // Crear renderer
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth * 0.8, 600);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // Agregar canvas al contenedor
+    const container = document.getElementById('threejs-container');
+    container.innerHTML = ''; // Limpiar indicador de carga
+    container.appendChild(renderer.domElement);
+
+    // Configurar controles de primera persona
+    setupControls();
+
+    // Agregar iluminación básica
+    setupLighting();
+
+    // Iniciar loop de renderizado
+    animate();
+}
+
+// Configurar controles de primera persona
+function setupControls() {
+    // Controles de puntero bloqueado para primera persona
+    controls = new THREE.PointerLockControls(camera, renderer.domElement);
+
+    // Botón para activar controles
+    const instructions = document.createElement('div');
+    instructions.innerHTML = '<div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 18px; text-align: center;">Click para activar controles 3D</div>';
+    instructions.style.position = 'absolute';
+    instructions.style.top = '50%';
+    instructions.style.left = '50%';
+    instructions.style.transform = 'translate(-50%, -50%)';
+    instructions.style.color = 'white';
+    instructions.style.fontSize = '18px';
+    instructions.style.textAlign = 'center';
+    instructions.style.pointerEvents = 'none';
+    document.getElementById('threejs-container').appendChild(instructions);
+
+    // Event listeners para pointer lock
+    controls.addEventListener('lock', function() {
+        isPointerLocked = true;
+        instructions.style.display = 'none';
+    });
+
+    controls.addEventListener('unlock', function() {
+        isPointerLocked = false;
+        instructions.style.display = 'block';
+    });
+
+    // Click para activar
+    renderer.domElement.addEventListener('click', function() {
+        if (!isPointerLocked) {
+            controls.lock();
+        }
+    });
+
+    // Controles de movimiento
+    const moveState = {
+        forward: false,
+        backward: false,
+        left: false,
+        right: false
+    };
+
+    document.addEventListener('keydown', function(event) {
+        switch(event.code) {
+            case 'KeyW':
+            case 'ArrowUp':
+                moveState.forward = true;
+                break;
+            case 'KeyS':
+            case 'ArrowDown':
+                moveState.backward = true;
+                break;
+            case 'KeyA':
+            case 'ArrowLeft':
+                moveState.left = true;
+                break;
+            case 'KeyD':
+            case 'ArrowRight':
+                moveState.right = true;
+                break;
+            case 'Escape':
+                controls.unlock();
+                break;
+        }
+    });
+
+    document.addEventListener('keyup', function(event) {
+        switch(event.code) {
+            case 'KeyW':
+            case 'ArrowUp':
+                moveState.forward = false;
+                break;
+            case 'KeyS':
+            case 'ArrowDown':
+                moveState.backward = false;
+                break;
+            case 'KeyA':
+            case 'ArrowLeft':
+                moveState.left = false;
+                break;
+            case 'KeyD':
+            case 'ArrowRight':
+                moveState.right = false;
+                break;
+        }
+    });
+
+    // Función de movimiento (se llama en animate)
+    window.movePlayer = function(delta) {
+        const speed = 5.0; // unidades por segundo
+        const direction = new THREE.Vector3();
+
+        if (moveState.forward) direction.z -= 1;
+        if (moveState.backward) direction.z += 1;
+        if (moveState.left) direction.x -= 1;
+        if (moveState.right) direction.x += 1;
+
+        if (direction.length() > 0) {
+            direction.normalize();
+            direction.multiplyScalar(speed * delta);
+
+            // Aplicar rotación de la cámara
+            direction.applyQuaternion(camera.quaternion);
+            direction.y = 0; // No movimiento vertical
+
+            // Verificar colisiones antes de mover
+            if (!checkCollisions(camera.position, direction)) {
+                camera.position.add(direction);
+
+                // Actualizar posición en el servidor
+                updatePlayerPosition();
+            }
+        }
+    };
+}
+
+// Configurar iluminación
+function setupLighting() {
+    // Luz ambiental
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+    scene.add(ambientLight);
+
+    // Luz direccional (sol)
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(50, 50, 25);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 2048;
+    directionalLight.shadow.mapSize.height = 2048;
+    scene.add(directionalLight);
+}
+
+// Loop de animación con optimizaciones
+function animate(currentTime = 0) {
+    requestAnimationFrame(animate);
+
+    // Calcular FPS
+    frameCount++;
+    if (currentTime - lastUpdateTime >= 1000) {
+        fps = Math.round((frameCount * 1000) / (currentTime - lastUpdateTime));
+        frameCount = 0;
+        lastUpdateTime = currentTime;
+        updatePerformanceUI();
+    }
+
+    const delta = Math.min(0.016, (currentTime - lastUpdateTime) / 1000); // Limitar delta
+
+    // Mover jugador si hay input
+    if (window.movePlayer) {
+        window.movePlayer(delta);
+    }
+
+    // Actualizar solo objetos visibles (frustum culling)
+    updateVisibleObjects();
+
+    renderer.render(scene, camera);
+}
+
+// Actualizar solo objetos visibles para optimización
+function updateVisibleObjects() {
+    const frustum = new THREE.Frustum();
+    const matrix = new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    frustum.setFromProjectionMatrix(matrix);
+
+    // Verificar visibilidad de objetos interactuables
+    interactiveObjects.forEach(obj => {
+        obj.visible = frustum.intersectsObject(obj);
+    });
+
+    // Verificar visibilidad de meshes de habitación
+    roomMeshes.forEach(mesh => {
+        mesh.visible = frustum.intersectsObject(mesh);
+    });
+}
+
+// Sistema de pool de geometrías para reutilización
+function getGeometryFromPool(type, ...params) {
+    const key = `${type}_${params.join('_')}`;
+
+    if (geometryPool.has(key)) {
+        return geometryPool.get(key);
+    }
+
+    let geometry;
+    switch(type) {
+        case 'box':
+            geometry = new THREE.BoxGeometry(...params);
+            break;
+        case 'plane':
+            geometry = new THREE.PlaneGeometry(...params);
+            break;
+        case 'cylinder':
+            geometry = new THREE.CylinderGeometry(...params);
+            break;
+        default:
+            geometry = new THREE.BoxGeometry(...params);
+    }
+
+    geometryPool.set(key, geometry);
+    return geometry;
+}
+
+// Sistema de pool de materiales
+function getMaterialFromPool(type, params) {
+    const key = `${type}_${JSON.stringify(params)}`;
+
+    if (materialPool.has(key)) {
+        return materialPool.get(key);
+    }
+
+    let material;
+    switch(type) {
+        case 'lambert':
+            material = new THREE.MeshLambertMaterial(params);
+            break;
+        case 'basic':
+            material = new THREE.MeshBasicMaterial(params);
+            break;
+        default:
+            material = new THREE.MeshLambertMaterial(params);
+    }
+
+    materialPool.set(key, material);
+    return material;
+}
+
+// Limpiar pools cuando se cambia de habitación
+function clearPools() {
+    // No eliminamos las geometrías/materiales del pool,
+    // solo limpiamos las referencias para que puedan ser reutilizadas
+    roomMeshes.forEach(mesh => scene.remove(mesh));
+    interactiveObjects.forEach(obj => scene.remove(obj));
+    roomMeshes = [];
+    interactiveObjects = [];
+}
+
+// Cargar datos de la habitación
+async function loadRoomData() {
+    try {
+        const response = await fetch(`${API_BASE}rooms/${ROOM_ID}/data/`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            currentRoomData = data.room;
+            playerData = data.player;
+
+            // Actualizar UI
+            updateUI();
+
+            // Crear geometría 3D
+            createRoomGeometry(data.room);
+            createInteractiveObjects(data.objects);
+
+            // Posicionar cámara
+            camera.position.set(
+                data.player.position.x,
+                data.player.position.y,
+                data.player.position.z
+            );
+
+            showSystemMessage('Entorno 3D cargado correctamente', 'success');
+        } else {
+            showSystemMessage('Error al cargar datos: ' + data.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Error loading room data:', error);
+        showSystemMessage('Error al cargar el entorno 3D', 'danger');
+    }
+}
+
+// Crear geometría de la habitación
+function createRoomGeometry(roomData) {
+    // Limpiar habitación anterior
+    clearPools();
+
+    const { dimensions, colors, position } = roomData;
+
+    // Crear paredes (usando cuboides huecos)
+    const wallThickness = 0.2;
+    const wallHeight = dimensions.height;
+
+    // Pared frontal
+    createWall(dimensions.length, wallHeight, wallThickness,
+               dimensions.length/2, wallHeight/2, 0, colors.primary);
+
+    // Pared trasera
+    createWall(dimensions.length, wallHeight, wallThickness,
+               dimensions.length/2, wallHeight/2, dimensions.width, colors.primary);
+
+    // Pared izquierda
+    createWall(wallThickness, wallHeight, dimensions.width,
+               0, wallHeight/2, dimensions.width/2, colors.secondary);
+
+    // Pared derecha
+    createWall(wallThickness, wallHeight, dimensions.width,
+               dimensions.length, wallHeight/2, dimensions.width/2, colors.secondary);
+
+    // Piso
+    createFloor(dimensions.length, dimensions.width, colors.secondary);
+
+    // Techo
+    createCeiling(dimensions.length, dimensions.width, wallHeight, colors.primary);
+}
+
+// Crear una pared
+function createWall(width, height, depth, x, y, z, color) {
+    const geometry = getGeometryFromPool('box', width, height, depth);
+    const material = getMaterialFromPool('lambert', { color: color });
+    const wall = new THREE.Mesh(geometry, material);
+
+    wall.position.set(x, y, z);
+    wall.castShadow = true;
+    wall.receiveShadow = true;
+
+    scene.add(wall);
+    roomMeshes.push(wall);
+}
+
+// Crear piso
+function createFloor(width, depth, color) {
+    const geometry = getGeometryFromPool('plane', width, depth);
+    const material = getMaterialFromPool('lambert', { color: color, side: THREE.DoubleSide });
+    const floor = new THREE.Mesh(geometry, material);
+
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
+    floor.receiveShadow = true;
+
+    scene.add(floor);
+    roomMeshes.push(floor);
+}
+
+// Crear techo
+function createCeiling(width, depth, height, color) {
+    const geometry = getGeometryFromPool('plane', width, depth);
+    const material = getMaterialFromPool('lambert', { color: color, side: THREE.DoubleSide });
+    const ceiling = new THREE.Mesh(geometry, material);
+
+    ceiling.rotation.x = Math.PI / 2;
+    ceiling.position.y = height;
+    ceiling.receiveShadow = true;
+
+    scene.add(ceiling);
+    roomMeshes.push(ceiling);
+}
+
+// Crear objetos interactuables
+function createInteractiveObjects(objects) {
+    // Limpiar objetos anteriores
+    interactiveObjects.forEach(obj => scene.remove(obj));
+    interactiveObjects = [];
+
+    objects.forEach(objData => {
+        let geometry, material, object;
+
+        if (objData.type === 'door') {
+            // Crear puerta
+            geometry = new THREE.BoxGeometry(
+                objData.dimensions.width,
+                objData.dimensions.height,
+                objData.dimensions.depth
+            );
+            material = new THREE.MeshLambertMaterial({
+                color: objData.properties.color,
+                transparent: true,
+                opacity: 0.8
+            });
+            object = new THREE.Mesh(geometry, material);
+
+            // Posicionar según la cara
+            positionDoor(object, objData);
+
+        } else if (objData.type === 'portal') {
+            // Crear portal (cilindro luminoso)
+            geometry = new THREE.CylinderGeometry(
+                objData.dimensions.width / 2,
+                objData.dimensions.width / 2,
+                objData.dimensions.height,
+                16
+            );
+            material = new THREE.MeshBasicMaterial({
+                color: 0x00ffff,
+                transparent: true,
+                opacity: 0.7
+            });
+            object = new THREE.Mesh(geometry, material);
+
+            // Agregar efecto de brillo
+            const glowMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00ffff,
+                transparent: true,
+                opacity: 0.3
+            });
+            const glowObject = new THREE.Mesh(geometry.clone(), glowMaterial);
+            glowObject.scale.multiplyScalar(1.2);
+            object.add(glowObject);
+        }
+
+        object.position.set(
+            objData.position.x,
+            objData.position.y,
+            objData.position.z
+        );
+
+        object.userData = objData; // Almacenar datos para interacción
+        object.castShadow = true;
+
+        scene.add(object);
+        interactiveObjects.push(object);
+    });
+}
+
+// Posicionar puerta según su cara
+function positionDoor(door, doorData) {
+    const face = doorData.properties.face;
+    const room = currentRoomData;
+
+    switch(face) {
+        case 'NORTH':
+            door.position.z = room.dimensions.width;
+            door.position.x = room.dimensions.length / 2;
+            break;
+        case 'SOUTH':
+            door.position.z = 0;
+            door.position.x = room.dimensions.length / 2;
+            break;
+        case 'EAST':
+            door.position.x = room.dimensions.length;
+            door.position.z = room.dimensions.width / 2;
+            break;
+        case 'WEST':
+            door.position.x = 0;
+            door.position.z = room.dimensions.width / 2;
+            break;
+    }
+}
+
+// Verificar colisiones
+function checkCollisions(currentPos, movement) {
+    const newPos = currentPos.clone().add(movement);
+
+    // Verificar límites de la habitación
+    const room = currentRoomData;
+    if (newPos.x < 0 || newPos.x > room.dimensions.length ||
+        newPos.z < 0 || newPos.z > room.dimensions.width) {
+        return true; // Colisión con pared
+    }
+
+    // Verificar colisión con objetos (simplificado)
+    // En una implementación completa, usarías bounding boxes
+
+    return false; // No hay colisión
+}
+
+// Actualizar posición del player en el servidor
+async function updatePlayerPosition() {
+    try {
+        const response = await fetch(`${API_BASE}player/position/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({
+                position_x: camera.position.x,
+                position_y: camera.position.z, // Z en 3D es Y en 2D del modelo
+                position_z: camera.position.y
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            playerData.position = data.position;
+            updateUI();
+        }
+    } catch (error) {
+        console.error('Error updating position:', error);
+    }
+}
+
+// Configurar event listeners
+function setupEventListeners() {
+    // Resize del canvas
+    window.addEventListener('resize', function() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth * 0.8, 600);
+    });
+
+    // Click en objetos interactuables
+    renderer.domElement.addEventListener('click', function(event) {
+        if (!isPointerLocked) return;
+
+        // Raycasting para detectar objetos
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+
+        const intersects = raycaster.intersectObjects(interactiveObjects);
+
+        if (intersects.length > 0) {
+            const clickedObject = intersects[0].object;
+            handleObjectInteraction(clickedObject.userData);
+        }
+    });
+}
+
+// Manejar interacción con objetos
+async function handleObjectInteraction(objectData) {
+    if (objectData.type === 'door' || objectData.type === 'portal') {
+        try {
+            const response = await fetch(`${API_BASE}transition/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify({
+                    exit_type: objectData.type,
+                    exit_id: objectData.id,
+                    target_room_id: objectData.connection?.target_room_id || objectData.properties?.target_room_id
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showSystemMessage(`Transición exitosa: ${data.message}`, 'success');
+
+                // Recargar habitación si cambió
+                if (data.target_room && data.target_room.id !== ROOM_ID) {
+                    // Aquí irías a la nueva habitación
+                    window.location.href = `/rooms/${data.target_room.id}/3d-interactive/`;
+                } else {
+                    // Actualizar posición local
+                    camera.position.set(
+                        data.player_stats.position_x,
+                        1.7,
+                        data.player_stats.position_y
+                    );
+                    updateUI();
+                }
+            } else {
+                showSystemMessage(`Error: ${data.message}`, 'danger');
+            }
+        } catch (error) {
+            console.error('Error during transition:', error);
+            showSystemMessage('Error en la transición', 'danger');
+        }
+    }
+}
+
+// Actualizar UI
+function updateUI() {
+    if (playerData) {
+        document.getElementById('energy-bar').style.width = `${playerData.energy}%`;
+        document.getElementById('productivity-bar').style.width = `${playerData.productivity}%`;
+        document.getElementById('social-bar').style.width = `${playerData.social}%`;
+        document.getElementById('player-position').textContent =
+            `(${playerData.position.x.toFixed(1)}, ${playerData.position.y.toFixed(1)}, ${playerData.position.z.toFixed(1)})`;
+    }
+
+    if (currentRoomData) {
+        document.getElementById('room-status').textContent = 'Activa';
+    }
+
+    updateMinimap();
+}
+
+// Actualizar UI de rendimiento
+function updatePerformanceUI() {
+    document.getElementById('fps-display').textContent = fps;
+    document.getElementById('objects-count').textContent = roomMeshes.length + interactiveObjects.length;
+    document.getElementById('geometries-count').textContent = geometryPool.size;
+
+    // Estimación de uso de memoria (aproximada)
+    const estimatedMemory = (geometryPool.size * 0.1 + materialPool.size * 0.05).toFixed(1);
+    document.getElementById('memory-usage').textContent = `${estimatedMemory} MB`;
+}
+
+// Actualizar minimapa
+function updateMinimap() {
+    if (!currentRoomData || !playerData) return;
+
+    const canvas = document.getElementById('minimap-canvas');
+    const ctx = canvas.getContext('2d');
+    const size = canvas.width;
+
+    // Limpiar canvas
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(0, 0, size, size);
+
+    const room = currentRoomData.dimensions;
+    const scale = size / Math.max(room.length, room.width);
+
+    // Dibujar habitación
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 10, room.length * scale, room.width * scale);
+
+    // Dibujar objetos interactuables
+    ctx.fillStyle = '#ff6b6b';
+    interactiveObjects.forEach(obj => {
+        const x = 10 + (obj.position.x / room.length) * (room.length * scale);
+        const y = 10 + (obj.position.z / room.width) * (room.width * scale);
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+
+    // Dibujar posición del player
+    const playerX = 10 + (camera.position.x / room.length) * (room.length * scale);
+    const playerZ = 10 + (camera.position.z / room.width) * (room.width * scale);
+
+    ctx.fillStyle = '#4ecdc4';
+    ctx.beginPath();
+    ctx.arc(playerX, playerZ, 4, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // Dibujar dirección del player
+    const direction = new THREE.Vector3(0, 0, -1);
+    direction.applyQuaternion(camera.quaternion);
+    ctx.strokeStyle = '#4ecdc4';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(playerX, playerZ);
+    ctx.lineTo(playerX + direction.x * 10, playerZ + direction.z * 10);
+    ctx.stroke();
+}
+
+// Mostrar mensajes del sistema
+function showSystemMessage(message, type = 'info') {
+    const messagesDiv = document.getElementById('system-messages');
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    messagesDiv.appendChild(alertDiv);
+
+    // Auto-remover después de 5 segundos
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+
+// Obtener CSRF token
+function getCSRFToken() {
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    return cookieValue || '';
+}
+</script>
+{% endblock %}

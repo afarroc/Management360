@@ -11,7 +11,7 @@ SECRET_KEY = config('SECRET_KEY')
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY no está definido en las variables de entorno.")
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,192.168.18.46,192.168.18.47').split(',')
 
 if RENDER_EXTERNAL_HOSTNAME := os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
@@ -46,6 +46,8 @@ INSTALLED_APPS = [
     'chat',
     'tools',
     'rooms',
+    'bots',
+    'help.apps.HelpConfig',
     'memento.apps.MementoConfig',
     'cv.apps.CvConfig',
     'kpis.apps.KpisConfig',
@@ -125,14 +127,14 @@ if not DEBUG:
 
 # Configuración de la base de datos
 if DEBUG:
-    # Configuración para desarrollo (MySQL local)
+    # Configuración para desarrollo (MySQL en servidor remoto)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
-            'NAME': config('DATABASE_NAME', default='projects'),
+            'NAME': config('DATABASE_NAME', default='management360'),
             'USER': config('DATABASE_USER', default='root'),
             'PASSWORD': config('DATABASE_PASSWORD', default=''),
-            'HOST': config('DATABASE_HOST', default='localhost'),
+            'HOST': config('DATABASE_HOST', default='192.168.18.46'),
             'PORT': config('DATABASE_PORT', default='3306'),
             'OPTIONS': {'charset': 'utf8mb4'},
         }
@@ -206,6 +208,19 @@ EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+
+# Email Reception Configuration (for CX processing)
+EMAIL_RECEPTION_ENABLED = config('EMAIL_RECEPTION_ENABLED', default=False, cast=bool)
+EMAIL_IMAP_HOST = config('EMAIL_IMAP_HOST', default='imap.gmail.com')
+EMAIL_IMAP_PORT = config('EMAIL_IMAP_PORT', default=993, cast=int)
+EMAIL_IMAP_USER = config('EMAIL_IMAP_USER', default=EMAIL_HOST_USER)
+EMAIL_IMAP_PASSWORD = config('EMAIL_IMAP_PASSWORD', default=EMAIL_HOST_PASSWORD)
+EMAIL_CX_FOLDER = config('EMAIL_CX_FOLDER', default='INBOX/CX')  # Carpeta específica para CX
+EMAIL_CHECK_INTERVAL = config('EMAIL_CHECK_INTERVAL', default=300, cast=int)  # 5 minutos por defecto
+
+# CX Email Processing
+CX_EMAIL_DOMAINS = config('CX_EMAIL_DOMAINS', default='@cliente.com,@support.com').split(',')
+CX_KEYWORDS = config('CX_KEYWORDS', default='cambio de plan,modificar plan,actualizar plan,solicitud,queja,reclamo').split(',')
 
 # Logging Configuration
 LOGGING = {

@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.urls import reverse_lazy
 from .models import Room, Comment, Evaluation, EntranceExit, Portal, RoomObject, PlayerProfile
-from .forms import RoomForm, EvaluationForm, EntranceExitForm, PortalForm
+from .forms import RoomForm, EvaluationForm, EntranceExitForm, PortalForm, RoomConnectionForm
 from django.contrib import messages
 from django.core.cache import cache
 from django.core.mail import send_mail
@@ -14,6 +14,7 @@ from django.http import Http404
 from django.db.models import Q  # Import for search functionality
 from django.utils import timezone
 from datetime import timedelta
+from .transition_manager import get_room_transition_manager
 
 # Ensure Room refers to the model, not overridden
 from .models import Room  # Ensure this import is not shadowed
@@ -127,6 +128,17 @@ def room_detail(request, pk):
         logger.debug(f"Fetching details for room with ID {pk}.")
         room = get_object_or_404(Room, pk=pk)
         logger.debug(f"Room with ID {pk} found: {room.name}.")
+
+        # Verificar consistencia de posición del jugador
+        if hasattr(request.user, 'player_profile') and request.user.player_profile:
+            player_profile = request.user.player_profile
+            current_physical_room = player_profile.current_room
+
+            # Si el jugador tiene una habitación física asignada y es diferente a la solicitada
+            if current_physical_room and current_physical_room.id != room.id:
+                # Redirigir automáticamente a la habitación física actual
+                return redirect('rooms:room_detail', pk=current_physical_room.id)
+
         try:
             room_image_url = room.image.url if room.image and room.image.name else None
         except ValueError as e:
@@ -205,120 +217,199 @@ def room_3d_view(request, pk):
 
     return render(request, 'rooms/room_3d.html', context)
 
+
 @login_required
-def edit_room(request, pk):
-    """Vista para editar una habitación existente"""
-    import logging
-    logger = logging.getLogger(__name__)
+def room_3d_interactive_view(request, pk):
+    """
+    Vista para el entorno 3D interactivo con Three.js
+    """
+    room = get_object_or_404(Room, pk=pk)
 
-    logger.info(f"=== INICIO EDIT_ROOM: pk={pk}, user={request.user.username}, method={request.method} ===")
-
-    try:
-        room = get_object_or_404(Room, pk=pk)
-        logger.info(f"Room encontrada: {room.name} (owner: {room.owner.username})")
-    except Exception as e:
-        logger.error(f"Error obteniendo room: {e}")
-        raise
-
-    # Verificar permisos - solo el owner o administradores pueden editar
-    has_permission = request.user == room.owner or request.user in room.administrators.all()
-    logger.info(f"Permisos: user={request.user.username}, owner={room.owner.username}, administrators={[admin.username for admin in room.administrators.all()]}, has_permission={has_permission}")
-
-    if not has_permission:
-        logger.warning(f"Usuario {request.user.username} no tiene permisos para editar room {room.name}")
-        messages.error(request, 'No tienes permisos para editar esta habitación.')
-        return redirect('rooms:room_detail', pk=pk)
-
-    if request.method == 'POST':
-        logger.info("=== PROCESANDO POST REQUEST ===")
-        logger.info(f"POST data keys: {list(request.POST.keys())}")
-        logger.info(f"FILES data keys: {list(request.FILES.keys())}")
-
-        try:
-            form = RoomForm(request.POST, request.FILES, instance=room, user=request.user)
-            logger.info(f"Formulario creado. Campos: {list(form.fields.keys())}")
-            logger.info(f"Formulario inicial válido: {form.is_bound and not form.errors}")
-
-            # Verificar validación del formulario
-            is_valid = form.is_valid()
-            logger.info(f"form.is_valid(): {is_valid}")
-
-            if not is_valid:
-                logger.error("=== ERRORES DE VALIDACIÓN ===")
-                logger.error(f"form.errors: {dict(form.errors)}")
-                logger.error(f"form.non_field_errors: {form.non_field_errors()}")
-
-                # Log detallado de cada campo con error
-                for field_name, field_errors in form.errors.items():
-                    logger.error(f"Campo '{field_name}': {field_errors}")
-                    if field_name in form.fields:
-                        field_value = form.data.get(field_name, 'NO_VALUE')
-                        logger.error(f"  Valor enviado: {field_value}")
-                        logger.error(f"  Tipo de campo: {type(form.fields[field_name])}")
-
-            if is_valid:
-                logger.info("=== INTENTANDO GUARDAR ===")
-                try:
-                    # Intentar guardar sin commit primero para ver si hay errores de modelo
-                    room_instance = form.save(commit=False)
-                    logger.info(f"save(commit=False) exitoso. Room instance: {room_instance}")
-
-                    # Verificar campos del modelo antes de guardar
-                    logger.info("=== VERIFICANDO CAMPOS DEL MODELO ===")
-                    for field in room_instance._meta.fields:
-                        value = getattr(room_instance, field.name, None)
-                        logger.info(f"  {field.name}: {value} (tipo: {type(value)})")
-
-                    # Ahora guardar realmente
-                    room_saved = form.save()
-                    logger.info(f"form.save() exitoso. Room guardada: {room_saved.name}")
-
-                    # Limpiar cache si existe
-                    from django.core.cache import cache
-                    cache_key = f'room_{room_saved.pk}'
-                    cache.delete(cache_key)
-                    logger.info(f"Cache limpiado para key: {cache_key}")
-
-                    messages.success(request, f'Habitación "{room_saved.name}" actualizada exitosamente.')
-                    logger.info("=== REDIRECCIÓN EXITOSA ===")
-                    return redirect('rooms:room_detail', pk=pk)
-
-                except Exception as save_error:
-                    logger.error(f"=== ERROR DURANTE GUARDADO ===")
-                    logger.error(f"Error: {save_error}")
-                    logger.error(f"Error type: {type(save_error)}")
-                    import traceback
-                    logger.error(f"Traceback: {traceback.format_exc()}")
-
-                    # Agregar error al formulario para mostrar al usuario
-                    form.add_error(None, f"Error al guardar: {str(save_error)}")
-
-            else:
-                logger.warning("Formulario no válido, mostrando errores al usuario")
-
-        except Exception as form_error:
-            logger.error(f"=== ERROR CREANDO FORMULARIO ===")
-            logger.error(f"Error: {form_error}")
-            import traceback
-            logger.error(f"Traceback: {traceback.format_exc()}")
-            form = RoomForm(instance=room, user=request.user)
-
-    else:
-        logger.info("=== CREANDO FORMULARIO GET ===")
-        form = RoomForm(instance=room, user=request.user)
-        logger.info(f"Formulario GET creado exitosamente")
+    # Verificar permisos de acceso
+    if room.permissions == 'private':
+        if not RoomMember.objects.filter(room=room, user=request.user).exists():
+            messages.error(request, 'No tienes acceso a esta habitación.')
+            return redirect('rooms:room_detail', pk=pk)
 
     context = {
-        'form': form,
         'room': room,
-        'page_title': f'Editar - {room.name}',
-        'is_edit': True,
-        'room_count': Room.objects.count(),
-        'active_rooms': Room.objects.filter(is_active=True).count()
+        'page_title': f'Entorno 3D Interactivo - {room.name}',
+        'room_id': room.id
     }
 
-    logger.info(f"=== RENDERIZANDO TEMPLATE: rooms/room_edit_alerts.html ===")
-    return render(request, 'rooms/room_edit_alerts.html', context)
+    return render(request, 'rooms/room_3d_interactive.html', context)
+
+
+@login_required
+def basic_3d_environment(request):
+    """
+    Entorno 3D básico con player interactivo en habitación 0,0,0
+    Incluye puertas que conectan a habitaciones anidadas y salida a calle
+    """
+    # Obtener o crear habitación base en 0,0,0
+    base_room, created = Room.objects.get_or_create(
+        name='Habitación Base 3D',
+        defaults={
+            'description': 'Habitación principal en posición 0,0,0 con conexiones 3D',
+            'owner': request.user,
+            'creator': request.user,
+            'permissions': 'public',
+            'room_type': 'OFFICE',
+            'x': 0, 'y': 0, 'z': 0,
+            'length': 10, 'width': 10, 'height': 3,
+            'color_primary': '#4CAF50',
+            'color_secondary': '#2196F3'
+        }
+    )
+
+    # Crear habitaciones conectadas si no existen
+    connected_rooms = []
+
+    # Habitación Norte (cocina)
+    north_room, _ = Room.objects.get_or_create(
+        name='Cocina',
+        defaults={
+            'description': 'Habitación conectada al norte',
+            'owner': request.user,
+            'creator': request.user,
+            'permissions': 'public',
+            'room_type': 'KITCHEN',
+            'x': 0, 'y': 10, 'z': 0,
+            'length': 8, 'width': 6, 'height': 3,
+            'color_primary': '#FF9800',
+            'color_secondary': '#795548'
+        }
+    )
+    connected_rooms.append(('north', north_room))
+
+    # Habitación Este (baño)
+    east_room, _ = Room.objects.get_or_create(
+        name='Baño',
+        defaults={
+            'description': 'Habitación conectada al este',
+            'owner': request.user,
+            'creator': request.user,
+            'permissions': 'public',
+            'room_type': 'BATHROOM',
+            'x': 10, 'y': 0, 'z': 0,
+            'length': 4, 'width': 6, 'height': 3,
+            'color_primary': '#00BCD4',
+            'color_secondary': '#607D8B'
+        }
+    )
+    connected_rooms.append(('east', east_room))
+
+    # Habitación Oeste (dormitorio)
+    west_room, _ = Room.objects.get_or_create(
+        name='Dormitorio',
+        defaults={
+            'description': 'Habitación conectada al oeste',
+            'owner': request.user,
+            'creator': request.user,
+            'permissions': 'public',
+            'room_type': 'SPECIAL',
+            'x': -8, 'y': 0, 'z': 0,
+            'length': 8, 'width': 6, 'height': 3,
+            'color_primary': '#9C27B0',
+            'color_secondary': '#673AB7'
+        }
+    )
+    connected_rooms.append(('west', west_room))
+
+    # Crear conexiones si no existen
+    for direction, room in connected_rooms:
+        # Crear entrada/salida en la habitación base
+        entrance, _ = EntranceExit.objects.get_or_create(
+            room=base_room,
+            face=direction.upper(),
+            defaults={
+                'name': f'Puerta {direction.title()}',
+                'description': f'Conecta a {room.name}',
+                'enabled': True,
+                'door_type': 'SINGLE',
+                'material': 'WOOD',
+                'color': '#8B4513'
+            }
+        )
+
+        # Crear conexión
+        connection, _ = RoomConnection.objects.get_or_create(
+            from_room=base_room,
+            to_room=room,
+            entrance=entrance,
+            defaults={
+                'bidirectional': True,
+                'energy_cost': 5
+            }
+        )
+
+        # Crear entrada correspondiente en la habitación conectada
+        opposite_face = {
+            'north': 'south',
+            'south': 'north',
+            'east': 'west',
+            'west': 'east'
+        }[direction]
+
+        opposite_entrance, _ = EntranceExit.objects.get_or_create(
+            room=room,
+            face=opposite_face.upper(),
+            defaults={
+                'name': f'Puerta {opposite_face.title()}',
+                'description': f'Conecta desde {base_room.name}',
+                'enabled': True,
+                'door_type': 'SINGLE',
+                'material': 'WOOD',
+                'color': '#8B4513'
+            }
+        )
+
+    # Crear puerta de salida a "calle/afuera"
+    exit_entrance, _ = EntranceExit.objects.get_or_create(
+        room=base_room,
+        face='SOUTH',
+        defaults={
+            'name': 'Salida a Calle',
+            'description': 'Puerta que da a la calle/afuera',
+            'enabled': True,
+            'door_type': 'DOUBLE',
+            'material': 'GLASS',
+            'color': '#87CEEB',
+            'is_locked': False
+        }
+    )
+
+    # Obtener perfil del jugador
+    player_profile, _ = PlayerProfile.objects.get_or_create(
+        user=request.user,
+        defaults={
+            'current_room': base_room,
+            'energy': 100,
+            'productivity': 50,
+            'social': 50,
+            'position_x': 5,  # Centro de la habitación
+            'position_y': 5,
+            'state': 'AVAILABLE'
+        }
+    )
+
+    # Si el jugador no está en la habitación base, teletransportarlo
+    if player_profile.current_room != base_room:
+        player_profile.current_room = base_room
+        player_profile.position_x = 5
+        player_profile.position_y = 5
+        player_profile.save()
+
+    context = {
+        'page_title': 'Entorno 3D Básico - Habitación Base',
+        'base_room': base_room,
+        'connected_rooms': connected_rooms,
+        'player_profile': player_profile,
+        'room_id': base_room.id
+    }
+
+    return render(request, 'rooms/basic_3d_environment.html', context)
+
 
 # Vista para agregar comentarios a una sala
 def room_comments(request, pk):
@@ -360,6 +451,106 @@ def create_entrance_exit(request):
     else:
         form = EntranceExitForm()
     return render(request, 'create_entrance_exit.html', {'form': form})
+
+# Vista para editar una entrada/salida existente
+@login_required
+def edit_entrance_exit(request, pk):
+    entrance_exit = get_object_or_404(EntranceExit, pk=pk)
+
+    # Verificar permisos - solo el owner de la habitación puede editar
+    if not entrance_exit.room.can_user_manage(request.user):
+        messages.error(request, 'No tienes permisos para editar esta entrada/salida.')
+        return redirect('rooms:room_detail', pk=entrance_exit.room.pk)
+
+    if request.method == 'POST':
+        form = EntranceExitForm(request.POST, instance=entrance_exit)
+        if form.is_valid():
+            # Guardar con valores por defecto para campos faltantes
+            entrance = form.save(commit=False)
+
+            # Asegurar valores por defecto para campos requeridos que no están en el formulario
+            if entrance.position_x is None:
+                entrance.assign_default_position()
+
+            # Campos con valores por defecto del modelo
+            entrance.width = entrance.width or 100
+            entrance.height = entrance.height or 200
+            entrance.door_type = entrance.door_type or 'SINGLE'
+            entrance.material = entrance.material or 'WOOD'
+            entrance.color = entrance.color or '#8B4513'
+            entrance.opacity = entrance.opacity or 1.0
+            entrance.is_locked = entrance.is_locked or False
+            entrance.auto_close = entrance.auto_close or False
+            entrance.close_delay = entrance.close_delay or 5
+            entrance.open_speed = entrance.open_speed or 1.0
+            entrance.close_speed = entrance.close_speed or 1.0
+            entrance.interaction_type = entrance.interaction_type or 'PUSH'
+            entrance.animation_type = entrance.animation_type or 'SWING'
+            entrance.requires_both_hands = entrance.requires_both_hands or False
+            entrance.interaction_distance = entrance.interaction_distance or 150
+            entrance.is_open = entrance.is_open or False
+            entrance.usage_count = entrance.usage_count or 0
+            entrance.health = entrance.health or 100
+            entrance.access_level = entrance.access_level or 0
+            entrance.security_system = entrance.security_system or 'NONE'
+            entrance.alarm_triggered = entrance.alarm_triggered or False
+            entrance.seals_air = entrance.seals_air or True
+            entrance.seals_sound = entrance.seals_sound or 20
+            entrance.temperature_resistance = entrance.temperature_resistance or 50
+            entrance.pressure_resistance = entrance.pressure_resistance or 1
+            entrance.energy_cost_modifier = entrance.energy_cost_modifier or 0
+            entrance.experience_reward = entrance.experience_reward or 1
+            entrance.special_effects = entrance.special_effects or {}
+            entrance.cooldown = entrance.cooldown or 0
+            entrance.max_usage_per_hour = entrance.max_usage_per_hour or 0
+            entrance.glow_intensity = entrance.glow_intensity or 0
+            entrance.decoration_type = entrance.decoration_type or 'NONE'
+
+            entrance.save()
+            messages.success(request, f'Entrada/Salida "{entrance.name}" actualizada exitosamente.')
+            return redirect('rooms:room_detail', pk=entrance_exit.room.pk)
+    else:
+        form = EntranceExitForm(instance=entrance_exit)
+
+    context = {
+        'form': form,
+        'entrance_exit': entrance_exit,
+        'room': entrance_exit.room,
+        'page_title': f'Editar Entrada/Salida - {entrance_exit.name}',
+        'is_edit': True
+    }
+
+    return render(request, 'rooms/entrance_exit_form.html', context)
+
+# Vista para eliminar una entrada/salida
+@login_required
+def delete_entrance_exit(request, pk):
+    entrance_exit = get_object_or_404(EntranceExit, pk=pk)
+
+    # Verificar permisos - solo el owner de la habitación puede eliminar
+    if not entrance_exit.room.can_user_manage(request.user):
+        messages.error(request, 'No tienes permisos para eliminar esta entrada/salida.')
+        return redirect('rooms:room_detail', pk=entrance_exit.room.pk)
+
+    # Verificar que no tenga conexiones activas
+    if entrance_exit.connection:
+        messages.error(request, 'No se puede eliminar una entrada/salida que tiene conexiones activas.')
+        return redirect('rooms:room_detail', pk=entrance_exit.room.pk)
+
+    if request.method == 'POST':
+        room_pk = entrance_exit.room.pk
+        entrance_name = entrance_exit.name
+        entrance_exit.delete()
+        messages.success(request, f'Entrada/Salida "{entrance_name}" eliminada exitosamente.')
+        return redirect('rooms:room_detail', pk=room_pk)
+
+    context = {
+        'entrance_exit': entrance_exit,
+        'room': entrance_exit.room,
+        'page_title': f'Eliminar Entrada/Salida - {entrance_exit.name}'
+    }
+
+    return render(request, 'rooms/entrance_exit_confirm_delete.html', context)
 
 # Vista para mostrar la lista de entradas/salidas
 def entrance_exit_list(request):
@@ -410,6 +601,100 @@ def portal_detail(request, pk):
     portal = get_object_or_404(Portal, pk=pk)
     return render(request, 'rooms/portal_detail.html', {'portal': portal})
 
+# Vista para crear una nueva conexión de habitación
+@login_required
+def create_room_connection(request, room_id):
+    room = get_object_or_404(Room, pk=room_id)
+
+    # Verificar permisos
+    if not room.can_user_manage(request.user):
+        messages.error(request, 'No tienes permisos para gestionar conexiones en esta habitación.')
+        return redirect('rooms:room_detail', pk=room_id)
+
+    if request.method == 'POST':
+        form = RoomConnectionForm(request.POST, room_id=room_id)
+        if form.is_valid():
+            connection = form.save()
+            messages.success(request, f'Conexión creada exitosamente entre {connection.from_room.name} y {connection.to_room.name}')
+            return HttpResponseRedirect(reverse_lazy('rooms:room_detail', kwargs={'pk': room_id}))
+    else:
+        form = RoomConnectionForm(room_id=room_id)
+
+    context = {
+        'form': form,
+        'room': room,
+        'page_title': f'Crear Conexión - {room.name}',
+        'is_create': True
+    }
+
+    return render(request, 'rooms/room_connection_form.html', context)
+
+# Vista para editar una conexión existente
+@login_required
+def edit_room_connection(request, room_id, connection_id):
+    room = get_object_or_404(Room, pk=room_id)
+    connection = get_object_or_404(RoomConnection, pk=connection_id)
+
+    # Verificar que la conexión pertenezca a la habitación
+    if connection.from_room != room and connection.to_room != room:
+        messages.error(request, 'Esta conexión no pertenece a esta habitación.')
+        return redirect('rooms:room_detail', pk=room_id)
+
+    # Verificar permisos
+    if not room.can_user_manage(request.user):
+        messages.error(request, 'No tienes permisos para gestionar conexiones en esta habitación.')
+        return redirect('rooms:room_detail', pk=room_id)
+
+    if request.method == 'POST':
+        form = RoomConnectionForm(request.POST, instance=connection, room_id=room_id)
+        if form.is_valid():
+            connection = form.save()
+            messages.success(request, f'Conexión actualizada exitosamente entre {connection.from_room.name} y {connection.to_room.name}')
+            return HttpResponseRedirect(reverse_lazy('rooms:room_detail', kwargs={'pk': room_id}))
+    else:
+        form = RoomConnectionForm(instance=connection, room_id=room_id)
+
+    context = {
+        'form': form,
+        'room': room,
+        'connection': connection,
+        'page_title': f'Editar Conexión - {room.name}',
+        'is_create': False
+    }
+
+    return render(request, 'rooms/room_connection_form.html', context)
+
+# Vista para eliminar una conexión
+@login_required
+def delete_room_connection(request, room_id, connection_id):
+    room = get_object_or_404(Room, pk=room_id)
+    connection = get_object_or_404(RoomConnection, pk=connection_id)
+
+    # Verificar que la conexión pertenezca a la habitación
+    if connection.from_room != room and connection.to_room != room:
+        messages.error(request, 'Esta conexión no pertenece a esta habitación.')
+        return redirect('rooms:room_detail', pk=room_id)
+
+    # Verificar permisos
+    if not room.can_user_manage(request.user):
+        messages.error(request, 'No tienes permisos para gestionar conexiones en esta habitación.')
+        return redirect('rooms:room_detail', pk=room_id)
+
+    if request.method == 'POST':
+        from_room_name = connection.from_room.name
+        to_room_name = connection.to_room.name
+        connection.delete()
+        messages.success(request, f'Conexión eliminada entre {from_room_name} y {to_room_name}')
+        return redirect('rooms:room_detail', pk=room_id)
+
+    context = {
+        'room': room,
+        'connection': connection,
+        'page_title': f'Eliminar Conexión - {room.name}'
+    }
+
+    return render(request, 'rooms/room_connection_confirm_delete.html', context)
+
 # Vista para mostrar la lista de salas
 def room_list(request):
     logger.debug("Fetching all rooms from the database.")
@@ -441,6 +726,8 @@ def room_search(request):
 import json
 import logging
 import requests
+
+logger = logging.getLogger(__name__)
 import math
 from requests.adapters import HTTPAdapter, Retry
 from django.conf import settings
@@ -449,15 +736,18 @@ from django.db.models import Exists, OuterRef, Count
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import status, viewsets
-from rest_framework.generics import ListCreateAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.viewsets import GenericViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
 from .models import Message, Room, RoomMember, Outbox, CDC
-from .serializers import MessageSerializer, RoomSearchSerializer, RoomSerializer, RoomMemberSerializer
+from .serializers import (
+    MessageSerializer, RoomSearchSerializer, RoomSerializer, RoomMemberSerializer,
+    RoomCRUDSerializer, EntranceExitCRUDSerializer, PortalCRUDSerializer, RoomConnectionCRUDSerializer
+)
 
 logger = logging.getLogger(__name__)
 
@@ -864,6 +1154,326 @@ def interact_with_object(request, object_id):
     result = obj.interact(request.user.player_profile)
     return Response(result)
 
+@api_view(['POST'])
+def use_entrance_exit(request, entrance_id):
+    """
+    API endpoint para usar una EntranceExit (puerta).
+    Implementa la arquitectura de separación de responsabilidades.
+    """
+    try:
+        # Obtener la puerta
+        entrance = get_object_or_404(EntranceExit, pk=entrance_id)
+
+        # Verificar que el usuario tenga un perfil de jugador
+        if not hasattr(request.user, 'player_profile'):
+            return Response({
+                'success': False,
+                'message': 'No tienes un perfil de jugador activo.'
+            }, status=400)
+
+        player_profile = request.user.player_profile
+
+        # Usar el RoomTransitionManager para manejar la transición
+        transition_manager = get_room_transition_manager()
+        result = transition_manager.attempt_transition(player_profile, entrance)
+
+        if result['success']:
+            return Response({
+                'success': True,
+                'message': result['message'],
+                'target_room': {
+                    'id': result['target_room'].id,
+                    'name': result['target_room'].name,
+                    'description': result['target_room'].description
+                },
+                'energy_cost': result['energy_cost'],
+                'experience_gained': result.get('experience_gained', 0),
+                'player_stats': {
+                    'energy': player_profile.energy,
+                    'productivity': player_profile.productivity,
+                    'position_x': player_profile.position_x,
+                    'position_y': player_profile.position_y
+                }
+            })
+        else:
+            return Response({
+                'success': False,
+                'message': result['message'],
+                'reason': result.get('reason', 'UNKNOWN')
+            }, status=400)
+
+    except Exception as e:
+        logger.error(f"Error en use_entrance_exit: {e}", exc_info=True)
+        return Response({
+            'success': False,
+            'message': 'Error interno del sistema.'
+        }, status=500)
+
+@api_view(['GET'])
+def get_entrance_info(request, entrance_id):
+    """
+    API endpoint para obtener información detallada de una EntranceExit.
+    """
+    try:
+        entrance = get_object_or_404(EntranceExit, pk=entrance_id)
+
+        if not hasattr(request.user, 'player_profile'):
+            return Response({
+                'success': False,
+                'message': 'No tienes un perfil de jugador activo.'
+            }, status=400)
+
+        player_profile = request.user.player_profile
+        transition_info = entrance.get_transition_info(player_profile)
+        usage_stats = entrance.get_usage_statistics()
+
+        return Response({
+            'success': True,
+            'entrance': {
+                'id': entrance.id,
+                'name': entrance.name,
+                'description': entrance.description,
+                'face': entrance.face,
+                'enabled': entrance.enabled,
+                'is_locked': entrance.is_locked,
+                'door_type': entrance.door_type,
+                'material': entrance.material,
+                'width': entrance.width,
+                'height': entrance.height,
+                'access_level': entrance.access_level,
+                'interaction_type': entrance.interaction_type,
+                'health': entrance.health
+            },
+            'transition_info': {
+                'can_use': transition_info['can_use'],
+                'reason': transition_info['reason'],
+                'energy_cost': transition_info['energy_cost'],
+                'experience_reward': transition_info['experience_reward'],
+                'target_room': {
+                    'id': transition_info['target_room'].id,
+                    'name': transition_info['target_room'].name,
+                    'description': transition_info['target_room'].description
+                } if transition_info['target_room'] else None
+            },
+            'usage_stats': usage_stats,
+            'connection': {
+                'exists': entrance.connection is not None,
+                'bidirectional': entrance.connection.bidirectional if entrance.connection else False,
+                'energy_cost': entrance.connection.energy_cost if entrance.connection else 0
+            } if entrance.connection else None
+        })
+
+    except Exception as e:
+        logger.error(f"Error en get_entrance_info: {e}", exc_info=True)
+        return Response({
+            'success': False,
+            'message': 'Error interno del sistema.'
+        }, status=500)
+
+@api_view(['GET'])
+def get_available_transitions(request):
+    """
+    API endpoint para obtener todas las transiciones disponibles para el jugador actual.
+    """
+    try:
+        if not hasattr(request.user, 'player_profile'):
+            return Response({
+                'success': False,
+                'message': 'No tienes un perfil de jugador activo.'
+            }, status=400)
+
+        player_profile = request.user.player_profile
+        transition_manager = get_room_transition_manager()
+        available_transitions = transition_manager.get_available_transitions(player_profile)
+
+        transitions_data = []
+        for transition in available_transitions:
+            transitions_data.append({
+                'entrance': {
+                    'id': transition['entrance'].id,
+                    'name': transition['entrance'].name,
+                    'face': transition['entrance'].face,
+                    'door_type': transition['entrance'].door_type,
+                    'material': transition['entrance'].material
+                },
+                'target_room': {
+                    'id': transition['target_room'].id,
+                    'name': transition['target_room'].name,
+                    'description': transition['target_room'].description
+                } if transition['target_room'] else None,
+                'energy_cost': transition['energy_cost'],
+                'experience_reward': transition['experience_reward'],
+                'accessible': transition['accessible'],
+                'reason': transition.get('reason', '')
+            })
+
+        return Response({
+            'success': True,
+            'current_room': {
+                'id': player_profile.current_room.id if player_profile.current_room else None,
+                'name': player_profile.current_room.name if player_profile.current_room else None
+            },
+            'available_transitions': transitions_data,
+            'player_energy': player_profile.energy
+        })
+
+    except Exception as e:
+        logger.error(f"Error en get_available_transitions: {e}", exc_info=True)
+        return Response({
+            'success': False,
+            'message': 'Error interno del sistema.'
+        }, status=500)
+
+@api_view(['POST'])
+def teleport_to_room(request, room_id):
+    """
+    API endpoint para teletransportarse a una habitación específica.
+    """
+    try:
+        if not hasattr(request.user, 'player_profile'):
+            return Response({
+                'success': False,
+                'message': 'No tienes un perfil de jugador activo.'
+            }, status=400)
+
+        player_profile = request.user.player_profile
+
+        # Get target room
+        try:
+            target_room = Room.objects.get(id=room_id)
+        except Room.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'Habitación no encontrada.'
+            }, status=404)
+
+        # Check if it's just a check request
+        check_only = request.data.get('check_only', False)
+        if check_only:
+            can_teleport, reason = player_profile.can_teleport_to(target_room)
+            return Response({
+                'success': can_teleport,
+                'message': reason,
+                'energy_cost': 20,
+                'current_energy': player_profile.energy
+            })
+
+        # Attempt teleportation
+        success, message = player_profile.teleport_to(target_room)
+
+        if success:
+            return Response({
+                'success': True,
+                'message': message,
+                'target_room': {
+                    'id': target_room.id,
+                    'name': target_room.name,
+                    'description': target_room.description
+                },
+                'energy_cost': 20,
+                'remaining_energy': player_profile.energy
+            })
+        else:
+            return Response({
+                'success': False,
+                'message': message
+            }, status=400)
+
+    except Exception as e:
+        logger.error(f"Error en teleport_to_room: {e}", exc_info=True)
+        return Response({
+            'success': False,
+            'message': 'Error interno del sistema.'
+        }, status=500)
+
+@api_view(['GET'])
+def get_navigation_history(request):
+    """
+    API endpoint para obtener el historial de navegación del jugador.
+    """
+    try:
+        if not hasattr(request.user, 'player_profile'):
+            return Response({
+                'success': False,
+                'message': 'No tienes un perfil de jugador activo.'
+            }, status=400)
+
+        player_profile = request.user.player_profile
+
+        # Convert room IDs to room data
+        history_data = []
+        for room_id in (player_profile.navigation_history or []):
+            try:
+                room = Room.objects.get(id=room_id)
+                history_data.append({
+                    'id': room.id,
+                    'name': room.name,
+                    'description': room.description[:50] + '...' if len(room.description) > 50 else room.description
+                })
+            except Room.DoesNotExist:
+                continue
+
+        return Response({
+            'success': True,
+            'navigation_history': history_data,
+            'current_room': {
+                'id': player_profile.current_room.id if player_profile.current_room else None,
+                'name': player_profile.current_room.name if player_profile.current_room else None
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error en get_navigation_history: {e}", exc_info=True)
+        return Response({
+            'success': False,
+            'message': 'Error interno del sistema.'
+        }, status=500)
+
+@api_view(['GET'])
+def get_user_current_room(request):
+    """
+    API endpoint para obtener la habitación actual física del usuario.
+    """
+    try:
+        if not hasattr(request.user, 'player_profile'):
+            return Response({
+                'success': False,
+                'message': 'No tienes un perfil de jugador activo.'
+            }, status=400)
+
+        player_profile = request.user.player_profile
+
+        if not player_profile.current_room:
+            return Response({
+                'success': False,
+                'message': 'No estás en ninguna habitación actualmente.'
+            }, status=400)
+
+        return Response({
+            'success': True,
+            'current_room': {
+                'id': player_profile.current_room.id,
+                'name': player_profile.current_room.name,
+                'description': player_profile.current_room.description,
+                'room_type': player_profile.current_room.room_type,
+                'permissions': player_profile.current_room.permissions
+            },
+            'player_stats': {
+                'energy': player_profile.energy,
+                'productivity': player_profile.productivity,
+                'social': player_profile.social,
+                'position_x': player_profile.position_x,
+                'position_y': player_profile.position_y
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error en get_user_current_room: {e}", exc_info=True)
+        return Response({
+            'success': False,
+            'message': 'Error interno del sistema.'
+        }, status=500)
+
 @api_view(['GET'])
 def room_detail_view(request, pk):
     """
@@ -1094,32 +1704,556 @@ def create_room_complete(request):
 
     return render(request, 'rooms/room_form_complete.html', context)
 
+
+# API CRUD Views for Rooms
+class RoomCRUDViewSet(ModelViewSet):
+    """
+    API endpoint completo para operaciones CRUD en habitaciones.
+    Proporciona: list, create, retrieve, update, partial_update, destroy
+    """
+    serializer_class = RoomCRUDSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Filtrar habitaciones según permisos del usuario.
+        - Owner puede ver todas sus habitaciones
+        - Admin puede ver habitaciones administradas
+        - Miembros pueden ver habitaciones donde son miembros
+        """
+        user = self.request.user
+        return Room.objects.filter(
+            Q(owner=user) |
+            Q(administrators=user) |
+            Q(members__user=user)
+        ).distinct().order_by('-updated_at')
+
+    def perform_create(self, serializer):
+        """Asignar el owner y creator al crear una habitación"""
+        serializer.save(owner=self.request.user, creator=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        """Actualización completa con validación de permisos"""
+        instance = self.get_object()
+
+        # Verificar permisos
+        if not instance.can_user_manage(request.user):
+            return Response(
+                {"error": "No tienes permisos para editar esta habitación"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        """Actualización parcial con validación de permisos"""
+        instance = self.get_object()
+
+        # Verificar permisos
+        if not instance.can_user_manage(request.user):
+            return Response(
+                {"error": "No tienes permisos para editar esta habitación"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """Eliminación con validación de permisos"""
+        instance = self.get_object()
+
+        # Verificar permisos
+        if not instance.can_user_manage(request.user):
+            return Response(
+                {"error": "No tienes permisos para eliminar esta habitación"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        return super().destroy(request, *args, **kwargs)
+
+
+# API CRUD Views for EntranceExit (Doors)
+class EntranceExitCRUDViewSet(ModelViewSet):
+    """
+    API endpoint completo para operaciones CRUD de EntranceExit (puertas).
+    Proporciona: list, create, retrieve, update, partial_update, destroy
+    """
+    serializer_class = EntranceExitCRUDSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Filtrar puertas por habitaciones del usuario"""
+        user = self.request.user
+        return EntranceExit.objects.filter(
+            room__owner=user
+        ).select_related('room', 'connection').order_by('-created_at')
+
+    def perform_create(self, serializer):
+        """Crear puerta con validaciones adicionales"""
+        serializer.save()
+
+
+# API CRUD Views for Portal
+class PortalCRUDViewSet(ModelViewSet):
+    """
+    API endpoint completo para operaciones CRUD de Portal.
+    Proporciona: list, create, retrieve, update, partial_update, destroy
+    """
+    serializer_class = PortalCRUDSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Filtrar portales por habitaciones del usuario"""
+        user = self.request.user
+        return Portal.objects.filter(
+            Q(entrance__room__owner=user) | Q(exit__room__owner=user)
+        ).select_related('entrance__room', 'exit__room').distinct().order_by('-created_at')
+
+    def perform_create(self, serializer):
+        """Crear portal con validaciones adicionales"""
+        serializer.save()
+
+
+# API CRUD Views for RoomConnection
+class RoomConnectionCRUDViewSet(ModelViewSet):
+    """
+    API endpoint completo para operaciones CRUD de RoomConnection.
+    Proporciona: list, create, retrieve, update, partial_update, destroy
+    """
+    serializer_class = RoomConnectionCRUDSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        """Filtrar conexiones por habitaciones del usuario"""
+        user = self.request.user
+        return RoomConnection.objects.filter(
+            Q(from_room__owner=user) | Q(to_room__owner=user)
+        ).select_related('from_room', 'to_room', 'entrance').distinct().order_by('-created_at')
+
+    def perform_create(self, serializer):
+        """Crear conexión con validaciones adicionales"""
+        serializer.save()
+
+
+# Frontend CRUD View
 @login_required
-def edit_room_complete(request, pk):
-    """Vista para editar una habitación completa con todas las opciones"""
-    room = get_object_or_404(Room, pk=pk)
+def room_crud_view(request):
+    """
+    Vista para el frontend moderno de gestión CRUD de habitaciones.
+    """
+    return render(request, 'rooms/room_crud.html', {
+        'page_title': 'Gestión de Habitaciones',
+    })
 
-    # Verificar permisos
-    if not room.can_user_manage(request.user):
-        messages.error(request, 'No tienes permisos para editar esta habitación.')
-        return redirect('rooms:room_detail', pk=pk)
 
-    if request.method == 'POST':
-        form = RoomForm(request.POST, request.FILES, instance=room, user=request.user)
-        if form.is_valid():
-            room = form.save()
-            messages.success(request, f'Habitación "{room.name}" actualizada exitosamente.')
-            return redirect('rooms:room_detail', pk=pk)
-    else:
-        form = RoomForm(instance=room, user=request.user)
+# ===== API ENDPOINTS PARA ENTORNO 3D =====
 
-    context = {
-        'form': form,
-        'room': room,
-        'page_title': f'Editar Completo - {room.name}',
-        'is_edit': True,
-        'room_count': Room.objects.count(),
-        'active_rooms': Room.objects.filter(is_active=True).count()
-    }
+@api_view(['GET'])
+def get_room_3d_data(request, room_id):
+    """
+    API endpoint para obtener datos 3D completos de una habitación.
+    Incluye geometría, objetos, conexiones y estado del player.
+    """
+    try:
+        room = get_object_or_404(Room, pk=room_id)
 
-    return render(request, 'rooms/room_form_complete.html', context)
+        # Verificar permisos de acceso
+        if room.permissions == 'private':
+            # Solo miembros pueden acceder a habitaciones privadas
+            if not RoomMember.objects.filter(room=room, user=request.user).exists():
+                return Response({
+                    'success': False,
+                    'message': 'No tienes acceso a esta habitación.'
+                }, status=403)
+
+        # Obtener perfil del jugador
+        try:
+            player_profile = request.user.player_profile
+        except PlayerProfile.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'No tienes un perfil de jugador activo.'
+            }, status=400)
+
+        # Datos básicos de la habitación
+        room_data = {
+            'id': room.id,
+            'name': room.name,
+            'description': room.description,
+            'dimensions': {
+                'length': room.length,
+                'width': room.width,
+                'height': room.height
+            },
+            'position': {
+                'x': room.x,
+                'y': room.y,
+                'z': room.z
+            },
+            'colors': {
+                'primary': room.color_primary,
+                'secondary': room.color_secondary
+            },
+            'material': room.material_type,
+            'lighting_intensity': room.lighting_intensity,
+            'temperature': float(room.temperature)
+        }
+
+        # Estado del jugador
+        player_data = {
+            'position': {
+                'x': player_profile.position_x or room.length // 2,
+                'y': player_profile.position_y or room.width // 2,
+                'z': 1.7  # Altura típica de una persona
+            },
+            'energy': player_profile.energy,
+            'productivity': player_profile.productivity,
+            'social': player_profile.social
+        }
+
+        # Obtener objetos 3D (puertas y portales)
+        objects_3d = []
+
+        # Puertas (EntranceExit)
+        for entrance in room.entrance_exits.filter(enabled=True):
+            obj_data = {
+                'type': 'door',
+                'id': entrance.id,
+                'name': entrance.name,
+                'position': {
+                    'x': entrance.position_x or 0,
+                    'y': entrance.position_y or 0,
+                    'z': 0
+                },
+                'dimensions': {
+                    'width': entrance.width / 100,  # Convertir cm a metros
+                    'height': entrance.height / 100,
+                    'depth': 0.2
+                },
+                'properties': {
+                    'face': entrance.face,
+                    'is_locked': entrance.is_locked,
+                    'door_type': entrance.door_type,
+                    'material': entrance.material,
+                    'color': entrance.color,
+                    'interaction_distance': entrance.interaction_distance / 100  # Convertir cm a metros
+                }
+            }
+
+            # Agregar información de conexión si existe
+            if entrance.connection:
+                obj_data['connection'] = {
+                    'target_room_id': entrance.connection.to_room.id if entrance.connection.from_room == room else entrance.connection.from_room.id,
+                    'energy_cost': entrance.connection.energy_cost,
+                    'bidirectional': entrance.connection.bidirectional
+                }
+
+            objects_3d.append(obj_data)
+
+        # Portales
+        for portal in room.portals.all():
+            # Determinar si este portal sale de esta habitación
+            if portal.entrance.room == room:
+                portal_exit = portal.exit
+                target_room = portal_exit.room
+            else:
+                portal_exit = portal.entrance
+                target_room = portal.entrance.room
+
+            obj_data = {
+                'type': 'portal',
+                'id': portal.id,
+                'name': portal.name,
+                'position': {
+                    'x': portal_exit.position_x or 0,
+                    'y': portal_exit.position_y or 0,
+                    'z': room.height // 2  # Centro vertical de la habitación
+                },
+                'dimensions': {
+                    'width': 2,
+                    'height': 3,
+                    'depth': 0.1
+                },
+                'properties': {
+                    'energy_cost': portal.energy_cost,
+                    'cooldown': portal.cooldown,
+                    'is_active': portal.is_active(),
+                    'target_room_id': target_room.id
+                }
+            }
+            objects_3d.append(obj_data)
+
+        # Obtener conexiones disponibles
+        connections = []
+        for entrance in room.entrance_exits.filter(enabled=True, connection__isnull=False):
+            connection = entrance.connection
+            target_room = connection.to_room if connection.from_room == room else connection.from_room
+
+            connections.append({
+                'direction': entrance.face,
+                'target_room_id': target_room.id,
+                'target_room_name': target_room.name,
+                'energy_cost': connection.energy_cost,
+                'entrance_id': entrance.id
+            })
+
+        # Datos de respuesta
+        response_data = {
+            'success': True,
+            'room': room_data,
+            'player': player_data,
+            'objects': objects_3d,
+            'connections': connections,
+            'portals': [obj for obj in objects_3d if obj['type'] == 'portal']
+        }
+
+        return Response(response_data)
+
+    except Exception as e:
+        logger.error(f"Error en get_room_3d_data: {e}", exc_info=True)
+        return Response({
+            'success': False,
+            'message': 'Error interno del sistema.'
+        }, status=500)
+
+
+@api_view(['POST'])
+def room_transition(request):
+    """
+    API endpoint para manejar transiciones entre habitaciones.
+    Actualiza la posición del player y cambia de habitación.
+    """
+    try:
+        # Validar datos de entrada
+        exit_type = request.data.get('exit_type')  # 'door' o 'portal'
+        exit_id = request.data.get('exit_id')
+        target_room_id = request.data.get('target_room_id')
+
+        if not exit_type or not exit_id:
+            return Response({
+                'success': False,
+                'message': 'Faltan parámetros: exit_type y exit_id son requeridos.'
+            }, status=400)
+
+        # Obtener perfil del jugador
+        try:
+            player_profile = request.user.player_profile
+        except PlayerProfile.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'No tienes un perfil de jugador activo.'
+            }, status=400)
+
+        # Procesar transición según el tipo
+        if exit_type == 'door':
+            entrance = get_object_or_404(EntranceExit, pk=exit_id)
+
+            # Usar el RoomTransitionManager existente
+            transition_manager = get_room_transition_manager()
+            result = transition_manager.attempt_transition(player_profile, entrance)
+
+            if result['success']:
+                # Obtener datos de la nueva habitación
+                new_room = result['target_room']
+                new_room_data = {
+                    'id': new_room.id,
+                    'name': new_room.name,
+                    'description': new_room.description
+                }
+
+                return Response({
+                    'success': True,
+                    'message': result['message'],
+                    'target_room': new_room_data,
+                    'energy_cost': result['energy_cost'],
+                    'player_stats': {
+                        'energy': player_profile.energy,
+                        'position_x': player_profile.position_x,
+                        'position_y': player_profile.position_y
+                    }
+                })
+            else:
+                return Response({
+                    'success': False,
+                    'message': result['message']
+                }, status=400)
+
+        elif exit_type == 'portal':
+            portal = get_object_or_404(Portal, pk=exit_id)
+
+            # Verificar si el portal está activo
+            if not portal.is_active():
+                return Response({
+                    'success': False,
+                    'message': 'El portal no está disponible actualmente.'
+                }, status=400)
+
+            # Verificar energía suficiente
+            if player_profile.energy < portal.energy_cost:
+                return Response({
+                    'success': False,
+                    'message': f'Energía insuficiente. Necesitas {portal.energy_cost}, tienes {player_profile.energy}.'
+                }, status=400)
+
+            # Determinar habitación destino
+            if portal.entrance.room == player_profile.current_room:
+                target_room = portal.exit.room
+                exit_entrance = portal.exit
+            else:
+                target_room = portal.entrance.room
+                exit_entrance = portal.entrance
+
+            # Realizar transición
+            player_profile.add_to_navigation_history(player_profile.current_room.id)
+            player_profile.current_room = target_room
+            player_profile.position_x = exit_entrance.position_x or target_room.length // 2
+            player_profile.position_y = exit_entrance.position_y or target_room.width // 2
+            player_profile.energy -= portal.energy_cost
+            player_profile.save()
+
+            # Actualizar último uso del portal
+            portal.last_used = timezone.now()
+            portal.save()
+
+            return Response({
+                'success': True,
+                'message': f'Teletransportado a {target_room.name} a través del portal.',
+                'target_room': {
+                    'id': target_room.id,
+                    'name': target_room.name,
+                    'description': target_room.description
+                },
+                'energy_cost': portal.energy_cost,
+                'player_stats': {
+                    'energy': player_profile.energy,
+                    'position_x': player_profile.position_x,
+                    'position_y': player_profile.position_y
+                }
+            })
+
+        else:
+            return Response({
+                'success': False,
+                'message': f'Tipo de salida no válido: {exit_type}'
+            }, status=400)
+
+    except Exception as e:
+        logger.error(f"Error en room_transition: {e}", exc_info=True)
+        return Response({
+            'success': False,
+            'message': 'Error interno del sistema.'
+        }, status=500)
+
+
+@api_view(['POST'])
+def update_player_position(request):
+    """
+    API endpoint para actualizar la posición del player en 3D.
+    """
+    try:
+        # Validar datos de entrada
+        position_x = request.data.get('position_x')
+        position_y = request.data.get('position_y')
+        position_z = request.data.get('position_z', 1.7)  # Altura por defecto
+
+        if position_x is None or position_y is None:
+            return Response({
+                'success': False,
+                'message': 'Faltan coordenadas de posición.'
+            }, status=400)
+
+        # Obtener perfil del jugador
+        try:
+            player_profile = request.user.player_profile
+        except PlayerProfile.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'No tienes un perfil de jugador activo.'
+            }, status=400)
+
+        # Validar límites de la habitación actual
+        if player_profile.current_room:
+            room = player_profile.current_room
+            # Asegurar que la posición esté dentro de los límites de la habitación
+            position_x = max(0, min(position_x, room.length))
+            position_y = max(0, min(position_y, room.width))
+            position_z = max(0, min(position_z, room.height))
+
+        # Actualizar posición
+        player_profile.position_x = position_x
+        player_profile.position_y = position_y
+        # Nota: position_z no se guarda en el modelo actual, pero se puede agregar si es necesario
+        player_profile.save()
+
+        return Response({
+            'success': True,
+            'message': 'Posición actualizada correctamente.',
+            'position': {
+                'x': player_profile.position_x,
+                'y': player_profile.position_y,
+                'z': position_z
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Error en update_player_position: {e}", exc_info=True)
+        return Response({
+            'success': False,
+            'message': 'Error interno del sistema.'
+        }, status=500)
+
+
+@api_view(['GET'])
+def get_player_status(request):
+    """
+    API endpoint para obtener el estado completo del player.
+    """
+    try:
+        # Obtener perfil del jugador
+        try:
+            player_profile = request.user.player_profile
+        except PlayerProfile.DoesNotExist:
+            return Response({
+                'success': False,
+                'message': 'No tienes un perfil de jugador activo.'
+            }, status=400)
+
+        # Obtener habitación actual
+        current_room_data = None
+        if player_profile.current_room:
+            room = player_profile.current_room
+            current_room_data = {
+                'id': room.id,
+                'name': room.name,
+                'description': room.description,
+                'dimensions': {
+                    'length': room.length,
+                    'width': room.width,
+                    'height': room.height
+                }
+            }
+
+        return Response({
+            'success': True,
+            'player': {
+                'energy': player_profile.energy,
+                'productivity': player_profile.productivity,
+                'social': player_profile.social,
+                'position': {
+                    'x': player_profile.position_x or 0,
+                    'y': player_profile.position_y or 0,
+                    'z': 1.7
+                },
+                'state': player_profile.state,
+                'skills': player_profile.skills
+            },
+            'current_room': current_room_data,
+            'navigation_history': player_profile.navigation_history or []
+        })
+
+    except Exception as e:
+        logger.error(f"Error en get_player_status: {e}", exc_info=True)
+        return Response({
+            'success': False,
+            'message': 'Error interno del sistema.'
+        }, status=500)

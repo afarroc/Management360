@@ -45,8 +45,8 @@ class Command(BaseCommand):
                 'twitter_url': '',
                 'facebook_url': '',
                 'instagram_url': '',
-                'company': '',
-                'job_title': '',
+                'company': 'Management360',
+                'job_title': 'Administrador del Sistema',
             }
         )
 

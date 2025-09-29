@@ -1,5 +1,5 @@
 ﻿from django import forms
-from .models import Room, Evaluation, EntranceExit, Portal, RoomObject
+from .models import Room, Evaluation, EntranceExit, Portal, RoomObject, RoomConnection
 import json
 from django.db.models import Q
 from django.utils.translation import gettext as _
@@ -337,7 +337,64 @@ class PortalForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         room_id = kwargs.pop('room_id', None)
         super().__init__(*args, **kwargs)
-        
+
         if room_id:
             self.fields['entrance'].queryset = EntranceExit.objects.filter(room_id=room_id)
             self.fields['exit'].queryset = EntranceExit.objects.exclude(room_id=room_id)
+
+class RoomConnectionForm(forms.ModelForm):
+    class Meta:
+        model = RoomConnection
+        fields = ['from_room', 'to_room', 'entrance', 'bidirectional', 'energy_cost']
+        widgets = {
+            'from_room': forms.Select(attrs={
+                'class': 'form-select',
+                'id': 'fromRoomSelect'
+            }),
+            'to_room': forms.Select(attrs={
+                'class': 'form-select',
+                'id': 'toRoomSelect'
+            }),
+            'entrance': forms.Select(attrs={
+                'class': 'form-select',
+                'id': 'entranceSelect'
+            }),
+            'bidirectional': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
+            }),
+            'energy_cost': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'min': 0,
+                'placeholder': 'Costo de energía'
+            })
+        }
+
+    def __init__(self, *args, **kwargs):
+        room_id = kwargs.pop('room_id', None)
+        super().__init__(*args, **kwargs)
+
+        if room_id:
+            # Filtrar habitaciones disponibles (excluyendo la actual)
+            self.fields['to_room'].queryset = Room.objects.exclude(id=room_id)
+            self.fields['from_room'].initial = room_id
+            self.fields['from_room'].widget.attrs['disabled'] = True
+
+            # Filtrar entradas de la habitación actual
+            self.fields['entrance'].queryset = EntranceExit.objects.filter(room_id=room_id)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        from_room = cleaned_data.get('from_room')
+        to_room = cleaned_data.get('to_room')
+        entrance = cleaned_data.get('entrance')
+
+        if from_room and to_room and entrance:
+            # Verificar que la entrada pertenezca a la habitación de origen
+            if entrance.room != from_room:
+                raise forms.ValidationError("La entrada debe pertenecer a la habitación de origen.")
+
+            # Verificar que no exista ya una conexión con la misma entrada
+            if RoomConnection.objects.filter(entrance=entrance).exclude(pk=self.instance.pk if self.instance else None).exists():
+                raise forms.ValidationError("Esta entrada ya está conectada a otra habitación.")
+
+        return cleaned_data

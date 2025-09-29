@@ -1,0 +1,507 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="pagetitle">
+    <h1>
+        <i class="bi bi-file-text text-primary me-3"></i>
+        {{ article.title }}
+    </h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'rooms:lobby' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'help:help_home' %}">Ayuda</a></li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'help:category_detail' article.category.slug %}">{{ article.category.name }}</a>
+            </li>
+            <li class="breadcrumb-item active">{{ article.title|truncatechars:30 }}</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <!-- Contenido principal -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <!-- Metadatos del artículo -->
+                    <div class="article-meta mb-4">
+                        <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+                            {% if article.is_featured %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-star-fill me-1"></i>Artículo Destacado
+                            </span>
+                            {% endif %}
+
+                            <span class="badge bg-{{ article.difficulty|lower }}">
+                                {{ article.get_difficulty_display }}
+                            </span>
+
+                            <small class="text-muted">
+                                <i class="bi bi-eye me-1"></i>{{ article.view_count }} visualizaciones
+                            </small>
+
+                            {% if article.helpful_percentage > 0 %}
+                            <small class="text-success">
+                                <i class="bi bi-hand-thumbs-up me-1"></i>{{ article.helpful_percentage }}% útil
+                            </small>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex flex-wrap align-items-center gap-3 text-muted">
+                            {% if article.author %}
+                            <div>
+                                <i class="bi bi-person me-1"></i>
+                                <strong>{{ article.author.get_full_name|default:article.author.username }}</strong>
+                            </div>
+                            {% endif %}
+
+                            {% if article.published_at %}
+                            <div>
+                                <i class="bi bi-calendar me-1"></i>
+                                {{ article.published_at|date:"l, F j, Y" }}
+                            </div>
+                            {% endif %}
+
+                            <div>
+                                <i class="bi bi-folder me-1"></i>
+                                <a href="{% url 'help:category_detail' article.category.slug %}" class="text-decoration-none">
+                                    {{ article.category.name }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contenido del artículo -->
+                    <div class="article-content">
+                        {{ article.content|safe }}
+                    </div>
+
+                    <!-- Etiquetas -->
+                    {% if article.tags %}
+                    <div class="article-tags mt-4 pt-3 border-top">
+                        <h6 class="text-muted mb-2">
+                            <i class="bi bi-tags me-1"></i>Etiquetas relacionadas:
+                        </h6>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for tag in article.get_tags_list %}
+                            <span class="badge bg-light text-dark border">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Navegación entre artículos -->
+                    <div class="article-navigation mt-4 pt-3 border-top">
+                        <div class="row">
+                            <div class="col-md-6">
+                                {% comment %} TODO: Implementar navegación anterior/siguiente {% endcomment %}
+                                <a href="{% url 'help:category_detail' article.category.slug %}" class="btn btn-outline-primary">
+                                    <i class="bi bi-arrow-left me-1"></i> Más artículos en {{ article.category.name }}
+                                </a>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <a href="{% url 'help:help_home' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-house me-1"></i> Centro de Ayuda
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feedback del usuario -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3">
+                        <i class="bi bi-hand-thumbs-up text-success me-2"></i>
+                        ¿Te fue útil este artículo?
+                    </h5>
+
+                    <div class="feedback-buttons d-flex gap-3 mb-3">
+                        <button class="btn btn-success" onclick="submitFeedback(true)">
+                            <i class="bi bi-hand-thumbs-up me-1"></i> Sí, me ayudó
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="submitFeedback(false)">
+                            <i class="bi bi-hand-thumbs-down me-1"></i> No, necesito más ayuda
+                        </button>
+                    </div>
+
+                    <div id="feedbackForm" class="d-none">
+                        <form id="detailedFeedbackForm">
+                            <div class="mb-3">
+                                <label for="feedbackRating" class="form-label">Calificación:</label>
+                                <select class="form-select" id="feedbackRating" name="rating">
+                                    <option value="5">⭐⭐⭐⭐⭐ Excelente</option>
+                                    <option value="4">⭐⭐⭐⭐ Bueno</option>
+                                    <option value="3" selected>⭐⭐⭐ Normal</option>
+                                    <option value="2">⭐⭐ Regular</option>
+                                    <option value="1">⭐ Muy malo</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="feedbackComment" class="form-label">Comentario (opcional):</label>
+                                <textarea class="form-control" id="feedbackComment" name="comment" rows="3"
+                                          placeholder="¿Qué podemos mejorar? ¿Encontraste lo que buscabas?"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="feedbackSuggestions" class="form-label">Sugerencias de mejora (opcional):</label>
+                                <textarea class="form-control" id="feedbackSuggestions" name="suggestions" rows="2"
+                                          placeholder="¿Cómo podemos mejorar este artículo?"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i> Enviar Feedback
+                            </button>
+                        </form>
+                    </div>
+
+                    <div id="feedbackThanks" class="d-none">
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            ¡Gracias por tu feedback! Nos ayuda a mejorar nuestros contenidos.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Artículos relacionados -->
+            {% if related_articles %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-link-45deg text-primary me-2"></i>
+                        Artículos Relacionados
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for related_article in related_articles %}
+                    <div class="related-article mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                        <h6 class="mb-1">
+                            <a href="{% url 'help:article_detail' related_article.slug %}" class="text-decoration-none">
+                                {{ related_article.title }}
+                            </a>
+                        </h6>
+                        <p class="small text-muted mb-1">{{ related_article.excerpt|truncatechars:80 }}</p>
+                        <small class="text-primary">
+                            <i class="bi bi-eye me-1"></i>{{ related_article.view_count }}
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Artículos de la categoría -->
+            {% if category_articles %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-folder text-info me-2"></i>
+                        Más en {{ article.category.name }}
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% for cat_article in category_articles %}
+                    <div class="category-article mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                        <h6 class="mb-1">
+                            <a href="{% url 'help:article_detail' cat_article.slug %}" class="text-decoration-none">
+                                {{ cat_article.title }}
+                            </a>
+                        </h6>
+                        <small class="text-muted">
+                            {{ cat_article.published_at|date:"M j, Y" }}
+                            <span class="ms-2">
+                                <i class="bi bi-eye me-1"></i>{{ cat_article.view_count }}
+                            </span>
+                        </small>
+                    </div>
+                    {% endfor %}
+
+                    <div class="text-center mt-3">
+                        <a href="{% url 'help:category_detail' article.category.slug %}" class="btn btn-outline-primary btn-sm">
+                            Ver todos los artículos
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Información de contacto -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-headset text-success me-2"></i>
+                        ¿Necesitas más ayuda?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="small text-muted mb-3">
+                        Si no encontraste lo que buscabas, nuestro equipo está aquí para ayudarte.
+                    </p>
+
+                    <div class="contact-options">
+                        <div class="d-grid gap-2">
+                            <a href="mailto:support@management360.com" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-envelope me-1"></i> Email de Soporte
+                            </a>
+                            <a href="#" class="btn btn-outline-success btn-sm">
+                                <i class="bi bi-chat-dots me-1"></i> Chat en Vivo
+                            </a>
+                            <a href="{% url 'help:search' %}" class="btn btn-outline-info btn-sm">
+                                <i class="bi bi-search me-1"></i> Nueva Búsqueda
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.article-meta {
+    background: rgba(0, 123, 255, 0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.article-content {
+    line-height: 1.7;
+    font-size: 1.1rem;
+}
+
+.article-content h1,
+.article-content h2,
+.article-content h3,
+.article-content h4,
+.article-content h5,
+.article-content h6 {
+    color: #495057;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.article-content h1 { font-size: 2rem; border-bottom: 2px solid #e9ecef; padding-bottom: 0.5rem; }
+.article-content h2 { font-size: 1.75rem; border-bottom: 1px solid #e9ecef; padding-bottom: 0.25rem; }
+.article-content h3 { font-size: 1.5rem; }
+.article-content h4 { font-size: 1.25rem; }
+
+.article-content p {
+    margin-bottom: 1.5rem;
+}
+
+.article-content ul, .article-content ol {
+    margin-bottom: 1.5rem;
+    padding-left: 2rem;
+}
+
+.article-content li {
+    margin-bottom: 0.5rem;
+}
+
+.article-content code {
+    background: #f8f9fa;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.article-content pre {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 5px;
+    border-left: 4px solid #007bff;
+    overflow-x: auto;
+    margin-bottom: 1.5rem;
+}
+
+.article-content blockquote {
+    border-left: 4px solid #6c757d;
+    padding-left: 1rem;
+    margin-left: 0;
+    font-style: italic;
+    color: #6c757d;
+}
+
+.article-tags .badge {
+    font-size: 0.8rem;
+    margin-bottom: 0.25rem;
+}
+
+.related-article h6 a:hover,
+.category-article h6 a:hover {
+    color: #007bff !important;
+}
+
+.feedback-buttons .btn {
+    min-width: 150px;
+}
+
+#feedbackForm {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.contact-options .btn {
+    text-align: left;
+    justify-content: flex-start;
+}
+
+@media (max-width: 768px) {
+    .article-meta .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 0.5rem !important;
+    }
+
+    .article-navigation .row > div {
+        text-align: center !important;
+        margin-bottom: 0.5rem;
+    }
+
+    .feedback-buttons {
+        flex-direction: column;
+    }
+
+    .feedback-buttons .btn {
+        min-width: auto;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Función para enviar feedback
+function submitFeedback(wasHelpful) {
+    // Ocultar botones iniciales
+    document.querySelector('.feedback-buttons').style.display = 'none';
+
+    if (wasHelpful) {
+        // Si fue útil, enviar feedback simple
+        submitSimpleFeedback(true);
+    } else {
+        // Si no fue útil, mostrar formulario detallado
+        document.getElementById('feedbackForm').classList.remove('d-none');
+    }
+}
+
+function submitSimpleFeedback(wasHelpful, rating = 5) {
+    const formData = new FormData();
+    formData.append('was_helpful', wasHelpful);
+    formData.append('rating', rating);
+
+    fetch('{% url "help:submit_feedback" article.slug %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('feedbackThanks').classList.remove('d-none');
+            document.getElementById('feedbackForm').classList.add('d-none');
+        } else {
+            alert('Error al enviar feedback: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al enviar feedback. Por favor, inténtalo de nuevo.');
+    });
+}
+
+// Manejar formulario de feedback detallado
+document.getElementById('detailedFeedbackForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    formData.append('was_helpful', false); // Ya sabemos que no fue útil
+
+    fetch('{% url "help:submit_feedback" article.slug %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('feedbackThanks').classList.remove('d-none');
+            document.getElementById('feedbackForm').classList.add('d-none');
+        } else {
+            alert('Error al enviar feedback: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al enviar feedback. Por favor, inténtalo de nuevo.');
+    });
+});
+
+// Resaltar elementos de navegación al hacer scroll
+document.addEventListener('DOMContentLoaded', function() {
+    // Smooth scroll para anclas
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        });
+    });
+
+    // Animación de entrada para elementos
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    });
+
+    // Aplicar animación a cards del sidebar
+    document.querySelectorAll('.card').forEach((card, index) => {
+        if (card.closest('.col-lg-4')) {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = `all 0.5s ease ${index * 0.1}s`;
+            observer.observe(card);
+        }
+    });
+});
+</script>
+{% endblock %}
