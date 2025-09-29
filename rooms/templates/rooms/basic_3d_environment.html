@@ -1,0 +1,616 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="pagetitle">
+    <h1>{{ page_title }}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'rooms:lobby' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rooms:room_list' %}">Rooms</a></li>
+            <li class="breadcrumb-item active">Entorno 3D Básico</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="card-title">Entorno 3D Básico - Player Interactivo</h5>
+                        <div>
+                            <span class="badge bg-success">Habitación Base (0,0,0)</span>
+                            <a href="{% url 'rooms:room_detail' base_room.pk %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-info-circle"></i> Detalles
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Información de la habitación base -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Habitación Base</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-1"><strong>Nombre:</strong> {{ base_room.name }}</p>
+                                    <p class="mb-1"><strong>Posición:</strong> ({{ base_room.x }}, {{ base_room.y }}, {{ base_room.z }})</p>
+                                    <p class="mb-1"><strong>Dimensiones:</strong> {{ base_room.length }}×{{ base_room.width }}×{{ base_room.height }}</p>
+                                    <p class="mb-0"><strong>Estado del Player:</strong> <span id="player-state">Cargando...</span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card bg-light">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Habitaciones Conectadas</h6>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-unstyled mb-0">
+                                        {% for direction, room in connected_rooms %}
+                                        <li><strong>{{ direction|title }}:</strong> {{ room.name }} ({{ room.x }}, {{ room.y }}, {{ room.z }})</li>
+                                        {% endfor %}
+                                        <li><strong>Sur:</strong> Salida a Calle/Afuera</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Canvas 3D -->
+                    <div class="position-relative mb-3">
+                        <div id="basic-3d-container" style="width: 100%; height: 500px; border: 2px solid #007bff; border-radius: 8px; background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%); position: relative;">
+                            <div id="loading-indicator" class="position-absolute top-50 start-50 translate-middle text-primary">
+                                <div class="spinner-border" role="status">
+                                    <span class="visually-hidden">Cargando...</span>
+                                </div>
+                                <div class="mt-2">Cargando entorno 3D básico...</div>
+                            </div>
+                        </div>
+
+                        <!-- Controles de ayuda -->
+                        <div class="position-absolute top-0 end-0 m-3">
+                            <div class="card bg-primary text-white" style="min-width: 200px;">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Controles</h6>
+                                </div>
+                                <div class="card-body">
+                                    <small>
+                                        <strong>Movimiento:</strong> WASD o Flechas<br>
+                                        <strong>Interactuar:</strong> Click en puertas<br>
+                                        <strong>Rotar vista:</strong> Mouse<br>
+                                        <strong>Zoom:</strong> Rueda mouse
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estado del Player -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Estado del Player</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-4">
+                                            <strong>Energía:</strong>
+                                            <div class="progress mt-1">
+                                                <div id="energy-bar" class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <strong>Productividad:</strong>
+                                            <div class="progress mt-1">
+                                                <div id="productivity-bar" class="progress-bar bg-info" role="progressbar" style="width: 50%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <strong>Social:</strong>
+                                            <div class="progress mt-1">
+                                                <div id="social-bar" class="progress-bar bg-warning" role="progressbar" style="width: 50%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-2">
+                                        <div class="col-6">
+                                            <strong>Posición:</strong>
+                                            <span id="player-position">Cargando...</span>
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Habitación:</strong>
+                                            <span id="current-room-name">{{ base_room.name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">Salidas Disponibles</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="available-exits" class="row">
+                                        <!-- Las salidas se cargarán dinámicamente -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mensajes del sistema -->
+                    <div id="system-messages" class="mt-3">
+                        <!-- Los mensajes se agregarán aquí dinámicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Three.js desde CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<!-- Configuración Django -->
+<script>
+    window.DJANGO_CONFIG = JSON.parse('{"ROOM_ID": {{ room_id|default:0 }}}');
+</script>
+
+<script>
+// Configuración global
+const ROOM_ID = window.DJANGO_CONFIG.ROOM_ID;
+const API_BASE = "/rooms/api/3d/";
+
+// Variables globales de Three.js
+let scene, camera, renderer, controls;
+let roomMeshes = [];
+let doorMeshes = [];
+let playerMesh;
+let currentRoomData = null;
+let playerData = null;
+
+// Estado del player
+let playerPosition = { x: 5, y: 1.7, z: 5 };
+let playerRotation = { x: 0, y: 0, z: 0 };
+
+// Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    initBasic3DScene();
+    loadBasicRoomData();
+    setupBasicEventListeners();
+});
+
+// Inicializar escena 3D básica
+function initBasic3DScene() {
+    // Crear escena
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87CEEB); // Cielo azul claro
+
+    // Crear cámara (tercera persona para mejor visibilidad)
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(5, 8, 15); // Vista desde arriba y atrás
+    camera.lookAt(5, 0, 5); // Mirar al centro de la habitación
+
+    // Crear renderer
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth * 0.8, 500);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // Agregar canvas al contenedor
+    const container = document.getElementById('basic-3d-container');
+    container.innerHTML = ''; // Limpiar indicador de carga
+    container.appendChild(renderer.domElement);
+
+    // Controles de órbita para vista en tercera persona
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enablePan = true;
+    controls.enableZoom = true;
+    controls.enableRotate = true;
+    controls.target.set(5, 0, 5); // Centro de la habitación
+    controls.update();
+
+    // Agregar iluminación básica
+    setupBasicLighting();
+
+    // Iniciar loop de renderizado
+    animate();
+}
+
+// Configurar iluminación básica
+function setupBasicLighting() {
+    // Luz ambiental
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+    scene.add(ambientLight);
+
+    // Luz direccional (sol)
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(10, 10, 5);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.mapSize.width = 1024;
+    directionalLight.shadow.mapSize.height = 1024;
+    scene.add(directionalLight);
+}
+
+// Loop de animación
+function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+}
+
+// Cargar datos básicos de la habitación
+async function loadBasicRoomData() {
+    try {
+        const response = await fetch(`${API_BASE}rooms/${ROOM_ID}/data/`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+            currentRoomData = data.room;
+            playerData = data.player;
+
+            // Crear geometría básica
+            createBasicRoomGeometry(data.room);
+            createBasicDoors(data.objects);
+            createPlayerMesh();
+
+            // Actualizar UI
+            updateBasicUI();
+
+            showSystemMessage('Entorno 3D básico cargado correctamente', 'success');
+        } else {
+            showSystemMessage('Error al cargar datos: ' + data.message, 'danger');
+        }
+    } catch (error) {
+        console.error('Error loading room data:', error);
+        showSystemMessage('Error al cargar el entorno 3D básico', 'danger');
+    }
+}
+
+// Crear geometría básica de la habitación (cubo hueco)
+function createBasicRoomGeometry(roomData) {
+    const { dimensions, colors } = roomData;
+    const wallThickness = 0.2;
+    const wallHeight = dimensions.height;
+
+    // Limpiar habitación anterior
+    roomMeshes.forEach(mesh => scene.remove(mesh));
+    roomMeshes = [];
+
+    // Crear paredes como cuboides individuales
+    const wallMaterial = new THREE.MeshLambertMaterial({ color: colors.primary });
+
+    // Pared Norte (z = width)
+    const northWall = new THREE.Mesh(
+        new THREE.BoxGeometry(dimensions.length, wallHeight, wallThickness),
+        wallMaterial
+    );
+    northWall.position.set(dimensions.length/2, wallHeight/2, dimensions.width);
+    northWall.castShadow = true;
+    northWall.receiveShadow = true;
+    scene.add(northWall);
+    roomMeshes.push(northWall);
+
+    // Pared Sur (z = 0) - con puerta de salida
+    const southWallLeft = new THREE.Mesh(
+        new THREE.BoxGeometry(dimensions.length/3, wallHeight, wallThickness),
+        wallMaterial
+    );
+    southWallLeft.position.set(dimensions.length/6, wallHeight/2, 0);
+    scene.add(southWallLeft);
+    roomMeshes.push(southWallLeft);
+
+    const southWallRight = new THREE.Mesh(
+        new THREE.BoxGeometry(dimensions.length/3, wallHeight, wallThickness),
+        wallMaterial
+    );
+    southWallRight.position.set(5*dimensions.length/6, wallHeight/2, 0);
+    scene.add(southWallRight);
+    roomMeshes.push(southWallRight);
+
+    // Pared Este (x = length)
+    const eastWall = new THREE.Mesh(
+        new THREE.BoxGeometry(wallThickness, wallHeight, dimensions.width),
+        wallMaterial
+    );
+    eastWall.position.set(dimensions.length, wallHeight/2, dimensions.width/2);
+    scene.add(eastWall);
+    roomMeshes.push(eastWall);
+
+    // Pared Oeste (x = 0)
+    const westWall = new THREE.Mesh(
+        new THREE.BoxGeometry(wallThickness, wallHeight, dimensions.width),
+        wallMaterial
+    );
+    westWall.position.set(0, wallHeight/2, dimensions.width/2);
+    scene.add(westWall);
+    roomMeshes.push(westWall);
+
+    // Piso
+    const floorGeometry = new THREE.PlaneGeometry(dimensions.length, dimensions.width);
+    const floorMaterial = new THREE.MeshLambertMaterial({ color: colors.secondary, side: THREE.DoubleSide });
+    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
+    floor.receiveShadow = true;
+    scene.add(floor);
+    roomMeshes.push(floor);
+
+    // Techo
+    const ceilingGeometry = new THREE.PlaneGeometry(dimensions.length, dimensions.width);
+    const ceilingMaterial = new THREE.MeshLambertMaterial({ color: colors.primary, side: THREE.DoubleSide });
+    const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
+    ceiling.rotation.x = Math.PI / 2;
+    ceiling.position.y = wallHeight;
+    scene.add(ceiling);
+    roomMeshes.push(ceiling);
+}
+
+// Crear puertas básicas
+function createBasicDoors(objects) {
+    // Limpiar puertas anteriores
+    doorMeshes.forEach(mesh => scene.remove(mesh));
+    doorMeshes = [];
+
+    objects.forEach(objData => {
+        if (objData.type === 'door') {
+            const doorGeometry = new THREE.BoxGeometry(
+                objData.dimensions.width,
+                objData.dimensions.height,
+                objData.dimensions.depth
+            );
+            const doorMaterial = new THREE.MeshLambertMaterial({
+                color: objData.properties.color,
+                transparent: true,
+                opacity: 0.9
+            });
+
+            const door = new THREE.Mesh(doorGeometry, doorMaterial);
+            door.position.set(
+                objData.position.x,
+                objData.position.y,
+                objData.position.z
+            );
+
+            // Almacenar datos para interacción
+            door.userData = objData;
+            door.castShadow = true;
+
+            scene.add(door);
+            doorMeshes.push(door);
+        }
+    });
+}
+
+// Crear mesh del player
+function createPlayerMesh() {
+    // Crear un cubo simple para representar al player
+    const playerGeometry = new THREE.BoxGeometry(0.5, 1.7, 0.5);
+    const playerMaterial = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+    playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
+
+    playerMesh.position.set(playerPosition.x, playerPosition.y, playerPosition.z);
+    playerMesh.castShadow = true;
+
+    scene.add(playerMesh);
+}
+
+// Configurar event listeners básicos
+function setupBasicEventListeners() {
+    // Resize del canvas
+    window.addEventListener('resize', function() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth * 0.8, 500);
+    });
+
+    // Click en puertas para navegación
+    renderer.domElement.addEventListener('click', function(event) {
+        // Raycasting para detectar puertas
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+
+        const intersects = raycaster.intersectObjects(doorMeshes);
+
+        if (intersects.length > 0) {
+            const clickedDoor = intersects[0].object;
+            handleBasicDoorInteraction(clickedDoor.userData);
+        }
+    });
+
+    // Controles de movimiento del player con teclado
+    document.addEventListener('keydown', function(event) {
+        const moveSpeed = 0.5;
+        let moved = false;
+
+        switch(event.code) {
+            case 'KeyW':
+            case 'ArrowUp':
+                playerPosition.z -= moveSpeed;
+                moved = true;
+                break;
+            case 'KeyS':
+            case 'ArrowDown':
+                playerPosition.z += moveSpeed;
+                moved = true;
+                break;
+            case 'KeyA':
+            case 'ArrowLeft':
+                playerPosition.x -= moveSpeed;
+                moved = true;
+                break;
+            case 'KeyD':
+            case 'ArrowRight':
+                playerPosition.x += moveSpeed;
+                moved = true;
+                break;
+        }
+
+        if (moved) {
+            updatePlayerPosition();
+            checkDoorProximity();
+        }
+    });
+}
+
+// Verificar proximidad a puertas
+function checkDoorProximity() {
+    const proximityDistance = 1.5;
+
+    doorMeshes.forEach(door => {
+        const distance = playerMesh.position.distanceTo(door.position);
+        if (distance < proximityDistance) {
+            // Resaltar puerta cercana
+            door.material.emissive.setHex(0x444444);
+            showSystemMessage(`Cerca de: ${door.userData.properties.face} - ${door.userData.name}`, 'info');
+        } else {
+            door.material.emissive.setHex(0x000000);
+        }
+    });
+}
+
+// Manejar interacción básica con puertas
+async function handleBasicDoorInteraction(doorData) {
+    if (doorData.type === 'door') {
+        try {
+            const response = await fetch(`${API_BASE}transition/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify({
+                    exit_type: 'door',
+                    exit_id: doorData.id,
+                    target_room_id: doorData.connection?.target_room_id
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showSystemMessage(`Transición exitosa: ${data.message}`, 'success');
+
+                // Si hay habitación destino, recargar
+                if (data.target_room) {
+                    // Aquí irías a la nueva habitación
+                    window.location.href = `/rooms/3d-basic/`; // Recargar para simplificar
+                } else {
+                    // Actualizar posición local
+                    updateBasicUI();
+                }
+            } else {
+                showSystemMessage(`Error: ${data.message}`, 'danger');
+            }
+        } catch (error) {
+            console.error('Error during transition:', error);
+            showSystemMessage('Error en la transición', 'danger');
+        }
+    }
+}
+
+// Actualizar posición del player
+function updatePlayerPosition() {
+    if (playerMesh) {
+        playerMesh.position.set(playerPosition.x, playerPosition.y, playerPosition.z);
+    }
+}
+
+// Actualizar UI básica
+function updateBasicUI() {
+    if (playerData) {
+        document.getElementById('energy-bar').style.width = `${playerData.energy}%`;
+        document.getElementById('productivity-bar').style.width = `${playerData.productivity}%`;
+        document.getElementById('social-bar').style.width = `${playerData.social}%`;
+        document.getElementById('player-position').textContent =
+            `(${playerPosition.x.toFixed(1)}, ${playerPosition.y.toFixed(1)}, ${playerPosition.z.toFixed(1)})`;
+        document.getElementById('player-state').textContent = playerData.state;
+    }
+
+    // Actualizar salidas disponibles
+    updateAvailableExits();
+}
+
+// Actualizar salidas disponibles
+function updateAvailableExits() {
+    const exitsContainer = document.getElementById('available-exits');
+    exitsContainer.innerHTML = '';
+
+    if (currentRoomData && currentRoomData.connections) {
+        currentRoomData.connections.forEach(conn => {
+            const exitDiv = document.createElement('div');
+            exitDiv.className = 'col-6 mb-2';
+            exitDiv.innerHTML = `
+                <button class="btn btn-outline-primary btn-sm w-100" onclick="navigateToRoom('${conn.direction}', ${conn.target_room_id})">
+                    <i class="bi bi-door-open"></i> ${conn.direction.toUpperCase()}<br>
+                    <small>${conn.target_room_name}</small>
+                </button>
+            `;
+            exitsContainer.appendChild(exitDiv);
+        });
+    }
+}
+
+// Función para navegar a otra habitación
+function navigateToRoom(direction, roomId) {
+    showSystemMessage(`Navegando hacia ${direction}...`, 'info');
+    // Aquí implementarías la navegación real
+}
+
+// Mostrar mensajes del sistema
+function showSystemMessage(message, type = 'info') {
+    const messagesDiv = document.getElementById('system-messages');
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    messagesDiv.appendChild(alertDiv);
+
+    // Auto-remover después de 3 segundos
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 3000);
+}
+
+// Obtener CSRF token
+function getCSRFToken() {
+    const cookieValue = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrftoken='))
+        ?.split('=')[1];
+    return cookieValue || '';
+}
+</script>
+{% endblock %}

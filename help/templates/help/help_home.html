@@ -1,0 +1,431 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Hero Section -->
+<section class="hero-section bg-primary text-white py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold mb-3">
+                    <i class="bi bi-question-circle-fill me-3"></i>
+                    Centro de Ayuda
+                </h1>
+                <p class="lead mb-4">
+                    Encuentra respuestas, tutoriales y guías para aprovechar al máximo Management360.
+                </p>
+                <div class="search-box mb-4">
+                    <form action="{% url 'help:search' %}" method="get" class="d-flex">
+                        <input type="text" name="q" class="form-control form-control-lg me-2"
+                               placeholder="Buscar en la ayuda..." required>
+                        <button type="submit" class="btn btn-light btn-lg">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                    </form>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center">
+                <i class="bi bi-headset display-1 text-white-50"></i>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Estadísticas Rápidas -->
+<section class="py-4 bg-light">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <i class="bi bi-file-text display-4 text-primary mb-2"></i>
+                        <h3 class="h2 mb-1">{{ stats.total_articles }}</h3>
+                        <p class="text-muted mb-0">Artículos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <i class="bi bi-folder display-4 text-success mb-2"></i>
+                        <h3 class="h2 mb-1">{{ stats.total_categories }}</h3>
+                        <p class="text-muted mb-0">Categorías</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <i class="bi bi-question-circle display-4 text-info mb-2"></i>
+                        <h3 class="h2 mb-1">{{ stats.total_faqs }}</h3>
+                        <p class="text-muted mb-0">Preguntas Frecuentes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <i class="bi bi-play-circle display-4 text-warning mb-2"></i>
+                        <h3 class="h2 mb-1">{{ stats.total_videos }}</h3>
+                        <p class="text-muted mb-0">Tutoriales en Video</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Categorías Destacadas -->
+<section class="py-5">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="h1 mb-3">
+                    <i class="bi bi-grid-3x3-gap text-primary me-3"></i>
+                    Explorar por Categoría
+                </h2>
+                <p class="lead text-muted">
+                    Navega por nuestras categorías organizadas para encontrar exactamente lo que necesitas.
+                </p>
+            </div>
+        </div>
+
+        <div class="row">
+            {% for category in featured_categories %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100 border-0 shadow-sm hover-lift">
+                    <div class="card-body text-center p-4">
+                        <div class="category-icon mb-3">
+                            <i class="bi {{ category.icon|default:'bi-folder' }} display-4" style="color: {{ category.color }};"></i>
+                        </div>
+                        <h5 class="card-title mb-3">{{ category.name }}</h5>
+                        <p class="card-text text-muted mb-3">{{ category.description }}</p>
+                        <div class="d-flex justify-content-center gap-3 mb-3">
+                            {% if category.article_count > 0 %}
+                            <small class="text-muted">
+                                <i class="bi bi-file-text me-1"></i>{{ category.article_count }} artículos
+                            </small>
+                            {% endif %}
+                            {% if category.faq_count > 0 %}
+                            <small class="text-muted">
+                                <i class="bi bi-question-circle me-1"></i>{{ category.faq_count }} FAQs
+                            </small>
+                            {% endif %}
+                        </div>
+                        <a href="{% url 'help:category_detail' category.slug %}"
+                           class="btn btn-outline-primary">
+                            Explorar <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-folder-x display-1 text-muted mb-3"></i>
+                <h4 class="text-muted">No hay categorías disponibles</h4>
+                <p class="text-muted">Las categorías de ayuda estarán disponibles próximamente.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{% url 'help:category_list' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-grid me-2"></i> Ver Todas las Categorías
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Artículos Destacados -->
+{% if featured_articles %}
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="h1 mb-3">
+                    <i class="bi bi-star-fill text-warning me-3"></i>
+                    Artículos Destacados
+                </h2>
+                <p class="lead text-muted">
+                    Los artículos más importantes y útiles para comenzar.
+                </p>
+            </div>
+        </div>
+
+        <div class="row">
+            {% for article in featured_articles %}
+            <div class="col-lg-3 col-md-6 mb-4">
+                <div class="card h-100 border-0 shadow-sm hover-lift">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-{{ article.category.color|slice:'1:'|default:'primary' }} me-2">
+                                {{ article.category.name }}
+                            </span>
+                            <small class="text-muted">
+                                <i class="bi bi-eye me-1"></i>{{ article.view_count }}
+                            </small>
+                        </div>
+                        <h6 class="card-title mb-2">
+                            <a href="{% url 'help:article_detail' article.slug %}" class="text-decoration-none">
+                                {{ article.title }}
+                            </a>
+                        </h6>
+                        {% if article.excerpt %}
+                        <p class="card-text small text-muted">{{ article.excerpt|truncatechars:100 }}</p>
+                        {% endif %}
+                        <div class="mt-auto">
+                            <small class="text-muted">
+                                {% if article.author %}
+                                Por {{ article.author.get_full_name|default:article.author.username }}
+                                {% endif %}
+                                {% if article.published_at %}
+                                • {{ article.published_at|date:"M j, Y" }}
+                                {% endif %}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Guías de Inicio Rápido -->
+{% if quick_guides %}
+<section class="py-5">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="h1 mb-3">
+                    <i class="bi bi-rocket-takeoff-fill text-success me-3"></i>
+                    Guías de Inicio Rápido
+                </h2>
+                <p class="lead text-muted">
+                    Tutoriales paso a paso para comenzar rápidamente con Management360.
+                </p>
+            </div>
+        </div>
+
+        <div class="row">
+            {% for guide in quick_guides %}
+            <div class="col-lg-4 mb-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-success text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                <i class="bi bi-lightning-charge-fill me-2"></i>
+                                {{ guide.title }}
+                            </h6>
+                            <span class="badge bg-white text-success">
+                                {{ guide.estimated_time }} min
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">{{ guide.description }}</p>
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                <i class="bi bi-person me-1"></i>
+                                Para {{ guide.get_target_audience_display }}
+                            </small>
+                        </div>
+                        <a href="#" class="btn btn-success">
+                            <i class="bi bi-play-fill me-1"></i> Comenzar Guía
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{% url 'help:quick_start' %}" class="btn btn-success btn-lg">
+                <i class="bi bi-list-check me-2"></i> Ver Todas las Guías
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Preguntas Frecuentes Populares -->
+{% if popular_faqs %}
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="h1 mb-3">
+                    <i class="bi bi-question-circle-fill text-info me-3"></i>
+                    Preguntas Frecuentes
+                </h2>
+                <p class="lead text-muted">
+                    Respuestas rápidas a las preguntas más comunes.
+                </p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="accordion" id="popularFaqAccordion">
+                    {% for faq in popular_faqs %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button {% if forloop.first %}collapsed{% endif %}"
+                                    type="button" data-bs-toggle="collapse"
+                                    data-bs-target="#faq{{ forloop.counter }}"
+                                    aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}">
+                                <i class="bi bi-question-circle me-2 text-info"></i>
+                                {{ faq.question }}
+                            </button>
+                        </h2>
+                        <div id="faq{{ forloop.counter }}"
+                             class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+                             data-bs-parent="#popularFaqAccordion">
+                            <div class="accordion-body">
+                                {{ faq.answer|safe }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="{% url 'help:faq_list' %}" class="btn btn-info btn-lg">
+                <i class="bi bi-question-circle me-2"></i> Ver Todas las FAQs
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Contacto de Soporte -->
+<section class="py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto text-center">
+                <h2 class="h1 mb-3">
+                    <i class="bi bi-headset text-primary me-3"></i>
+                    ¿Necesitas Ayuda Adicional?
+                </h2>
+                <p class="lead text-muted mb-4">
+                    Nuestro equipo de soporte está aquí para ayudarte con cualquier pregunta o problema.
+                </p>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-envelope display-4 text-primary mb-3"></i>
+                                <h6>Email</h6>
+                                <p class="small text-muted">support@management360.com</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-chat-dots display-4 text-success mb-3"></i>
+                                <h6>Chat en Vivo</h6>
+                                <p class="small text-muted">Disponible 24/7</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="bi bi-telephone display-4 text-warning mb-3"></i>
+                                <h6>Teléfono</h6>
+                                <p class="small text-muted">+1 (555) 123-4567</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hero-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 0 0 2rem 2rem;
+}
+
+.search-box .form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.category-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+    border-color: rgba(0, 123, 255, 0.25);
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: rgba(0, 123, 255, 0.05);
+    color: #0056b3;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Funcionalidad de búsqueda mejorada
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.querySelector('.search-box form');
+    const searchInput = searchForm.querySelector('input[name="q"]');
+
+    // Auto-focus en el campo de búsqueda
+    searchInput.focus();
+
+    // Mejorar UX de búsqueda
+    searchForm.addEventListener('submit', function(e) {
+        const query = searchInput.value.trim();
+        if (query.length < 2) {
+            e.preventDefault();
+            alert('Por favor, ingresa al menos 2 caracteres para buscar.');
+            searchInput.focus();
+            return false;
+        }
+    });
+
+    // Animación de cards al hacer hover
+    const cards = document.querySelectorAll('.hover-lift');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px)';
+        });
+
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+});
+</script>
+{% endblock %}

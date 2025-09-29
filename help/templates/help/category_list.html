@@ -1,0 +1,166 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="pagetitle">
+    <h1>
+        <i class="bi bi-grid-3x3-gap-fill text-primary me-3"></i>
+        Todas las Categorías de Ayuda
+    </h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'rooms:lobby' %}">Home</a></li>
+            <li class="breadcrumb-item active">Ayuda</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        {% for category in categories %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-0 shadow-sm hover-card">
+                <div class="card-body text-center p-4">
+                    <div class="category-icon mb-3 mx-auto">
+                        <i class="bi {{ category.icon|default:'bi-folder' }} display-4 text-white"></i>
+                    </div>
+                    <h5 class="card-title mb-3">{{ category.name }}</h5>
+                    <p class="card-text text-muted mb-3">{{ category.description }}</p>
+
+                    <div class="stats-row mb-3">
+                        {% if category.article_count > 0 %}
+                        <div class="stat-item">
+                            <i class="bi bi-file-text text-primary"></i>
+                            <span class="ms-1">{{ category.article_count }}</span>
+                            <small class="text-muted">artículos</small>
+                        </div>
+                        {% endif %}
+                        {% if category.faq_count > 0 %}
+                        <div class="stat-item">
+                            <i class="bi bi-question-circle text-info"></i>
+                            <span class="ms-1">{{ category.faq_count }}</span>
+                            <small class="text-muted">FAQs</small>
+                        </div>
+                        {% endif %}
+                        {% if category.video_count > 0 %}
+                        <div class="stat-item">
+                            <i class="bi bi-play-circle text-warning"></i>
+                            <span class="ms-1">{{ category.video_count }}</span>
+                            <small class="text-muted">videos</small>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <a href="{% url 'help:category_detail' category.slug %}"
+                       class="btn btn-outline-primary w-100">
+                        <i class="bi bi-arrow-right me-2"></i>
+                        Explorar Categoría
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="bi bi-folder-x display-1 text-muted mb-4"></i>
+                <h3 class="text-muted mb-3">No hay categorías disponibles</h3>
+                <p class="text-muted mb-4">
+                    Las categorías de ayuda estarán disponibles próximamente.
+                </p>
+                <a href="{% url 'help:help_home' %}" class="btn btn-primary">
+                    <i class="bi bi-arrow-left me-2"></i> Volver al Inicio
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.category-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+.hover-card {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.hover-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-color: rgba(0, 123, 255, 0.2);
+}
+
+.stats-row {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 123, 255, 0.1);
+    padding: 0.25rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+}
+
+.stat-item i {
+    font-size: 1rem;
+}
+
+.stat-item small {
+    margin-left: 0.25rem;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+@media (max-width: 768px) {
+    .stats-row {
+        gap: 0.5rem;
+    }
+
+    .stat-item {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.8rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animación de entrada para las cards
+    const cards = document.querySelectorAll('.hover-card');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    });
+
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = `all 0.5s ease ${index * 0.1}s`;
+        observer.observe(card);
+    });
+});
+</script>
+{% endblock %}

@@ -6,10 +6,11 @@ from collections import defaultdict
 
 # Django Imports
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
+from django.db import models
 from django.db.models import Q, Sum, Count, F, ExpressionWrapper, DurationField
 from django.db.models.functions import TruncDate
 from django.http import Http404, HttpResponse, JsonResponse, HttpResponseRedirect
@@ -31,7 +32,7 @@ from .models import (
     TaskStatus, Project, Status, Task, EventState, TaskState,
     TaskSchedule, TaskProgram, ProjectTemplate, TemplateTask, InboxItem, Reminder,
     TagCategory, Tag, TaskDependency, InboxItemClassification,
-    InboxItemAuthorization, InboxItemHistory
+    InboxItemAuthorization, InboxItemHistory, GTDProcessingSettings
 )
 from .forms import (
     CreateNewEvent, CreateNewProject, CreateNewTask, EditClassificationForm,
@@ -4508,7 +4509,6 @@ def reminders_dashboard(request):
 
     return render(request, 'events/reminders_dashboard.html', context)
 
-
 @login_required
 def create_reminder(request):
     """
@@ -4525,6 +4525,99 @@ def create_reminder(request):
 
             messages.success(request, f'Recordatorio "{reminder.title}" creado exitosamente')
             return redirect('reminders_dashboard')
+
+
+    else:
+        form = ReminderForm()
+
+    context = {
+        'title': 'Crear Recordatorio',
+        'form': form,
+    }
+
+    return render(request, 'events/create_reminder.html', context)
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def check_new_emails_api(request):
+    """
+    API endpoint para verificar y procesar correos nuevos manualmente
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    try:
+        from django.core.management import call_command
+        from io import StringIO
+
+        # Capturar la salida del comando
+        output = StringIO()
+        call_command('process_cx_emails', stdout=output, max_emails=20)
+
+        # Analizar la salida para extraer información
+        output_str = output.getvalue()
+        processed_count = 0
+
+        # Buscar el número de emails procesados en la salida
+        import re
+        match = re.search(r'Processed (\d+) CX emails successfully', output_str)
+        if match:
+            processed_count = int(match.group(1))
+
+        return JsonResponse({
+            'success': True,
+            'processed_count': processed_count,
+            'message': f'Se procesaron {processed_count} emails CX exitosamente',
+            'details': output_str
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def process_cx_emails_api(request):
+    """
+    API endpoint para procesar emails CX manualmente (similar a check_new_emails pero más específico)
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    try:
+        from django.core.management import call_command
+        from io import StringIO
+
+        # Ejecutar el comando de procesamiento CX
+        output = StringIO()
+        call_command('process_cx_emails', stdout=output, max_emails=50, dry_run=False)
+
+        # Analizar la salida
+        output_str = output.getvalue()
+        processed_count = 0
+
+        # Extraer información de la salida
+        import re
+        match = re.search(r'Processed (\d+) CX emails successfully', output_str)
+        if match:
+            processed_count = int(match.group(1))
+
+        return JsonResponse({
+            'success': True,
+            'processed_count': processed_count,
+            'message': f'Procesamiento CX completado: {processed_count} emails procesados',
+            'details': output_str
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
         
         
 # ============================================================================
@@ -5956,4 +6049,551 @@ def bulk_reminder_action(request):
                 )
             messages.success(request, f'Se duplicaron {count} recordatorio(s).')
 
-    return redirect('reminders_dashboard')
+@login_required
+@user_passes_test(lambda u: u.is_superuser)
+def root(request):
+    """
+    Vista raíz con layout de 12 contenedores responsivos
+    """
+    # Información del usuario actual
+    user_info = {
+        'username': request.user.username,
+        'first_name': request.user.first_name,
+        'last_name': request.user.last_name,
+        'email': request.user.email,
+        'date_joined': request.user.date_joined,
+        'last_login': request.user.last_login,
+        'is_staff': request.user.is_staff,
+        'is_superuser': request.user.is_superuser,
+        'is_active': request.user.is_active,
+    }
+
+    # Información del perfil y rol del sistema
+    profile_info = {}
+    user_role = 'Usuario Regular'
+    role_badge_class = 'secondary'
+
+    if hasattr(request.user, 'profile') and request.user.profile:
+        profile_info = {
+            'role': getattr(request.user.profile, 'role', None),
+            'profession': getattr(request.user.profile, 'profession', None),
+            'bio': getattr(request.user.profile, 'bio', None),
+        }
+
+        # Determinar el tipo de usuario basado en el rol
+        role = getattr(request.user.profile, 'role', None)
+        if role == 'SU':
+            user_role = 'Super Usuario'
+            role_badge_class = 'danger'
+        elif role == 'ADMIN':
+            user_role = 'Administrador'
+            role_badge_class = 'warning'
+        elif role == 'GTD_ANALYST':
+            user_role = 'Analista GTD'
+            role_badge_class = 'info'
+        elif role:
+            user_role = f'Usuario {role}'
+            role_badge_class = 'primary'
+
+    # Información del PlayerProfile (si existe)
+    player_info = {}
+    if hasattr(request.user, 'player_profile') and request.user.player_profile:
+        player_profile = request.user.player_profile
+        player_info = {
+            'current_room': player_profile.current_room.name if player_profile.current_room else None,
+            'energy': player_profile.energy,
+            'productivity': player_profile.productivity,
+            'social': player_profile.social,
+            'position_x': player_profile.position_x,
+            'position_y': player_profile.position_y,
+        }
+
+    # Obtener items del inbox procesados por email CX
+    cx_email_items = InboxItem.objects.filter(
+        user_context__source='cx_email'
+    ).select_related('created_by').order_by('-created_at')[:20]
+
+    # Estadísticas de emails CX
+    cx_stats = {
+        'total': InboxItem.objects.filter(user_context__source='cx_email').count(),
+        'processed': InboxItem.objects.filter(
+            user_context__source='cx_email',
+            is_processed=True
+        ).count(),
+        'unprocessed': InboxItem.objects.filter(
+            user_context__source='cx_email',
+            is_processed=False
+        ).count(),
+        'today': InboxItem.objects.filter(
+            user_context__source='cx_email',
+            created_at__date=timezone.now().date()
+        ).count(),
+    }
+
+    # Información del backend de email
+    from django.conf import settings
+    import smtplib
+
+    email_backend_info = {
+        'backend': getattr(settings, 'EMAIL_BACKEND', 'No configurado'),
+        'host': getattr(settings, 'EMAIL_HOST', 'No configurado'),
+        'port': getattr(settings, 'EMAIL_PORT', 'No configurado'),
+        'use_tls': getattr(settings, 'EMAIL_USE_TLS', False),
+        'host_user': getattr(settings, 'EMAIL_HOST_USER', 'No configurado'),
+        'reception_enabled': getattr(settings, 'EMAIL_RECEPTION_ENABLED', False),
+        'imap_host': getattr(settings, 'EMAIL_IMAP_HOST', 'No configurado'),
+        'imap_port': getattr(settings, 'EMAIL_IMAP_PORT', 'No configurado'),
+        'cx_domains': getattr(settings, 'CX_EMAIL_DOMAINS', []),
+        'cx_keywords': getattr(settings, 'CX_KEYWORDS', []),
+    }
+
+    # Probar conectividad SMTP
+    smtp_status = 'Desconocido'
+    try:
+        if email_backend_info['host'] != 'No configurado' and email_backend_info['port'] != 'No configurado':
+            server = smtplib.SMTP(email_backend_info['host'], email_backend_info['port'], timeout=5)
+            server.ehlo()
+            if email_backend_info['use_tls']:
+                server.starttls()
+                server.ehlo()
+            server.quit()
+            smtp_status = 'Conectado'
+        else:
+            smtp_status = 'No configurado'
+    except Exception as e:
+        smtp_status = f'Error: {str(e)}'
+
+    email_backend_info['smtp_status'] = smtp_status
+
+    # Obtener todos los items del inbox para gestión completa
+    all_inbox_items = InboxItem.objects.select_related('created_by').order_by('-created_at')[:50]
+
+    context = {
+        'title': 'Root Dashboard',
+        'page_title': 'Root Dashboard',
+        'user_info': user_info,
+        'profile_info': profile_info,
+        'player_info': player_info,
+        'user_role': user_role,
+        'role_badge_class': role_badge_class,
+        'cx_email_items': cx_email_items,
+        'cx_stats': cx_stats,
+        'email_backend_info': email_backend_info,
+        'all_inbox_items': all_inbox_items,
+    }
+    return render(request, 'events/root.html', context)
+
+
+@login_required
+def inbox_management_panel(request):
+    """
+    Panel de gestión del analista GTD - Control de interacciones y configuraciones
+    """
+    # Verificar permisos - solo superusers o administradores con rol GTD
+    if not (request.user.is_superuser or
+            (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and
+             request.user.profile.role in ['SU', 'ADMIN', 'GTD_ANALYST'])):
+        messages.error(request, 'No tienes permisos para acceder al panel de gestión GTD.')
+        return redirect('inbox')
+
+    # Obtener estadísticas generales
+    total_inbox_items = InboxItem.objects.count()
+    processed_items = InboxItem.objects.filter(is_processed=True).count()
+    unprocessed_items = InboxItem.objects.filter(is_processed=False).count()
+    public_items = InboxItem.objects.filter(is_public=True).count()
+
+    # Estadísticas por tipo de interacción (basado en context o descripción)
+    email_items = InboxItem.objects.filter(
+        models.Q(description__icontains='@') |
+        models.Q(context__icontains='email')
+    ).count()
+
+    call_items = InboxItem.objects.filter(
+        models.Q(title__icontains='llamada') |
+        models.Q(title__icontains='call') |
+        models.Q(context__icontains='telefono')
+    ).count()
+
+    chat_items = InboxItem.objects.filter(
+        models.Q(title__icontains='chat') |
+        models.Q(context__icontains='chat')
+    ).count()
+
+    # Items por prioridad
+    high_priority = InboxItem.objects.filter(priority='alta', is_processed=False).count()
+    medium_priority = InboxItem.objects.filter(priority='media', is_processed=False).count()
+    low_priority = InboxItem.objects.filter(priority='baja', is_processed=False).count()
+
+    # Items recientes para las colas
+    recent_emails = InboxItem.objects.filter(
+        models.Q(description__icontains='@') |
+        models.Q(context__icontains='email'),
+        is_processed=False
+    ).select_related('created_by').order_by('-created_at')[:10]
+
+    recent_calls = InboxItem.objects.filter(
+        models.Q(title__icontains='llamada') |
+        models.Q(title__icontains='call'),
+        is_processed=False
+    ).select_related('created_by').order_by('-created_at')[:10]
+
+    recent_chats = InboxItem.objects.filter(
+        models.Q(title__icontains='chat'),
+        is_processed=False
+    ).select_related('created_by').order_by('-created_at')[:10]
+
+    # Obtener configuraciones actuales desde la base de datos
+    settings_obj = GTDProcessingSettings.get_active_settings()
+    if settings_obj:
+        processing_settings = {
+            'auto_email_processing': settings_obj.auto_email_processing,
+            'auto_call_queue': settings_obj.auto_call_queue,
+            'auto_chat_routing': settings_obj.auto_chat_routing,
+            'processing_interval': settings_obj.processing_interval,
+            'max_concurrent': settings_obj.max_concurrent_items,
+            'email_batch_size': settings_obj.email_batch_size,
+            'call_queue_timeout': settings_obj.call_queue_timeout,
+            'chat_response_timeout': settings_obj.chat_response_timeout,
+            'enable_bot_cx': settings_obj.enable_bot_cx,
+            'enable_bot_atc': settings_obj.enable_bot_atc,
+            'enable_human_agents': settings_obj.enable_human_agents,
+        }
+    else:
+        # Configuraciones por defecto si no existen
+        processing_settings = {
+            'auto_email_processing': True,
+            'auto_call_queue': True,
+            'auto_chat_routing': True,
+            'processing_interval': 60,
+            'max_concurrent': 5,
+            'email_batch_size': 10,
+            'call_queue_timeout': 30,
+            'chat_response_timeout': 300,
+            'enable_bot_cx': True,
+            'enable_bot_atc': True,
+            'enable_human_agents': True,
+        }
+
+    context = {
+        'title': 'Panel de Gestión GTD - Analista',
+        'stats': {
+            'total': total_inbox_items,
+            'processed': processed_items,
+            'unprocessed': unprocessed_items,
+            'public': public_items,
+            'emails': email_items,
+            'calls': call_items,
+            'chats': chat_items,
+            'high_priority': high_priority,
+            'medium_priority': medium_priority,
+            'low_priority': low_priority,
+        },
+        'recent_emails': recent_emails,
+        'recent_calls': recent_calls,
+        'recent_chats': recent_chats,
+        'processing_settings': processing_settings,
+    }
+
+    return render(request, 'events/inbox_management_panel.html', context)
+
+
+@login_required
+def update_processing_settings(request):
+    """
+    API endpoint para actualizar configuraciones de procesamiento
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    # Verificar permisos
+    if not (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and
+            request.user.profile.role in ['SU', 'ADMIN', 'GTD_ANALYST']):
+        return JsonResponse({'success': False, 'error': 'No tienes permisos'})
+
+    try:
+        # Obtener o crear configuración para el usuario
+        settings_obj, created = GTDProcessingSettings.objects.get_or_create(
+            created_by=request.user,
+            defaults={'is_active': True}
+        )
+
+        # Actualizar configuraciones
+        settings_obj.auto_email_processing = request.POST.get('auto_email_processing') == 'true'
+        settings_obj.auto_call_queue = request.POST.get('auto_call_queue') == 'true'
+        settings_obj.auto_chat_routing = request.POST.get('auto_chat_routing') == 'true'
+        settings_obj.processing_interval = int(request.POST.get('processing_interval', 60))
+        settings_obj.max_concurrent_items = int(request.POST.get('max_concurrent', 5))
+
+        # Guardar configuración
+        settings_obj.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Configuraciones actualizadas exitosamente',
+            'created': created
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@login_required
+def get_queue_data(request):
+    """
+    API endpoint para obtener datos de las colas en tiempo real
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    try:
+        # Estadísticas en tiempo real
+        active_items = InboxItem.objects.filter(is_processed=False).count()
+        pending_items = InboxItem.objects.filter(
+            is_processed=False,
+            created_at__gte=timezone.now() - timedelta(hours=1)
+        ).count()
+
+        # Conteo por tipo
+        emails = InboxItem.objects.filter(
+            models.Q(description__icontains='@') |
+            models.Q(context__icontains='email'),
+            is_processed=False
+        ).count()
+
+        calls = InboxItem.objects.filter(
+            models.Q(title__icontains='llamada') |
+            models.Q(title__icontains='call'),
+            is_processed=False
+        ).count()
+
+        chats = InboxItem.objects.filter(
+            models.Q(title__icontains='chat'),
+            is_processed=False
+        ).count()
+
+        return JsonResponse({
+            'success': True,
+            'data': {
+                'active': active_items,
+                'pending': pending_items,
+                'emails': emails,
+                'calls': calls,
+                'chats': chats
+            }
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@login_required
+def assign_interaction_to_agent(request):
+    """
+    API endpoint para asignar una interacción a un agente/bot
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    try:
+        interaction_id = request.POST.get('interaction_id')
+        agent_type = request.POST.get('agent_type')  # 'bot-cx', 'bot-atc', 'human-*'
+        priority = request.POST.get('priority', 'media')
+        notes = request.POST.get('notes', '')
+
+        if not interaction_id or not agent_type:
+            return JsonResponse({'success': False, 'error': 'Datos incompletos'})
+
+        # Obtener el InboxItem
+        inbox_item = InboxItem.objects.get(id=interaction_id)
+
+        # Verificar permisos
+        if not (request.user == inbox_item.created_by or
+                inbox_item.authorized_users.filter(id=request.user.id).exists() or
+                (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and
+                 request.user.profile.role in ['SU', 'ADMIN', 'GTD_ANALYST'])):
+            return JsonResponse({'success': False, 'error': 'No tienes permisos para asignar esta interacción'})
+
+        # Actualizar el InboxItem
+        inbox_item.priority = priority
+        if notes:
+            inbox_item.notes = notes
+
+        # Agregar información de asignación en context
+        context_data = inbox_item.context or {}
+        if isinstance(context_data, str):
+            # Si es string, convertir a dict
+            try:
+                import json
+                context_data = json.loads(context_data)
+            except:
+                context_data = {}
+        context_data.update({
+            'assigned_to': agent_type,
+            'assigned_by': request.user.username,
+            'assigned_at': timezone.now().isoformat(),
+            'assignment_notes': notes
+        })
+        inbox_item.context = context_data
+        inbox_item.save()
+
+        # Registrar en historial
+        InboxItemHistory.objects.create(
+            inbox_item=inbox_item,
+            user=request.user,
+            action='assigned',
+            new_values={
+                'assigned_to': agent_type,
+                'priority': priority,
+                'notes': notes
+            }
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Interacción asignada a {agent_type} exitosamente'
+        })
+
+    except InboxItem.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Interacción no encontrada'})
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@login_required
+def mark_interaction_resolved(request):
+    """
+    API endpoint para marcar una interacción como resuelta
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    try:
+        interaction_id = request.POST.get('interaction_id')
+        resolution_notes = request.POST.get('resolution_notes', '')
+
+        if not interaction_id:
+            return JsonResponse({'success': False, 'error': 'ID de interacción requerido'})
+
+        # Obtener el InboxItem
+        inbox_item = InboxItem.objects.get(id=interaction_id)
+
+        # Verificar permisos
+        if not (request.user == inbox_item.created_by or
+                inbox_item.authorized_users.filter(id=request.user.id).exists() or
+                (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and
+                 request.user.profile.role in ['SU', 'ADMIN', 'GTD_ANALYST'])):
+            return JsonResponse({'success': False, 'error': 'No tienes permisos para resolver esta interacción'})
+
+        # Marcar como procesada
+        inbox_item.is_processed = True
+        inbox_item.processed_at = timezone.now()
+
+        # Agregar notas de resolución
+        if resolution_notes:
+            context_data = inbox_item.context or {}
+            if isinstance(context_data, str):
+                # Si es string, convertir a dict
+                try:
+                    import json
+                    context_data = json.loads(context_data)
+                except:
+                    context_data = {}
+            context_data['resolution_notes'] = resolution_notes
+            context_data['resolved_by'] = request.user.username
+            context_data['resolved_at'] = timezone.now().isoformat()
+            inbox_item.context = context_data
+
+        inbox_item.save()
+
+        # Registrar en historial
+        InboxItemHistory.objects.create(
+            inbox_item=inbox_item,
+            user=request.user,
+            action='resolved',
+            new_values={
+                'resolution_notes': resolution_notes,
+                'processed_at': inbox_item.processed_at.isoformat()
+            }
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Interacción marcada como resuelta'
+        })
+
+    except InboxItem.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Interacción no encontrada'})
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@login_required
+def create_inbox_item_api(request):
+    """
+    API endpoint para crear un nuevo item del inbox desde el panel root
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    try:
+        # Obtener datos del formulario
+        title = request.POST.get('title', '').strip()
+        description = request.POST.get('description', '').strip()
+        gtd_category = request.POST.get('gtd_category', 'pendiente')
+        priority = request.POST.get('priority', 'media')
+        action_type = request.POST.get('action_type', '')
+        context = request.POST.get('context', '').strip()
+
+        # Validar datos requeridos
+        if not title:
+            return JsonResponse({'success': False, 'error': 'El título es requerido'})
+
+        # Crear el item del inbox
+        inbox_item = InboxItem.objects.create(
+            title=title,
+            description=description,
+            created_by=request.user,
+            gtd_category=gtd_category,
+            priority=priority,
+            action_type=action_type if action_type else None,
+            context=context if context else None
+        )
+
+        # Registrar en historial
+        InboxItemHistory.objects.create(
+            inbox_item=inbox_item,
+            user=request.user,
+            action='created',
+            new_values={
+                'title': title,
+                'description': description,
+                'gtd_category': gtd_category,
+                'priority': priority,
+                'action_type': action_type,
+                'context': context
+            }
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Item "{title}" creado exitosamente',
+            'item_id': inbox_item.id
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })

@@ -1,0 +1,146 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+
+{% if messages %}
+<div class="alert alert-info alert-dismissible fade show" role="alert">
+    {% for message in messages %}
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="pagetitle">
+    <h1>{{ page_title }}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rooms:room_list' %}">Rooms</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rooms:room_detail' room.pk %}">{{ room.name }}</a></li>
+            <li class="breadcrumb-item active">{{ is_edit|yesno:"Editar,Crear" }} Entrada/Salida</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="row g-3">
+                            <!-- Información básica -->
+                            <div class="col-md-6">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">Nombre *</label>
+                                {{ form.name }}
+                                {% if form.name.errors %}
+                                    <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.face.id_for_label }}" class="form-label">Dirección *</label>
+                                {{ form.face }}
+                                {% if form.face.errors %}
+                                    <div class="text-danger small">{{ form.face.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">Descripción</label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Posicionamiento -->
+                            <div class="col-md-6">
+                                <label for="{{ form.position_x.id_for_label }}" class="form-label">Posición X</label>
+                                {{ form.position_x }}
+                                {% if form.position_x.errors %}
+                                    <div class="text-danger small">{{ form.position_x.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Deja vacío para auto-posicionar</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="{{ form.position_y.id_for_label }}" class="form-label">Posición Y</label>
+                                {{ form.position_y }}
+                                {% if form.position_y.errors %}
+                                    <div class="text-danger small">{{ form.position_y.errors.0 }}</div>
+                                {% endif %}
+                                <div class="form-text">Deja vacío para auto-posicionar</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i>
+                                {{ is_edit|yesno:"Actualizar,Crear" }} Entrada/Salida
+                            </button>
+                            <a href="{% url 'rooms:room_detail' room.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Información de la habitación -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-house"></i> Habitación</h6>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ room.name }}</h5>
+                    <p class="card-text">{{ room.description|truncatechars:100 }}</p>
+                    <div class="mb-2">
+                        <strong>Dimensiones:</strong> {{ room.length }}×{{ room.width }}×{{ room.height }}
+                    </div>
+                    <a href="{% url 'rooms:room_detail' room.pk %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-eye"></i> Ver Habitación
+                    </a>
+                </div>
+            </div>
+
+            {% if is_edit %}
+            <!-- Información de la entrada actual -->
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-door-open"></i> Entrada Actual</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <strong>Nombre:</strong> {{ entrance_exit.name }}
+                    </div>
+                    <div class="mb-2">
+                        <strong>Dirección:</strong>
+                        <span class="badge bg-secondary">{{ entrance_exit.get_face_display }}</span>
+                    </div>
+                    <div class="mb-2">
+                        <strong>Estado:</strong>
+                        {% if entrance_exit.enabled %}
+                            <span class="text-success">● Activa</span>
+                        {% else %}
+                            <span class="text-muted">○ Inactiva</span>
+                        {% endif %}
+                    </div>
+                    {% if entrance_exit.connection %}
+                    <div class="mb-2">
+                        <strong>Conectada a:</strong> {{ entrance_exit.connection.to_room.name }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}
