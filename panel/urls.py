@@ -26,6 +26,8 @@ urlpatterns = [
     path('memento/', include('memento.urls')),
     path('passgen/', include('passgen.urls')),
     path('rooms/', include('rooms.urls', namespace='rooms')),
+    path('bots/', include('bots.urls', namespace='bots')),
+    path('help/', include('help.urls', namespace='help')),
     path('tools/', include('tools.urls')),
     
     # API Endpoints (alphabetical order)

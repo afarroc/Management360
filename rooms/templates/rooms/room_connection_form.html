@@ -1,0 +1,139 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block content %}
+
+{% if messages %}
+<div class="alert alert-info alert-dismissible fade show" role="alert">
+    {% for message in messages %}
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="pagetitle">
+    <h1>{{ page_title }}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rooms:room_list' %}">Rooms</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'rooms:room_detail' room.pk %}">{{ room.name }}</a></li>
+            <li class="breadcrumb-item active">{{ is_create|yesno:"Crear,Editar" }} Conexión</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.from_room.id_for_label }}" class="form-label">Habitación Origen</label>
+                                {{ form.from_room }}
+                                {% if form.from_room.errors %}
+                                    <div class="text-danger">{{ form.from_room.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.to_room.id_for_label }}" class="form-label">Habitación Destino</label>
+                                {{ form.to_room }}
+                                {% if form.to_room.errors %}
+                                    <div class="text-danger">{{ form.to_room.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.entrance.id_for_label }}" class="form-label">Entrada/Salida</label>
+                                {{ form.entrance }}
+                                {% if form.entrance.errors %}
+                                    <div class="text-danger">{{ form.entrance.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.energy_cost.id_for_label }}" class="form-label">Costo de Energía</label>
+                                {{ form.energy_cost }}
+                                {% if form.energy_cost.errors %}
+                                    <div class="text-danger">{{ form.energy_cost.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.bidirectional }}
+                                <label class="form-check-label" for="{{ form.bidirectional.id_for_label }}">
+                                    Conexión Bidireccional
+                                </label>
+                                {% if form.bidirectional.errors %}
+                                    <div class="text-danger">{{ form.bidirectional.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                <p>{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> {{ is_create|yesno:"Crear,Guardar" }} Conexión
+                            </button>
+                            <a href="{% url 'rooms:room_detail' room.pk %}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancelar
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> Información</h6>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ room.name }}</h5>
+                    <p class="text-muted">{{ room.description|truncatechars:100 }}</p>
+
+                    <div class="mt-3">
+                        <small class="text-muted">Propietario:</small>
+                        <div>{{ room.owner.get_full_name }}</div>
+                    </div>
+
+                    <div class="mt-2">
+                        <small class="text-muted">Tipo:</small>
+                        <div><span class="badge bg-primary">{{ room.get_room_type_display }}</span></div>
+                    </div>
+                </div>
+            </div>
+
+            {% if not is_create %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-trash"></i> Eliminar Conexión</h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Si deseas eliminar esta conexión, puedes hacerlo desde aquí.</p>
+                    <a href="{% url 'rooms:delete_room_connection' room.pk connection.pk %}" class="btn btn-danger btn-sm">
+                        <i class="bi bi-trash"></i> Eliminar
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% endblock %}

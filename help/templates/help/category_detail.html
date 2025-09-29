@@ -1,0 +1,445 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="pagetitle">
+    <h1>
+        <i class="bi {{ category.icon|default:'bi-folder' }} text-primary me-3"></i>
+        {{ category.name }}
+    </h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'rooms:lobby' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'help:help_home' %}">Ayuda</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'help:category_list' %}">Categorías</a></li>
+            <li class="breadcrumb-item active">{{ category.name }}</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <!-- Descripción de la categoría -->
+    {% if category.description %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 bg-light">
+                <div class="card-body">
+                    <p class="lead mb-0">{{ category.description }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Navegación por pestañas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <ul class="nav nav-tabs nav-tabs-bordered" id="categoryTabs" role="tablist">
+                {% if articles %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="articles-tab" data-bs-toggle="tab"
+                            data-bs-target="#articles" type="button" role="tab">
+                        <i class="bi bi-file-text me-2"></i>
+                        Artículos ({{ articles.paginator.count }})
+                    </button>
+                </li>
+                {% endif %}
+                {% if faqs %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if not articles %}active{% endif %}" id="faqs-tab" data-bs-toggle="tab"
+                            data-bs-target="#faqs" type="button" role="tab">
+                        <i class="bi bi-question-circle me-2"></i>
+                        Preguntas Frecuentes ({{ faqs|length }})
+                    </button>
+                </li>
+                {% endif %}
+                {% if videos %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if not articles and not faqs %}active{% endif %}" id="videos-tab" data-bs-toggle="tab"
+                            data-bs-target="#videos" type="button" role="tab">
+                        <i class="bi bi-play-circle me-2"></i>
+                        Tutoriales ({{ videos|length }})
+                    </button>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Contenido de las pestañas -->
+    <div class="tab-content" id="categoryTabsContent">
+
+        <!-- Artículos -->
+        {% if articles %}
+        <div class="tab-pane fade show active" id="articles" role="tabpanel">
+            <div class="row">
+                {% for article in articles %}
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="card h-100 border-0 shadow-sm hover-card">
+                        <div class="card-body">
+                            {% if article.is_featured %}
+                            <div class="featured-badge">
+                                <i class="bi bi-star-fill"></i> Destacado
+                            </div>
+                            {% endif %}
+
+                            <div class="d-flex align-items-start mb-2">
+                                <span class="badge bg-primary me-2">{{ article.get_difficulty_display }}</span>
+                                <small class="text-muted ms-auto">
+                                    <i class="bi bi-eye me-1"></i>{{ article.view_count }}
+                                </small>
+                            </div>
+
+                            <h6 class="card-title mb-2">
+                                <a href="{% url 'help:article_detail' article.slug %}" class="text-decoration-none stretched-link">
+                                    {{ article.title }}
+                                </a>
+                            </h6>
+
+                            {% if article.excerpt %}
+                            <p class="card-text small text-muted mb-3">{{ article.excerpt|truncatechars:120 }}</p>
+                            {% endif %}
+
+                            <div class="article-meta">
+                                {% if article.author %}
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-person me-1"></i>
+                                    {{ article.author.get_full_name|default:article.author.username }}
+                                </small>
+                                {% endif %}
+                                {% if article.published_at %}
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-calendar me-1"></i>
+                                    {{ article.published_at|date:"M j, Y" }}
+                                </small>
+                                {% endif %}
+                                {% if article.helpful_percentage > 0 %}
+                                <small class="text-success d-block">
+                                    <i class="bi bi-hand-thumbs-up me-1"></i>
+                                    {{ article.helpful_percentage }}% útil
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="text-center py-5">
+                        <i class="bi bi-file-earmark-x display-1 text-muted mb-3"></i>
+                        <h4 class="text-muted">No hay artículos en esta categoría</h4>
+                        <p class="text-muted">Los artículos estarán disponibles próximamente.</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Paginación -->
+            {% if articles.has_other_pages %}
+            <div class="d-flex justify-content-center mt-4">
+                <nav aria-label="Navegación de artículos">
+                    <ul class="pagination">
+                        {% if articles.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ articles.previous_page_number }}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in articles.paginator.page_range %}
+                        {% if articles.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                        {% elif num > articles.number|add:'-3' and num < articles.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if articles.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ articles.next_page_number }}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Preguntas Frecuentes -->
+        {% if faqs %}
+        <div class="tab-pane fade {% if not articles %}show active{% endif %}" id="faqs" role="tabpanel">
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <div class="accordion" id="categoryFaqAccordion">
+                        {% for faq in faqs %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button {% if forloop.first %}collapsed{% endif %}"
+                                        type="button" data-bs-toggle="collapse"
+                                        data-bs-target="#faq{{ forloop.counter }}"
+                                        aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}">
+                                    <i class="bi bi-question-circle text-info me-2"></i>
+                                    {{ faq.question }}
+                                    {% if faq.view_count > 0 %}
+                                    <small class="text-muted ms-2">({{ faq.view_count }} vistas)</small>
+                                    {% endif %}
+                                </button>
+                            </h2>
+                            <div id="faq{{ forloop.counter }}"
+                                 class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+                                 data-bs-parent="#categoryFaqAccordion">
+                                <div class="accordion-body">
+                                    {{ faq.answer|safe }}
+                                    {% if faq.helpful_count > 0 %}
+                                    <div class="mt-3 pt-3 border-top">
+                                        <small class="text-success">
+                                            <i class="bi bi-hand-thumbs-up me-1"></i>
+                                            {{ faq.helpful_count }} personas encontraron esto útil
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Tutoriales en Video -->
+        {% if videos %}
+        <div class="tab-pane fade {% if not articles and not faqs %}show active{% endif %}" id="videos" role="tabpanel">
+            <div class="row">
+                {% for video in videos %}
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="card h-100 border-0 shadow-sm hover-card">
+                        {% if video.thumbnail_url %}
+                        <div class="card-img-top position-relative">
+                            <img src="{{ video.thumbnail_url }}" class="card-img-top" alt="{{ video.title }}">
+                            <div class="play-overlay">
+                                <i class="bi bi-play-circle-fill display-4 text-white"></i>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="card-body">
+                            {% if video.is_featured %}
+                            <div class="featured-badge">
+                                <i class="bi bi-star-fill"></i> Destacado
+                            </div>
+                            {% endif %}
+
+                            <div class="d-flex align-items-start mb-2">
+                                <span class="badge bg-{{ video.difficulty|lower }}" style="text-transform: capitalize;">
+                                    {{ video.get_difficulty_display }}
+                                </span>
+                                <small class="text-muted ms-auto">
+                                    <i class="bi bi-eye me-1"></i>{{ video.view_count }}
+                                </small>
+                            </div>
+
+                            <h6 class="card-title mb-2">
+                                <a href="#" class="text-decoration-none stretched-link" onclick="openVideoModal('{{ video.id }}')">
+                                    {{ video.title }}
+                                </a>
+                            </h6>
+
+                            <p class="card-text small text-muted mb-3">{{ video.description|truncatechars:100 }}</p>
+
+                            <div class="video-meta">
+                                {% if video.author %}
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-person me-1"></i>
+                                    {{ video.author.get_full_name|default:video.author.username }}
+                                </small>
+                                {% endif %}
+                                {% if video.duration %}
+                                <small class="text-muted d-block">
+                                    <i class="bi bi-clock me-1"></i>
+                                    {{ video.duration }}
+                                </small>
+                                {% endif %}
+                                {% if video.like_count > 0 %}
+                                <small class="text-success d-block">
+                                    <i class="bi bi-hand-thumbs-up me-1"></i>
+                                    {{ video.like_count }} likes
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</section>
+
+<!-- Modal para videos -->
+<div class="modal fade" id="videoModal" tabindex="-1" aria-labelledby="videoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="videoModalLabel">Tutorial en Video</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="videoContent">
+                    <!-- El contenido del video se cargará aquí -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hover-card {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.hover-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    border-color: rgba(0, 123, 255, 0.2);
+}
+
+.featured-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    z-index: 10;
+}
+
+.card {
+    position: relative;
+}
+
+.article-meta, .video-meta {
+    margin-top: auto;
+}
+
+.article-meta small, .video-meta small {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.play-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    cursor: pointer;
+}
+
+.hover-card:hover .play-overlay {
+    opacity: 1;
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+    border-color: rgba(0, 123, 255, 0.25);
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: rgba(0, 123, 255, 0.05);
+    color: #0056b3;
+}
+
+.pagination .page-link {
+    color: #007bff;
+    border-color: #dee2e6;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+@media (max-width: 768px) {
+    .card-img-top {
+        height: 150px;
+        object-fit: cover;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Función para abrir modal de video
+function openVideoModal(videoId) {
+    // Aquí iría la lógica para cargar el video específico
+    // Por ahora, solo abrimos el modal con un placeholder
+    const modal = new bootstrap.Modal(document.getElementById('videoModal'));
+    const videoContent = document.getElementById('videoContent');
+
+    videoContent.innerHTML = `
+        <div class="text-center">
+            <i class="bi bi-play-circle display-1 text-muted mb-3"></i>
+            <h5>Funcionalidad de video próximamente</h5>
+            <p class="text-muted">Los tutoriales en video estarán disponibles próximamente.</p>
+        </div>
+    `;
+
+    modal.show();
+}
+
+// Animación de entrada para las cards
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.hover-card');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    });
+
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = `all 0.5s ease ${index * 0.05}s`;
+        observer.observe(card);
+    });
+
+    // Auto-expandir primera FAQ
+    const firstFaqButton = document.querySelector('.accordion-button');
+    if (firstFaqButton) {
+        setTimeout(() => {
+            firstFaqButton.click();
+        }, 500);
+    }
+});
+</script>
+{% endblock %}

@@ -50,6 +50,7 @@ urlpatterns = [
     # ============================================================================
     # MAIN DASHBOARD AND OVERVIEW
     # ============================================================================
+    path('root/', views.root, name='root'),
     path('dashboard/', views.unified_dashboard, name='unified_dashboard'),
     path('panel/', views.panel, name='panel'),
     path('management/', views.management_index, name='management_index'),
@@ -134,6 +135,18 @@ urlpatterns = [
     path('inbox/admin/<int:item_id>/classify/', views.classify_inbox_item_admin, name='classify_inbox_item_admin'),
     path('inbox/admin/<int:item_id>/authorize/', views.authorize_inbox_item, name='authorize_inbox_item'),
     path('inbox/admin/bulk-action/', views.inbox_admin_bulk_action, name='inbox_admin_bulk_action'),
+    # Inbox Management Panel - GTD Analyst Control Panel
+    path('inbox/management/', views.inbox_management_panel, name='inbox_management_panel'),
+    # Inbox Item Creation API
+    path('inbox/create/', views.create_inbox_item_api, name='create_inbox_item_api'),
+    path('inbox/management/api/queue-data/', views.get_queue_data, name='get_queue_data'),
+    path('inbox/management/api/update-settings/', views.update_processing_settings, name='update_processing_settings'),
+    path('inbox/management/api/assign-agent/', views.assign_interaction_to_agent, name='assign_interaction_to_agent'),
+    path('inbox/management/api/mark-resolved/', views.mark_interaction_resolved, name='mark_interaction_resolved'),
+
+    # Email Processing API Endpoints
+    path('api/check-new-emails/', views.check_new_emails_api, name='check_new_emails_api'),
+    path('api/process-cx-emails/', views.process_cx_emails_api, name='process_cx_emails_api'),
 
     # ============================================================================
     # PRODUCTIVITY TOOLS

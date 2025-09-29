@@ -20,6 +20,10 @@ class PlayerProfile(models.Model):
     ], default='IDLE')
     skills = models.JSONField(default=list)  # Ej: ["programming", "design"]
     last_state_change = models.DateTimeField(auto_now=True)
+
+    # Navigation history for back button handling
+    navigation_history = models.JSONField(default=list, help_text='Historial de habitaciones visitadas para navegación con botón atrás')
+    last_navigation_time = models.DateTimeField(auto_now=True)
     
     def move_to_room(self, direction):
         current_room = self.current_room
@@ -96,7 +100,10 @@ class PlayerProfile(models.Model):
         """Utiliza una salida y actualiza la posición del jugador"""
         if not self.can_use_exit(exit_type, exit_id):
             return False
-        
+
+        # Record current room in navigation history before moving
+        self.add_to_navigation_history(self.current_room.id)
+
         if exit_type == 'entrance':
             entrance = EntranceExit.objects.get(id=exit_id)
             self.current_room = entrance.connection.to_room
@@ -105,7 +112,7 @@ class PlayerProfile(models.Model):
             self.position_x = opposite_entrance.position_x
             self.position_y = opposite_entrance.position_y
             self.energy -= entrance.connection.energy_cost
-            
+
         elif exit_type == 'portal':
             portal = Portal.objects.get(id=exit_id)
             self.current_room = portal.exit.room
@@ -114,9 +121,50 @@ class PlayerProfile(models.Model):
             self.energy -= portal.energy_cost
             portal.last_used = timezone.now()
             portal.save()
-        
+
         self.save()
         return True
+
+    def add_to_navigation_history(self, room_id):
+        """Agrega una habitación al historial de navegación"""
+        history = self.navigation_history or []
+        # Evitar duplicados consecutivos
+        if not history or history[-1] != room_id:
+            history.append(room_id)
+            # Mantener solo las últimas 10 habitaciones
+            if len(history) > 10:
+                history = history[-10:]
+            self.navigation_history = history
+            self.save()
+
+    def can_teleport_to(self, target_room):
+        """Verifica si el jugador puede teletransportarse a una habitación"""
+        if not target_room or not target_room.is_active:
+            return False, "Habitación no disponible"
+
+        teleport_cost = 20  # Costo base de teletransportación
+        if self.energy < teleport_cost:
+            return False, f"Insuficiente energía. Necesitas {teleport_cost}, tienes {self.energy}"
+
+        return True, "Teletransportación disponible"
+
+    def teleport_to(self, target_room):
+        """Teletransporta al jugador a una habitación específica"""
+        can_teleport, reason = self.can_teleport_to(target_room)
+        if not can_teleport:
+            return False, reason
+
+        # Record current room in history before teleporting
+        self.add_to_navigation_history(self.current_room.id)
+
+        # Teleport
+        self.current_room = target_room
+        self.energy -= 20  # Costo de teletransportación
+        self.position_x = target_room.length // 2  # Centro de la habitación
+        self.position_y = target_room.width // 2
+        self.save()
+
+        return True, f"Teletransportado a {target_room.name}"
 
 class RoomManager(models.Manager):
     pass
@@ -348,7 +396,104 @@ class EntranceExit(models.Model):
     position_x = models.IntegerField(null=True, blank=True)
     position_y = models.IntegerField(null=True, blank=True)
     enabled = models.BooleanField(default=True)
-    connection = models.OneToOneField(RoomConnection, on_delete=models.SET_NULL, null=True, blank=True)
+    connection = models.ForeignKey(RoomConnection, on_delete=models.SET_NULL, null=True, blank=True)
+
+    # Propiedades físicas/visuales
+    width = models.IntegerField(default=100, help_text='Ancho de la puerta en cm')
+    height = models.IntegerField(default=200, help_text='Alto de la puerta en cm')
+    door_type = models.CharField(max_length=20, choices=[
+        ('SINGLE', 'Puerta simple'),
+        ('DOUBLE', 'Puerta doble'),
+        ('SLIDING', 'Corrediza'),
+        ('FOLDING', 'Plegable'),
+        ('REVOLVING', 'Giratoria'),
+        ('GATE', 'Portón'),
+        ('HATCH', 'Escotilla')
+    ], default='SINGLE')
+    material = models.CharField(max_length=50, choices=[
+        ('WOOD', 'Madera'),
+        ('METAL', 'Metal'),
+        ('GLASS', 'Vidrio'),
+        ('PLASTIC', 'Plástico'),
+        ('STONE', 'Piedra'),
+        ('SPECIAL', 'Especial')
+    ], default='WOOD')
+    color = models.CharField(max_length=7, default='#8B4513', help_text='Color en formato hex (#RRGGBB)')
+    texture_url = models.URLField(blank=True, help_text='URL de textura/imagen')
+    opacity = models.DecimalField(max_digits=3, decimal_places=2, default=1.0, help_text='Opacidad (0.0-1.0)')
+
+    # Propiedades funcionales
+    is_locked = models.BooleanField(default=False, help_text='Si está cerrada con llave')
+    required_key = models.CharField(max_length=100, blank=True, help_text='ID del objeto/llave necesario')
+    auto_close = models.BooleanField(default=False, help_text='Si se cierra automáticamente')
+    close_delay = models.IntegerField(default=5, help_text='Segundos antes de cerrarse automáticamente')
+    open_speed = models.DecimalField(max_digits=4, decimal_places=2, default=1.0, help_text='Velocidad de apertura (segundos)')
+    close_speed = models.DecimalField(max_digits=4, decimal_places=2, default=1.0, help_text='Velocidad de cierre (segundos)')
+    sound_open = models.URLField(blank=True, help_text='Sonido al abrir')
+    sound_close = models.URLField(blank=True, help_text='Sonido al cerrar')
+
+    # Propiedades de interacción
+    interaction_type = models.CharField(max_length=20, choices=[
+        ('PUSH', 'Empujar'),
+        ('PULL', 'Tirar'),
+        ('HANDLE', 'Manija'),
+        ('BUTTON', 'Botón'),
+        ('AUTOMATIC', 'Automática'),
+        ('LEVER', 'Palanca'),
+        ('KNOB', 'Perilla')
+    ], default='PUSH')
+    animation_type = models.CharField(max_length=20, choices=[
+        ('SWING', 'Giratoria'),
+        ('SLIDE', 'Deslizante'),
+        ('FOLD', 'Plegable'),
+        ('ROLL', 'Enrollable'),
+        ('NONE', 'Sin animación')
+    ], default='SWING')
+    requires_both_hands = models.BooleanField(default=False, help_text='Si requiere ambas manos')
+    interaction_distance = models.IntegerField(default=150, help_text='Distancia máxima para interactuar (cm)')
+
+    # Propiedades de estado
+    is_open = models.BooleanField(default=False, help_text='Estado actual (abierta/cerrada)')
+    last_opened = models.DateTimeField(null=True, blank=True)
+    usage_count = models.IntegerField(default=0, help_text='Número de veces usada')
+    health = models.IntegerField(default=100, help_text='Estado de la puerta (0-100)')
+
+    # Propiedades de seguridad/permisos
+    access_level = models.IntegerField(default=0, help_text='Nivel de acceso requerido (0-10, 0=abierto)')
+    allowed_users = models.ManyToManyField(User, blank=True, related_name='accessible_doors', help_text='Usuarios con acceso especial')
+    security_system = models.CharField(max_length=50, choices=[
+        ('NONE', 'Sin seguridad'),
+        ('BASIC', 'Básica'),
+        ('ELECTRONIC', 'Electrónica'),
+        ('BIOMETRIC', 'Biométrica'),
+        ('MAGNETIC', 'Magnética')
+    ], default='NONE')
+    alarm_triggered = models.BooleanField(default=False, help_text='Si activó alarma de seguridad')
+
+    # Propiedades ambientales
+    seals_air = models.BooleanField(default=True, help_text='Si sella el aire (presurización)')
+    seals_sound = models.IntegerField(default=20, help_text='Aislamiento acústico en dB')
+    temperature_resistance = models.IntegerField(default=50, help_text='Resistencia a temperatura (-50 a +50°C)')
+    pressure_resistance = models.IntegerField(default=1, help_text='Resistencia a presión (atm)')
+
+    # Propiedades de juego/mecánicas
+    energy_cost_modifier = models.IntegerField(default=0, help_text='Modificador del costo de energía base')
+    experience_reward = models.IntegerField(default=1, help_text='Experiencia por usar la puerta')
+    special_effects = models.JSONField(default=dict, help_text='Efectos especiales en JSON')
+    cooldown = models.IntegerField(default=0, help_text='Cooldown entre usos (segundos)')
+    max_usage_per_hour = models.IntegerField(default=0, help_text='Límite de uso por hora (0=ilimitado)')
+
+    # Propiedades de apariencia avanzada
+    glow_color = models.CharField(max_length=7, blank=True, help_text='Color de brillo (#RRGGBB)')
+    glow_intensity = models.IntegerField(default=0, help_text='Intensidad del brillo (0-100)')
+    particle_effects = models.CharField(max_length=100, blank=True, help_text='Efectos de partículas')
+    decoration_type = models.CharField(max_length=50, choices=[
+        ('NONE', 'Sin decoración'),
+        ('FRAME', 'Marco decorativo'),
+        ('WINDOW', 'Ventanal'),
+        ('ORNAMENTAL', 'Adorno ornamental'),
+        ('RUNIC', 'Rúnico/mágico')
+    ], default='NONE')
 
     def save(self, *args, **kwargs):
         if self.position_x is None or self.position_y is None:
@@ -372,8 +517,106 @@ class EntranceExit(models.Model):
             self.position_x = self.room.length // 2
             self.position_y = self.room.width // 2
 
+    def can_player_use(self, player_profile):
+        """
+        Verifica si un jugador puede usar esta puerta.
+        Delega la lógica al RoomTransitionManager.
+        """
+        from .transition_manager import get_room_transition_manager
+        manager = get_room_transition_manager()
+        result = manager.attempt_transition(player_profile, self)
+        return result['success'], result.get('message', '')
+
+    def attempt_transition(self, player_profile):
+        """
+        Intenta realizar una transición a través de esta puerta.
+        Delega la lógica al RoomTransitionManager.
+        """
+        from .transition_manager import get_room_transition_manager
+        manager = get_room_transition_manager()
+        return manager.attempt_transition(player_profile, self)
+
+    def get_transition_info(self, player_profile):
+        """
+        Obtiene información sobre la transición posible a través de esta puerta.
+        """
+        from .transition_manager import get_room_transition_manager
+        manager = get_room_transition_manager()
+
+        if not self.connection:
+            return {
+                'can_use': False,
+                'reason': 'No hay conexión activa',
+                'target_room': None,
+                'energy_cost': 0
+            }
+
+        # Determinar habitación destino
+        if self.connection.from_room == player_profile.current_room:
+            target_room = self.connection.to_room
+        elif self.connection.to_room == player_profile.current_room and self.connection.bidirectional:
+            target_room = self.connection.from_room
+        else:
+            target_room = None
+
+        if not target_room:
+            return {
+                'can_use': False,
+                'reason': 'Dirección inválida',
+                'target_room': None,
+                'energy_cost': 0
+            }
+
+        # Verificar acceso
+        access_result = manager._validate_access(player_profile, self)
+        energy_cost = manager._calculate_energy_cost(self.connection, self)
+
+        return {
+            'can_use': access_result['allowed'],
+            'reason': access_result.get('message', ''),
+            'target_room': target_room,
+            'energy_cost': energy_cost,
+            'experience_reward': self.experience_reward
+        }
+
+    def get_opposite_entrance(self):
+        """
+        Obtiene la entrada opuesta en la habitación conectada.
+        """
+        if not self.connection:
+            return None
+
+        target_room = None
+        if self.connection.from_room == self.room:
+            target_room = self.connection.to_room
+        elif self.connection.to_room == self.room and self.connection.bidirectional:
+            target_room = self.connection.from_room
+
+        if not target_room:
+            return None
+
+        # Buscar la entrada correspondiente en la habitación destino
+        for entrance in target_room.entrance_exits.all():
+            if entrance.connection == self.connection and entrance != self:
+                return entrance
+
+        return None
+
+    def get_usage_statistics(self):
+        """
+        Obtiene estadísticas de uso de la puerta.
+        """
+        return {
+            'total_usage': self.usage_count,
+            'last_used': self.last_opened,
+            'is_open': self.is_open,
+            'health_percentage': self.health
+        }
+
     def __str__(self):
-        return f"{self.name} ({self.room.name} - {self.face})"
+        status = "🔓" if not self.is_locked else "🔒"
+        enabled = "✅" if self.enabled else "❌"
+        return f"{status}{enabled} {self.name} ({self.room.name} - {self.face})"
 
 
 class Portal(models.Model):
