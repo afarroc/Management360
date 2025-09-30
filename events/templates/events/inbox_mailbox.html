@@ -1,0 +1,546 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Bandeja de Entrada GTD{% endblock %}
+
+{% block content %}
+<div class="container-fluid mailbox-container" data-inbox-item-id="{{ inbox_item.id|default:0 }}">
+    <!-- Header -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="mb-1">
+                        <i class="bi bi-envelope-fill text-primary me-3"></i>
+                        Bandeja de Entrada GTD
+                    </h1>
+                    <p class="text-muted mb-0">{{ total_items }} items • {{ unprocessed_count }} pendientes</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary" onclick="refreshMailbox()">
+                        <i class="bi bi-arrow-clockwise me-1"></i>
+                        Actualizar
+                    </button>
+                    <a href="{% url 'inbox' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list me-1"></i>
+                        Inbox Principal
+                    </a>
+                    <a href="{% url 'process_inbox_item_mailbox' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-envelope me-1"></i>
+                        Bandeja de Entrada
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mailbox Layout -->
+    <div class="row mailbox-layout">
+        <!-- Sidebar: Item List -->
+        <div class="col-md-4 col-lg-3 mailbox-sidebar">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="bi bi-list-ul me-2"></i>
+                            Items del Inbox
+                        </h6>
+                        <span class="badge bg-primary">{{ inbox_items|length }}</span>
+                    </div>
+                    <!-- Search and Filters -->
+                    <div class="mt-3">
+                        <input type="text" class="form-control form-control-sm" id="itemSearch"
+                               placeholder="Buscar items..." onkeyup="filterItems(this.value)">
+                        <div class="mt-2">
+                            <div class="btn-group btn-group-sm w-100" role="group">
+                                <input type="radio" class="btn-check" name="filterStatus" id="filterAll" autocomplete="off" checked onclick="filterByStatus('all')">
+                                <label class="btn btn-outline-secondary btn-sm" for="filterAll">Todos</label>
+
+                                <input type="radio" class="btn-check" name="filterStatus" id="filterPending" autocomplete="off" onclick="filterByStatus('pending')">
+                                <label class="btn btn-outline-warning btn-sm" for="filterPending">Pendientes</label>
+
+                                <input type="radio" class="btn-check" name="filterStatus" id="filterProcessed" autocomplete="off" onclick="filterByStatus('processed')">
+                                <label class="btn btn-outline-success btn-sm" for="filterProcessed">Procesados</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0 mailbox-item-list" id="itemList">
+                    {% for item in inbox_items %}
+                    <div class="mailbox-item {% if item.is_processed %}processed{% else %}pending{% endif %} {% if inbox_item and inbox_item.id == item.id %}active{% endif %}"
+                         data-item-id="{{ item.id }}"
+                         onclick="selectItem({{ item.id }})">
+                        <div class="mailbox-item-header">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h6 class="mailbox-item-title mb-1">{{ item.title|truncatechars:40 }}</h6>
+                                <small class="text-muted">{{ item.created_at|date:"d/m H:i" }}</small>
+                            </div>
+                            {% if item.description %}
+                            <p class="mailbox-item-preview mb-1">{{ item.description|truncatechars:60 }}</p>
+                            {% endif %}
+                        </div>
+                        <div class="mailbox-item-meta">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    {% if item.assigned_to and item.assigned_to != request.user %}
+                                        <i class="bi bi-person me-1"></i>Asignado
+                                    {% else %}
+                                        <i class="bi bi-person me-1"></i>Mío
+                                    {% endif %}
+                                </small>
+                                <div class="mailbox-item-badges">
+                                    {% if not item.is_processed %}
+                                        <span class="badge bg-warning badge-sm">Pendiente</span>
+                                    {% else %}
+                                        <span class="badge bg-success badge-sm">Procesado</span>
+                                    {% endif %}
+                                    {% if item.priority == 'alta' %}
+                                        <span class="badge bg-danger badge-sm">Alta</span>
+                                    {% elif item.priority == 'baja' %}
+                                        <span class="badge bg-info badge-sm">Baja</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">No hay items en el inbox</p>
+                        <a href="{% url 'inbox' %}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle me-1"></i>
+                            Agregar Item
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content: Item Detail -->
+        <div class="col-md-8 col-lg-9 mailbox-main">
+            {% if inbox_item %}
+                <!-- Item Detail View -->
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white border-bottom-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="navigateItem('prev')" id="prevBtn" disabled>
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+                                <h5 class="mb-0">{{ inbox_item.title }}</h5>
+                                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="navigateItem('next')" id="nextBtn" disabled>
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                            <div class="d-flex gap-1">
+                                <!-- Quick Actions -->
+                                <button type="button" class="btn btn-sm btn-outline-success" onclick="quickAction('process')" title="Marcar como procesado">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-warning" onclick="quickAction('archive')" title="Archivar">
+                                    <i class="bi bi-archive"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-info" onclick="quickAction('delegate')" title="Delegar">
+                                    <i class="bi bi-send"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="quickAction('delete')" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Item Metadata -->
+                        <div class="item-metadata mb-4 p-3 bg-light rounded">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Creado por</small>
+                                    <strong>{{ inbox_item.created_by.get_full_name|default:inbox_item.created_by.username }}</strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Fecha de creación</small>
+                                    <strong>{{ inbox_item.created_at|date:"d/m/Y H:i" }}</strong>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Estado</small>
+                                    <span class="badge bg-{% if inbox_item.is_processed %}success{% else %}warning{% endif %}">
+                                        {% if inbox_item.is_processed %}Procesado{% else %}Pendiente{% endif %}
+                                    </span>
+                                </div>
+                                <div class="col-md-6">
+                                    <small class="text-muted d-block">Prioridad</small>
+                                    <span class="badge bg-{% if inbox_item.priority == 'alta' %}danger{% elif inbox_item.priority == 'baja' %}info{% else %}secondary{% endif %}">
+                                        {{ inbox_item.get_priority_display }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Item Content -->
+                        <div class="item-content">
+                            {% if inbox_item.description %}
+                                <h6 class="text-muted mb-2">Descripción</h6>
+                                <p class="mb-4">{{ inbox_item.description }}</p>
+                            {% endif %}
+
+                            {% if inbox_item.context %}
+                                <h6 class="text-muted mb-2">Contexto Adicional</h6>
+                                <div class="bg-light p-3 rounded mb-4">
+                                    <pre class="mb-0">{{ inbox_item.context }}</pre>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- GTD Processing Actions -->
+                        <div class="processing-actions mt-4">
+                            <h6 class="mb-3">
+                                <i class="bi bi-diagram-3 me-2"></i>
+                                ¿Qué hacer con este item?
+                            </h6>
+
+                            <form method="post" id="processForm">
+                                {% csrf_token %}
+                                <input type="hidden" name="item_id" value="{{ inbox_item.id }}">
+
+                                <div class="row g-3">
+                                    <!-- Accionable -->
+                                    <div class="col-md-6">
+                                        <div class="card border-success">
+                                            <div class="card-body text-center">
+                                                <i class="bi bi-check-circle-fill text-success" style="font-size: 2rem;"></i>
+                                                <h6 class="mt-2">Es accionable</h6>
+                                                <div class="d-grid gap-2 mt-3">
+                                                    <button type="submit" name="action" value="convert_to_task" class="btn btn-success btn-sm">
+                                                        <i class="bi bi-plus-circle me-1"></i>
+                                                        Crear Tarea
+                                                    </button>
+                                                    <button type="submit" name="action" value="convert_to_project" class="btn btn-primary btn-sm">
+                                                        <i class="bi bi-folder-plus me-1"></i>
+                                                        Crear Proyecto
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- No Accionable -->
+                                    <div class="col-md-6">
+                                        <div class="card border-warning">
+                                            <div class="card-body text-center">
+                                                <i class="bi bi-x-circle-fill text-warning" style="font-size: 2rem;"></i>
+                                                <h6 class="mt-2">No es accionable</h6>
+                                                <div class="d-grid gap-2 mt-3">
+                                                    <button type="submit" name="action" value="reference" class="btn btn-warning btn-sm">
+                                                        <i class="bi bi-archive me-1"></i>
+                                                        Referencia
+                                                    </button>
+                                                    <button type="submit" name="action" value="someday" class="btn btn-info btn-sm">
+                                                        <i class="bi bi-lightbulb me-1"></i>
+                                                        Algún día
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Secondary Actions -->
+                                <div class="d-flex justify-content-center gap-2 mt-3">
+                                    <button type="submit" name="action" value="postpone" class="btn btn-outline-secondary btn-sm">
+                                        <i class="bi bi-pause-circle me-1"></i>
+                                        Posponer
+                                    </button>
+                                    <button type="submit" name="action" value="delete" class="btn btn-outline-danger btn-sm"
+                                            onclick="return confirm('¿Eliminar este item?')">
+                                        <i class="bi bi-trash me-1"></i>
+                                        Eliminar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <!-- Empty State -->
+                <div class="card shadow-sm h-100">
+                    <div class="card-body d-flex align-items-center justify-content-center text-center">
+                        <div>
+                            <i class="bi bi-envelope-open text-muted" style="font-size: 4rem;"></i>
+                            <h5 class="mt-3 text-muted">Selecciona un item</h5>
+                            <p class="text-muted">Haz clic en un item de la lista para ver los detalles y procesarlo</p>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+/* Mailbox Layout */
+.mailbox-container {
+    padding: 1rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    min-height: 100vh;
+}
+
+.mailbox-layout {
+    min-height: calc(100vh - 200px);
+}
+
+/* Sidebar */
+.mailbox-sidebar .card {
+    border: none;
+    border-radius: 12px;
+}
+
+.mailbox-item-list {
+    max-height: calc(100vh - 250px);
+    overflow-y: auto;
+}
+
+/* Item List */
+.mailbox-item {
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.mailbox-item:hover {
+    background: #f8f9fa;
+    transform: translateX(2px);
+}
+
+.mailbox-item.active {
+    background: #e3f2fd;
+    border-left: 4px solid #2196f3;
+}
+
+.mailbox-item.pending {
+    border-left: 3px solid #ffc107;
+}
+
+.mailbox-item.processed {
+    border-left: 3px solid #28a745;
+}
+
+.mailbox-item-title {
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+}
+
+.mailbox-item-preview {
+    color: #718096;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.mailbox-item-meta {
+    font-size: 0.75rem;
+}
+
+.badge-sm {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+
+/* Main Content */
+.mailbox-main .card {
+    border: none;
+    border-radius: 12px;
+}
+
+.item-metadata {
+    border: 1px solid #e9ecef;
+}
+
+.processing-actions .card {
+    transition: all 0.3s ease;
+}
+
+.processing-actions .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .mailbox-container {
+        padding: 0.5rem;
+    }
+
+    .mailbox-sidebar {
+        margin-bottom: 1rem;
+    }
+
+    .mailbox-item-list {
+        max-height: 300px;
+    }
+
+    .mailbox-item {
+        padding: 0.75rem;
+    }
+}
+
+/* Loading States */
+.mailbox-item.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+</style>
+
+{% block extra_js %}
+<script>
+// Global variables
+let currentItemId = {{ inbox_item.id|default:0 }};
+let allItems = {{ inbox_items|length }};
+let itemIds = [{% for item in inbox_items %}{{ item.id }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+// Select item function
+function selectItem(itemId) {
+    if (itemId === currentItemId) return;
+
+    // Update active state in sidebar
+    document.querySelectorAll('.mailbox-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    document.querySelector(`[data-item-id="${itemId}"]`).classList.add('active');
+
+    // Navigate to item detail
+    window.location.href = `/events/inbox/process/${itemId}/`;
+}
+
+// Filter items
+function filterItems(searchTerm) {
+    const items = document.querySelectorAll('.mailbox-item');
+    items.forEach(item => {
+        const title = item.querySelector('.mailbox-item-title').textContent.toLowerCase();
+        const preview = item.querySelector('.mailbox-item-preview')?.textContent.toLowerCase() || '';
+        const visible = title.includes(searchTerm.toLowerCase()) || preview.includes(searchTerm.toLowerCase());
+        item.style.display = visible ? 'block' : 'none';
+    });
+}
+
+// Filter by status
+function filterByStatus(status) {
+    const items = document.querySelectorAll('.mailbox-item');
+    items.forEach(item => {
+        let visible = true;
+        if (status === 'pending') {
+            visible = item.classList.contains('pending');
+        } else if (status === 'processed') {
+            visible = item.classList.contains('processed');
+        }
+        item.style.display = visible ? 'block' : 'none';
+    });
+}
+
+// Navigate between items
+function navigateItem(direction) {
+    if (!currentItemId || itemIds.length === 0) return;
+
+    const currentIndex = itemIds.indexOf(currentItemId);
+    let newIndex;
+
+    if (direction === 'next') {
+        newIndex = currentIndex + 1;
+    } else {
+        newIndex = currentIndex - 1;
+    }
+
+    if (newIndex >= 0 && newIndex < itemIds.length) {
+        selectItem(itemIds[newIndex]);
+    }
+}
+
+// Quick actions
+function quickAction(action) {
+    if (!currentItemId) return;
+
+    const actions = {
+        'process': {
+            confirm: '¿Marcar este item como procesado?',
+            value: 'reference' // Using reference as it marks as processed
+        },
+        'archive': {
+            confirm: '¿Archivar este item?',
+            value: 'reference'
+        },
+        'delegate': {
+            confirm: '¿Delegar este item?',
+            value: 'delegate'
+        },
+        'delete': {
+            confirm: '¿Eliminar permanentemente este item?',
+            value: 'delete'
+        }
+    };
+
+    if (confirm(actions[action].confirm)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = window.location.href;
+
+        form.innerHTML = `
+            <input type="hidden" name="csrfmiddlewaretoken" value="${document.querySelector('[name=csrfmiddlewaretoken]').value}">
+            <input type="hidden" name="action" value="${actions[action].value}">
+        `;
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Refresh mailbox
+function refreshMailbox() {
+    window.location.reload();
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return; // Don't interfere with input fields
+
+    switch(e.key) {
+        case 'ArrowLeft':
+            e.preventDefault();
+            navigateItem('prev');
+            break;
+        case 'ArrowRight':
+            e.preventDefault();
+            navigateItem('next');
+            break;
+        case 'Enter':
+            if (e.ctrlKey) {
+                e.preventDefault();
+                quickAction('process');
+            }
+            break;
+        case 'Delete':
+            if (e.ctrlKey) {
+                e.preventDefault();
+                quickAction('delete');
+            }
+            break;
+    }
+});
+
+// Update navigation buttons
+document.addEventListener('DOMContentLoaded', function() {
+    if (currentItemId && itemIds.length > 0) {
+        const currentIndex = itemIds.indexOf(currentItemId);
+        document.getElementById('prevBtn').disabled = currentIndex <= 0;
+        document.getElementById('nextBtn').disabled = currentIndex >= itemIds.length - 1;
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

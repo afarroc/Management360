@@ -673,6 +673,14 @@ class InboxItem(models.Model):
 
     # Sistema de clasificación colaborativa
     is_public = models.BooleanField(default=False, help_text="¿Puede ser visto por otros usuarios?")
+    assigned_to = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_inbox_items',
+        help_text="Usuario asignado para procesar este item"
+    )
     authorized_users = models.ManyToManyField(
         User,
         through='InboxItemAuthorization',
@@ -756,6 +764,69 @@ class InboxItem(models.Model):
         """Incrementa el contador de vistas"""
         self.view_count += 1
         self.save(update_fields=['view_count', 'last_activity'])
+
+    def assign_to_available_user(self):
+        """
+        Asigna automáticamente el item a un usuario disponible
+        basado en carga de trabajo y especialización
+        """
+        from django.contrib.auth.models import User
+        from django.db.models import Count
+
+        # Obtener usuarios disponibles (con perfiles activos)
+        available_users = User.objects.filter(
+            is_active=True,
+            profile__isnull=False
+        ).exclude(
+            profile__role__in=['SU']  # Excluir superusuarios de asignación automática
+        )
+
+        if not available_users.exists():
+            return False
+
+        # Calcular carga actual de cada usuario
+        user_workloads = {}
+        for user in available_users:
+            # Contar items asignados no procesados
+            assigned_count = InboxItem.objects.filter(
+                assigned_to=user,
+                is_processed=False
+            ).count()
+
+            # Bonus por especialización (usuarios CX tienen prioridad para emails)
+            specialization_bonus = 0
+            if hasattr(user, 'profile') and user.profile:
+                if 'CX' in str(user.profile.role or ''):
+                    specialization_bonus = -2  # Prioridad para CX
+                elif 'FTE' in str(user.profile.role or ''):
+                    specialization_bonus = -1  # Prioridad para FTE
+
+            user_workloads[user.id] = {
+                'user': user,
+                'workload': assigned_count + specialization_bonus,
+                'role': getattr(user.profile, 'role', None) if hasattr(user, 'profile') else None
+            }
+
+        # Ordenar por carga de trabajo (menor primero)
+        sorted_users = sorted(user_workloads.values(), key=lambda x: x['workload'])
+
+        # Asignar al usuario con menor carga
+        best_user = sorted_users[0]['user']
+        self.assigned_to = best_user
+        self.save(update_fields=['assigned_to'])
+
+        # Registrar en historial
+        InboxItemHistory.objects.create(
+            inbox_item=self,
+            user=best_user,  # O el usuario del sistema
+            action='auto_assigned',
+            new_values={
+                'assigned_to': best_user.username,
+                'assignment_method': 'automatic'
+            }
+        )
+
+        return True
 
 # Recordatorios mejorados
 class Reminder(models.Model):

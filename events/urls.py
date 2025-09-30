@@ -124,6 +124,7 @@ urlpatterns = [
     # GTD (GETTING THINGS DONE) SYSTEM
     # ============================================================================
     path('inbox/', views.inbox_view, name='inbox'),
+    path('inbox/process/', views.process_inbox_item, name='process_inbox_item_mailbox'),
     path('inbox/process/<int:item_id>/', views.process_inbox_item, name='process_inbox_item'),
     path('inbox/api/tasks/', views.get_available_tasks, name='inbox_api_tasks'),
     path('inbox/api/projects/', views.get_available_projects, name='inbox_api_projects'),
@@ -135,6 +136,9 @@ urlpatterns = [
     path('inbox/admin/<int:item_id>/classify/', views.classify_inbox_item_admin, name='classify_inbox_item_admin'),
     path('inbox/admin/<int:item_id>/authorize/', views.authorize_inbox_item, name='authorize_inbox_item'),
     path('inbox/admin/bulk-action/', views.inbox_admin_bulk_action, name='inbox_admin_bulk_action'),
+
+    # Root Dashboard Bulk Actions
+    path('root/bulk-actions/', views.root_bulk_actions, name='root_bulk_actions'),
     # Inbox Management Panel - GTD Analyst Control Panel
     path('inbox/management/', views.inbox_management_panel, name='inbox_management_panel'),
     # Inbox Item Creation API
