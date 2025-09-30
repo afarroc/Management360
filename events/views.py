@@ -571,7 +571,7 @@ def project_bulk_action(request):
         projects = Project.objects.filter(id__in=selected_projects)
 
         if action == 'delete':
-            if not (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU'):
+            if not (hasattr(request.user, 'profile') and hasattr(request.user.cv, 'role') and request.user.cv.role == 'SU'):
                 messages.error(request, 'No tienes permiso para eliminar proyectos.')
                 return redirect('project_panel')
 
@@ -679,7 +679,7 @@ def project_edit(request, project_id=None):
 
             # Estamos manejando una solicitud GET sin argumentos
             # Verificar el rol del usuario
-            if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
+            if hasattr(request.user, 'profile') and hasattr(request.user.cv, 'role') and request.user.cv.role == 'SU':
                 # Si el usuario es un 'SU', puede ver todos los proyectos
                 projects = Project.objects.all().order_by('-updated_at')
             else:
@@ -1409,7 +1409,7 @@ def task_edit(request, task_id=None):
         else:
             # Estamos manejando una solicitud GET sin argumentos
             # Verificar el rol del usuario
-            if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
+            if hasattr(request.user, 'profile') and hasattr(request.user.cv, 'role') and request.user.cv.role == 'SU':
                 # Si el usuario es un 'SU', puede ver todos los proyectos
                 tasks = Task.objects.all().order_by('-created_at')
             else:
@@ -1423,7 +1423,7 @@ def task_edit(request, task_id=None):
 def task_delete(request, task_id):
     if request.method == 'POST':
         task = get_object_or_404(Task, pk=task_id)
-        if not (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU'):
+        if not (hasattr(request.user, 'profile') and hasattr(request.user.cv, 'role') and request.user.cv.role == 'SU'):
             messages.error(request, 'No tienes permiso para eliminar esta tarea.')
             return redirect(reverse('tasks'))
         task.delete()
@@ -1682,8 +1682,10 @@ def inbox_view(request):
                 messages.error(request, 'El título es obligatorio')
                 return redirect('inbox')
 
-    # Obtener items del inbox del usuario
-    inbox_items = InboxItem.objects.filter(created_by=request.user)
+    # Obtener items del inbox del usuario (creados por él o asignados a él)
+    inbox_items = InboxItem.objects.filter(
+        models.Q(created_by=request.user) | models.Q(assigned_to=request.user)
+    ).distinct()
 
     # Categorización GTD
     unprocessed_items = inbox_items.filter(is_processed=False)
@@ -1758,7 +1760,15 @@ def inbox_stats_api(request):
         from .models import InboxItem
 
         # Obtener items del inbox del usuario
-        inbox_items = InboxItem.objects.filter(created_by=request.user)
+        # SU users can see all items, others see only their own or assigned items
+        if hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and request.user.cv.role == 'SU':
+            # SU users see all inbox items
+            inbox_items = InboxItem.objects.all()
+        else:
+            # Regular users see items they created or are assigned to
+            inbox_items = InboxItem.objects.filter(
+                models.Q(created_by=request.user) | models.Q(assigned_to=request.user)
+            ).distinct()
 
         # Estadísticas básicas
         total_items = inbox_items.count()
@@ -1942,18 +1952,36 @@ def find_similar_projects(user, title, description=None, threshold=0.6):
 
 
 @login_required
-def process_inbox_item(request, item_id):
+def process_inbox_item(request, item_id=None):
     """
-    Vista para procesar un item del inbox siguiendo la metodología GTD
+    Vista para procesar items del inbox siguiendo la metodología GTD
+    Estilo bandeja de entrada con lista y detalle
     """
     from .models import InboxItem
     from .forms import CreateNewTask
 
+    # Obtener todos los items del inbox del usuario
+    user_inbox_items = InboxItem.objects.filter(
+        Q(created_by=request.user) | Q(assigned_to=request.user)
+    ).select_related('created_by', 'assigned_to').order_by('-created_at')
+
+    # Si no se especifica item_id, mostrar la bandeja de entrada
+    if item_id is None:
+        context = {
+            'title': 'Bandeja de Entrada GTD',
+            'inbox_items': user_inbox_items,
+            'total_items': user_inbox_items.count(),
+            'unprocessed_count': user_inbox_items.filter(is_processed=False).count(),
+            'processed_count': user_inbox_items.filter(is_processed=True).count(),
+        }
+        return render(request, 'events/inbox_mailbox.html', context)
+
+    # Si se especifica item_id, mostrar el detalle del item
     try:
-        inbox_item = InboxItem.objects.get(id=item_id, created_by=request.user)
+        inbox_item = user_inbox_items.filter(id=item_id).get()
     except InboxItem.DoesNotExist:
         messages.error(request, 'Item no encontrado')
-        return redirect('inbox')
+        return redirect('process_inbox_item')
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -2480,7 +2508,7 @@ def event_create(request):
             if form.is_valid():
                 try:
                     # Obtén el estado inicial basado en la solicitud
-                    if 'inbound' in request.POST or (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU'):
+                    if 'inbound' in request.POST or (hasattr(request.user, 'profile') and hasattr(request.user.cv, 'role') and request.user.cv.role == 'SU'):
                         initial_status_id = request.POST.get('event_status')
                     else:
                         initial_status_id = Status.objects.get(status_name='Created').id
@@ -2497,7 +2525,7 @@ def event_create(request):
                     new_event = form.save(commit=False)
                     new_event.event_status = initial_status
                     new_event.host = request.user  # El host es siempre el creador del evento
-                    if not hasattr(request.user, 'profile') or not hasattr(request.user.profile, 'role') or request.user.profile.role != 'SU':
+                    if not hasattr(request.user, 'profile') or not hasattr(request.user.cv, 'role') or request.user.cv.role != 'SU':
                         new_event.assigned_to = request.user  # Establecer automáticamente assigned_to como el usuario actual si el usuario no es un 'SU'
                     new_event.save()
 
@@ -2585,7 +2613,7 @@ def event_edit(request, event_id=None):
         else:
             # Estamos manejando una solicitud GET sin argumentos
             # Verificar el rol del usuario
-            if hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU':
+            if hasattr(request.user, 'profile') and hasattr(request.user.cv, 'role') and request.user.cv.role == 'SU':
                 # Si el usuario es un 'SU', puede ver todos los eventos
                 events = Event.objects.all().order_by('-updated_at')
             else:
@@ -2633,7 +2661,7 @@ def event_delete(request, event_id):
         event = get_object_or_404(Event, pk=event_id)
 
         # Verificar si el usuario es un 'SU'
-        if not (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role == 'SU'):
+        if not (hasattr(request.user, 'profile') and hasattr(request.user.cv, 'role') and request.user.cv.role == 'SU'):
             messages.error(request, 'No tienes permiso para eliminar este evento.')
             return redirect(reverse('event_panel'))
 
@@ -5113,7 +5141,7 @@ def inbox_admin_dashboard(request):
     Panel de administración de inboxes - Vista principal para gestionar items del inbox
     """
     # Verificar permisos de administrador
-    if not (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and request.user.profile.role in ['SU', 'ADMIN']):
+    if not (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and request.user.cv.role in ['SU', 'ADMIN']):
         messages.error(request, 'No tienes permisos para acceder al panel de administración de inboxes.')
         return redirect('inbox')
 
@@ -5431,10 +5459,14 @@ def inbox_item_detail_admin(request, item_id):
     """
     Vista detallada de un item del inbox para administración
     """
-    # Verificar permisos
-    if not request.user.profile.role in ['SU', 'ADMIN']:
-        messages.error(request, 'No tienes permisos para ver detalles de items del inbox.')
-        return redirect('inbox_admin_dashboard')
+    # Verificar permisos - permitir acceso a usuarios autenticados y activos
+    if not request.user.is_authenticated:
+        messages.error(request, 'Debes iniciar sesión para ver detalles de items del inbox.')
+        return redirect('login')
+
+    if not request.user.is_active:
+        messages.error(request, 'Tu cuenta no está activa.')
+        return redirect('login')
 
     try:
         inbox_item = InboxItem.objects.select_related(
@@ -5459,14 +5491,30 @@ def inbox_item_detail_admin(request, item_id):
         # Historial de actividad
         activity_history = InboxItemHistory.objects.filter(inbox_item=inbox_item)[:20]
 
+        # Obtener usuarios disponibles para delegación
+        available_users = User.objects.filter(is_active=True).order_by('username')
+
         context = {
             'title': f'Administrar: {inbox_item.title}',
-            'inbox_item': inbox_item,
+            'item': inbox_item,
             'classifications': classifications,
             'consensus_category': consensus_category,
             'consensus_action': consensus_action,
-            'activity_history': activity_history,
+            'history': activity_history,
+            'available_users': available_users,
         }
+
+        # Debug logs
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"DEBUG: Rendering inbox_item_detail_admin for item {item_id}")
+        logger.info(f"DEBUG: Item title: {inbox_item.title}")
+        logger.info(f"DEBUG: Item description: {inbox_item.description}")
+        logger.info(f"DEBUG: Item created_by: {inbox_item.created_by}")
+        logger.info(f"DEBUG: Item created_at: {inbox_item.created_at}")
+        logger.info(f"DEBUG: Context keys: {list(context.keys())}")
+        logger.info(f"DEBUG: Available users count: {available_users.count()}")
+        logger.info(f"DEBUG: History count: {activity_history.count()}")
 
         return render(request, 'events/inbox_item_detail_admin.html', context)
 
@@ -5481,7 +5529,7 @@ def classify_inbox_item_admin(request, item_id):
     Vista para clasificar un item del inbox desde el panel de administración
     """
     # Verificar permisos
-    if not request.user.profile.role in ['SU', 'ADMIN']:
+    if not (hasattr(request.user, 'cv') and request.user.cv and request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST']):
         messages.error(request, 'No tienes permisos para clasificar items del inbox.')
         return redirect('inbox_admin_dashboard')
 
@@ -5552,7 +5600,7 @@ def authorize_inbox_item(request, item_id):
     Vista para autorizar usuarios a ver/clasificar un item del inbox
     """
     # Verificar permisos
-    if not request.user.profile.role in ['SU', 'ADMIN']:
+    if not (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST']):
         messages.error(request, 'No tienes permisos para autorizar usuarios.')
         return redirect('inbox_admin_dashboard')
 
@@ -5617,7 +5665,7 @@ def inbox_admin_bulk_action(request):
     Vista para acciones masivas en items del inbox
     """
     # Verificar permisos
-    if not request.user.profile.role in ['SU', 'ADMIN']:
+    if not (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST']):
         messages.error(request, 'No tienes permisos para realizar acciones masivas.')
         return redirect('inbox_admin_dashboard')
 
@@ -6049,139 +6097,292 @@ def bulk_reminder_action(request):
                 )
             messages.success(request, f'Se duplicaron {count} recordatorio(s).')
 
+# Funciones helper movidas a módulos separados:
+# - check_root_access -> events.utils.dashboard_utils
+# - get_responsive_grid_classes -> events.utils.dashboard_utils
+# - _get_user_info, _get_profile_info, _get_player_info -> events.services.dashboard_service
+
+
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
 def root(request):
     """
-    Vista raíz con layout de 12 contenedores responsivos
+    Vista raíz refactorizada con servicios modulares y mejor mantenibilidad
     """
-    # Información del usuario actual
-    user_info = {
-        'username': request.user.username,
-        'first_name': request.user.first_name,
-        'last_name': request.user.last_name,
-        'email': request.user.email,
-        'date_joined': request.user.date_joined,
-        'last_login': request.user.last_login,
-        'is_staff': request.user.is_staff,
-        'is_superuser': request.user.is_superuser,
-        'is_active': request.user.is_active,
-    }
+    from .services.dashboard_service import RootDashboardService
+    from .utils import check_root_access, get_responsive_grid_classes, log_dashboard_access
 
-    # Información del perfil y rol del sistema
-    profile_info = {}
-    user_role = 'Usuario Regular'
-    role_badge_class = 'secondary'
+    # Verificar acceso usando utilidad centralizada
+    if not check_root_access(request.user):
+        messages.error(request, 'No tienes permisos suficientes para acceder al panel root.')
+        return redirect('dashboard')
 
-    if hasattr(request.user, 'profile') and request.user.profile:
-        profile_info = {
-            'role': getattr(request.user.profile, 'role', None),
-            'profession': getattr(request.user.profile, 'profession', None),
-            'bio': getattr(request.user.profile, 'bio', None),
-        }
+    # Registrar acceso para auditoría
+    log_dashboard_access(request.user, 'root_dashboard_access')
 
-        # Determinar el tipo de usuario basado en el rol
-        role = getattr(request.user.profile, 'role', None)
-        if role == 'SU':
-            user_role = 'Super Usuario'
-            role_badge_class = 'danger'
-        elif role == 'ADMIN':
-            user_role = 'Administrador'
-            role_badge_class = 'warning'
-        elif role == 'GTD_ANALYST':
-            user_role = 'Analista GTD'
-            role_badge_class = 'info'
-        elif role:
-            user_role = f'Usuario {role}'
-            role_badge_class = 'primary'
-
-    # Información del PlayerProfile (si existe)
-    player_info = {}
-    if hasattr(request.user, 'player_profile') and request.user.player_profile:
-        player_profile = request.user.player_profile
-        player_info = {
-            'current_room': player_profile.current_room.name if player_profile.current_room else None,
-            'energy': player_profile.energy,
-            'productivity': player_profile.productivity,
-            'social': player_profile.social,
-            'position_x': player_profile.position_x,
-            'position_y': player_profile.position_y,
-        }
-
-    # Obtener items del inbox procesados por email CX
-    cx_email_items = InboxItem.objects.filter(
-        user_context__source='cx_email'
-    ).select_related('created_by').order_by('-created_at')[:20]
-
-    # Estadísticas de emails CX
-    cx_stats = {
-        'total': InboxItem.objects.filter(user_context__source='cx_email').count(),
-        'processed': InboxItem.objects.filter(
-            user_context__source='cx_email',
-            is_processed=True
-        ).count(),
-        'unprocessed': InboxItem.objects.filter(
-            user_context__source='cx_email',
-            is_processed=False
-        ).count(),
-        'today': InboxItem.objects.filter(
-            user_context__source='cx_email',
-            created_at__date=timezone.now().date()
-        ).count(),
-    }
-
-    # Información del backend de email
-    from django.conf import settings
-    import smtplib
-
-    email_backend_info = {
-        'backend': getattr(settings, 'EMAIL_BACKEND', 'No configurado'),
-        'host': getattr(settings, 'EMAIL_HOST', 'No configurado'),
-        'port': getattr(settings, 'EMAIL_PORT', 'No configurado'),
-        'use_tls': getattr(settings, 'EMAIL_USE_TLS', False),
-        'host_user': getattr(settings, 'EMAIL_HOST_USER', 'No configurado'),
-        'reception_enabled': getattr(settings, 'EMAIL_RECEPTION_ENABLED', False),
-        'imap_host': getattr(settings, 'EMAIL_IMAP_HOST', 'No configurado'),
-        'imap_port': getattr(settings, 'EMAIL_IMAP_PORT', 'No configurado'),
-        'cx_domains': getattr(settings, 'CX_EMAIL_DOMAINS', []),
-        'cx_keywords': getattr(settings, 'CX_KEYWORDS', []),
-    }
-
-    # Probar conectividad SMTP
-    smtp_status = 'Desconocido'
     try:
-        if email_backend_info['host'] != 'No configurado' and email_backend_info['port'] != 'No configurado':
-            server = smtplib.SMTP(email_backend_info['host'], email_backend_info['port'], timeout=5)
-            server.ehlo()
-            if email_backend_info['use_tls']:
-                server.starttls()
-                server.ehlo()
-            server.quit()
-            smtp_status = 'Conectado'
-        else:
-            smtp_status = 'No configurado'
+        # Usar el servicio refactorizado para obtener todos los datos
+        dashboard = RootDashboardService(request.user, request)
+        context = dashboard.get_dashboard_data()
+
+        # Añadir elementos finales del contexto
+        context.update({
+            'title': 'Root Dashboard',
+            'page_title': 'Root Dashboard',
+            'css_classes': get_responsive_grid_classes(),
+        })
+
+        return render(request, 'events/root.html', context)
+
     except Exception as e:
-        smtp_status = f'Error: {str(e)}'
+        # Manejo de errores mejorado
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error in root dashboard for user {request.user.username}: {str(e)}", exc_info=True)
+        messages.error(request, 'Error al cargar el dashboard. Contacte al administrador.')
+        return redirect('dashboard')
 
-    email_backend_info['smtp_status'] = smtp_status
 
-    # Obtener todos los items del inbox para gestión completa
-    all_inbox_items = InboxItem.objects.select_related('created_by').order_by('-created_at')[:50]
+@login_required
+def root_bulk_actions(request):
+    """
+    Vista para manejar acciones masivas desde el panel root
+    """
+    from .utils.dashboard_utils import check_root_access
 
-    context = {
-        'title': 'Root Dashboard',
-        'page_title': 'Root Dashboard',
-        'user_info': user_info,
-        'profile_info': profile_info,
-        'player_info': player_info,
-        'user_role': user_role,
-        'role_badge_class': role_badge_class,
-        'cx_email_items': cx_email_items,
-        'cx_stats': cx_stats,
-        'email_backend_info': email_backend_info,
-        'all_inbox_items': all_inbox_items,
-    }
-    return render(request, 'events/root.html', context)
+    if not check_root_access(request.user):
+        return JsonResponse({'success': False, 'error': 'No tienes permisos suficientes'})
+
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    action = request.POST.get('action')
+    selected_items = request.POST.getlist('selected_items[]')
+
+    # Validación básica de entrada
+    if not action:
+        return JsonResponse({'success': False, 'error': 'Acción requerida'})
+
+    if not selected_items:
+        return JsonResponse({'success': False, 'error': 'No se seleccionaron items'})
+
+    # Limitar número máximo de items por acción para prevenir abuso
+    if len(selected_items) > 50:
+        return JsonResponse({'success': False, 'error': 'Demasiados items seleccionados (máximo 50)'})
+
+    # Logging para auditoría
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"User {request.user.username} performing bulk action '{action}' on {len(selected_items)} items")
+
+    try:
+        items = InboxItem.objects.filter(id__in=selected_items)
+
+        if action == 'mark_processed':
+            count = 0
+            for item in items:
+                if not item.is_processed:
+                    item.is_processed = True
+                    item.processed_at = timezone.now()
+                    item.save()
+                    count += 1
+
+                    # Registrar en historial
+                    InboxItemHistory.objects.create(
+                        inbox_item=item,
+                        user=request.user,
+                        action='bulk_mark_processed',
+                        new_values={'processed_at': item.processed_at.isoformat()}
+                    )
+
+            return JsonResponse({
+                'success': True,
+                'message': f'Se marcaron {count} item(s) como procesados',
+                'count': count
+            })
+
+        elif action == 'mark_unprocessed':
+            count = 0
+            for item in items:
+                if item.is_processed:
+                    item.is_processed = False
+                    item.processed_at = None
+                    item.save()
+                    count += 1
+
+                    # Registrar en historial
+                    InboxItemHistory.objects.create(
+                        inbox_item=item,
+                        user=request.user,
+                        action='bulk_mark_unprocessed',
+                        old_values={'processed_at': item.processed_at.isoformat() if item.processed_at else None}
+                    )
+
+            return JsonResponse({
+                'success': True,
+                'message': f'Se marcaron {count} item(s) como no procesados',
+                'count': count
+            })
+
+        elif action == 'change_priority':
+            new_priority = request.POST.get('new_priority')
+            if not new_priority or new_priority not in ['alta', 'media', 'baja']:
+                return JsonResponse({'success': False, 'error': 'Prioridad inválida'})
+
+            count = items.update(priority=new_priority)
+
+            # Registrar en historial para cada item
+            for item in items:
+                InboxItemHistory.objects.create(
+                    inbox_item=item,
+                    user=request.user,
+                    action='bulk_change_priority',
+                    old_values={'priority': item.priority},
+                    new_values={'priority': new_priority}
+                )
+
+            return JsonResponse({
+                'success': True,
+                'message': f'Se cambió la prioridad de {count} item(s) a {new_priority}',
+                'count': count
+            })
+
+        elif action == 'assign_to_user':
+            user_id = request.POST.get('user_id')
+            if not user_id:
+                return JsonResponse({'success': False, 'error': 'ID de usuario requerido'})
+
+            try:
+                target_user = User.objects.get(id=user_id)
+            except User.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Usuario no encontrado'})
+
+            count = items.update(assigned_to=target_user)
+
+            # Registrar en historial para cada item
+            for item in items:
+                InboxItemHistory.objects.create(
+                    inbox_item=item,
+                    user=request.user,
+                    action='bulk_assign_user',
+                    old_values={'assigned_to': item.assigned_to.username if item.assigned_to else None},
+                    new_values={'assigned_to': target_user.username}
+                )
+
+            return JsonResponse({
+                'success': True,
+                'message': f'Se asignaron {count} item(s) al usuario {target_user.username}',
+                'count': count
+            })
+
+        elif action == 'change_category':
+            new_category = request.POST.get('new_category')
+            if not new_category:
+                return JsonResponse({'success': False, 'error': 'Categoría requerida'})
+
+            count = items.update(gtd_category=new_category)
+
+            # Registrar en historial para cada item
+            for item in items:
+                InboxItemHistory.objects.create(
+                    inbox_item=item,
+                    user=request.user,
+                    action='bulk_change_category',
+                    old_values={'gtd_category': item.gtd_category},
+                    new_values={'gtd_category': new_category}
+                )
+
+            return JsonResponse({
+                'success': True,
+                'message': f'Se cambió la categoría de {count} item(s) a {new_category}',
+                'count': count
+            })
+
+        elif action == 'delegate':
+            delegate_user_id = request.POST.get('delegate_user_id')
+            if not delegate_user_id:
+                return JsonResponse({'success': False, 'error': 'Usuario destino requerido'})
+
+            try:
+                delegate_user = User.objects.get(id=delegate_user_id)
+            except User.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Usuario destino no encontrado'})
+
+            # Verificar que el usuario destino esté activo
+            if not delegate_user.is_active:
+                return JsonResponse({'success': False, 'error': 'El usuario destino no está activo'})
+
+            # Verificar permisos para delegar cada item
+            # Permitir delegación si es superusuario o tiene rol admin
+            user_can_delegate = (request.user.is_superuser or
+                                (hasattr(request.user, 'cv') and
+                                 hasattr(request.user.cv, 'role') and
+                                 request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST']))
+
+            # Debug logging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"DEBUG DELEGATION: User {request.user.username}, is_superuser: {request.user.is_superuser}")
+            logger.info(f"DEBUG DELEGATION: has_cv: {hasattr(request.user, 'cv')}")
+            if hasattr(request.user, 'cv'):
+                logger.info(f"DEBUG DELEGATION: User role: {getattr(request.user.cv, 'role', 'NO_ROLE')}")
+            logger.info(f"DEBUG DELEGATION: user_can_delegate: {user_can_delegate}")
+
+            for item in items:
+                # Solo permitir delegar si el usuario es el creador del item o puede delegar
+                can_delegate_item = item.created_by == request.user or user_can_delegate
+                logger.info(f"DEBUG DELEGATION: Item '{item.title}', created_by: {item.created_by.username}, can_delegate_item: {can_delegate_item}")
+
+                if not can_delegate_item:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'No tienes permisos para delegar el item "{item.title}". Usuario: {request.user.username}, is_superuser: {request.user.is_superuser}, Rol detectado: {getattr(request.user.cv, "role", "SIN_ROL")}'
+                    })
+
+            count = 0
+            for item in items:
+                old_assigned = item.assigned_to
+                item.assigned_to = delegate_user
+                item.save(update_fields=['assigned_to'])
+                count += 1
+
+                # Registrar en historial
+                InboxItemHistory.objects.create(
+                    inbox_item=item,
+                    user=request.user,
+                    action='bulk_delegated',
+                    old_values={'assigned_to': old_assigned.username if old_assigned else None},
+                    new_values={
+                        'assigned_to': delegate_user.username,
+                        'delegation_method': 'bulk_action',
+                        'delegated_by': request.user.username
+                    }
+                )
+
+            return JsonResponse({
+                'success': True,
+                'message': f'Se delegaron {count} item(s) al usuario {delegate_user.username}',
+                'count': count,
+                'delegate_user': delegate_user.username
+            })
+
+        elif action == 'delete':
+            count = items.count()
+            items.delete()
+
+            return JsonResponse({
+                'success': True,
+                'message': f'Se eliminaron {count} item(s)',
+                'count': count
+            })
+
+        else:
+            return JsonResponse({'success': False, 'error': 'Acción no válida'})
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
 
 
 @login_required
@@ -6191,8 +6392,8 @@ def inbox_management_panel(request):
     """
     # Verificar permisos - solo superusers o administradores con rol GTD
     if not (request.user.is_superuser or
-            (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and
-             request.user.profile.role in ['SU', 'ADMIN', 'GTD_ANALYST'])):
+            (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and
+             request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST'])):
         messages.error(request, 'No tienes permisos para acceder al panel de gestión GTD.')
         return redirect('inbox')
 
@@ -6306,8 +6507,8 @@ def update_processing_settings(request):
         return JsonResponse({'success': False, 'error': 'Método no permitido'})
 
     # Verificar permisos
-    if not (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and
-            request.user.profile.role in ['SU', 'ADMIN', 'GTD_ANALYST']):
+    if not (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and
+            request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST']):
         return JsonResponse({'success': False, 'error': 'No tienes permisos'})
 
     try:
@@ -6415,8 +6616,8 @@ def assign_interaction_to_agent(request):
         # Verificar permisos
         if not (request.user == inbox_item.created_by or
                 inbox_item.authorized_users.filter(id=request.user.id).exists() or
-                (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and
-                 request.user.profile.role in ['SU', 'ADMIN', 'GTD_ANALYST'])):
+                (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and
+                 request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST'])):
             return JsonResponse({'success': False, 'error': 'No tienes permisos para asignar esta interacción'})
 
         # Actualizar el InboxItem
@@ -6489,8 +6690,8 @@ def mark_interaction_resolved(request):
         # Verificar permisos
         if not (request.user == inbox_item.created_by or
                 inbox_item.authorized_users.filter(id=request.user.id).exists() or
-                (hasattr(request.user, 'profile') and hasattr(request.user.profile, 'role') and
-                 request.user.profile.role in ['SU', 'ADMIN', 'GTD_ANALYST'])):
+                (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and
+                 request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST'])):
             return JsonResponse({'success': False, 'error': 'No tienes permisos para resolver esta interacción'})
 
         # Marcar como procesada
@@ -6540,6 +6741,69 @@ def mark_interaction_resolved(request):
 
 
 @login_required
+def assign_inbox_item_api(request):
+    """
+    API endpoint para asignar manualmente un item del inbox a un usuario
+    Solo para administradores
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    # Verificar permisos de administrador
+    if not (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and
+            request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST']):
+        return JsonResponse({'success': False, 'error': 'No tienes permisos para asignar items'})
+
+    try:
+        item_id = request.POST.get('item_id')
+        user_id = request.POST.get('user_id')
+
+        if not item_id or not user_id:
+            return JsonResponse({'success': False, 'error': 'ID de item y usuario requeridos'})
+
+        # Obtener el item y usuario
+        inbox_item = InboxItem.objects.get(id=item_id)
+        target_user = User.objects.get(id=user_id)
+
+        # Verificar que el usuario objetivo esté activo
+        if not target_user.is_active:
+            return JsonResponse({'success': False, 'error': 'El usuario objetivo no está activo'})
+
+        # Asignar el item
+        old_assigned = inbox_item.assigned_to
+        inbox_item.assigned_to = target_user
+        inbox_item.save(update_fields=['assigned_to'])
+
+        # Registrar en historial
+        InboxItemHistory.objects.create(
+            inbox_item=inbox_item,
+            user=request.user,
+            action='manual_assigned',
+            old_values={'assigned_to': old_assigned.username if old_assigned else None},
+            new_values={
+                'assigned_to': target_user.username,
+                'assignment_method': 'manual',
+                'assigned_by': request.user.username
+            }
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Item asignado a {target_user.username} exitosamente'
+        })
+
+    except InboxItem.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Item del inbox no encontrado'})
+    except User.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Usuario no encontrado'})
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@login_required
 def create_inbox_item_api(request):
     """
     API endpoint para crear un nuevo item del inbox desde el panel root
@@ -6555,6 +6819,7 @@ def create_inbox_item_api(request):
         priority = request.POST.get('priority', 'media')
         action_type = request.POST.get('action_type', '')
         context = request.POST.get('context', '').strip()
+        auto_assign = request.POST.get('auto_assign', 'false').lower() == 'true'
 
         # Validar datos requeridos
         if not title:
@@ -6571,6 +6836,10 @@ def create_inbox_item_api(request):
             context=context if context else None
         )
 
+        # Asignación automática si se solicita
+        if auto_assign:
+            inbox_item.assign_to_available_user()
+
         # Registrar en historial
         InboxItemHistory.objects.create(
             inbox_item=inbox_item,
@@ -6582,14 +6851,16 @@ def create_inbox_item_api(request):
                 'gtd_category': gtd_category,
                 'priority': priority,
                 'action_type': action_type,
-                'context': context
+                'context': context,
+                'auto_assigned': auto_assign
             }
         )
 
         return JsonResponse({
             'success': True,
             'message': f'Item "{title}" creado exitosamente',
-            'item_id': inbox_item.id
+            'item_id': inbox_item.id,
+            'assigned_to': inbox_item.assigned_to.username if inbox_item.assigned_to else None
         })
 
     except Exception as e:
