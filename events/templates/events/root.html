@@ -174,404 +174,6 @@
         </div>
     </div>
 
-    <!-- Tabla de Items de Email CX -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-envelope-paper me-2"></i>
-                        Items Recibidos por Email CX
-                    </h5>
-                    <div>
-                        <span class="badge bg-light text-dark me-2">Total: {{ cx_stats.total }}</span>
-                        <span class="badge bg-success me-2">Procesados: {{ cx_stats.processed }}</span>
-                        <span class="badge bg-warning">Pendientes: {{ cx_stats.unprocessed }}</span>
-                        <span class="badge bg-primary ms-2">Hoy: {{ cx_stats.today }}</span>
-                    </div>
-                </div>
-                <div class="card-body">
-                    {% if cx_email_items %}
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover">
-                            <thead class="table-dark">
-                                <tr>
-                                    <th><i class="bi bi-hash"></i> ID</th>
-                                    <th><i class="bi bi-tag"></i> Título</th>
-                                    <th><i class="bi bi-person"></i> Remitente</th>
-                                    <th><i class="bi bi-envelope"></i> Email</th>
-                                    <th><i class="bi bi-flag"></i> Prioridad</th>
-                                    <th><i class="bi bi-check-circle"></i> Estado</th>
-                                    <th><i class="bi bi-calendar"></i> Fecha</th>
-                                    <th><i class="bi bi-robot"></i> Asignado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for item in cx_email_items %}
-                                <tr>
-                                    <td>
-                                        <code class="text-muted">#{{ item.id }}</code>
-                                    </td>
-                                    <td>
-                                        <strong>{{ item.title|truncatechars:50 }}</strong>
-                                        {% if item.description %}
-                                        <br><small class="text-muted">{{ item.description|truncatechars:80 }}</small>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if item.user_context.customer_id %}
-                                        <span class="badge bg-secondary">{{ item.user_context.customer_id }}</span>
-                                        {% else %}
-                                        <span class="text-muted">No identificado</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <small class="font-monospace">{{ item.user_context.email_sender|truncatechars:30 }}</small>
-                                    </td>
-                                    <td>
-                                        {% if item.priority == 'alta' %}
-                                            <span class="badge bg-danger">
-                                                <i class="bi bi-exclamation-triangle-fill"></i> Alta
-                                            </span>
-                                        {% elif item.priority == 'media' %}
-                                            <span class="badge bg-warning text-dark">
-                                                <i class="bi bi-dash-circle"></i> Media
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-secondary">
-                                                <i class="bi bi-arrow-down-circle"></i> Baja
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if item.is_processed %}
-                                            <span class="badge bg-success">
-                                                <i class="bi bi-check-circle-fill"></i> Procesado
-                                            </span>
-                                            {% if item.processed_at %}
-                                            <br><small class="text-muted">{{ item.processed_at|date:"d/m H:i" }}</small>
-                                            {% endif %}
-                                        {% else %}
-                                            <span class="badge bg-warning text-dark">
-                                                <i class="bi bi-clock"></i> Pendiente
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="text-nowrap">
-                                            <strong>{{ item.created_at|date:"d/m/Y" }}</strong>
-                                            <br><small class="text-muted">{{ item.created_at|date:"H:i" }}</small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        {% if item.user_context.assigned_to %}
-                                            <span class="badge bg-info">
-                                                <i class="bi bi-robot"></i> {{ item.user_context.assigned_to }}
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-light text-dark">
-                                                <i class="bi bi-person"></i> Sin asignar
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="mt-3 text-center">
-                        <small class="text-muted">
-                            Mostrando los últimos {{ cx_email_items|length }} items de email CX.
-                            <a href="{% url 'inbox_admin_dashboard' %}" class="text-decoration-none">Ver todos →</a>
-                        </small>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-5">
-                        <i class="bi bi-envelope-x display-4 text-muted mb-3"></i>
-                        <h5 class="text-muted">No hay items de email CX</h5>
-                        <p class="text-muted">Los emails procesados aparecerán aquí automáticamente.</p>
-                        <div class="mt-3">
-                            <small class="text-muted">
-                                Para probar el procesamiento de emails, ejecuta:<br>
-                                <code class="bg-light px-2 py-1 rounded">python manage.py process_cx_emails</code>
-                            </small>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Configuración Backend de Email -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-secondary">
-                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-gear me-2"></i>
-                        Configuración Backend de Email
-                    </h5>
-                    <div>
-                        {% if email_backend_info.smtp_status == 'Conectado' %}
-                            <span class="badge bg-success">
-                                <i class="bi bi-check-circle-fill"></i> SMTP: {{ email_backend_info.smtp_status }}
-                            </span>
-                        {% elif email_backend_info.smtp_status == 'No configurado' %}
-                            <span class="badge bg-secondary">
-                                <i class="bi bi-dash-circle"></i> SMTP: {{ email_backend_info.smtp_status }}
-                            </span>
-                        {% else %}
-                            <span class="badge bg-danger">
-                                <i class="bi bi-x-circle-fill"></i> SMTP: Error
-                            </span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <!-- Configuración SMTP -->
-                        <div class="col-lg-6 col-md-6">
-                            <h6 class="text-secondary mb-3">
-                                <i class="bi bi-send me-2"></i>Configuración SMTP (Envío)
-                            </h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <tbody>
-                                        <tr>
-                                            <td class="text-muted" style="width: 40%;"><strong>Backend:</strong></td>
-                                            <td>
-                                                <code class="text-primary">{{ email_backend_info.backend }}</code>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-muted"><strong>Host:</strong></td>
-                                            <td>
-                                                {% if email_backend_info.host != 'No configurado' %}
-                                                    <code>{{ email_backend_info.host }}</code>
-                                                {% else %}
-                                                    <span class="text-muted">{{ email_backend_info.host }}</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-muted"><strong>Puerto:</strong></td>
-                                            <td>
-                                                {% if email_backend_info.port != 'No configurado' %}
-                                                    <code>{{ email_backend_info.port }}</code>
-                                                {% else %}
-                                                    <span class="text-muted">{{ email_backend_info.port }}</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-muted"><strong>TLS:</strong></td>
-                                            <td>
-                                                {% if email_backend_info.use_tls %}
-                                                    <span class="badge bg-success">
-                                                        <i class="bi bi-shield-check"></i> Habilitado
-                                                    </span>
-                                                {% else %}
-                                                    <span class="badge bg-warning text-dark">
-                                                        <i class="bi bi-shield-x"></i> Deshabilitado
-                                                    </span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-muted"><strong>Usuario:</strong></td>
-                                            <td>
-                                                {% if email_backend_info.host_user != 'No configurado' %}
-                                                    <code>{{ email_backend_info.host_user }}</code>
-                                                {% else %}
-                                                    <span class="text-muted">{{ email_backend_info.host_user }}</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <!-- Configuración IMAP y CX -->
-                        <div class="col-lg-6 col-md-6">
-                            <h6 class="text-secondary mb-3">
-                                <i class="bi bi-envelope-arrow-down me-2"></i>Configuración IMAP (Recepción) & CX
-                            </h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <tbody>
-                                        <tr>
-                                            <td class="text-muted" style="width: 40%;"><strong>Recepción:</strong></td>
-                                            <td>
-                                                {% if email_backend_info.reception_enabled %}
-                                                    <span class="badge bg-success">
-                                                        <i class="bi bi-check-circle"></i> Habilitada
-                                                    </span>
-                                                {% else %}
-                                                    <span class="badge bg-secondary">
-                                                        <i class="bi bi-dash-circle"></i> Deshabilitada
-                                                    </span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-muted"><strong>IMAP Host:</strong></td>
-                                            <td>
-                                                {% if email_backend_info.imap_host != 'No configurado' %}
-                                                    <code>{{ email_backend_info.imap_host }}</code>
-                                                {% else %}
-                                                    <span class="text-muted">{{ email_backend_info.imap_host }}</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-muted"><strong>IMAP Puerto:</strong></td>
-                                            <td>
-                                                {% if email_backend_info.imap_port != 'No configurado' %}
-                                                    <code>{{ email_backend_info.imap_port }}</code>
-                                                {% else %}
-                                                    <span class="text-muted">{{ email_backend_info.imap_port }}</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-muted"><strong>Dominios CX:</strong></td>
-                                            <td>
-                                                {% if email_backend_info.cx_domains %}
-                                                    <div class="d-flex flex-wrap gap-1">
-                                                        {% for domain in email_backend_info.cx_domains %}
-                                                            <span class="badge bg-info">{{ domain }}</span>
-                                                        {% endfor %}
-                                                    </div>
-                                                {% else %}
-                                                    <span class="text-muted">No configurados</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td class="text-muted"><strong>Palabras clave CX:</strong></td>
-                                            <td>
-                                                {% if email_backend_info.cx_keywords %}
-                                                    <div class="d-flex flex-wrap gap-1">
-                                                        {% for keyword in email_backend_info.cx_keywords %}
-                                                            <span class="badge bg-warning text-dark">{{ keyword }}</span>
-                                                        {% endfor %}
-                                                    </div>
-                                                {% else %}
-                                                    <span class="text-muted">No configuradas</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Estado de Conectividad -->
-                    <hr>
-                    <div class="row">
-                        <div class="col-12">
-                            <h6 class="text-secondary mb-3">
-                                <i class="bi bi-activity me-2"></i>Estado de Conectividad
-                            </h6>
-                            <div class="row text-center">
-                                <div class="col-lg-3 col-md-6 mb-3">
-                                    <div class="card border-0 bg-light">
-                                        <div class="card-body py-3">
-                                            <div class="text-secondary mb-1">
-                                                <i class="bi bi-send fs-4"></i>
-                                            </div>
-                                            <div class="fs-6 fw-bold">
-                                                {% if email_backend_info.smtp_status == 'Conectado' %}
-                                                    <span class="text-success">SMTP OK</span>
-                                                {% elif email_backend_info.smtp_status == 'No configurado' %}
-                                                    <span class="text-muted">No Configurado</span>
-                                                {% else %}
-                                                    <span class="text-danger">SMTP Error</span>
-                                                {% endif %}
-                                            </div>
-                                            <small class="text-muted">Envío de Emails</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6 mb-3">
-                                    <div class="card border-0 bg-light">
-                                        <div class="card-body py-3">
-                                            <div class="text-secondary mb-1">
-                                                <i class="bi bi-envelope-arrow-down fs-4"></i>
-                                            </div>
-                                            <div class="fs-6 fw-bold">
-                                                {% if email_backend_info.reception_enabled %}
-                                                    <span class="text-success">IMAP OK</span>
-                                                {% else %}
-                                                    <span class="text-muted">Deshabilitado</span>
-                                                {% endif %}
-                                            </div>
-                                            <small class="text-muted">Recepción de Emails</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6 mb-3">
-                                    <div class="card border-0 bg-light">
-                                        <div class="card-body py-3">
-                                            <div class="text-secondary mb-1">
-                                                <i class="bi bi-robot fs-4"></i>
-                                            </div>
-                                            <div class="fs-6 fw-bold">
-                                                <span class="text-info">CX Activo</span>
-                                            </div>
-                                            <small class="text-muted">Procesamiento Automático</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-3 col-md-6 mb-3">
-                                    <div class="card border-0 bg-light">
-                                        <div class="card-body py-3">
-                                            <div class="text-secondary mb-1">
-                                                <i class="bi bi-gear fs-4"></i>
-                                            </div>
-                                            <div class="fs-6 fw-bold">
-                                                <span class="text-primary">Configurado</span>
-                                            </div>
-                                            <small class="text-muted">Sistema Listo</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Información adicional -->
-                    <div class="mt-3">
-                        <div class="alert alert-light border" role="alert">
-                            <small class="text-muted">
-                                <i class="bi bi-info-circle me-1"></i>
-                                <strong>Nota:</strong> La configuración de email se gestiona en el archivo <code>panel/settings.py</code>.
-                                Para probar el envío de emails, ejecuta: <code class="bg-light px-1 rounded">python manage.py sendtestemail</code>
-                            </small>
-                        </div>
-                        <div class="d-flex gap-2 mt-3">
-                            <button class="btn btn-success btn-sm" onclick="checkNewEmails()" id="checkEmailsBtn">
-                                <i class="bi bi-envelope-arrow-down me-2"></i>Verificar Correos Nuevos
-                            </button>
-                            <button class="btn btn-outline-primary btn-sm" onclick="processEmailsManually()" id="processEmailsBtn">
-                                <i class="bi bi-robot me-2"></i>Procesar Emails CX
-                            </button>
-                            <div id="emailCheckStatus" class="d-none">
-                                <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                    <span class="visually-hidden">Verificando...</span>
-                                </div>
-                                <small class="text-muted ms-2" id="emailCheckMessage">Verificando correos nuevos...</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Gestión Completa del Inbox GTD -->
     <div class="row mb-4">
@@ -592,6 +194,63 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <!-- Filtros para la tabla de Inbox -->
+                    <div class="row mb-3">
+                        <div class="col-md-2 mb-2">
+                            <label for="filterCategory" class="form-label small">Categoría GTD</label>
+                            <select class="form-select form-select-sm" id="filterCategory">
+                                <option value="">Todas</option>
+                                <option value="accionable">Accionable</option>
+                                <option value="no_accionable">No Accionable</option>
+                                <option value="pendiente">Pendiente</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label for="filterPriority" class="form-label small">Prioridad</label>
+                            <select class="form-select form-select-sm" id="filterPriority">
+                                <option value="">Todas</option>
+                                <option value="alta">Alta</option>
+                                <option value="media">Media</option>
+                                <option value="baja">Baja</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label for="filterStatus" class="form-label small">Estado</label>
+                            <select class="form-select form-select-sm" id="filterStatus">
+                                <option value="">Todos</option>
+                                <option value="processed">Procesado</option>
+                                <option value="pending">Pendiente</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label for="filterUser" class="form-label small">Creado por</label>
+                            <select class="form-select form-select-sm" id="filterUser">
+                                <option value="">Todos</option>
+                                {% for user in users_for_filter %}
+                                <option value="{{ user.username }}">{{ user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label for="filterDateFrom" class="form-label small">Desde</label>
+                            <input type="date" class="form-control form-control-sm" id="filterDateFrom">
+                        </div>
+                        <div class="col-md-2 mb-2">
+                            <label for="filterDateTo" class="form-label small">Hasta</label>
+                            <input type="date" class="form-control form-control-sm" id="filterDateTo">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-10 mb-2">
+                            <label for="filterSearch" class="form-label small">Buscar</label>
+                            <input type="text" class="form-control form-control-sm" id="filterSearch" placeholder="Título o descripción...">
+                        </div>
+                        <div class="col-md-2 mb-2 d-flex align-items-end">
+                            <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearFilters()">
+                                <i class="bi bi-x-circle"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
                     {% if all_inbox_items %}
                     <div class="table-responsive">
                         <table class="table table-striped table-hover">
@@ -605,6 +264,7 @@
                                     <th><i class="bi bi-flag"></i> Prioridad</th>
                                     <th><i class="bi bi-check-circle"></i> Estado</th>
                                     <th><i class="bi bi-calendar"></i> Creado</th>
+                                    <th><i class="bi bi-person-plus"></i> Delegar a</th>
                                     <th><i class="bi bi-cogs"></i> Acciones</th>
                                 </tr>
                             </thead>
@@ -684,6 +344,26 @@
                                             <strong>{{ item.created_at|date:"d/m/Y" }}</strong>
                                             <br><small class="text-muted">{{ item.created_at|date:"H:i" }}</small>
                                         </div>
+                                    </td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <select class="form-select form-select-sm delegate-select" data-item-id="{{ item.id }}" style="min-width: 120px;">
+                                                <option value="">Seleccionar...</option>
+                                                {% for user in all_users %}
+                                                    {% if user != item.created_by %}
+                                                        <option value="{{ user.id }}">{{ user.username }}</option>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                            <button class="btn btn-outline-success btn-sm" onclick="delegateInboxItem({{ item.id }})" title="Delegar">
+                                                <i class="bi bi-person-plus"></i>
+                                            </button>
+                                        </div>
+                                        {% if item.assigned_to %}
+                                            <small class="text-muted">
+                                                <i class="bi bi-check-circle-fill text-success"></i> {{ item.assigned_to.username }}
+                                            </small>
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
@@ -1084,6 +764,68 @@ function bulkDeleteInboxItems() {
     alert('Función de eliminación masiva próximamente');
 }
 
+function delegateInboxItem(itemId) {
+    const selectElement = document.querySelector(`.delegate-select[data-item-id="${itemId}"]`);
+    const userId = selectElement.value;
+
+    if (!userId) {
+        alert('Por favor, selecciona un usuario para delegar.');
+        return;
+    }
+
+    if (!confirm('¿Estás seguro de que quieres delegar este item al usuario seleccionado?')) {
+        return;
+    }
+
+    // Mostrar loading
+    const button = event.target.closest('button');
+    const originalHtml = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+
+    fetch('/events/root/bulk-actions/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `action=delegate&selected_items[]=${itemId}&delegate_user_id=${userId}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Actualizar la UI para mostrar el usuario asignado
+            const cell = selectElement.closest('td');
+            const existingBadge = cell.querySelector('.text-muted');
+            if (existingBadge) {
+                existingBadge.remove();
+            }
+
+            // Agregar indicador de asignación
+            const badge = document.createElement('small');
+            badge.className = 'text-muted d-block';
+            badge.innerHTML = `<i class="bi bi-check-circle-fill text-success"></i> ${data.delegate_user}`;
+            cell.appendChild(badge);
+
+            // Resetear el select
+            selectElement.value = '';
+
+            alert(`Item delegado exitosamente a ${data.delegate_user}`);
+        } else {
+            alert('Error al delegar el item: ' + (data.error || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al delegar el item');
+    })
+    .finally(() => {
+        // Restaurar botón
+        button.disabled = false;
+        button.innerHTML = originalHtml;
+    });
+}
+
 // Funciones para verificación manual de emails
 function checkNewEmails() {
     const btn = document.getElementById('checkEmailsBtn');
@@ -1170,6 +912,99 @@ function processEmailsManually() {
         btn.innerHTML = '<i class="bi bi-robot me-2"></i>Procesar Emails CX';
     });
 }
+
+// Funciones de filtrado para la tabla de Inbox
+function filterInboxTable() {
+    const categoryFilter = document.getElementById('filterCategory').value.toLowerCase();
+    const priorityFilter = document.getElementById('filterPriority').value.toLowerCase();
+    const statusFilter = document.getElementById('filterStatus').value.toLowerCase();
+    const userFilter = document.getElementById('filterUser').value.toLowerCase();
+    const dateFromFilter = document.getElementById('filterDateFrom').value;
+    const dateToFilter = document.getElementById('filterDateTo').value;
+    const searchFilter = document.getElementById('filterSearch').value.toLowerCase();
+
+    const table = document.querySelector('.table.table-striped.table-hover');
+    const rows = table.querySelectorAll('tbody tr');
+
+    rows.forEach(row => {
+        const categoryCell = row.cells[3]; // Categoría GTD
+        const priorityCell = row.cells[5]; // Prioridad
+        const statusCell = row.cells[6]; // Estado
+        const createdCell = row.cells[7]; // Creado
+        const userCell = row.cells[2]; // Creado por
+        const titleCell = row.cells[1]; // Título y descripción
+
+        // Obtener valores de las celdas
+        const categoryText = categoryCell.textContent.toLowerCase();
+        const priorityText = priorityCell.textContent.toLowerCase();
+        const statusText = statusCell.textContent.toLowerCase();
+        const userText = userCell.textContent.toLowerCase().trim();
+        const titleText = titleCell.textContent.toLowerCase();
+
+        // Extraer fecha de la celda de creación (formato: dd/mm/yyyy)
+        let rowDate = null;
+        if (createdCell) {
+            const dateText = createdCell.textContent.trim();
+            const dateMatch = dateText.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+            if (dateMatch) {
+                rowDate = new Date(dateMatch[3], dateMatch[2] - 1, dateMatch[1]);
+            }
+        }
+
+        // Aplicar filtros
+        const categoryMatch = !categoryFilter || categoryText.includes(categoryFilter);
+        const priorityMatch = !priorityFilter || priorityText.includes(priorityFilter);
+        const statusMatch = !statusFilter || statusText.includes(statusFilter);
+        const userMatch = !userFilter || userText.includes(userFilter);
+        const searchMatch = !searchFilter || titleText.includes(searchFilter);
+
+        // Filtro de fecha desde
+        let dateFromMatch = true;
+        if (dateFromFilter && rowDate) {
+            const fromDate = new Date(dateFromFilter);
+            dateFromMatch = rowDate >= fromDate;
+        }
+
+        // Filtro de fecha hasta
+        let dateToMatch = true;
+        if (dateToFilter && rowDate) {
+            const toDate = new Date(dateToFilter);
+            toDate.setHours(23, 59, 59, 999); // Fin del día
+            dateToMatch = rowDate <= toDate;
+        }
+
+        // Mostrar/ocultar fila
+        if (categoryMatch && priorityMatch && statusMatch && userMatch && searchMatch && dateFromMatch && dateToMatch) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function clearFilters() {
+    document.getElementById('filterCategory').value = '';
+    document.getElementById('filterPriority').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterUser').value = '';
+    document.getElementById('filterDateFrom').value = '';
+    document.getElementById('filterDateTo').value = '';
+    document.getElementById('filterSearch').value = '';
+    filterInboxTable();
+}
+
+// Agregar event listeners a los filtros
+document.addEventListener('DOMContentLoaded', function() {
+    const filters = ['filterCategory', 'filterPriority', 'filterStatus', 'filterUser', 'filterDateFrom', 'filterDateTo', 'filterSearch'];
+
+    filters.forEach(filterId => {
+        const filterElement = document.getElementById(filterId);
+        if (filterElement) {
+            filterElement.addEventListener('input', filterInboxTable);
+            filterElement.addEventListener('change', filterInboxTable);
+        }
+    });
+});
 
 // Manejar formulario de creación
 document.getElementById('createInboxItemForm').addEventListener('submit', function(e) {
