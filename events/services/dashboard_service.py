@@ -166,6 +166,7 @@ class RootDashboardService:
             'email_backend_info': self._get_email_backend_info(),
             'all_inbox_items': self._get_all_inbox_items_page(),
             'users_for_filter': self._get_users_for_filter(),
+            'all_users': self._get_all_users_for_delegation(),
             'current_page': self.filters.page,
             'total_pages': self._get_total_pages(),
             'has_filters': self._has_active_filters(),
@@ -352,6 +353,17 @@ class RootDashboardService:
                 Q(classified_inbox_items__isnull=False) |
                 Q(assigned_inbox_items__isnull=False)
             ).distinct().order_by('username')[:50]
+            cache.set(cache_key, users, 1800)  # 30 minutos
+
+        return users
+
+    def _get_all_users_for_delegation(self):
+        """Obtener todos los usuarios activos para delegación"""
+        cache_key = 'all_users_for_delegation'
+        users = cache.get(cache_key)
+
+        if users is None:
+            users = User.objects.filter(is_active=True).order_by('username')
             cache.set(cache_key, users, 1800)  # 30 minutos
 
         return users

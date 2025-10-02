@@ -1749,6 +1749,57 @@ def inbox_view(request):
 
 
 @login_required
+def event_inbox_panel(request):
+    """
+    Vista para mostrar items del inbox filtrados por usuario actual en formato tabla simple
+    Sección event/inbox/* y /panel/
+    """
+    from .models import InboxItem
+
+    # Obtener items del inbox del usuario (creados por él o asignados a él)
+    inbox_items = InboxItem.objects.filter(
+        models.Q(created_by=request.user) | models.Q(assigned_to=request.user)
+    ).distinct().select_related('created_by', 'assigned_to').order_by('-created_at')
+
+    # Estadísticas básicas
+    total_items = inbox_items.count()
+    unprocessed_items = inbox_items.filter(is_processed=False).count()
+    processed_items = inbox_items.filter(is_processed=True).count()
+
+    # Items recientes (últimos 7 días)
+    from datetime import timedelta
+    recent_items = inbox_items.filter(created_at__gte=timezone.now() - timedelta(days=7))
+
+    # Datos para la tabla
+    table_data = []
+    for item in inbox_items[:50]:  # Limitar a 50 items para mejor rendimiento
+        table_data.append({
+            'id': item.id,
+            'title': item.title,
+            'description': item.description[:100] + '...' if item.description and len(item.description) > 100 else item.description,
+            'created_by': item.created_by.username if item.created_by else 'Sistema',
+            'assigned_to': item.assigned_to.username if item.assigned_to else 'Sin asignar',
+            'created_at': item.created_at.strftime('%d/%m/%Y %H:%M'),
+            'is_processed': item.is_processed,
+            'gtd_category': item.gtd_category,
+            'priority': item.priority,
+            'action_type': item.action_type,
+        })
+
+    context = {
+        'title': 'Panel de Inbox - Items Filtrados',
+        'inbox_items': inbox_items,
+        'table_data': table_data,
+        'total_items': total_items,
+        'unprocessed_items': unprocessed_items,
+        'processed_items': processed_items,
+        'recent_items': recent_items.count(),
+    }
+
+    return render(request, 'events/inbox_panel.html', context)
+
+
+@login_required
 def inbox_stats_api(request):
     """
     API endpoint para obtener estadísticas del inbox GTD en tiempo real
@@ -1961,9 +2012,13 @@ def process_inbox_item(request, item_id=None):
     from .forms import CreateNewTask
 
     # Obtener todos los items del inbox del usuario
+    # Incluir items creados por el usuario, asignados a él, o para los que está autorizado
     user_inbox_items = InboxItem.objects.filter(
-        Q(created_by=request.user) | Q(assigned_to=request.user)
-    ).select_related('created_by', 'assigned_to').order_by('-created_at')
+        Q(created_by=request.user) |
+        Q(assigned_to=request.user) |
+        Q(authorized_users=request.user) |  # Agregar acceso para usuarios autorizados
+        Q(is_public=True)  # Opcional: incluir items públicos
+    ).distinct().select_related('created_by', 'assigned_to').order_by('-created_at')
 
     # Si no se especifica item_id, mostrar la bandeja de entrada
     if item_id is None:
@@ -1979,8 +2034,25 @@ def process_inbox_item(request, item_id=None):
     # Si se especifica item_id, mostrar el detalle del item
     try:
         inbox_item = user_inbox_items.filter(id=item_id).get()
+
+        # Debug logging para troubleshooting de permisos
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"User {request.user.username} accessing inbox item {item_id}")
+        logger.info(f"Item created_by: {inbox_item.created_by.username}")
+        logger.info(f"Item assigned_to: {inbox_item.assigned_to.username if inbox_item.assigned_to else 'None'}")
+        logger.info(f"User is creator: {inbox_item.created_by == request.user}")
+        logger.info(f"User is assigned: {inbox_item.assigned_to == request.user}")
+        logger.info(f"User is authorized: {request.user in inbox_item.authorized_users.all()}")
+        logger.info(f"Item is public: {inbox_item.is_public}")
+
     except InboxItem.DoesNotExist:
-        messages.error(request, 'Item no encontrado')
+        # Debug logging para accesos denegados
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"User {request.user.username} denied access to inbox item {item_id} - Item not found or no permissions")
+
+        messages.error(request, 'Item no encontrado o no tienes permisos para accederlo')
         return redirect('process_inbox_item')
 
     if request.method == 'POST':
@@ -2048,15 +2120,35 @@ def process_inbox_item(request, item_id=None):
         elif action == 'link_to_task':
             # Vincular a tarea existente
             task_id = request.POST.get('task_id')
-            if task_id:
+            if not task_id:
+                messages.error(request, 'Debe seleccionar una tarea para vincular.')
+                return redirect('process_inbox_item', item_id=item_id)
+
+            try:
+                # Validar que task_id es un número válido
                 try:
-                    existing_task = Task.objects.get(id=task_id)
+                    task_id = int(task_id)
+                except (ValueError, TypeError):
+                    messages.error(request, 'ID de tarea inválido.')
+                    return redirect('process_inbox_item', item_id=item_id)
 
-                    # Verificar permisos
-                    if existing_task.host != request.user and request.user not in existing_task.attendees.all():
-                        messages.error(request, 'No tienes permisos para vincular a esta tarea.')
-                        return redirect('process_inbox_item', item_id=item_id)
+                existing_task = Task.objects.get(id=task_id)
 
+                # Verificar permisos mejorados
+                if not (existing_task.host == request.user or
+                       request.user in existing_task.attendees.all() or
+                       (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and
+                        request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST'])):
+                    messages.error(request, 'No tienes permisos para vincular a esta tarea.')
+                    return redirect('process_inbox_item', item_id=item_id)
+
+                # Verificar que la tarea no esté eliminada o en estado inválido
+                if existing_task.task_status.status_name in ['Deleted', 'Archived']:
+                    messages.error(request, 'No se puede vincular a una tarea eliminada o archivada.')
+                    return redirect('process_inbox_item', item_id=item_id)
+
+                # Usar transacción para asegurar integridad de datos
+                with transaction.atomic():
                     # Marcar como procesado y vincular correctamente usando GenericForeignKey
                     from django.contrib.contenttypes.models import ContentType
                     task_content_type = ContentType.objects.get_for_model(Task)
@@ -2067,14 +2159,32 @@ def process_inbox_item(request, item_id=None):
                     inbox_item.processed_at = timezone.now()
                     inbox_item.save()
 
-                    messages.success(request,
-                        f'Item del inbox vinculado exitosamente a la tarea: "{existing_task.title}"')
-                    return redirect('tasks', task_id=existing_task.id)
+                    # Registrar en historial con más detalles
+                    InboxItemHistory.objects.create(
+                        inbox_item=inbox_item,
+                        user=request.user,
+                        action='linked_to_task',
+                        old_values=None,
+                        new_values={
+                            'linked_task_id': existing_task.id,
+                            'linked_task_title': existing_task.title,
+                            'link_method': 'manual_selection'
+                        }
+                    )
 
-                except Task.DoesNotExist:
-                    messages.error(request, 'La tarea objetivo no existe.')
-                except Exception as e:
-                    messages.error(request, f'Error al vincular: {e}')
+                messages.success(request,
+                    f'Item del inbox vinculado exitosamente a la tarea: "{existing_task.title}"')
+                return redirect('tasks', task_id=existing_task.id)
+
+            except Task.DoesNotExist:
+                messages.error(request, 'La tarea objetivo no existe o no tienes permisos para accederla.')
+            except ContentType.DoesNotExist:
+                messages.error(request, 'Error interno: No se pudo obtener el tipo de contenido para Task.')
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error linking inbox item {item_id} to task {task_id}: {str(e)}", exc_info=True)
+                messages.error(request, f'Error al vincular: {str(e)}')
 
         elif action == 'link_to_project':
             # Vincular a proyecto existente
@@ -6868,3 +6978,243 @@ def create_inbox_item_api(request):
             'success': False,
             'error': str(e)
         })
+
+
+@login_required
+def process_inbox_item(request, item_id):
+    """
+    Vista para procesar un item del inbox según la metodología GTD
+    """
+    try:
+        inbox_item = get_object_or_404(InboxItem, id=item_id)
+
+        # Verificar permisos - el usuario debe ser el creador, el asignado o tener permisos especiales
+        if (inbox_item.created_by != request.user and
+            inbox_item.assigned_to != request.user and
+            not request.user.is_superuser and
+            not (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and
+                 request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST'])):
+            messages.error(request, 'No tienes permisos para procesar este item del inbox.')
+            return redirect('inbox')
+
+        if request.method == 'POST':
+            action = request.POST.get('action')
+
+            if action == 'convert_to_task':
+                # Crear nueva tarea basada en el item del inbox
+                task = Task.objects.create(
+                    title=inbox_item.title,
+                    description=inbox_item.description,
+                    host=request.user,
+                    assigned_to=request.user,
+                    task_status=TaskStatus.objects.get_or_create(status_name='To Do', defaults={'color': '#6c757d'})[0],
+                    created_at=timezone.now()
+                )
+
+                # Vincular el item al inbox con la tarea
+                inbox_item.processed_to = task
+                inbox_item.is_processed = True
+                inbox_item.processed_at = timezone.now()
+                inbox_item.save()
+
+                # Registrar en el historial
+                InboxItemHistory.objects.create(
+                    inbox_item=inbox_item,
+                    user=request.user,
+                    action='converted_to_task',
+                    new_values={'task_id': task.id, 'task_title': task.title}
+                )
+
+                messages.success(request, f'Item convertido a tarea: "{task.title}"')
+                return redirect('inbox')
+
+            elif action == 'choose_existing_task':
+                # Vincular a tarea existente
+                selected_task_id = request.POST.get('selected_task_id')
+                if not selected_task_id:
+                    messages.error(request, 'Debes seleccionar una tarea existente.')
+                    return redirect('process_inbox_item', item_id=item_id)
+
+                try:
+                    task = Task.objects.get(id=selected_task_id)
+
+                    # Verificar permisos para la tarea
+                    if task.host != request.user and request.user not in task.attendees.all():
+                        messages.error(request, 'No tienes permisos para vincular a esta tarea.')
+                        return redirect('process_inbox_item', item_id=item_id)
+
+                    # Vincular el item del inbox con la tarea
+                    inbox_item.processed_to = task
+                    inbox_item.is_processed = True
+                    inbox_item.processed_at = timezone.now()
+                    inbox_item.save()
+
+                    # Registrar en el historial
+                    InboxItemHistory.objects.create(
+                        inbox_item=inbox_item,
+                        user=request.user,
+                        action='linked_to_task',
+                        new_values={'task_id': task.id, 'task_title': task.title}
+                    )
+
+                    messages.success(request, f'Item vinculado a tarea: "{task.title}"')
+                    return redirect('inbox')
+
+                except Task.DoesNotExist:
+                    messages.error(request, 'La tarea seleccionada no existe.')
+                    return redirect('process_inbox_item', item_id=item_id)
+
+            elif action == 'convert_to_project':
+                # Crear nuevo proyecto basado en el item del inbox
+                project = Project.objects.create(
+                    title=inbox_item.title,
+                    description=inbox_item.description,
+                    host=request.user,
+                    assigned_to=request.user,
+                    project_status=ProjectStatus.objects.get_or_create(status_name='Created', defaults={'color': '#6c757d'})[0],
+                    created_at=timezone.now()
+                )
+
+                # Vincular el item del inbox con el proyecto
+                inbox_item.processed_to = project
+                inbox_item.is_processed = True
+                inbox_item.processed_at = timezone.now()
+                inbox_item.save()
+
+                # Registrar en el historial
+                InboxItemHistory.objects.create(
+                    inbox_item=inbox_item,
+                    user=request.user,
+                    action='converted_to_project',
+                    new_values={'project_id': project.id, 'project_title': project.title}
+                )
+
+                messages.success(request, f'Item convertido a proyecto: "{project.title}"')
+                return redirect('inbox')
+
+            elif action == 'choose_existing_project':
+                # Vincular a proyecto existente
+                selected_project_id = request.POST.get('selected_project_id')
+                if not selected_project_id:
+                    messages.error(request, 'Debes seleccionar un proyecto existente.')
+                    return redirect('process_inbox_item', item_id=item_id)
+
+                try:
+                    project = Project.objects.get(id=selected_project_id)
+
+                    # Verificar permisos para el proyecto
+                    if (project.host != request.user and
+                        request.user not in project.attendees.all()):
+                        messages.error(request, 'No tienes permisos para vincular a este proyecto.')
+                        return redirect('process_inbox_item', item_id=item_id)
+
+                    # Vincular el item del inbox con el proyecto
+                    inbox_item.processed_to = project
+                    inbox_item.is_processed = True
+                    inbox_item.processed_at = timezone.now()
+                    inbox_item.save()
+
+                    # Registrar en el historial
+                    InboxItemHistory.objects.create(
+                        inbox_item=inbox_item,
+                        user=request.user,
+                        action='linked_to_project',
+                        new_values={'project_id': project.id, 'project_title': project.title}
+                    )
+
+                    messages.success(request, f'Item vinculado a proyecto: "{project.title}"')
+                    return redirect('inbox')
+
+                except Project.DoesNotExist:
+                    messages.error(request, 'El proyecto seleccionado no existe.')
+                    return redirect('process_inbox_item', item_id=item_id)
+
+            elif action == 'reference':
+                # Marcar como referencia (no accionable)
+                inbox_item.gtd_category = 'no_accionable'
+                inbox_item.action_type = 'reference'
+                inbox_item.is_processed = True
+                inbox_item.processed_at = timezone.now()
+                inbox_item.save()
+
+                # Registrar en el historial
+                InboxItemHistory.objects.create(
+                    inbox_item=inbox_item,
+                    user=request.user,
+                    action='marked_as_reference',
+                    new_values={'category': 'reference'}
+                )
+
+                messages.success(request, f'Item marcado como referencia: "{inbox_item.title}"')
+                return redirect('inbox')
+
+            elif action == 'someday':
+                # Marcar como "algún día/quizás" (no accionable)
+                inbox_item.gtd_category = 'no_accionable'
+                inbox_item.action_type = 'someday'
+                inbox_item.is_processed = True
+                inbox_item.processed_at = timezone.now()
+                inbox_item.save()
+
+                # Registrar en el historial
+                InboxItemHistory.objects.create(
+                    inbox_item=inbox_item,
+                    user=request.user,
+                    action='marked_as_someday',
+                    new_values={'category': 'someday'}
+                )
+
+                messages.success(request, f'Item guardado para "algún día": "{inbox_item.title}"')
+                return redirect('inbox')
+
+            elif action == 'delete':
+                # Eliminar el item del inbox
+                item_title = inbox_item.title
+                inbox_item.delete()
+
+                # Registrar en el historial (antes de eliminar)
+                InboxItemHistory.objects.create(
+                    inbox_item=None,  # Item ya no existe
+                    user=request.user,
+                    action='deleted',
+                    old_values={'title': item_title}
+                )
+
+                messages.success(request, f'Item eliminado: "{item_title}"')
+                return redirect('inbox')
+
+            elif action == 'postpone':
+                # Posponer procesamiento (mantener en inbox)
+                messages.info(request, f'Procesamiento pospuesto para: "{inbox_item.title}"')
+                return redirect('inbox')
+
+            else:
+                messages.error(request, 'Acción no válida.')
+                return redirect('process_inbox_item', item_id=item_id)
+
+        # GET request - mostrar el formulario de procesamiento
+        # Obtener clasificaciones existentes para mostrar consenso
+        classifications = InboxItemClassification.objects.filter(inbox_item=inbox_item)
+
+        # Calcular consenso de categoría y acción
+        consensus_category = inbox_item.get_classification_consensus()
+        consensus_action = inbox_item.get_action_type_consensus()
+
+        # Obtener estadísticas para el template
+        processed_count = InboxItem.objects.filter(is_processed=True).count()
+        unprocessed_count = InboxItem.objects.filter(is_processed=False).count()
+
+        context = {
+            'inbox_item': inbox_item,
+            'classifications': classifications,
+            'consensus_category': consensus_category,
+            'consensus_action': consensus_action,
+            'processed_count': processed_count,
+            'unprocessed_count': unprocessed_count,
+        }
+
+        return render(request, 'events/process_inbox_item.html', context)
+
+    except Exception as e:
+        messages.error(request, f'Error al procesar el item del inbox: {str(e)}')
+        return redirect('inbox')

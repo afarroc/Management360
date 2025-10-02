@@ -130,6 +130,10 @@ urlpatterns = [
     path('inbox/api/projects/', views.get_available_projects, name='inbox_api_projects'),
     path('inbox/api/stats/', views.inbox_stats_api, name='inbox_api_stats'),
 
+    # Event Inbox Panel - Sección específica para mostrar inbox items filtrados
+    path('event/inbox/', views.event_inbox_panel, name='event_inbox_panel'),
+    path('panel/inbox/', views.event_inbox_panel, name='panel_inbox'),
+
     # Inbox Administration System
     path('inbox/admin/', views.inbox_admin_dashboard, name='inbox_admin_dashboard'),
     path('inbox/admin/<int:item_id>/', views.inbox_item_detail_admin, name='inbox_item_detail_admin'),
