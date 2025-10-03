@@ -173,9 +173,176 @@
             </div>
         </div>
     </div>
+    <!-- Dashboard de Métricas y Resumen Ejecutivo -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up me-2"></i>
+                        Dashboard Ejecutivo - Resumen del Sistema
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <!-- Estadísticas del Inbox -->
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <div class="card h-100 border-info card-dashboard">
+                                <div class="card-body text-center">
+                                    <div class="text-info mb-2">
+                                        <i class="bi bi-inbox fs-1"></i>
+                                    </div>
+                                    <h4 class="text-info mb-1">{{ all_inbox_items|length }}</h4>
+                                    <small class="text-muted">Items en Inbox</small>
+                                    <div class="progress mt-2" style="height: 4px;">
+                                        <div class="progress-bar bg-info" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Items Procesados Hoy -->
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <div class="card h-100 border-success card-dashboard">
+                                <div class="card-body text-center">
+                                    <div class="text-success mb-2">
+                                        <i class="bi bi-check-circle-fill fs-1"></i>
+                                    </div>
+                                    <h4 class="text-success mb-1">{{ processed_today_count|default:0 }}</h4>
+                                    <small class="text-muted">Procesados Hoy</small>
+                                    <div class="progress mt-2" style="height: 4px;">
+                                        <div class="progress-bar bg-success" style="width: {{ processed_percentage|default:0 }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Emails Procesados -->
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <div class="card h-100 border-primary card-dashboard">
+                                <div class="card-body text-center">
+                                    <div class="text-primary mb-2">
+                                        <i class="bi bi-envelope fs-1"></i>
+                                    </div>
+                                    <h4 class="text-primary mb-1">{{ emails_processed_today|default:0 }}</h4>
+                                    <small class="text-muted">Emails CX Hoy</small>
+                                    <div class="progress mt-2" style="height: 4px;">
+                                        <div class="progress-bar bg-primary" style="width: {{ email_processing_rate|default:0 }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Eficiencia del Sistema -->
+                        <div class="col-lg-3 col-md-6 mb-4">
+                            <div class="card h-100 border-warning card-dashboard">
+                                <div class="card-body text-center">
+                                    <div class="text-warning mb-2">
+                                        <i class="bi bi-speedometer2 fs-1"></i>
+                                    </div>
+                                    <h4 class="text-warning mb-1">{{ system_efficiency|default:85 }}%</h4>
+                                    <small class="text-muted">Eficiencia</small>
+                                    <div class="progress mt-2" style="height: 4px;">
+                                        <div class="progress-bar bg-warning" style="width: {{ system_efficiency|default:85 }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información del Sistema -->
+                    <div class="row mt-4">
+                        <div class="col-lg-8">
+                            <h6 class="text-success mb-3">
+                                <i class="bi bi-info-circle me-2"></i>Estado del Sistema GTD
+                            </h6>
+                            <div class="row text-center">
+                                <div class="col-3">
+                                    <div class="text-success fs-4">●</div>
+                                    <small class="text-muted">Inbox Activo</small>
+                                </div>
+                                <div class="col-3">
+                                    <div class="text-primary fs-4">●</div>
+                                    <small class="text-muted">Procesamiento OK</small>
+                                </div>
+                                <div class="col-3">
+                                    <div class="text-info fs-4">●</div>
+                                    <small class="text-muted">Emails CX OK</small>
+                                </div>
+                                <div class="col-3">
+                                    <div class="text-warning fs-4">●</div>
+                                    <small class="text-muted">Sistema Optimizado</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <h6 class="text-success mb-3">
+                                <i class="bi bi-clock me-2"></i>Última Actividad
+                            </h6>
+                            <div class="small text-muted">
+                                <div class="mb-1">
+                                    <i class="bi bi-check-circle text-success me-1"></i>
+                                    Inbox actualizado: <strong>{{ last_inbox_update|default:"Nunca" }}</strong>
+                                </div>
+                                <div class="mb-1">
+                                    <i class="bi bi-envelope text-primary me-1"></i>
+                                    Emails procesados: <strong>{{ last_email_check|default:"Nunca" }}</strong>
+                                </div>
+                                <div class="mb-0">
+                                    <i class="bi bi-robot text-info me-1"></i>
+                                    Sistema optimizado: <strong>{{ last_optimization|default:"Reciente" }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
     <!-- Gestión Completa del Inbox GTD -->
+    <!-- Panel de Acciones Rápidas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-secondary">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-rocket me-2"></i>
+                        Acciones Rápidas del Sistema
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-3 col-md-6">
+                            <button class="btn btn-outline-primary w-100 p-3 h-100 d-flex flex-column align-items-center" onclick="refreshInboxItems()">
+                                <i class="bi bi-arrow-clockwise fs-2 mb-2"></i>
+                                <span>Actualizar Inbox</span>
+                            </button>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <button class="btn btn-outline-info w-100 p-3 h-100 d-flex flex-column align-items-center" onclick="checkNewEmails()">
+                                <i class="bi bi-envelope-arrow-down fs-2 mb-2"></i>
+                                <span>Verificar Emails</span>
+                            </button>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <button class="btn btn-outline-success w-100 p-3 h-100 d-flex flex-column align-items-center" onclick="processEmailsManually()">
+                                <i class="bi bi-robot fs-2 mb-2"></i>
+                                <span>Procesar Emails</span>
+                            </button>
+                        </div>
+                        <div class="col-lg-3 col-md-6">
+                            <button class="btn btn-outline-warning w-100 p-3 h-100 d-flex flex-column align-items-center" data-bs-toggle="modal" data-bs-target="#createInboxItemModal">
+                                <i class="bi bi-plus-circle fs-2 mb-2"></i>
+                                <span>Crear Item</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="row mb-4">
         <div class="col-12">
             <div class="card border-info">
@@ -253,124 +420,88 @@
                     </div>
                     {% if all_inbox_items %}
                     <div class="table-responsive">
-                        <table class="table table-striped table-hover">
+                        <table class="table table-striped table-hover table-sm">
                             <thead class="table-dark">
                                 <tr>
-                                    <th><i class="bi bi-hash"></i> ID</th>
+                                    <th class="d-none d-md-table-cell"><i class="bi bi-hash"></i></th>
                                     <th><i class="bi bi-tag"></i> Título</th>
-                                    <th><i class="bi bi-person"></i> Creado por</th>
-                                    <th><i class="bi bi-diagram-3"></i> Categoría GTD</th>
-                                    <th><i class="bi bi-gear"></i> Acción</th>
+                                    <th class="d-none d-lg-table-cell"><i class="bi bi-person"></i> Usuario</th>
+                                    <th><i class="bi bi-diagram-3"></i> Estado</th>
                                     <th><i class="bi bi-flag"></i> Prioridad</th>
-                                    <th><i class="bi bi-check-circle"></i> Estado</th>
-                                    <th><i class="bi bi-calendar"></i> Creado</th>
-                                    <th><i class="bi bi-person-plus"></i> Delegar a</th>
+                                    <th class="d-none d-xl-table-cell"><i class="bi bi-calendar"></i> Creado</th>
                                     <th><i class="bi bi-cogs"></i> Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for item in all_inbox_items %}
                                 <tr>
-                                    <td>
-                                        <code class="text-muted">#{{ item.id }}</code>
+                                    <td class="d-none d-md-table-cell">
+                                        <code class="text-muted small">#{{ item.id }}</code>
                                     </td>
                                     <td>
                                         <div>
-                                            <strong>{{ item.title|truncatechars:40 }}</strong>
+                                            <strong class="d-block">{{ item.title|truncatechars:35 }}</strong>
                                             {% if item.description %}
-                                            <br><small class="text-muted">{{ item.description|truncatechars:60 }}</small>
+                                            <small class="text-muted d-block">{{ item.description|truncatechars:45 }}</small>
                                             {% endif %}
                                             {% if item.user_context and item.user_context.source == 'cx_email' %}
-                                            <br><small class="badge bg-primary">CX Email</small>
+                                            <span class="badge bg-primary badge-sm">CX</span>
                                             {% endif %}
                                         </div>
                                     </td>
-                                    <td>
+                                    <td class="d-none d-lg-table-cell">
                                         <small>{{ item.created_by.username }}</small>
                                     </td>
                                     <td>
-                                        {% if item.gtd_category == 'accionable' %}
-                                            <span class="badge bg-success">
-                                                <i class="bi bi-check-circle"></i> Accionable
-                                            </span>
-                                        {% elif item.gtd_category == 'no_accionable' %}
-                                            <span class="badge bg-secondary">
-                                                <i class="bi bi-x-circle"></i> No Accionable
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-warning text-dark">
-                                                <i class="bi bi-question-circle"></i> Pendiente
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if item.action_type %}
-                                            <small class="text-primary">{{ item.get_action_type_display }}</small>
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
+                                        <div class="d-flex flex-column gap-1">
+                                            {% if item.gtd_category == 'accionable' %}
+                                                <span class="badge bg-success badge-sm">
+                                                    <i class="bi bi-check-circle"></i> Acción
+                                                </span>
+                                            {% elif item.gtd_category == 'no_accionable' %}
+                                                <span class="badge bg-secondary badge-sm">
+                                                    <i class="bi bi-x-circle"></i> Ref
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark badge-sm">
+                                                    <i class="bi bi-question-circle"></i> Pend
+                                                </span>
+                                            {% endif %}
+                                            {% if item.is_processed %}
+                                                <span class="badge bg-success badge-sm">
+                                                    <i class="bi bi-check-circle-fill"></i> OK
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark badge-sm">
+                                                    <i class="bi bi-clock"></i> Pend
+                                                </span>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                     <td>
                                         {% if item.priority == 'alta' %}
-                                            <span class="badge bg-danger">
-                                                <i class="bi bi-exclamation-triangle-fill"></i> Alta
+                                            <span class="badge bg-danger badge-sm">
+                                                <i class="bi bi-exclamation-triangle-fill"></i>
                                             </span>
                                         {% elif item.priority == 'media' %}
-                                            <span class="badge bg-warning text-dark">
-                                                <i class="bi bi-dash-circle"></i> Media
+                                            <span class="badge bg-warning text-dark badge-sm">
+                                                <i class="bi bi-dash-circle"></i>
                                             </span>
                                         {% else %}
-                                            <span class="badge bg-secondary">
-                                                <i class="bi bi-arrow-down-circle"></i> Baja
+                                            <span class="badge bg-secondary badge-sm">
+                                                <i class="bi bi-arrow-down-circle"></i>
                                             </span>
                                         {% endif %}
                                     </td>
-                                    <td>
-                                        {% if item.is_processed %}
-                                            <span class="badge bg-success">
-                                                <i class="bi bi-check-circle-fill"></i> Procesado
-                                            </span>
-                                            {% if item.processed_at %}
-                                            <br><small class="text-muted">{{ item.processed_at|date:"d/m H:i" }}</small>
-                                            {% endif %}
-                                        {% else %}
-                                            <span class="badge bg-warning text-dark">
-                                                <i class="bi bi-clock"></i> Pendiente
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="text-nowrap">
-                                            <strong>{{ item.created_at|date:"d/m/Y" }}</strong>
-                                            <br><small class="text-muted">{{ item.created_at|date:"H:i" }}</small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="input-group input-group-sm">
-                                            <select class="form-select form-select-sm delegate-select" data-item-id="{{ item.id }}" style="min-width: 120px;">
-                                                <option value="">Seleccionar...</option>
-                                                {% for user in all_users %}
-                                                    {% if user != item.created_by %}
-                                                        <option value="{{ user.id }}">{{ user.username }}</option>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </select>
-                                            <button class="btn btn-outline-success btn-sm" onclick="delegateInboxItem({{ item.id }})" title="Delegar">
-                                                <i class="bi bi-person-plus"></i>
-                                            </button>
-                                        </div>
-                                        {% if item.assigned_to %}
-                                            <small class="text-muted">
-                                                <i class="bi bi-check-circle-fill text-success"></i> {{ item.assigned_to.username }}
-                                            </small>
-                                        {% endif %}
+                                    <td class="d-none d-xl-table-cell">
+                                        <small class="text-nowrap">{{ item.created_at|date:"d/m H:i" }}</small>
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <button class="btn btn-outline-primary btn-sm" onclick="viewInboxItem({{ item.id }})" title="Ver">
+                                            <button class="btn btn-outline-primary btn-sm" onclick="viewInboxItem({{ item.id }})" title="Ver detalles">
                                                 <i class="bi bi-eye"></i>
                                             </button>
-                                            <button class="btn btn-outline-warning btn-sm" onclick="editInboxItem({{ item.id }})" title="Editar">
+                                            <button class="btn btn-outline-warning btn-sm d-none d-md-inline-block" onclick="editInboxItem({{ item.id }})" title="Editar">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
                                             <button class="btn btn-outline-danger btn-sm" onclick="deleteInboxItem({{ item.id }}, '{{ item.title|escapejs }}')" title="Eliminar">
@@ -384,17 +515,21 @@
                         </table>
                     </div>
 
-                    <div class="mt-3 d-flex justify-content-between align-items-center">
-                        <small class="text-muted">
-                            Mostrando {{ all_inbox_items|length }} items del inbox.
-                            <a href="{% url 'inbox_management_panel' %}" class="text-decoration-none">Ver panel completo →</a>
-                        </small>
-                        <div class="btn-group btn-group-sm" role="group">
-                            <button class="btn btn-outline-secondary btn-sm" onclick="bulkProcessInboxItems()">
-                                <i class="bi bi-check-all"></i> Procesar Seleccionados
+                    <div class="mt-3 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                        <div class="d-flex flex-column flex-sm-row gap-2 align-items-start align-items-sm-center">
+                            <small class="text-muted">
+                                <strong>{{ all_inbox_items|length }}</strong> items en inbox
+                            </small>
+                            <a href="{% url 'inbox_management_panel' %}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-gear me-1"></i>Panel Completo
+                            </a>
+                        </div>
+                        <div class="btn-group btn-group-sm flex-wrap" role="group">
+                            <button class="btn btn-outline-success btn-sm" onclick="bulkProcessInboxItems()">
+                                <i class="bi bi-check-all me-1"></i>Procesar
                             </button>
                             <button class="btn btn-outline-danger btn-sm" onclick="bulkDeleteInboxItems()">
-                                <i class="bi bi-trash-fill"></i> Eliminar Seleccionados
+                                <i class="bi bi-trash-fill me-1"></i>Eliminar
                             </button>
                         </div>
                     </div>
@@ -481,238 +616,333 @@
         </div>
     </div>
 
-    <!-- Contenedores del Dashboard -->
-    <div class="row">
-        <!-- Contenedor 1 -->
-        <div class="col-lg-3 col-md-6 col-sm-12 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Contenedor 1</h5>
-                    <p class="card-text">Este es el primer contenedor responsivo. Se adapta automáticamente al tamaño de pantalla.</p>
-                    <div class="d-flex justify-content-between">
-                        <small class="text-muted">Estado: Activo</small>
-                        <span class="badge bg-success">OK</span>
-                    </div>
+    <!-- Modal para Alertas y Mensajes -->
+    <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="alertModalLabel">
+                        <i class="bi bi-info-circle me-2"></i>Notificación
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="alertModalBody">
+                    <!-- El mensaje se insertará aquí dinámicamente -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Contenedor 2 -->
-        <div class="col-lg-3 col-md-6 col-sm-12 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Contenedor 2</h5>
-                    <p class="card-text">Segundo contenedor con información adicional y métricas básicas.</p>
-                    <div class="progress mt-2" style="height: 6px;">
-                        <div class="progress-bar bg-info" style="width: 75%"></div>
-                    </div>
-                    <small class="text-muted mt-1 d-block">Progreso: 75%</small>
-                </div>
-            </div>
-        </div>
-
-        <!-- Contenedor 3 -->
-        <div class="col-lg-3 col-md-6 col-sm-12 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Contenedor 3</h5>
-                    <p class="card-text">Tercer contenedor con elementos interactivos y botones de acción.</p>
+    <!-- Sincronización de Correos CX -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-envelope-arrow-down me-2"></i>
+                        Sincronización de Correos CX
+                    </h5>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-primary">Acción 1</button>
-                        <button class="btn btn-sm btn-outline-secondary">Acción 2</button>
+                        <button class="btn btn-sm btn-light" id="checkEmailsBtn" onclick="checkNewEmails()">
+                            <i class="bi bi-envelope-arrow-down"></i> Verificar Correos Nuevos
+                        </button>
+                        <button class="btn btn-sm btn-outline-light" id="processEmailsBtn" onclick="processEmailsManually()">
+                            <i class="bi bi-robot"></i> Procesar Emails CX
+                        </button>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Contenedor 4 -->
-        <div class="col-lg-3 col-md-6 col-sm-12 mb-4">
-            <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Contenedor 4</h5>
-                    <p class="card-text">Cuarto contenedor con iconos y elementos visuales.</p>
-                    <div class="d-flex align-items-center">
-                        <i class="bi bi-star-fill text-warning me-2"></i>
-                        <i class="bi bi-star-fill text-warning me-2"></i>
-                        <i class="bi bi-star-fill text-warning me-2"></i>
-                        <i class="bi bi-star-fill text-warning me-2"></i>
-                        <i class="bi bi-star text-warning me-2"></i>
-                        <small class="text-muted ms-2">4.0/5.0</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Contenedor 5 -->
-        <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Contenedor 5</h5>
-                    <p class="card-text">Quinto contenedor con un ancho diferente (4 columnas en lg).</p>
-                    <div class="alert alert-light border" role="alert">
-                        <small>Este contenedor ocupa más espacio horizontal para contenido extenso.</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Contenedor 6 -->
-        <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Contenedor 6</h5>
-                    <p class="card-text">Sexto contenedor con el mismo ancho que el anterior.</p>
-                    <ul class="list-unstyled">
-                        <li><i class="bi bi-check-circle text-success me-2"></i>Elemento 1</li>
-                        <li><i class="bi bi-check-circle text-success me-2"></i>Elemento 2</li>
-                        <li><i class="bi bi-check-circle text-success me-2"></i>Elemento 3</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Contenedor 7 -->
-        <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Contenedor 7</h5>
-                    <p class="card-text">Séptimo contenedor completando la fila de 3 elementos.</p>
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <div class="text-primary"><i class="bi bi-people fs-4"></i></div>
-                            <small>Usuarios</small>
-                        </div>
-                        <div class="col-4">
-                            <div class="text-success"><i class="bi bi-check-circle fs-4"></i></div>
-                            <small>Tareas</small>
-                        </div>
-                        <div class="col-4">
-                            <div class="text-warning"><i class="bi bi-clock fs-4"></i></div>
-                            <small>Tiempo</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Contenedor 8 -->
-        <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Contenedor 8</h5>
-                    <p class="card-text">Octavo contenedor ocupando la mitad del ancho (6 columnas).</p>
-                    <div class="bg-light p-3 rounded">
-                        <h6 class="text-muted mb-2">Información Destacada</h6>
-                        <p class="mb-0">Este contenedor tiene más espacio para contenido detallado y puede incluir gráficos o información más compleja.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Contenedor 9 -->
-        <div class="col-lg-6 col-md-6 col-sm-12 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Contenedor 9</h5>
-                    <p class="card-text">Noveno contenedor complementando el ancho del anterior.</p>
-                    <div class="table-responsive">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr>
-                                    <th>Item</th>
-                                    <th>Valor</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>A</td>
-                                    <td>100</td>
-                                    <td><span class="badge bg-success">OK</span></td>
-                                </tr>
-                                <tr>
-                                    <td>B</td>
-                                    <td>85</td>
-                                    <td><span class="badge bg-warning">Advertencia</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Contenedor 10 -->
-        <div class="col-lg-8 col-md-8 col-sm-12 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Contenedor 10</h5>
-                    <p class="card-text">Décimo contenedor con ancho mayor (8 columnas) para contenido principal.</p>
                     <div class="row">
-                        <div class="col-md-6">
-                            <h6>Estadísticas</h6>
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Proyectos:</span>
-                                <strong>24</strong>
+                        <!-- Estado de Sincronización -->
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-info-circle me-2"></i>Estado Actual
+                            </h6>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small">Servicio:</span>
+                                <span class="badge bg-success" id="syncStatus">Activo</span>
                             </div>
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Tareas:</span>
-                                <strong>156</strong>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="small">Última verificación:</span>
+                                <small class="text-muted" id="lastCheckTime">Nunca</small>
                             </div>
-                            <div class="d-flex justify-content-between">
-                                <span>Eventos:</span>
-                                <strong>8</strong>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="small">Procesados hoy:</span>
+                                <strong class="text-primary" id="emailsProcessedToday">0</strong>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <h6>Actividad Reciente</h6>
-                            <small class="text-muted">Última actualización: hace 5 min</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Contenedor 11 -->
-        <div class="col-lg-4 col-md-4 col-sm-12 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Contenedor 11</h5>
-                    <p class="card-text">Undécimo contenedor más estrecho (4 columnas).</p>
-                    <div class="text-center">
-                        <div class="avatar avatar-xl mb-3">
-                            <img src="{% static 'assets/img/profile-img.jpg' %}" alt="Profile" class="avatar-img rounded-circle" onerror="this.src='{% static 'images/default-avatar.png' %}'">
+                        <!-- Configuración Rápida -->
+                        <div class="col-lg-4 col-md-6 mb-3">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-gear me-2"></i>Configuración
+                            </h6>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="autoSyncToggle" checked>
+                                <label class="form-check-label small" for="autoSyncToggle">
+                                    Auto-sincronización
+                                </label>
+                            </div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" id="notificationsToggle" checked>
+                                <label class="form-check-label small" for="notificationsToggle">
+                                    Notificaciones
+                                </label>
+                            </div>
+                            <div class="mb-2">
+                                <label for="syncInterval" class="form-label small mb-1">Intervalo:</label>
+                                <select class="form-select form-select-sm" id="syncInterval">
+                                    <option value="5">5 min</option>
+                                    <option value="15" selected>15 min</option>
+                                    <option value="30">30 min</option>
+                                    <option value="60">1 hora</option>
+                                </select>
+                            </div>
                         </div>
-                        <h6>Usuario Activo</h6>
-                        <small class="text-muted">Conectado</small>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Contenedor 12 -->
-        <div class="col-12 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Contenedor 12</h5>
-                    <p class="card-text">Duodécimo y último contenedor ocupando todo el ancho disponible (12 columnas).</p>
-                    <div class="alert alert-info" role="alert">
-                        <h6 class="alert-heading">Información Importante</h6>
-                        <p class="mb-0">Este layout responsivo se adapta automáticamente a diferentes tamaños de pantalla. En dispositivos móviles, todos los contenedores se apilan verticalmente para una mejor experiencia de usuario.</p>
-                    </div>
-                    <div class="text-center mt-3">
-                        <small class="text-muted">Layout creado con Bootstrap Grid System - 12 contenedores responsivos</small>
+                        <!-- Estado de Procesamiento -->
+                        <div class="col-lg-4 col-md-12">
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-activity me-2"></i>Actividad
+                            </h6>
+                            <div id="emailCheckStatus" class="alert alert-info d-none py-2" role="alert">
+                                <div class="d-flex align-items-center">
+                                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                                        <span class="sr-only">Cargando...</span>
+                                    </div>
+                                    <small id="emailCheckMessage">Procesando...</small>
+                                </div>
+                            </div>
+                            <div class="text-center text-muted small" id="noActivityMessage">
+                                <i class="bi bi-check-circle-fill text-success me-1"></i>
+                                Servicio activo - Procesamiento automático
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Centro de Bots -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-robot me-2"></i>Centro de Bots
+                    </h5>
+                    <small class="text-light">Simulación de tareas con credenciales reales</small>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-4 mb-3">
+                            <label for="botSelect" class="form-label fw-bold">Seleccionar Bot</label>
+                            <select class="form-select" id="botSelect" onchange="updateBotTasks()">
+                                <option value="">-- Seleccionar Bot --</option>
+                                {% for bot in available_bots %}
+                                <option value="{{ bot.id }}" data-icon="{{ bot.icon }}" data-color="{{ bot.color }}">
+                                    {{ bot.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                <small id="botDescription" class="text-muted">Selecciona un bot para ver su descripción y tareas disponibles.</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-5 mb-3">
+                            <label class="form-label fw-bold">Seleccionar Tareas</label>
+                            <div id="taskOptions" class="border rounded p-3 bg-light" style="min-height: 120px;">
+                                <small class="text-muted">Selecciona un bot para ver las tareas disponibles.</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 mb-3 d-flex align-items-end">
+                            <div class="w-100">
+                                <button class="btn btn-primary w-100 mb-2" id="activateBotBtn" onclick="activateBot()" disabled>
+                                    <i class="bi bi-play-circle me-2"></i>Activar Bot
+                                </button>
+                                <div id="activationStatus" class="small text-muted text-center">
+                                    <!-- Estado de activación se mostrará aquí -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resultados de la activación -->
+                    <div id="activationResults" class="mt-3" style="display: none;">
+                        <div class="alert alert-success" role="alert">
+                            <h6 class="alert-heading">
+                                <i class="bi bi-check-circle-fill me-2"></i>Activación Completada
+                            </h6>
+                            <div id="activationSummary"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </section>
 
 {% endblock %}
 
+{% block extra_css %}
+<style>
+/* Estilos personalizados para el dashboard root */
+.badge-sm {
+    font-size: 0.7em;
+    padding: 0.2em 0.4em;
+}
+
+.card-dashboard {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card-dashboard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.table-responsive {
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .btn-group-sm {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-group-sm .btn {
+        margin-bottom: 0.25rem;
+    }
+
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+
+/* Animaciones para los indicadores de estado */
+@keyframes pulse-success {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.status-indicator {
+    animation: pulse-success 2s infinite;
+}
+
+/* Mejorar la apariencia de los filtros */
+.form-select-sm {
+    border-radius: 0.25rem;
+}
+
+.input-group-sm .form-select {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.input-group-sm .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+</style>
+{% endblock %}
+
 {% block extra_js %}
 <script>
+// Datos de bots disponibles (pasados desde Django)
+const availableBots = {{ available_bots_json|safe }};
+
+// Funciones para mostrar modales de alerta y confirmación
+function showAlertModal(title, message, type = 'info') {
+    const modal = new bootstrap.Modal(document.getElementById('alertModal'));
+    const modalTitle = document.getElementById('alertModalLabel');
+    const modalBody = document.getElementById('alertModalBody');
+
+    // Configurar icono según el tipo
+    const icons = {
+        'success': 'bi-check-circle-fill text-success',
+        'danger': 'bi-exclamation-triangle-fill text-danger',
+        'warning': 'bi-exclamation-triangle-fill text-warning',
+        'info': 'bi-info-circle-fill text-info'
+    };
+
+    modalTitle.innerHTML = `<i class="bi ${icons[type] || icons['info']} me-2"></i>${title}`;
+    modalBody.innerHTML = `<p class="mb-0">${message}</p>`;
+
+    modal.show();
+}
+
+function showConfirmModal(title, message, type = 'warning', onConfirm, onCancel) {
+    // Crear modal de confirmación dinámicamente
+    const modalHtml = `
+        <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmModalLabel">
+                            <i class="bi bi-question-circle-fill text-${type} me-2"></i>${title}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0">${message}</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="confirmCancelBtn">Cancelar</button>
+                        <button type="button" class="btn btn-${type}" id="confirmOkBtn">Confirmar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Agregar modal al DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    const confirmBtn = document.getElementById('confirmOkBtn');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+
+    // Configurar eventos
+    confirmBtn.addEventListener('click', () => {
+        modal.hide();
+        if (onConfirm) onConfirm();
+        // Remover modal del DOM después de ocultarlo
+        setTimeout(() => {
+            document.getElementById('confirmModal').remove();
+        }, 300);
+    });
+
+    cancelBtn.addEventListener('click', () => {
+        modal.hide();
+        if (onCancel) onCancel();
+        // Remover modal del DOM después de ocultarlo
+        setTimeout(() => {
+            document.getElementById('confirmModal').remove();
+        }, 300);
+    });
+
+    // Remover modal si se cierra con la X o haciendo click fuera
+    document.getElementById('confirmModal').addEventListener('hidden.bs.modal', () => {
+        if (onCancel) onCancel();
+        document.getElementById('confirmModal').remove();
+    });
+
+    modal.show();
+}
+
 // Funciones CRUD para Inbox Items
 function viewInboxItem(itemId) {
     // Abrir panel de administración para ver detalles del item
@@ -725,29 +955,123 @@ function editInboxItem(itemId) {
 }
 
 function deleteInboxItem(itemId, title) {
-    if (confirm(`¿Estás seguro de que quieres eliminar el item "${title}"? Esta acción no se puede deshacer.`)) {
-        // Usar la API de administración para eliminar
-        fetch(`/events/inbox/admin/bulk-action/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: `action=delete&selected_items=${itemId}`
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success || response.redirected) {
-                location.reload();
-            } else {
-                alert('Error al eliminar el item: ' + (data.error || 'Error desconocido'));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al eliminar el item');
-        });
-    }
+    console.log('=== INICIO deleteInboxItem ===');
+    console.log('itemId:', itemId);
+    console.log('title:', title);
+
+    // Mostrar modal de confirmación personalizado en lugar de confirm()
+    showConfirmModal(
+        `¿Estás seguro de que quieres eliminar el item "${title}"?`,
+        'Esta acción no se puede deshacer.',
+        'danger',
+        () => {
+            console.log('Usuario confirmó eliminación');
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            console.log('CSRF Token encontrado:', csrfToken ? 'Sí (' + csrfToken.substring(0, 10) + '...)' : 'No');
+
+            const url = `/events/inbox/admin/bulk-action/`;
+            const body = `action=delete&selected_items=${itemId}`;
+
+            console.log('URL completa:', window.location.origin + url);
+            console.log('Body:', body);
+            console.log('Current location:', window.location.href);
+            console.log('Is HTTPS:', window.location.protocol === 'https:');
+
+            // Usar la API de administración para eliminar
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: body
+            })
+            .then(response => {
+                console.log('=== RESPONSE RECIBIDA ===');
+                console.log('Response status:', response.status);
+                console.log('Response statusText:', response.statusText);
+                console.log('Response ok:', response.ok);
+                console.log('Response redirected:', response.redirected);
+                console.log('Response url:', response.url);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+                // Verificar si es un redirect
+                if (response.redirected) {
+                    console.log('RESPUESTA ES REDIRECT - URL final:', response.url);
+                }
+
+                // Intentar leer el contenido como texto primero
+                return response.text().then(text => {
+                    console.log('Contenido de respuesta (primeros 500 chars):', text.substring(0, 500));
+
+                    // Verificar si es HTML
+                    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+                        console.error('ERROR: La respuesta es HTML, no JSON!');
+                        console.log('Contenido HTML completo:', text);
+                        throw new Error('Respuesta HTML en lugar de JSON');
+                    }
+
+                    // Si no es HTML, intentar parsear como JSON
+                    try {
+                        const jsonData = JSON.parse(text);
+                        console.log('JSON parseado exitosamente:', jsonData);
+                        return jsonData;
+                    } catch (jsonError) {
+                        console.error('Error al parsear JSON:', jsonError);
+                        console.log('Texto que falló en JSON:', text);
+                        throw jsonError;
+                    }
+                });
+            })
+            .then(data => {
+                console.log('=== PROCESANDO DATA ===');
+                console.log('Data recibida:', data);
+                console.log('data.success:', data.success);
+                console.log('data.success type:', typeof data.success);
+                console.log('data.error:', data.error);
+                console.log('data.message:', data.message);
+                console.log('response.redirected check:', data.response ? data.response.redirected : 'N/A');
+
+                if (data.success === true || data.success === "true") {
+                    console.log('Eliminación exitosa, recargando página');
+                    showAlertModal('Item eliminado exitosamente', data.message || 'El item ha sido eliminado correctamente.', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    console.log('Error en data.success, mostrando modal de error');
+                    console.log('data.success value:', data.success);
+                    showAlertModal('Error al eliminar el item', data.error || data.message || 'Error desconocido', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('=== ERROR EN deleteInboxItem ===');
+                console.error('Error completo:', error);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
+                console.error('Error name:', error.name);
+                console.error('Error type:', typeof error);
+
+                // Verificar si es un error de red
+                if (error instanceof TypeError && error.message.includes('fetch')) {
+                    console.error('ERROR DE RED: Posible problema de conectividad o CORS');
+                }
+
+                // Verificar si es un error de JSON
+                if (error instanceof SyntaxError) {
+                    console.error('ERROR DE JSON: La respuesta no es JSON válido');
+                }
+
+                showAlertModal('Error al eliminar el item', `Error: ${error.message}. Revisa la consola para más detalles.`, 'danger');
+            });
+        },
+        () => {
+            console.log('Usuario canceló la eliminación');
+        }
+    );
+
+    console.log('=== FIN deleteInboxItem ===');
 }
 
 function refreshInboxItems() {
@@ -756,12 +1080,12 @@ function refreshInboxItems() {
 
 function bulkProcessInboxItems() {
     // Obtener items seleccionados (si se implementa checkbox)
-    alert('Función de procesamiento masivo próximamente');
+    showAlertModal('Función próximamente', 'La función de procesamiento masivo estará disponible próximamente.', 'info');
 }
 
 function bulkDeleteInboxItems() {
     // Obtener items seleccionados (si se implementa checkbox)
-    alert('Función de eliminación masiva próximamente');
+    showAlertModal('Función próximamente', 'La función de eliminación masiva estará disponible próximamente.', 'info');
 }
 
 function delegateInboxItem(itemId) {
@@ -769,13 +1093,22 @@ function delegateInboxItem(itemId) {
     const userId = selectElement.value;
 
     if (!userId) {
-        alert('Por favor, selecciona un usuario para delegar.');
+        showAlertModal('Usuario requerido', 'Por favor, selecciona un usuario para delegar.', 'warning');
         return;
     }
 
-    if (!confirm('¿Estás seguro de que quieres delegar este item al usuario seleccionado?')) {
-        return;
-    }
+    showConfirmModal(
+        'Confirmar delegación',
+        '¿Estás seguro de que quieres delegar este item al usuario seleccionado?',
+        'primary',
+        () => {
+            // Continuar con la delegación
+            performDelegation(itemId, userId);
+        }
+    );
+}
+
+function performDelegation(itemId, userId) {
 
     // Mostrar loading
     const button = event.target.closest('button');
@@ -810,14 +1143,14 @@ function delegateInboxItem(itemId) {
             // Resetear el select
             selectElement.value = '';
 
-            alert(`Item delegado exitosamente a ${data.delegate_user}`);
+            showAlertModal('Delegación exitosa', `Item delegado exitosamente a ${data.delegate_user}`, 'success');
         } else {
-            alert('Error al delegar el item: ' + (data.error || 'Error desconocido'));
+            showAlertModal('Error al delegar', data.error || 'Error desconocido', 'danger');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error al delegar el item');
+        showAlertModal('Error al delegar', 'Error al delegar el item', 'danger');
     })
     .finally(() => {
         // Restaurar botón
@@ -862,6 +1195,7 @@ function checkNewEmails() {
         console.error('Error:', error);
         messageSpan.textContent = 'Error de conexión';
         statusDiv.classList.add('text-danger');
+        showAlertModal('Error de conexión', 'No se pudo conectar con el servidor para verificar emails.', 'danger');
     })
     .finally(() => {
         // Rehabilitar botón
@@ -905,6 +1239,7 @@ function processEmailsManually() {
         console.error('Error:', error);
         messageSpan.textContent = 'Error de conexión';
         statusDiv.classList.add('text-danger');
+        showAlertModal('Error de conexión', 'No se pudo conectar con el servidor para procesar emails.', 'danger');
     })
     .finally(() => {
         // Rehabilitar botón
@@ -1006,6 +1341,148 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Funciones para el Centro de Bots
+function updateBotTasks() {
+    const botSelect = document.getElementById('botSelect');
+    const taskOptions = document.getElementById('taskOptions');
+    const botDescription = document.getElementById('botDescription');
+    const activateBtn = document.getElementById('activateBotBtn');
+
+    const selectedBotId = botSelect.value;
+
+    if (!selectedBotId) {
+        taskOptions.innerHTML = '<small class="text-muted">Selecciona un bot para ver las tareas disponibles.</small>';
+        botDescription.textContent = 'Selecciona un bot para ver su descripción y tareas disponibles.';
+        activateBtn.disabled = true;
+        return;
+    }
+
+    // Buscar el bot seleccionado en availableBots
+    const selectedBot = availableBots.find(bot => bot.id === selectedBotId);
+
+    if (selectedBot) {
+        // Actualizar descripción
+        botDescription.innerHTML = `<strong>${selectedBot.name}:</strong> ${selectedBot.description}`;
+
+        // Generar checkboxes para las tareas
+        let tasksHtml = '<div class="mb-2"><small class="text-muted fw-bold">Selecciona las tareas a ejecutar:</small></div>';
+        selectedBot.tasks.forEach(task => {
+            tasksHtml += `
+                <div class="form-check">
+                    <input class="form-check-input task-checkbox" type="checkbox" value="${task.id}" id="task_${task.id}">
+                    <label class="form-check-label" for="task_${task.id}">
+                        <strong>${task.name}</strong>
+                        <br><small class="text-muted">${task.description}</small>
+                    </label>
+                </div>
+            `;
+        });
+
+        taskOptions.innerHTML = tasksHtml;
+
+        // Habilitar botón de activación
+        activateBtn.disabled = false;
+
+        // Agregar event listeners a los checkboxes
+        document.querySelectorAll('.task-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', updateActivateButton);
+        });
+    }
+}
+
+function updateActivateButton() {
+    const checkedTasks = document.querySelectorAll('.task-checkbox:checked');
+    const activateBtn = document.getElementById('activateBotBtn');
+    const activationStatus = document.getElementById('activationStatus');
+
+    if (checkedTasks.length > 0) {
+        activateBtn.disabled = false;
+        activationStatus.innerHTML = `<small class="text-success">${checkedTasks.length} tarea(s) seleccionada(s)</small>`;
+    } else {
+        activateBtn.disabled = true;
+        activationStatus.innerHTML = '<small class="text-muted">Selecciona al menos una tarea</small>';
+    }
+}
+
+function activateBot() {
+    const botSelect = document.getElementById('botSelect');
+    const activateBtn = document.getElementById('activateBotBtn');
+    const activationStatus = document.getElementById('activationStatus');
+    const activationResults = document.getElementById('activationResults');
+    const activationSummary = document.getElementById('activationSummary');
+
+    const botId = botSelect.value;
+    const selectedTasks = Array.from(document.querySelectorAll('.task-checkbox:checked')).map(cb => cb.value);
+
+    if (!botId || selectedTasks.length === 0) {
+        showAlertModal('Error', 'Selecciona un bot y al menos una tarea', 'warning');
+        return;
+    }
+
+    // Deshabilitar botón y mostrar loading
+    activateBtn.disabled = true;
+    activateBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Activando...';
+    activationStatus.innerHTML = '<small class="text-info">Procesando activación...</small>';
+
+    // Preparar datos para envío
+    const formData = new FormData();
+    formData.append('bot_id', botId);
+    selectedTasks.forEach(task => {
+        formData.append('tasks[]', task);
+    });
+
+    fetch('/events/root/activate-bot/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Mostrar resultados exitosos
+            let summaryHtml = `<p class="mb-2"><strong>Bot activado:</strong> ${data.bot_name}</p>`;
+            summaryHtml += '<ul class="mb-0">';
+
+            data.executed_tasks.forEach(task => {
+                const statusIcon = task.status === 'success' ? 'bi-check-circle-fill text-success' : 'bi-exclamation-triangle-fill text-warning';
+                const statusText = task.status === 'success' ? 'Completado' : 'Error';
+                summaryHtml += `
+                    <li class="mb-1">
+                        <i class="bi ${statusIcon} me-1"></i>
+                        <strong>${task.task_id}:</strong> ${statusText}
+                        ${task.result ? `<br><small class="text-muted ms-3">${task.result}</small>` : ''}
+                        ${task.error ? `<br><small class="text-danger ms-3">${task.error}</small>` : ''}
+                    </li>
+                `;
+            });
+
+            summaryHtml += '</ul>';
+            activationSummary.innerHTML = summaryHtml;
+            activationResults.style.display = 'block';
+
+            // Resetear formulario
+            botSelect.value = '';
+            updateBotTasks();
+
+            showAlertModal('Activación Exitosa', `Bot ${data.bot_name} activado correctamente`, 'success');
+        } else {
+            showAlertModal('Error en activación', data.error || 'Error desconocido', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlertModal('Error de conexión', 'No se pudo conectar con el servidor para activar el bot', 'danger');
+    })
+    .finally(() => {
+        // Restaurar botón
+        activateBtn.disabled = false;
+        activateBtn.innerHTML = '<i class="bi bi-play-circle me-2"></i>Activar Bot';
+        activationStatus.innerHTML = '';
+    });
+}
+
 // Manejar formulario de creación
 document.getElementById('createInboxItemForm').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -1027,12 +1504,12 @@ document.getElementById('createInboxItemForm').addEventListener('submit', functi
             modal.hide();
             location.reload();
         } else {
-            alert('Error al crear el item: ' + data.error);
+            showAlertModal('Error al crear', 'Error al crear el item: ' + data.error, 'danger');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Error al crear el item');
+        showAlertModal('Error al crear', 'Error al crear el item', 'danger');
     });
 });
 </script>

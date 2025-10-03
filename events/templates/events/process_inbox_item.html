@@ -3,6 +3,76 @@
 
 {% block title %}Panel de Control - {{ inbox_item.title }}{% endblock %}
 
+{% block extra_css %}
+<style>
+/* Estilos personalizados para el dashboard root */
+.badge-sm {
+    font-size: 0.7em;
+    padding: 0.2em 0.4em;
+}
+
+.card-dashboard {
+    transition: transform 0.2s ease-in-out;
+}
+
+.card-dashboard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.table-responsive {
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+    .btn-group-sm {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .btn-group-sm .btn {
+        margin-bottom: 0.25rem;
+    }
+
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+
+/* Animaciones para los indicadores de estado */
+@keyframes pulse-success {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.status-indicator {
+    animation: pulse-success 2s infinite;
+}
+
+/* Mejorar la apariencia de los filtros */
+.form-select-sm {
+    border-radius: 0.25rem;
+}
+
+.input-group-sm .form-select {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.input-group-sm .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid inbox-control-panel" data-inbox-item-id="{{ inbox_item.id|default:0 }}">
     <!-- Header Section -->
@@ -436,7 +506,26 @@
             </div>
         </div>
     {% endif %}
-</div>
+
+    <!-- Modal para Alertas y Mensajes -->
+    <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="alertModalLabel">
+                        <i class="bi bi-info-circle me-2"></i>Notificación
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="alertModalBody">
+                    <!-- El mensaje se insertará aquí dinámicamente -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
 <style>
 /* Main Layout */
@@ -929,28 +1018,90 @@
 {% endblock %}
 
 {% block extra_js %}
-<script type="text/javascript">
-// Función auxiliar para mostrar mensajes de error
-function showErrorMessage(message) {
-    const toastHtml = `
-        <div class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="bi bi-exclamation-triangle me-2"></i>${message}
+<script>
+// Funciones para mostrar modales de alerta y confirmación
+function showAlertModal(title, message, type = 'info') {
+    const modal = new bootstrap.Modal(document.getElementById('alertModal'));
+    const modalTitle = document.getElementById('alertModalLabel');
+    const modalBody = document.getElementById('alertModalBody');
+
+    // Configurar icono según el tipo
+    const icons = {
+        'success': 'bi-check-circle-fill text-success',
+        'danger': 'bi-exclamation-triangle-fill text-danger',
+        'warning': 'bi-exclamation-triangle-fill text-warning',
+        'info': 'bi-info-circle-fill text-info'
+    };
+
+    modalTitle.innerHTML = `<i class="bi ${icons[type] || icons['info']} me-2"></i>${title}`;
+    modalBody.innerHTML = `<p class="mb-0">${message}</p>`;
+
+    modal.show();
+}
+
+function showConfirmModal(title, message, type = 'warning', onConfirm, onCancel) {
+    // Crear modal de confirmación dinámicamente
+    const modalHtml = `
+        <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmModalLabel">
+                            <i class="bi bi-question-circle-fill text-${type} me-2"></i>${title}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-0">${message}</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="confirmCancelBtn">Cancelar</button>
+                        <button type="button" class="btn btn-${type}" id="confirmOkBtn">Confirmar</button>
+                    </div>
                 </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
             </div>
         </div>
     `;
-    const toastContainer = document.createElement('div');
-    toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
-    toastContainer.innerHTML = toastHtml;
-    document.body.appendChild(toastContainer);
-    const toast = new bootstrap.Toast(toastContainer.querySelector('.toast'));
-    toast.show();
-    toastContainer.addEventListener('hidden.bs.toast', () => {
-        document.body.removeChild(toastContainer);
+
+    // Agregar modal al DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    const confirmBtn = document.getElementById('confirmOkBtn');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+
+    // Configurar eventos
+    confirmBtn.addEventListener('click', () => {
+        modal.hide();
+        if (onConfirm) onConfirm();
+        // Remover modal del DOM después de ocultarlo
+        setTimeout(() => {
+            document.getElementById('confirmModal').remove();
+        }, 300);
     });
+
+    cancelBtn.addEventListener('click', () => {
+        modal.hide();
+        if (onCancel) onCancel();
+        // Remover modal del DOM después de ocultarlo
+        setTimeout(() => {
+            document.getElementById('confirmModal').remove();
+        }, 300);
+    });
+
+    // Remover modal si se cierra con la X o haciendo click fuera
+    document.getElementById('confirmModal').addEventListener('hidden.bs.modal', () => {
+        if (onCancel) onCancel();
+        document.getElementById('confirmModal').remove();
+    });
+
+    modal.show();
+}
+</script>
+<script type="text/javascript">
+// Función auxiliar para mostrar mensajes de error (ahora usa modales)
+function showErrorMessage(message) {
+    showAlertModal('Error', message, 'danger');
 }
 
 // Función para mostrar el selector de tareas
@@ -1140,40 +1291,130 @@ function showClassificationModal() {
     modal.show();
 }
 
-// Funciones de gestión avanzada (placeholders)
-function bulkAction(action) {
-    console.log('[BULK_ACTION]', action);
-    showErrorMessage('Función no implementada aún: ' + action);
+// Funciones CRUD para Inbox Items
+function viewInboxItem(itemId) {
+    // Abrir panel de administración para ver detalles del item
+    window.open(`/events/inbox/admin/${itemId}/`, '_blank');
 }
 
-function managePermissions() {
-    console.log('[MANAGE_PERMISSIONS]');
-    showErrorMessage('Función no implementada aún: Gestionar permisos');
+function editInboxItem(itemId) {
+    // Por ahora, abrir el panel de administración (se puede mejorar con edición inline)
+    window.open(`/events/inbox/admin/${itemId}/`, '_blank');
 }
 
-function shareItem() {
-    console.log('[SHARE_ITEM]');
-    showErrorMessage('Función no implementada aún: Compartir item');
+function deleteInboxItem(itemId, title) {
+    console.log('=== INICIO deleteInboxItem ===');
+    console.log('itemId:', itemId);
+    console.log('title:', title);
+
+    // Mostrar modal de confirmación personalizado en lugar de confirm()
+    showConfirmModal(
+        `¿Estás seguro de que quieres eliminar el item "${title}"?`,
+        'Esta acción no se puede deshacer.',
+        'danger',
+        () => {
+            console.log('Usuario confirmó eliminación');
+
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            console.log('CSRF Token encontrado:', csrfToken ? 'Sí' : 'No');
+
+            const url = `/events/inbox/admin/bulk-action/`;
+            const body = `action=delete&selected_items=${itemId}`;
+
+            console.log('URL:', url);
+            console.log('Body:', body);
+
+            // Usar la API de administración para eliminar
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: body
+            })
+            .then(response => {
+                console.log('=== RESPONSE RECIBIDA ===');
+                console.log('Response status:', response.status);
+                console.log('Response statusText:', response.statusText);
+                console.log('Response ok:', response.ok);
+                console.log('Response redirected:', response.redirected);
+                console.log('Response url:', response.url);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+                // Verificar si es un redirect
+                if (response.redirected) {
+                    console.log('RESPUESTA ES REDIRECT - URL final:', response.url);
+                }
+
+                // Intentar leer el contenido como texto primero
+                return response.text().then(text => {
+                    console.log('Contenido de respuesta (primeros 500 chars):', text.substring(0, 500));
+
+                    // Verificar si es HTML
+                    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+                        console.error('ERROR: La respuesta es HTML, no JSON!');
+                        console.log('Contenido HTML completo:', text);
+                        throw new Error('Respuesta HTML en lugar de JSON');
+                    }
+
+                    // Si no es HTML, intentar parsear como JSON
+                    try {
+                        const jsonData = JSON.parse(text);
+                        console.log('JSON parseado exitosamente:', jsonData);
+                        return jsonData;
+                    } catch (jsonError) {
+                        console.error('Error al parsear JSON:', jsonError);
+                        console.log('Texto que falló en JSON:', text);
+                        throw jsonError;
+                    }
+                });
+            })
+            .then(data => {
+                console.log('=== PROCESANDO DATA ===');
+                console.log('Data recibida:', data);
+                console.log('data.success:', data.success);
+                console.log('response.redirected check:', data.response ? data.response.redirected : 'N/A');
+
+                if (data.success) {
+                    console.log('Eliminación exitosa, recargando página');
+                    showAlertModal('Item eliminado exitosamente', 'El item ha sido eliminado correctamente.', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    console.log('Error en data.success, mostrando modal');
+                    showAlertModal('Error al eliminar el item', data.error || 'Error desconocido', 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('=== ERROR EN deleteInboxItem ===');
+                console.error('Error completo:', error);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
+                showAlertModal('Error al eliminar el item', error.message, 'danger');
+            });
+        },
+        () => {
+            console.log('Usuario canceló la eliminación');
+        }
+    );
+
+    console.log('=== FIN deleteInboxItem ===');
 }
 
-function archiveItem() {
-    console.log('[ARCHIVE_ITEM]');
-    showErrorMessage('Función no implementada aún: Archivar item');
+function refreshInboxItems() {
+    location.reload();
 }
 
-function showAnalytics() {
-    console.log('[SHOW_ANALYTICS]');
-    showErrorMessage('Función no implementada aún: Mostrar analytics');
+function bulkProcessInboxItems() {
+    // Obtener items seleccionados (si se implementa checkbox)
+    showAlertModal('Función próximamente', 'La función de procesamiento masivo estará disponible próximamente.', 'info');
 }
 
-function generateReport() {
-    console.log('[GENERATE_REPORT]');
-    showErrorMessage('Función no implementada aún: Generar reporte');
-}
-
-function showInsights() {
-    console.log('[SHOW_INSIGHTS]');
-    showErrorMessage('Función no implementada aún: Mostrar insights');
+function bulkDeleteInboxItems() {
+    // Obtener items seleccionados (si se implementa checkbox)
+    showAlertModal('Función próximamente', 'La función de eliminación masiva estará disponible próximamente.', 'info');
 }
 
 // Inicializar funcionalidades cuando el DOM esté listo
