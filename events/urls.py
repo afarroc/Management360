@@ -143,11 +143,17 @@ urlpatterns = [
 
     # Root Dashboard Bulk Actions
     path('root/bulk-actions/', views.root_bulk_actions, name='root_bulk_actions'),
+    # Bot Activation API
+    path('root/activate-bot/', views.activate_bot, name='activate_bot'),
     # Inbox Management Panel - GTD Analyst Control Panel
     path('inbox/management/', views.inbox_management_panel, name='inbox_management_panel'),
     # Inbox Item Creation API
     path('inbox/create/', views.create_inbox_item_api, name='create_inbox_item_api'),
     path('inbox/management/api/queue-data/', views.get_queue_data, name='get_queue_data'),
+    path('inbox/management/api/email-queue/', views.get_email_queue_items, name='get_email_queue_items'),
+    path('inbox/management/api/call-queue/', views.get_call_queue_items, name='get_call_queue_items'),
+    path('inbox/management/api/chat-queue/', views.get_chat_queue_items, name='get_chat_queue_items'),
+    path('inbox/management/api/process-queue/', views.process_queue, name='process_queue'),
     path('inbox/management/api/update-settings/', views.update_processing_settings, name='update_processing_settings'),
     path('inbox/management/api/assign-agent/', views.assign_interaction_to_agent, name='assign_interaction_to_agent'),
     path('inbox/management/api/mark-resolved/', views.mark_interaction_resolved, name='mark_interaction_resolved'),

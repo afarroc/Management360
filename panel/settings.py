@@ -11,7 +11,7 @@ SECRET_KEY = config('SECRET_KEY')
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY no está definido en las variables de entorno.")
 DEBUG = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,192.168.18.46,192.168.18.47').split(',')
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,192.168.18.46,192.168.18.47,testserver').split(',')
 
 if RENDER_EXTERNAL_HOSTNAME := os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)

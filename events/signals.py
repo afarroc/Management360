@@ -14,9 +14,12 @@ def create_inbox_item_for_task(sender, instance, created, **kwargs):
             if instance.host:
                 # NO crear item en inbox si la tarea viene del procesamiento del inbox
                 # Verificar si existe algún InboxItem que apunte a esta tarea (ya procesado)
+                from django.contrib.contenttypes.models import ContentType
+                task_content_type = ContentType.objects.get_for_model(instance)
                 existing_processed_inbox_item = InboxItem.objects.filter(
                     created_by=instance.host,
-                    processed_to=instance
+                    processed_to_content_type=task_content_type,
+                    processed_to_object_id=instance.id
                 ).exists()
 
                 if existing_processed_inbox_item:

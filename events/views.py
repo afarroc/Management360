@@ -2,6 +2,7 @@
 from datetime import datetime, timedelta, time
 from decimal import Decimal
 import csv
+import json
 from collections import defaultdict
 
 # Django Imports
@@ -1234,7 +1235,8 @@ def project_activate(request, project_id=None):
             return redirect('project_panel')
         
 # Tasks
-     
+
+@login_required
 def tasks(request, task_id=None, project_id=None):
     title='Tasks'
     urls=[
@@ -1271,9 +1273,9 @@ def tasks(request, task_id=None, project_id=None):
     else:
 
         if not project_id:
-            tasks = Task.objects.all()
+            tasks = Task.objects.filter(Q(host=request.user) | Q(assigned_to=request.user))
         else:
-            tasks = Task.objects.filter(project_id=project_id)
+            tasks = Task.objects.filter(Q(host=request.user) | Q(assigned_to=request.user), project_id=project_id)
 
         # Convert to tasks_data format for alert generation
         tasks_data = [{'task': task} for task in tasks]
@@ -4677,11 +4679,16 @@ def create_reminder(request):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
 def check_new_emails_api(request):
     """
     API endpoint para verificar y procesar correos nuevos manualmente
     """
+    from .utils import check_root_access
+
+    # Verificar permisos usando la misma lógica que el dashboard root
+    if not check_root_access(request.user):
+        return JsonResponse({'success': False, 'error': 'No tienes permisos para acceder a esta funcionalidad'})
+
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método no permitido'})
 
@@ -4718,11 +4725,370 @@ def check_new_emails_api(request):
 
 
 @login_required
-@user_passes_test(lambda u: u.is_superuser)
+def activate_bot(request):
+    """
+    Vista para activar bots que simulan tareas usando credenciales de usuarios reales
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    # Verificar permisos - solo administradores pueden activar bots
+    if not (request.user.is_superuser or
+            (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and
+             request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST'])):
+        return JsonResponse({'success': False, 'error': 'No tienes permisos para activar bots'})
+
+    try:
+        bot_id = request.POST.get('bot_id')
+        selected_tasks = request.POST.getlist('tasks[]')
+
+        if not bot_id:
+            return JsonResponse({'success': False, 'error': 'Bot requerido'})
+
+        if not selected_tasks:
+            return JsonResponse({'success': False, 'error': 'Debes seleccionar al menos una tarea'})
+
+        # Definir configuración de bots
+        bot_configs = {
+            'project_bot': {
+                'name': 'Bot de Proyectos',
+                'tasks': {
+                    'create_project': 'create_project_simulation',
+                    'manage_tasks': 'manage_tasks_simulation',
+                    'generate_reports': 'generate_reports_simulation',
+                    'simulate_inbox': 'simulate_inbox_simulation'
+                }
+            },
+            'teacher_bot': {
+                'name': 'Bot Profesor',
+                'tasks': {
+                    'create_course': 'create_course_simulation',
+                    'create_lesson': 'create_lesson_simulation',
+                    'create_content': 'create_content_simulation',
+                    'manage_students': 'manage_students_simulation'
+                }
+            },
+            'client_bot': {
+                'name': 'Bot Cliente',
+                'tasks': {
+                    'simulate_inbox': 'simulate_client_inbox',
+                    'send_emails': 'simulate_email_sending',
+                    'create_tickets': 'create_support_tickets',
+                    'simulate_calls': 'simulate_phone_calls'
+                }
+            }
+        }
+
+        if bot_id not in bot_configs:
+            return JsonResponse({'success': False, 'error': 'Bot no válido'})
+
+        bot_config = bot_configs[bot_id]
+        executed_tasks = []
+
+        # Ejecutar cada tarea seleccionada
+        for task_id in selected_tasks:
+            if task_id in bot_config['tasks']:
+                task_function_name = bot_config['tasks'][task_id]
+                try:
+                    # Ejecutar la función de simulación correspondiente
+                    result = globals()[task_function_name](request.user)
+                    executed_tasks.append({
+                        'task_id': task_id,
+                        'status': 'success',
+                        'result': result
+                    })
+                except Exception as e:
+                    executed_tasks.append({
+                        'task_id': task_id,
+                        'status': 'error',
+                        'error': str(e)
+                    })
+
+        # Registrar la activación del bot
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"Bot {bot_config['name']} activado por {request.user.username}. Tareas ejecutadas: {len(executed_tasks)}")
+
+        return JsonResponse({
+            'success': True,
+            'message': f'Bot {bot_config["name"]} activado exitosamente',
+            'executed_tasks': executed_tasks,
+            'bot_name': bot_config['name']
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+# Funciones de simulación para bots
+
+def create_project_simulation(user):
+    """Simula la creación de un proyecto"""
+    from .models import Project, ProjectStatus
+    from django.utils import timezone
+
+    # Obtener estado por defecto
+    try:
+        default_status = ProjectStatus.objects.get(status_name='Created')
+    except ProjectStatus.DoesNotExist:
+        default_status = ProjectStatus.objects.filter(status_name__icontains='created').first()
+        if not default_status:
+            default_status = ProjectStatus.objects.first()
+
+    # Crear proyecto simulado
+    project = Project.objects.create(
+        title=f"Proyecto Simulado - {timezone.now().strftime('%Y%m%d_%H%M%S')}",
+        description="Proyecto creado automáticamente por el Bot de Proyectos",
+        host=user,
+        assigned_to=user,
+        project_status=default_status,
+        ticket_price=Decimal('0.10')
+    )
+
+    return f"Proyecto '{project.title}' creado exitosamente (ID: {project.id})"
+
+
+def manage_tasks_simulation(user):
+    """Simula la gestión de tareas"""
+    from .models import Task, TaskStatus, Project
+
+    # Obtener proyectos del usuario
+    projects = Project.objects.filter(host=user)[:3]  # Limitar a 3 proyectos
+
+    tasks_created = 0
+    for project in projects:
+        try:
+            default_status = TaskStatus.objects.get(status_name='To Do')
+        except TaskStatus.DoesNotExist:
+            default_status = TaskStatus.objects.filter(status_name__icontains='to do').first()
+            if not default_status:
+                default_status = TaskStatus.objects.first()
+
+        # Crear tarea para el proyecto
+        task = Task.objects.create(
+            title=f"Tarea Simulada para {project.title}",
+            description="Tarea creada automáticamente por el Bot de Proyectos",
+            host=user,
+            assigned_to=user,
+            project=project,
+            task_status=default_status,
+            ticket_price=Decimal('0.05')
+        )
+        tasks_created += 1
+
+    return f"{tasks_created} tareas creadas en {len(projects)} proyectos"
+
+
+def generate_reports_simulation(user):
+    """Simula la generación de reportes"""
+    from .models import Project
+
+    projects = Project.objects.filter(host=user)
+    report_data = {
+        'total_projects': projects.count(),
+        'active_projects': projects.filter(project_status__status_name__in=['In Progress', 'Created']).count(),
+        'completed_projects': projects.filter(project_status__status_name='Completed').count()
+    }
+
+    return f"Reporte generado: {report_data['total_projects']} proyectos totales, {report_data['active_projects']} activos, {report_data['completed_projects']} completados"
+
+
+def simulate_inbox_simulation(user):
+    """Simula la creación de items en el inbox"""
+    from .models import InboxItem
+
+    # Crear varios items de inbox simulados
+    inbox_items = []
+    for i in range(3):
+        item = InboxItem.objects.create(
+            title=f"Item de Inbox Simulado {i+1}",
+            description="Item creado automáticamente por el Bot de Proyectos",
+            created_by=user,
+            gtd_category='accionable',
+            priority='media',
+            action_type='hacer'
+        )
+        inbox_items.append(item)
+
+    return f"{len(inbox_items)} items de inbox creados"
+
+
+def create_course_simulation(user):
+    """Simula la creación de un curso"""
+    # Nota: Esta función requiere que exista el modelo Course en la app courses
+    try:
+        from courses.models import Course
+
+        course = Course.objects.create(
+            title=f"Curso Simulado - {timezone.now().strftime('%Y%m%d_%H%M%S')}",
+            description="Curso creado automáticamente por el Bot Profesor",
+            instructor=user,
+            price=Decimal('50.00')
+        )
+
+        return f"Curso '{course.title}' creado exitosamente (ID: {course.id})"
+    except ImportError:
+        return "Simulación: Módulo Course no disponible"
+    except Exception as e:
+        return f"Error en simulación de curso: {str(e)}"
+
+
+def create_lesson_simulation(user):
+    """Simula la creación de lecciones"""
+    try:
+        from courses.models import Course, Lesson
+
+        # Obtener cursos del instructor
+        courses = Course.objects.filter(instructor=user)[:2]
+
+        lessons_created = 0
+        for course in courses:
+            lesson = Lesson.objects.create(
+                course=course,
+                title=f"Lección Simulada para {course.title}",
+                content="Contenido creado automáticamente por el Bot Profesor",
+                order=lessons_created + 1
+            )
+            lessons_created += 1
+
+        return f"{lessons_created} lecciones creadas en {len(courses)} cursos"
+    except ImportError:
+        return "Simulación: Módulos Course/Lesson no disponibles"
+    except Exception as e:
+        return f"Error en simulación de lecciones: {str(e)}"
+
+
+def create_content_simulation(user):
+    """Simula la creación de contenido"""
+    try:
+        from courses.models import Course, ContentBlock
+
+        courses = Course.objects.filter(instructor=user)[:2]
+
+        content_created = 0
+        for course in courses:
+            content = ContentBlock.objects.create(
+                course=course,
+                title=f"Contenido Simulado para {course.title}",
+                content="Contenido educativo creado automáticamente por el Bot Profesor",
+                block_type='text'
+            )
+            content_created += 1
+
+        return f"{content_created} bloques de contenido creados en {len(courses)} cursos"
+    except ImportError:
+        return "Simulación: Módulos Course/ContentBlock no disponibles"
+    except Exception as e:
+        return f"Error en simulación de contenido: {str(e)}"
+
+
+def manage_students_simulation(user):
+    """Simula la gestión de estudiantes"""
+    try:
+        from courses.models import Course, Enrollment
+
+        courses = Course.objects.filter(instructor=user)[:2]
+
+        enrollments_created = 0
+        for course in courses:
+            # Simular inscripción de estudiantes (esto es solo una simulación)
+            # En un escenario real, se seleccionarían usuarios existentes
+            enrollments_created += 1
+
+        return f"Simulación: {enrollments_created} estudiantes inscritos en cursos"
+    except ImportError:
+        return "Simulación: Módulos Course/Enrollment no disponibles"
+    except Exception as e:
+        return f"Error en simulación de estudiantes: {str(e)}"
+
+
+def simulate_client_inbox(user):
+    """Simula consultas de clientes en el inbox"""
+    from .models import InboxItem
+
+    client_queries = [
+        "Consulta sobre producto X",
+        "Problema con la entrega",
+        "Solicitud de información",
+        "Queja sobre servicio"
+    ]
+
+    inbox_items = []
+    for query in client_queries:
+        item = InboxItem.objects.create(
+            title=f"Consulta Cliente: {query}",
+            description="Consulta simulada de cliente creada por el Bot Cliente",
+            created_by=user,
+            gtd_category='accionable',
+            priority='alta',
+            action_type='responder'
+        )
+        inbox_items.append(item)
+
+    return f"{len(inbox_items)} consultas de cliente simuladas en inbox"
+
+
+def simulate_email_sending(user):
+    """Simula envío de emails"""
+    # Esta es una simulación - en un escenario real enviaría emails
+    emails_simulated = 5
+    return f"Simulación: {emails_simulated} emails enviados a clientes"
+
+
+def create_support_tickets(user):
+    """Simula creación de tickets de soporte"""
+    from .models import InboxItem
+
+    tickets = []
+    for i in range(3):
+        ticket = InboxItem.objects.create(
+            title=f"Ticket de Soporte #{i+1}",
+            description="Ticket de soporte simulado creado por el Bot Cliente",
+            created_by=user,
+            gtd_category='accionable',
+            priority='alta',
+            action_type='resolver'
+        )
+        tickets.append(ticket)
+
+    return f"{len(tickets)} tickets de soporte creados"
+
+
+def simulate_phone_calls(user):
+    """Simula registros de llamadas telefónicas"""
+    from .models import InboxItem
+
+    calls = []
+    call_types = ["Consulta técnica", "Soporte urgente", "Información general"]
+
+    for call_type in call_types:
+        call = InboxItem.objects.create(
+            title=f"Llamada: {call_type}",
+            description="Registro de llamada telefónica simulada por el Bot Cliente",
+            created_by=user,
+            gtd_category='accionable',
+            priority='media',
+            action_type='seguir'
+        )
+        calls.append(call)
+
+    return f"{len(calls)} registros de llamadas telefónicas creados"
+
+
+@login_required
 def process_cx_emails_api(request):
     """
     API endpoint para procesar emails CX manualmente (similar a check_new_emails pero más específico)
     """
+    from .utils import check_root_access
+
+    # Verificar permisos usando la misma lógica que el dashboard root
+    if not check_root_access(request.user):
+        return JsonResponse({'success': False, 'error': 'No tienes permisos para acceder a esta funcionalidad'})
+
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Método no permitido'})
 
@@ -5776,26 +6142,35 @@ def inbox_admin_bulk_action(request):
     """
     # Verificar permisos
     if not (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST']):
-        messages.error(request, 'No tienes permisos para realizar acciones masivas.')
-        return redirect('inbox_admin_dashboard')
+        return JsonResponse({'success': False, 'error': 'No tienes permisos para realizar acciones masivas.'})
 
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        selected_items = request.POST.getlist('selected_items')
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
 
-        if not selected_items:
-            messages.error(request, 'No se seleccionaron items.')
-            return redirect('inbox_admin_dashboard')
+    action = request.POST.get('action')
+    selected_items = request.POST.getlist('selected_items')
 
-        items = InboxItem.objects.filter(id__in=selected_items)
+    if not selected_items:
+        return JsonResponse({'success': False, 'error': 'No se seleccionaron items.'})
 
+    items = InboxItem.objects.filter(id__in=selected_items)
+
+    try:
         if action == 'make_public':
             count = items.update(is_public=True)
-            messages.success(request, f'Se hicieron públicos {count} item(s).')
+            return JsonResponse({
+                'success': True,
+                'message': f'Se hicieron públicos {count} item(s).',
+                'count': count
+            })
 
         elif action == 'make_private':
             count = items.update(is_public=False)
-            messages.success(request, f'Se hicieron privados {count} item(s).')
+            return JsonResponse({
+                'success': True,
+                'message': f'Se hicieron privados {count} item(s).',
+                'count': count
+            })
 
         elif action == 'mark_processed':
             count = 0
@@ -5805,14 +6180,29 @@ def inbox_admin_bulk_action(request):
                     item.processed_at = timezone.now()
                     item.save()
                     count += 1
-            messages.success(request, f'Se marcaron como procesados {count} item(s).')
+            return JsonResponse({
+                'success': True,
+                'message': f'Se marcaron como procesados {count} item(s).',
+                'count': count
+            })
 
         elif action == 'delete':
             count = items.count()
             items.delete()
-            messages.success(request, f'Se eliminaron {count} item(s).')
+            return JsonResponse({
+                'success': True,
+                'message': f'Se eliminaron {count} item(s).',
+                'count': count
+            })
 
-    return redirect('inbox_admin_dashboard')
+        else:
+            return JsonResponse({'success': False, 'error': 'Acción no válida.'})
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error al procesar la acción: {str(e)}'
+        })
 
 
 @login_required
@@ -6234,11 +6624,57 @@ def root(request):
         dashboard = RootDashboardService(request.user, request)
         context = dashboard.get_dashboard_data()
 
+        # Definir bots disponibles con sus tareas predefinidas
+        available_bots = [
+            {
+                'id': 'project_bot',
+                'name': 'Bot de Proyectos',
+                'description': 'Simula gestión completa de proyectos',
+                'icon': 'bi-folder-plus',
+                'color': 'primary',
+                'tasks': [
+                    {'id': 'create_project', 'name': 'Crear Proyecto', 'description': 'Crea un nuevo proyecto con estructura completa'},
+                    {'id': 'manage_tasks', 'name': 'Gestionar Tareas', 'description': 'Asigna y administra tareas del proyecto'},
+                    {'id': 'generate_reports', 'name': 'Generar Reportes', 'description': 'Crea reportes de progreso del proyecto'},
+                    {'id': 'simulate_inbox', 'name': 'Simular Inbox', 'description': 'Crea items de inbox relacionados con el proyecto'}
+                ]
+            },
+            {
+                'id': 'teacher_bot',
+                'name': 'Bot Profesor',
+                'description': 'Simula creación y gestión de cursos educativos',
+                'icon': 'bi-mortarboard',
+                'color': 'success',
+                'tasks': [
+                    {'id': 'create_course', 'name': 'Crear Curso', 'description': 'Crea un nuevo curso con estructura básica'},
+                    {'id': 'create_lesson', 'name': 'Crear Lección', 'description': 'Añade lecciones al curso'},
+                    {'id': 'create_content', 'name': 'Crear Contenido', 'description': 'Genera secciones de contenido educativo'},
+                    {'id': 'manage_students', 'name': 'Gestionar Estudiantes', 'description': 'Simula gestión de estudiantes inscritos'}
+                ]
+            },
+            {
+                'id': 'client_bot',
+                'name': 'Bot Cliente',
+                'description': 'Simula interacciones y consultas de clientes',
+                'icon': 'bi-person-gear',
+                'color': 'info',
+                'tasks': [
+                    {'id': 'simulate_inbox', 'name': 'Simular Inbox', 'description': 'Crea consultas y tickets de soporte'},
+                    {'id': 'send_emails', 'name': 'Enviar Emails', 'description': 'Simula envío de correos electrónicos'},
+                    {'id': 'create_tickets', 'name': 'Crear Tickets', 'description': 'Genera tickets de soporte técnico'},
+                    {'id': 'simulate_calls', 'name': 'Simular Llamadas', 'description': 'Crea registros de llamadas telefónicas'}
+                ]
+            }
+        ]
+
         # Añadir elementos finales del contexto
+        import json
         context.update({
             'title': 'Root Dashboard',
             'page_title': 'Root Dashboard',
             'css_classes': get_responsive_grid_classes(),
+            'available_bots': available_bots,
+            'available_bots_json': json.dumps(available_bots),
         })
 
         return render(request, 'events/root.html', context)
@@ -6667,21 +7103,26 @@ def get_queue_data(request):
             created_at__gte=timezone.now() - timedelta(hours=1)
         ).count()
 
-        # Conteo por tipo
+        # Conteo por tipo mejorado
         emails = InboxItem.objects.filter(
             models.Q(description__icontains='@') |
-            models.Q(context__icontains='email'),
+            models.Q(context__icontains='email') |
+            models.Q(title__icontains='email'),
             is_processed=False
         ).count()
 
         calls = InboxItem.objects.filter(
             models.Q(title__icontains='llamada') |
-            models.Q(title__icontains='call'),
+            models.Q(title__icontains='call') |
+            models.Q(context__icontains='telefono') |
+            models.Q(context__icontains='phone'),
             is_processed=False
         ).count()
 
         chats = InboxItem.objects.filter(
-            models.Q(title__icontains='chat'),
+            models.Q(title__icontains='chat') |
+            models.Q(context__icontains='chat') |
+            models.Q(title__icontains='mensaje'),
             is_processed=False
         ).count()
 
@@ -6694,6 +7135,254 @@ def get_queue_data(request):
                 'calls': calls,
                 'chats': chats
             }
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@login_required
+def get_email_queue_items(request):
+    """
+    API endpoint para obtener items de la cola de emails
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    try:
+        # Obtener items de email no procesados
+        email_items = InboxItem.objects.filter(
+            models.Q(description__icontains='@') |
+            models.Q(context__icontains='email') |
+            models.Q(title__icontains='email'),
+            is_processed=False
+        ).select_related('created_by', 'assigned_to').order_by('-created_at')[:20]  # Limitar a 20 para rendimiento
+
+        items_data = []
+        for item in email_items:
+            # Calcular tiempo transcurrido
+            time_diff = timezone.now() - item.created_at
+            if time_diff.days > 0:
+                time_ago = f"{time_diff.days}d ago"
+            elif time_diff.seconds // 3600 > 0:
+                time_ago = f"{time_diff.seconds // 3600}h ago"
+            elif time_diff.seconds // 60 > 0:
+                time_ago = f"{time_diff.seconds // 60}m ago"
+            else:
+                time_ago = "Just now"
+
+            items_data.append({
+                'id': item.id,
+                'title': item.title[:50] + ('...' if len(item.title) > 50 else ''),
+                'sender': item.created_by.username if item.created_by else 'Unknown',
+                'priority': item.priority,
+                'time': time_ago,
+                'status': 'pending' if not item.assigned_to else 'assigned',
+                'assigned_to': item.assigned_to.username if item.assigned_to else None
+            })
+
+        return JsonResponse({
+            'success': True,
+            'data': items_data
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@login_required
+def get_call_queue_items(request):
+    """
+    API endpoint para obtener items de la cola de llamadas
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    try:
+        # Obtener items de llamadas no procesados
+        call_items = InboxItem.objects.filter(
+            models.Q(title__icontains='llamada') |
+            models.Q(title__icontains='call') |
+            models.Q(context__icontains='telefono') |
+            models.Q(context__icontains='phone'),
+            is_processed=False
+        ).select_related('created_by', 'assigned_to').order_by('-created_at')[:20]
+
+        items_data = []
+        for item in call_items:
+            # Calcular tiempo transcurrido
+            time_diff = timezone.now() - item.created_at
+            if time_diff.days > 0:
+                time_ago = f"{time_diff.days}d ago"
+            elif time_diff.seconds // 3600 > 0:
+                time_ago = f"{time_diff.seconds // 3600}h ago"
+            elif time_diff.seconds // 60 > 0:
+                time_ago = f"{time_diff.seconds // 60}m ago"
+            else:
+                time_ago = "Just now"
+
+            # Calcular tiempo de espera (simulado)
+            wait_minutes = min(time_diff.seconds // 60, 60)  # Máximo 60 minutos para display
+
+            items_data.append({
+                'id': item.id,
+                'title': item.title[:50] + ('...' if len(item.title) > 50 else ''),
+                'caller': item.created_by.username if item.created_by else 'Unknown',
+                'priority': item.priority,
+                'time': time_ago,
+                'status': 'pending' if not item.assigned_to else 'assigned',
+                'waitTime': f"{wait_minutes:02d}:{(time_diff.seconds % 60):02d}",
+                'assigned_to': item.assigned_to.username if item.assigned_to else None
+            })
+
+        return JsonResponse({
+            'success': True,
+            'data': items_data
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@login_required
+def get_chat_queue_items(request):
+    """
+    API endpoint para obtener items de la cola de chats
+    """
+    if request.method != 'GET':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    try:
+        # Obtener items de chat no procesados
+        chat_items = InboxItem.objects.filter(
+            models.Q(title__icontains='chat') |
+            models.Q(context__icontains='chat') |
+            models.Q(title__icontains='mensaje'),
+            is_processed=False
+        ).select_related('created_by', 'assigned_to').order_by('-created_at')[:20]
+
+        items_data = []
+        for item in chat_items:
+            # Calcular tiempo transcurrido
+            time_diff = timezone.now() - item.created_at
+            if time_diff.days > 0:
+                time_ago = f"{time_diff.days}d ago"
+            elif time_diff.seconds // 3600 > 0:
+                time_ago = f"{time_diff.seconds // 3600}h ago"
+            elif time_diff.seconds // 60 > 0:
+                time_ago = f"{time_diff.seconds // 60}m ago"
+            else:
+                time_ago = "Just now"
+
+            # Contar mensajes (simulado basado en contexto)
+            messages_count = 1
+            if item.context:
+                try:
+                    context_data = json.loads(item.context) if isinstance(item.context, str) else item.context
+                    if isinstance(context_data, dict) and 'messages' in context_data:
+                        messages_count = len(context_data['messages'])
+                except:
+                    messages_count = 1
+
+            items_data.append({
+                'id': item.id,
+                'title': item.title[:50] + ('...' if len(item.title) > 50 else ''),
+                'customer': item.created_by.username if item.created_by else 'Unknown',
+                'priority': item.priority,
+                'time': time_ago,
+                'status': 'active' if item.assigned_to else 'pending',
+                'messages': messages_count,
+                'assigned_to': item.assigned_to.username if item.assigned_to else None
+            })
+
+        return JsonResponse({
+            'success': True,
+            'data': items_data
+        })
+
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+
+@login_required
+def process_queue(request):
+    """
+    API endpoint para procesar colas automáticamente
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'})
+
+    try:
+        data = json.loads(request.body)
+        queue_type = data.get('queue_type')
+        action = data.get('action')
+
+        if not queue_type or not action:
+            return JsonResponse({'success': False, 'error': 'Parámetros requeridos faltantes'})
+
+        processed_count = 0
+        activated_count = 0
+
+        # Definir filtros por tipo de cola
+        queue_filters = {
+            'email': models.Q(description__icontains='@') |
+                    models.Q(context__icontains='email') |
+                    models.Q(title__icontains='email'),
+            'call': models.Q(title__icontains='llamada') |
+                   models.Q(title__icontains='call') |
+                   models.Q(context__icontains='telefono') |
+                   models.Q(context__icontains='phone'),
+            'chat': models.Q(title__icontains='chat') |
+                   models.Q(context__icontains='chat') |
+                   models.Q(title__icontains='mensaje')
+        }
+
+        if queue_type not in queue_filters:
+            return JsonResponse({'success': False, 'error': 'Tipo de cola no válido'})
+
+        # Obtener items no procesados de la cola específica
+        queue_items = InboxItem.objects.filter(
+            queue_filters[queue_type],
+            is_processed=False,
+            assigned_to__isnull=True  # Solo items no asignados
+        )
+
+        if action == 'process':
+            # Asignar automáticamente agentes a los items
+            for item in queue_items:
+                if item.assign_to_available_user():
+                    processed_count += 1
+
+        elif action == 'activate':
+            # Para llamadas: marcar como activas y asignar
+            for item in queue_items:
+                if item.assign_to_available_user():
+                    activated_count += 1
+
+        elif action == 'pause':
+            # Para pausar: no hacer nada específico por ahora
+            pass
+
+        else:
+            return JsonResponse({'success': False, 'error': 'Acción no válida'})
+
+        return JsonResponse({
+            'success': True,
+            'processed_count': processed_count,
+            'activated_count': activated_count,
+            'message': f'Cola {queue_type} procesada exitosamente'
         })
 
     except Exception as e:
@@ -7038,8 +7727,10 @@ def process_inbox_item(request, item_id):
                 try:
                     task = Task.objects.get(id=selected_task_id)
 
-                    # Verificar permisos para la tarea
-                    if task.host != request.user and request.user not in task.attendees.all():
+                    # Verificar permisos para la tarea (host, assigned_to o attendees)
+                    if (task.host != request.user and
+                        task.assigned_to != request.user and
+                        request.user not in task.attendees.all()):
                         messages.error(request, 'No tienes permisos para vincular a esta tarea.')
                         return redirect('process_inbox_item', item_id=item_id)
 
