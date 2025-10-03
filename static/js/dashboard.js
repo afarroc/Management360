@@ -46,6 +46,7 @@
     initAnimatedCounters();
     initTooltips();
     initAlerts();
+    initEmailSync();
 
     perfData.components.dashboard = performance.now() - startTime;
     console.log('Dashboard initialized in:', perfData.components.dashboard, 'ms');
@@ -206,6 +207,263 @@
         bsAlert.close();
       }, delay);
     });
+  }
+
+  /**
+   * Initialize CX Email Synchronization functionality
+   */
+  function initEmailSync() {
+    // Bind click handlers for email sync buttons
+    const checkEmailsBtn = document.getElementById('checkEmailsBtn');
+    const processEmailsBtn = document.getElementById('processEmailsBtn');
+
+    if (checkEmailsBtn) {
+      checkEmailsBtn.addEventListener('click', checkNewEmails);
+    }
+
+    if (processEmailsBtn) {
+      processEmailsBtn.addEventListener('click', processEmailsManually);
+    }
+
+    // Initialize configuration toggles
+    initEmailConfigToggles();
+  }
+
+  /**
+   * Initialize email configuration toggles
+   */
+  function initEmailConfigToggles() {
+    const autoSyncToggle = document.getElementById('autoSyncToggle');
+    const notifyToggle = document.getElementById('notifyOnNewEmails');
+
+    if (autoSyncToggle) {
+      autoSyncToggle.addEventListener('change', function() {
+        updateEmailConfig('auto_sync', this.checked);
+      });
+    }
+
+    if (notifyToggle) {
+      notifyToggle.addEventListener('change', function() {
+        updateEmailConfig('notifications', this.checked);
+      });
+    }
+  }
+
+  /**
+   * Check for new emails
+   */
+  function checkNewEmails() {
+    const btn = document.getElementById('checkEmailsBtn');
+    const statusEl = document.getElementById('syncStatus');
+    const countEl = document.getElementById('lastSyncCount');
+
+    // Disable button and show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-hourglass"></i> Verificando...';
+
+    if (statusEl) {
+      statusEl.innerHTML = '<span class="text-info"><i class="bi bi-arrow-repeat"></i> Verificando correos nuevos...</span>';
+    }
+
+    // Make AJAX request
+    fetch('/events/api/check-new-emails/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Update UI with results
+        if (statusEl) {
+          statusEl.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> Verificación completada</span>';
+        }
+
+        if (countEl && data.processed_count !== undefined) {
+          countEl.textContent = data.processed_count;
+        }
+
+        // Update pending emails count if available
+        const pendingEl = document.getElementById('pendingEmails');
+        if (pendingEl && data.pending_count !== undefined) {
+          pendingEl.textContent = data.pending_count;
+        }
+
+        // Show success message
+        showAlert('success', `Se procesaron ${data.processed_count || 0} emails CX exitosamente`);
+
+      } else {
+        // Show error
+        if (statusEl) {
+          statusEl.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Error en verificación</span>';
+        }
+        showAlert('danger', data.error || 'Error al verificar correos');
+      }
+    })
+    .catch(error => {
+      console.error('Error checking emails:', error);
+      if (statusEl) {
+        statusEl.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Error de conexión</span>';
+      }
+      showAlert('danger', 'Error de conexión al verificar correos');
+    })
+    .finally(() => {
+      // Re-enable button
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-envelope-arrow-down"></i> Verificar Correos Nuevos';
+    });
+  }
+
+  /**
+   * Process emails manually
+   */
+  function processEmailsManually() {
+    const btn = document.getElementById('processEmailsBtn');
+    const statusEl = document.getElementById('syncStatus');
+    const countEl = document.getElementById('lastSyncCount');
+
+    // Disable button and show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-robot"></i> Procesando...';
+
+    if (statusEl) {
+      statusEl.innerHTML = '<span class="text-info"><i class="bi bi-robot"></i> Procesando emails CX...</span>';
+    }
+
+    // Make AJAX request
+    fetch('/events/api/process-cx-emails/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        // Update UI with results
+        if (statusEl) {
+          statusEl.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> Procesamiento completado</span>';
+        }
+
+        if (countEl && data.processed_count !== undefined) {
+          countEl.textContent = data.processed_count;
+        }
+
+        // Update pending emails count if available
+        const pendingEl = document.getElementById('pendingEmails');
+        if (pendingEl && data.pending_count !== undefined) {
+          pendingEl.textContent = data.pending_count;
+        }
+
+        // Show success message
+        showAlert('success', `Procesamiento CX completado: ${data.processed_count || 0} emails procesados`);
+
+      } else {
+        // Show error
+        if (statusEl) {
+          statusEl.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Error en procesamiento</span>';
+        }
+        showAlert('danger', data.error || 'Error al procesar emails');
+      }
+    })
+    .catch(error => {
+      console.error('Error processing emails:', error);
+      if (statusEl) {
+        statusEl.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Error de conexión</span>';
+      }
+      showAlert('danger', 'Error de conexión al procesar emails');
+    })
+    .finally(() => {
+      // Re-enable button
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-robot"></i> Procesar Emails CX';
+    });
+  }
+
+  /**
+   * Update email configuration
+   */
+  function updateEmailConfig(setting, value) {
+    fetch('/events/api/update-email-config/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCsrfToken()
+      },
+      body: JSON.stringify({
+        setting: setting,
+        value: value
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showAlert('success', 'Configuración actualizada');
+      } else {
+        showAlert('danger', data.error || 'Error al actualizar configuración');
+        // Revert toggle on error
+        const toggle = document.getElementById(setting === 'auto_sync' ? 'autoSyncToggle' : 'notifyOnNewEmails');
+        if (toggle) {
+          toggle.checked = !value;
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Error updating config:', error);
+      showAlert('danger', 'Error al actualizar configuración');
+      // Revert toggle on error
+      const toggle = document.getElementById(setting === 'auto_sync' ? 'autoSyncToggle' : 'notifyOnNewEmails');
+      if (toggle) {
+        toggle.checked = !value;
+      }
+    });
+  }
+
+  /**
+   * Get CSRF token from cookies
+   */
+  function getCsrfToken() {
+    const name = 'csrftoken';
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  /**
+   * Show alert message
+   */
+  function showAlert(type, message) {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    // Add to page
+    document.body.appendChild(alertDiv);
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+      if (alertDiv.parentNode) {
+        const bsAlert = new bootstrap.Alert(alertDiv);
+        bsAlert.close();
+      }
+    }, 5000);
   }
 
   /**

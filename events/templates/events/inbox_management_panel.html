@@ -438,127 +438,145 @@ function updateMetrics(data) {
 
 // Load email queue
 function loadEmailQueue() {
-    const emailQueue = document.getElementById('email-queue');
-    const sampleEmails = [
-        {
-            id: 1,
-            title: 'Solicitud cambio de plan internet',
-            sender: 'cliente1@gmail.com',
-            priority: 'media',
-            time: '2 min ago',
-            status: 'pending'
-        },
-        {
-            id: 2,
-            title: 'URGENTE: Facturación duplicada',
-            sender: 'cliente2@empresa.com',
-            priority: 'alta',
-            time: '5 min ago',
-            status: 'pending'
-        },
-        {
-            id: 3,
-            title: 'Actualización datos de contacto',
-            sender: 'cliente3@gmail.com',
-            priority: 'baja',
-            time: '10 min ago',
-            status: 'processing'
+    fetch('/events/inbox/management/api/email-queue/', {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
         }
-    ];
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const emailQueue = document.getElementById('email-queue');
+            if (data.data.length === 0) {
+                emailQueue.innerHTML = '<div class="text-center text-muted py-3">No hay emails pendientes</div>';
+                return;
+            }
 
-    emailQueue.innerHTML = sampleEmails.map(email => `
-        <div class="queue-item email ${email.priority === 'alta' ? 'high-priority' : ''}"
-             onclick="showInteractionDetails(${email.id}, 'email')">
-            <div class="d-flex justify-content-between align-items-start">
-                <div class="flex-grow-1">
-                    <div class="fw-bold">${email.title}</div>
-                    <small class="text-muted">${email.sender}</small>
+            emailQueue.innerHTML = data.data.map(email => `
+                <div class="queue-item email ${email.priority === 'alta' ? 'high-priority' : ''}"
+                      onclick="showInteractionDetails(${email.id}, 'email')">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">${email.title}</div>
+                            <small class="text-muted">${email.sender}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-${getPriorityColor(email.priority)} priority-badge">${email.priority}</span>
+                            <div class="status-indicator status-${email.status}"></div>
+                        </div>
+                    </div>
+                    <div class="text-muted small mt-1">${email.time}</div>
                 </div>
-                <div class="text-end">
-                    <span class="badge bg-${getPriorityColor(email.priority)} priority-badge">${email.priority}</span>
-                    <div class="status-indicator status-${email.status}"></div>
-                </div>
-            </div>
-            <div class="text-muted small mt-1">${email.time}</div>
-        </div>
-    `).join('');
+            `).join('');
+        } else {
+            console.error('Error loading email queue:', data.error);
+            const emailQueue = document.getElementById('email-queue');
+            emailQueue.innerHTML = '<div class="text-center text-danger py-3">Error al cargar emails</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const emailQueue = document.getElementById('email-queue');
+        emailQueue.innerHTML = '<div class="text-center text-danger py-3">Error de conexión</div>';
+    });
 }
 
 // Load call queue
 function loadCallQueue() {
-    const callQueue = document.getElementById('call-queue');
-    const sampleCalls = [
-        {
-            id: 101,
-            title: 'Llamada entrante - Problema técnico',
-            caller: '+51 999 888 777',
-            priority: 'media',
-            time: '1 min ago',
-            status: 'pending',
-            waitTime: '00:45'
-        },
-        {
-            id: 102,
-            title: 'Llamada entrante - Consulta de plan',
-            caller: '+51 999 777 666',
-            priority: 'baja',
-            time: '3 min ago',
-            status: 'pending',
-            waitTime: '01:20'
+    fetch('/events/inbox/management/api/call-queue/', {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
         }
-    ];
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const callQueue = document.getElementById('call-queue');
+            if (data.data.length === 0) {
+                callQueue.innerHTML = '<div class="text-center text-muted py-3">No hay llamadas pendientes</div>';
+                return;
+            }
 
-    callQueue.innerHTML = sampleCalls.map(call => `
-        <div class="queue-item call ${call.priority === 'alta' ? 'high-priority' : ''}"
-             onclick="showInteractionDetails(${call.id}, 'call')">
-            <div class="d-flex justify-content-between align-items-start">
-                <div class="flex-grow-1">
-                    <div class="fw-bold">${call.title}</div>
-                    <small class="text-muted">${call.caller}</small>
-                    <div class="text-warning small">Wait: ${call.waitTime}</div>
+            callQueue.innerHTML = data.data.map(call => `
+                <div class="queue-item call ${call.priority === 'alta' ? 'high-priority' : ''}"
+                      onclick="showInteractionDetails(${call.id}, 'call')">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">${call.title}</div>
+                            <small class="text-muted">${call.caller}</small>
+                            <div class="text-warning small">Wait: ${call.waitTime}</div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-${getPriorityColor(call.priority)} priority-badge">${call.priority}</span>
+                            <div class="status-indicator status-${call.status}"></div>
+                        </div>
+                    </div>
+                    <div class="text-muted small mt-1">${call.time}</div>
                 </div>
-                <div class="text-end">
-                    <span class="badge bg-${getPriorityColor(call.priority)} priority-badge">${call.priority}</span>
-                    <div class="status-indicator status-${call.status}"></div>
-                </div>
-            </div>
-            <div class="text-muted small mt-1">${call.time}</div>
-        </div>
-    `).join('');
+            `).join('');
+        } else {
+            console.error('Error loading call queue:', data.error);
+            const callQueue = document.getElementById('call-queue');
+            callQueue.innerHTML = '<div class="text-center text-danger py-3">Error al cargar llamadas</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const callQueue = document.getElementById('call-queue');
+        callQueue.innerHTML = '<div class="text-center text-danger py-3">Error de conexión</div>';
+    });
 }
 
 // Load chat queue
 function loadChatQueue() {
-    const chatQueue = document.getElementById('chat-queue');
-    const sampleChats = [
-        {
-            id: 201,
-            title: 'Chat - Duda sobre facturación',
-            customer: 'Cliente Web #1247',
-            priority: 'baja',
-            time: '30 sec ago',
-            status: 'active',
-            messages: 5
+    fetch('/events/inbox/management/api/chat-queue/', {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
         }
-    ];
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const chatQueue = document.getElementById('chat-queue');
+            if (data.data.length === 0) {
+                chatQueue.innerHTML = '<div class="text-center text-muted py-3">No hay chats pendientes</div>';
+                return;
+            }
 
-    chatQueue.innerHTML = sampleChats.map(chat => `
-        <div class="queue-item chat"
-             onclick="showInteractionDetails(${chat.id}, 'chat')">
-            <div class="d-flex justify-content-between align-items-start">
-                <div class="flex-grow-1">
-                    <div class="fw-bold">${chat.title}</div>
-                    <small class="text-muted">${chat.customer}</small>
-                    <div class="text-info small">${chat.messages} messages</div>
+            chatQueue.innerHTML = data.data.map(chat => `
+                <div class="queue-item chat"
+                      onclick="showInteractionDetails(${chat.id}, 'chat')">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">${chat.title}</div>
+                            <small class="text-muted">${chat.customer}</small>
+                            <div class="text-info small">${chat.messages} messages</div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-${getPriorityColor(chat.priority)} priority-badge">${chat.priority}</span>
+                            <div class="status-indicator status-${chat.status}"></div>
+                        </div>
+                    </div>
+                    <div class="text-muted small mt-1">${chat.time}</div>
                 </div>
-                <div class="text-end">
-                    <span class="badge bg-${getPriorityColor(chat.priority)} priority-badge">${chat.priority}</span>
-                    <div class="status-indicator status-${chat.status}"></div>
-                </div>
-            </div>
-            <div class="text-muted small mt-1">${chat.time}</div>
-        </div>
-    `).join('');
+            `).join('');
+        } else {
+            console.error('Error loading chat queue:', data.error);
+            const chatQueue = document.getElementById('chat-queue');
+            chatQueue.innerHTML = '<div class="text-center text-danger py-3">Error al cargar chats</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const chatQueue = document.getElementById('chat-queue');
+        chatQueue.innerHTML = '<div class="text-center text-danger py-3">Error de conexión</div>';
+    });
 }
 
 // Helper function for priority colors
@@ -711,28 +729,168 @@ function getChatDetails(id) {
 
 // Queue control functions
 function processEmailQueue() {
-    alert('Processing email queue...');
-    // In real implementation, this would trigger email processing
+    if (confirm('¿Procesar automáticamente la cola de emails? Esto asignará agentes disponibles a los emails pendientes.')) {
+        fetch('/events/inbox/management/api/process-queue/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                queue_type: 'email',
+                action: 'process'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Procesamiento completado: ${data.processed_count} emails procesados`);
+                loadQueueData(); // Refresh all data
+            } else {
+                alert('Error al procesar emails: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error de conexión al procesar emails');
+        });
+    }
 }
 
 function pauseEmailQueue() {
-    alert('Email queue paused');
+    fetch('/events/inbox/management/api/process-queue/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            queue_type: 'email',
+            action: 'pause'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Cola de emails pausada');
+        } else {
+            alert('Error al pausar cola: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión');
+    });
 }
 
 function activateCallQueue() {
-    alert('Inbound call queue activated - routing calls to ATC agents');
+    if (confirm('¿Activar cola de llamadas entrantes? Las llamadas serán enrutadas automáticamente a agentes ATC.')) {
+        fetch('/events/inbox/management/api/process-queue/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                queue_type: 'call',
+                action: 'activate'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Cola de llamadas activada: ${data.activated_count} llamadas enrutadas`);
+                loadQueueData();
+            } else {
+                alert('Error al activar cola: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error de conexión');
+        });
+    }
 }
 
 function pauseCallQueue() {
-    alert('Call queue paused');
+    fetch('/events/inbox/management/api/process-queue/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            queue_type: 'call',
+            action: 'pause'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Cola de llamadas pausada');
+        } else {
+            alert('Error al pausar cola: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión');
+    });
 }
 
 function processChatQueue() {
-    alert('Processing chat queue...');
+    if (confirm('¿Procesar automáticamente la cola de chats? Los chats serán asignados a agentes disponibles.')) {
+        fetch('/events/inbox/management/api/process-queue/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                queue_type: 'chat',
+                action: 'process'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(`Procesamiento completado: ${data.processed_count} chats procesados`);
+                loadQueueData();
+            } else {
+                alert('Error al procesar chats: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error de conexión al procesar chats');
+        });
+    }
 }
 
 function pauseChatQueue() {
-    alert('Chat queue paused');
+    fetch('/events/inbox/management/api/process-queue/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            queue_type: 'chat',
+            action: 'pause'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Cola de chats pausada');
+        } else {
+            alert('Error al pausar cola: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error de conexión');
+    });
 }
 
 // Assignment functions

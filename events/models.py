@@ -3,7 +3,7 @@ from django.db import models
 from django.core.validators import FileExtensionValidator
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 
 # Modelo para los estados del evento
@@ -86,6 +86,15 @@ class Project(models.Model):
     assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_projets') 
     attendees = models.ManyToManyField(User, through='ProjectAttendee', related_name='collaborating_projects',blank=True) 
     ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
+
+    # Generic relation for reverse querying from InboxItem
+    processed_inbox_items = GenericRelation(
+        'InboxItem',
+        related_name='processed_projects',
+        content_type_field='processed_to_content_type',
+        object_id_field='processed_to_object_id',
+        blank=True
+    )
 
     def change_status(self, new_status_id):
         # Obtener el nuevo estado
@@ -180,24 +189,45 @@ class Task(models.Model):
     ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
     tags = models.ManyToManyField('Tag', blank=True)
 
+    # Generic relation for reverse querying from InboxItem
+    processed_inbox_items = GenericRelation(
+        'InboxItem',
+        related_name='processed_tasks',
+        content_type_field='processed_to_content_type',
+        object_id_field='processed_to_object_id',
+        blank=True
+    )
 
-    def change_status(self, new_status_id):
+    def change_status(self, new_status_id, user=None):
         # Obtener el nuevo estado
         new_status = TaskStatus.objects.get(id=new_status_id)
-        
+
+        # Guardar el estado anterior para el historial
+        old_status_name = self.task_status.status_name if self.task_status else None
+
         # Finalizar el estado actual
         current_state = self.taskstate_set.filter(end_time__isnull=True).last()
         if current_state:
             current_state.end_time = timezone.now()
             current_state.save()
-        
+
         # Crear un nuevo estado con el nuevo estado proporcionado
         TaskState.objects.create(task=self, status=new_status)
-        
+
         # Actualizar el estado del evento
         self.task_status = new_status
         self.updated_at = timezone.now()
         self.save()
+
+        # Registrar en el historial si se proporciona un usuario
+        if user:
+            TaskHistory.objects.create(
+                task=self,
+                editor=user,
+                field_name='task_status',
+                old_value=old_status_name,
+                new_value=new_status.status_name
+            )
 
     def record_edit(self, editor, field_name, old_value, new_value):
         # Registrar la edición en el historial
@@ -369,7 +399,7 @@ class TaskSchedule(models.Model):
             # Crear TaskProgram
             program, created = TaskProgram.objects.get_or_create(
                 task=self.task,
-                host=self.task.host,
+                host=self.host,  # Usar el host de la programación, no de la tarea
                 start_time=occurrence['start_time'],
                 defaults={
                     'title': f"{self.task.title} - {occurrence['start_time'].strftime('%d/%m/%Y %H:%M')}",
