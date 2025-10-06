@@ -1,0 +1,304 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load bitacora_tags %}
+
+{% block content %}
+
+<!-- Mensajes de confirmación y éxito -->
+{% if messages %}
+<div class="alert alert-info" role="alert">
+    {% for message in messages %}
+    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
+        {% endfor %}
+</div>
+{% endif %}
+
+<div class="pagetitle">
+    <h1>{{ entry.titulo }}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'bitacora:list' %}">Bitácora</a></li>
+            <li class="breadcrumb-item active">{{ entry.titulo|truncatechars:30 }}</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section dashboard">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge bg-primary">{{ entry.get_categoria_display }}</span>
+                        {% if entry.mood %}
+                        <span class="badge bg-info ms-2">Estado: {{ entry.mood }}</span>
+                        {% endif %}
+                        {% if entry.is_public %}
+                        <span class="badge bg-success ms-2">Público</span>
+                        {% else %}
+                        <span class="badge bg-secondary ms-2">Privado</span>
+                        {% endif %}
+                    </div>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'bitacora:update' entry.pk %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i> Editar
+                        </a>
+                        <a href="{% url 'bitacora:delete' entry.pk %}" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash"></i> Eliminar
+                        </a>
+                        <a href="{% url 'bitacora:list' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-arrow-left"></i> Volver
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="entry-content mb-4">
+                        {{ entry.contenido|safe }}
+                    </div>
+
+                    <!-- Tags -->
+                    {% if entry.tags.all %}
+                    <div class="mb-3">
+                        <strong>Tags:</strong>
+                        {% for tag in entry.tags.all %}
+                        <span class="badge bg-light text-dark me-1">{{ tag.name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Ubicación -->
+                    {% if entry.latitud and entry.longitud %}
+                    <div class="mb-3">
+                        <strong><i class="bi bi-geo-alt"></i> Ubicación:</strong> {{ entry.latitud }}, {{ entry.longitud }}
+                    </div>
+                    {% endif %}
+
+                    <!-- Relaciones -->
+                    {% if entry.related_event %}
+                    <div class="mb-3">
+                        <strong><i class="bi bi-calendar-event"></i> Evento relacionado:</strong>
+                        <a href="#" class="text-decoration-none">{{ entry.related_event.title }}</a>
+                    </div>
+                    {% endif %}
+                    {% if entry.related_task %}
+                    <div class="mb-3">
+                        <strong><i class="bi bi-check-circle"></i> Tarea relacionada:</strong>
+                        <a href="#" class="text-decoration-none">{{ entry.related_task.title }}</a>
+                    </div>
+                    {% endif %}
+                    {% if entry.related_project %}
+                    <div class="mb-3">
+                        <strong><i class="bi bi-folder"></i> Proyecto relacionado:</strong>
+                        <a href="#" class="text-decoration-none">{{ entry.related_project.title }}</a>
+                    </div>
+                    {% endif %}
+                    {% if entry.related_room %}
+                    <div class="mb-3">
+                        <strong><i class="bi bi-house"></i> Habitación relacionada:</strong>
+                        <a href="#" class="text-decoration-none">{{ entry.related_room.name }}</a>
+                    </div>
+                    {% endif %}
+
+                    <!-- Contenido estructurado -->
+                    {% if rendered_structured_content %}
+                    <div class="mb-4">
+                        <h5><i class="bi bi-puzzle"></i> Contenido Estructurado:</h5>
+                        <div class="structured-content">
+                            {% for block in rendered_structured_content %}
+                            <div class="content-block mb-3 p-3 border rounded bg-light">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0">{{ block.title }}</h6>
+                                    <span class="badge bg-info">{{ block.type }}</span>
+                                </div>
+
+                                <div class="content-body">
+                                    {% if block.type == 'html' %}
+                                        <div>{{ block.content|safe }}</div>
+                                    {% elif block.type == 'text' %}
+                                        <p>{{ block.content }}</p>
+                                    {% elif block.type == 'markdown' %}
+                                        <pre><code>{{ block.content }}</code></pre>
+                                    {% elif block.type == 'json' and block.rendered_content %}
+                                        {{ block.rendered_content|safe }}
+                                    {% elif block.type == 'ad_banner' %}
+                                        {% render_content_block block %}
+                                    {% elif block.type == 'ad_card' %}
+                                        {% render_content_block block %}
+                                    {% elif block.type == 'ad_alert' %}
+                                        {% render_content_block block %}
+                                    {% elif block.type == 'ad_testimonial' %}
+                                        {% render_content_block block %}
+                                    {% elif block.type == 'ad_countdown' %}
+                                        {% render_content_block block %}
+                                    {% elif block.type == 'ad_feature' %}
+                                        {% render_content_block block %}
+                                    {% elif block.type == 'ad_comparison' %}
+                                        {% render_content_block block %}
+                                    {% elif block.type == 'ad_achievement' %}
+                                        {% render_content_block block %}
+                                    {% elif block.type == 'image' %}
+                                        {% if block.content %}
+                                        <img src="{{ block.content }}" alt="{{ block.title }}" class="img-fluid rounded">
+                                        {% endif %}
+                                    {% elif block.type == 'video' %}
+                                        {% if block.content %}
+                                        <video controls class="w-100">
+                                            <source src="{{ block.content }}" type="video/mp4">
+                                            Tu navegador no soporta video.
+                                        </video>
+                                        {% endif %}
+                                    {% elif block.type == 'quote' %}
+                                        <blockquote class="blockquote">
+                                            <p class="mb-0">{{ block.content }}</p>
+                                        </blockquote>
+                                    {% elif block.type == 'code' %}
+                                        <pre><code>{{ block.content }}</code></pre>
+                                    {% elif block.type == 'list' %}
+                                        <div>{{ block.content|safe }}</div>
+                                    {% elif block.type == 'table' %}
+                                        <div>{{ block.content|safe }}</div>
+                                    {% elif block.type == 'card' %}
+                                        <div>{{ block.content|safe }}</div>
+                                    {% elif block.type == 'alert' %}
+                                        <div>{{ block.content|safe }}</div>
+                                    {% elif block.type == 'button' %}
+                                        <div>{{ block.content|safe }}</div>
+                                    {% elif block.type == 'form' %}
+                                        <div>{{ block.content|safe }}</div>
+                                    {% elif block.type == 'divider' %}
+                                        <hr>
+                                    {% elif block.type == 'icon' %}
+                                        <i class="{{ block.content }}"></i>
+                                    {% elif block.type == 'progress' %}
+                                        <div>{{ block.content|safe }}</div>
+                                    {% elif block.type == 'badge' %}
+                                        <div>{{ block.content|safe }}</div>
+                                    {% elif block.type == 'timeline' %}
+                                        <div>{{ block.content|safe }}</div>
+                                    {% else %}
+                                        <div>{{ block.content|safe }}</div>
+                                    {% endif %}
+                                </div>
+
+                                <small class="text-muted">Insertado: {{ block.inserted_at|date:"d/m/Y H:i" }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Adjuntos multimedia -->
+                    {% if entry.attachments.all %}
+                    <div class="mb-3">
+                        <h5><i class="bi bi-paperclip"></i> Adjuntos:</h5>
+                        <div class="row">
+                            {% for attachment in entry.attachments.all %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body text-center">
+                                        {% if attachment.tipo == 'image' %}
+                                        <img src="{{ attachment.archivo.url }}" alt="{{ attachment.descripcion }}" class="img-fluid rounded mb-2" style="max-height: 150px;">
+                                        {% elif attachment.tipo == 'audio' %}
+                                        <i class="bi bi-music-note-beamed fs-1 text-primary mb-2"></i>
+                                        <audio controls class="w-100">
+                                            <source src="{{ attachment.archivo.url }}" type="audio/mpeg">
+                                            Tu navegador no soporta audio.
+                                        </audio>
+                                        {% elif attachment.tipo == 'video' %}
+                                        <i class="bi bi-play-circle fs-1 text-primary mb-2"></i>
+                                        <video controls class="w-100" style="max-height: 150px;">
+                                            <source src="{{ attachment.archivo.url }}" type="video/mp4">
+                                            Tu navegador no soporta video.
+                                        </video>
+                                        {% else %}
+                                        <i class="bi bi-file-earmark fs-1 text-secondary mb-2"></i>
+                                        <a href="{{ attachment.archivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            Descargar {{ attachment.tipo }}
+                                        </a>
+                                        {% endif %}
+                                        {% if attachment.descripcion %}
+                                        <p class="card-text small text-muted mt-2">{{ attachment.descripcion }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="text-muted small border-top pt-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Creado:</strong> {{ entry.fecha_creacion|date:"d/m/Y H:i" }}
+                            </div>
+                            {% if entry.fecha_actualizacion != entry.fecha_creacion %}
+                            <div class="col-md-6">
+                                <strong>Actualizado:</strong> {{ entry.fecha_actualizacion|date:"d/m/Y H:i" }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar con información adicional -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Información</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>Categoría:</strong><br>
+                        <span class="badge bg-primary">{{ entry.get_categoria_display }}</span>
+                    </div>
+
+                    {% if entry.mood %}
+                    <div class="mb-3">
+                        <strong>Estado de ánimo:</strong><br>
+                        <span class="text-info">{{ entry.mood }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <strong>Visibilidad:</strong><br>
+                        {% if entry.is_public %}
+                        <span class="text-success"><i class="bi bi-eye"></i> Público</span>
+                        {% else %}
+                        <span class="text-secondary"><i class="bi bi-eye-slash"></i> Privado</span>
+                        {% endif %}
+                    </div>
+
+                    {% if entry.tags.all %}
+                    <div class="mb-3">
+                        <strong>Tags:</strong><br>
+                        {% for tag in entry.tags.all %}
+                        <span class="badge bg-light text-dark me-1 mb-1">{{ tag.name }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <strong>Estadísticas:</strong><br>
+                        <small class="text-muted">
+                            {% if rendered_structured_content %}
+                            {{ rendered_structured_content|length }} bloque{{ rendered_structured_content|length|pluralize }} estructurado{{ rendered_structured_content|length|pluralize }}
+                            {% endif %}
+                            {% if entry.attachments.all %}
+                            {% if rendered_structured_content %}<br>{% endif %}
+                            {{ entry.attachments.count }} adjunto{{ entry.attachments.count|pluralize }}
+                            {% else %}
+                            {% if not rendered_structured_content %}Sin contenido adicional{% endif %}
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

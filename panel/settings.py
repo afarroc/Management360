@@ -54,7 +54,9 @@ INSTALLED_APPS = [
     'passgen',
     'courses.apps.CoursesConfig',
     'campaigns.apps.CampaignsConfig',
-    
+    'bitacora',
+    'tinymce',
+
     'django.contrib.humanize',
 ]
 
@@ -280,3 +282,27 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')  # Si usas proxy
     SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# TinyMCE Configuration
+TINYMCE_DEFAULT_CONFIG = {
+    'height': 600,
+    'width': '100%',
+    'menubar': 'file edit view insert format tools table help',
+    'plugins': 'advlist autolink lists link image charmap print preview anchor searchreplace visualblocks code fullscreen insertdatetime media table paste codesample help wordcount emoticons hr pagebreak nonbreaking anchor toc insertdatetime advlist lists checklist link image media table paste wordcount spellchecker a11ychecker tinymcespellchecker permanentpen powerpaste casechange formatpainter pageembed tinycomments mentions quickbars linkchecker autocorrect typography mergetags',
+    'toolbar1': 'undo redo | formatselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist checklist | outdent indent | removeformat',
+    'toolbar2': 'link image media | emoticons charmap | code codesample | fullscreen preview | insertdatetime | table | hr pagebreak nonbreaking anchor toc | permanentpen powerpaste casechange formatpainter pageembed tinycomments mentions quickbars linkchecker autocorrect typography mergetags',
+    'toolbar3': 'contentblock',  # Botón personalizado para bloques de contenido
+    'content_css': '/static/assets/css/style.css',
+    'skin': 'oxide',
+    'content_style': 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
+    'branding': False,
+    'resize': True,
+    'image_advtab': True,
+    'image_title': True,
+    'automatic_uploads': True,
+    'file_picker_types': 'image',
+    'paste_data_images': True,
+    'images_upload_url': '/bitacora/upload-image/',
+    'images_upload_credentials': True,
+    'setup': 'function(editor) { editor.ui.registry.addButton("contentblock", { text: "Insertar Bloque", icon: "template", tooltip: "Insertar bloque de contenido estructurado", onAction: function() { window.openContentBlocksGallery(); } }); }',
+}

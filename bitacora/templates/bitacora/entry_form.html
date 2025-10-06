@@ -1,0 +1,181 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+<!-- TinyMCE CDN -->
+<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+
+
+{% block content %}
+
+<!-- Mensajes de confirmación y éxito -->
+{% if messages %}
+<div class="alert alert-info" role="alert">
+    {% for message in messages %}
+    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
+        {% endfor %}
+</div>
+{% endif %}
+
+<div class="pagetitle">
+    <h1>{% if object %}Editar{% else %}Nueva{% endif %} Entrada</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'bitacora:list' %}">Bitácora</a></li>
+            <li class="breadcrumb-item active">{% if object %}Editar{% else %}Nueva{% endif %} Entrada</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section dashboard">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        <!-- Sección de contenido estructurado -->
+                        <div class="mt-4 border-top pt-3">
+                            <h6><i class="bi bi-puzzle me-2"></i>Contenido Estructurado</h6>
+                            <p class="text-muted small">Enriquece tu entrada con bloques de contenido reutilizable desde el sistema de cursos.</p>
+
+                            {% if object %}
+                            <a href="{% url 'bitacora:content_blocks' %}?entry={{ object.pk }}" class="btn btn-outline-info btn-sm" target="_blank">
+                                <i class="bi bi-plus-circle me-1"></i>Insertar Bloque de Contenido
+                            </a>
+
+                            {% if object.structured_content %}
+                            <div class="mt-3">
+                                <h6 class="text-muted">Bloques Insertados ({{ object.structured_content|length }}):</h6>
+                                <div class="list-group list-group-flush">
+                                    {% for block in object.structured_content %}
+                                    <div class="list-group-item py-2">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ block.title }}</strong>
+                                                <span class="badge bg-secondary ms-2">{{ block.content_type }}</span>
+                                            </div>
+                                            <small class="text-muted">{{ block.inserted_at|date:"d/m H:i" }}</small>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="alert alert-info mt-2">
+                                <small>💡 <strong>Tip:</strong> Después de guardar esta entrada, podrás insertar bloques de contenido estructurado para enriquecerla.</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-end gap-2 mt-3">
+                            <a href="{% url 'bitacora:list' %}" class="btn btn-secondary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">Guardar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar TinyMCE manualmente
+    tinymce.init({
+        selector: 'textarea[name="contenido"]', // Selector por nombre del campo
+        height: 600,
+        width: '100%',
+        menubar: 'file edit view insert format tools table help',
+        plugins: 'advlist autolink lists link image charmap print preview anchor searchreplace visualblocks code fullscreen insertdatetime media table paste codesample help wordcount emoticons hr pagebreak nonbreaking anchor toc insertdatetime advlist lists checklist link image media table paste wordcount spellchecker a11ychecker tinymcespellchecker permanentpen powerpaste casechange formatpainter pageembed tinycomments mentions quickbars linkchecker autocorrect typography mergetags',
+        toolbar1: 'undo redo | formatselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist checklist | outdent indent | removeformat',
+        toolbar2: 'link image media | emoticons charmap | code codesample | fullscreen preview | insertdatetime | table | hr pagebreak nonbreaking anchor toc | permanentpen powerpaste casechange formatpainter pageembed tinycomments mentions quickbars linkchecker autocorrect typography mergetags',
+        toolbar3: 'contentblock',
+        content_css: '/static/assets/css/style.css',
+        skin: 'oxide',
+        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
+        branding: false,
+        resize: true,
+        image_advtab: true,
+        image_title: true,
+        automatic_uploads: true,
+        file_picker_types: 'image',
+        paste_data_images: true,
+        images_upload_url: '/bitacora/upload-image/',
+        images_upload_credentials: true,
+        setup: function(editor) {
+            editor.ui.registry.addButton('contentblock', {
+                text: 'Insertar Bloque',
+                icon: 'template',
+                tooltip: 'Insertar bloque de contenido estructurado',
+                onAction: function() {
+                    window.openContentBlocksGallery();
+                }
+            });
+        }
+    });
+
+    // Función para insertar bloque de contenido en TinyMCE
+    window.insertContentBlock = function(blockData) {
+        const editor = tinymce.get('contenido'); // Usar el nombre del campo
+        if (editor) {
+            let htmlContent = '';
+
+            // Generar HTML basado en el tipo de contenido
+            switch(blockData.content_type) {
+                case 'html':
+                case 'bootstrap':
+                    htmlContent = blockData.content;
+                    break;
+                case 'text':
+                    htmlContent = `<p>${blockData.content}</p>`;
+                    break;
+                case 'markdown':
+                    htmlContent = `<pre><code>${blockData.content}</code></pre>`;
+                    break;
+                case 'image':
+                    htmlContent = `<img src="${blockData.content}" alt="${blockData.title}" class="img-fluid">`;
+                    break;
+                case 'video':
+                    htmlContent = `<video controls class="w-100"><source src="${blockData.content}" type="video/mp4">Tu navegador no soporta video.</video>`;
+                    break;
+                case 'quote':
+                    htmlContent = `<blockquote class="blockquote"><p class="mb-0">${blockData.content}</p></blockquote>`;
+                    break;
+                case 'code':
+                    htmlContent = `<pre><code>${blockData.content}</code></pre>`;
+                    break;
+                case 'card':
+                    htmlContent = `<div class="card"><div class="card-body">${blockData.content}</div></div>`;
+                    break;
+                case 'alert':
+                    htmlContent = `<div class="alert alert-info">${blockData.content}</div>`;
+                    break;
+                default:
+                    htmlContent = blockData.content;
+            }
+
+            // Insertar en el editor
+            editor.insertContent(`<div class="content-block" data-block-id="${blockData.id}" data-block-type="${blockData.content_type}">
+                <h5>${blockData.title}</h5>
+                ${htmlContent}
+                <small class="text-muted">Bloque insertado desde biblioteca de contenido</small>
+            </div><br>`);
+        }
+    };
+
+    // Función para abrir la galería de bloques
+    window.openContentBlocksGallery = function() {
+        // Obtener el ID de la entrada actual si existe
+        const urlParams = new URLSearchParams(window.location.search);
+        const entryId = urlParams.get('entry') || 'current';
+
+        const galleryUrl = `/bitacora/content-blocks/?entry=${entryId}`;
+        window.open(galleryUrl, 'contentBlocksGallery', 'width=1000,height=700,scrollbars=yes,resizable=yes');
+    };
+});
+</script>
+{% endblock %}
