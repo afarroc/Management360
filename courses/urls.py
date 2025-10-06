@@ -61,7 +61,7 @@ urlpatterns = [
     path('content/<slug:slug>/toggle-public/', views.toggle_block_public, name='toggle_block_public'),
 
     # URLs para Lecciones Independientes - deben ir antes de <slug:slug>/
-    path('lessons/', views.standalone_lessons_list, name='standalone_lessons_list'),
+    path('content/', views.standalone_lessons_list, name='standalone_lessons_list'),
     path('lessons/my-lessons/', views.my_standalone_lessons, name='my_standalone_lessons'),
     path('lessons/create/', views.create_standalone_lesson, name='create_standalone_lesson'),
     path('lessons/<slug:slug>/', views.standalone_lesson_detail, name='standalone_lesson_detail'),

@@ -120,6 +120,9 @@ urlpatterns = [
     # Basic 3D Environment
     path('3d-basic/', views.basic_3d_environment, name='basic_3d_environment'),
 
+    # Navigation Test Zone
+    path('navigation-test-zone/', views.create_navigation_test_zone, name='create_navigation_test_zone'),
+
    # ... otras URLs existentes ...
      path('room/', room_view, name='current_room'),
      path('room/<int:room_id>/', room_view, name='room_view'),

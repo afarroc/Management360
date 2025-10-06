@@ -1,47 +1,74 @@
 <div class="tab-pane fade show active profile-overview" id="profile-overview">
-    <h5 class="card-title">About</h5>
-    <p class="small fst-italic">{{ cv.bio }}</p>
+    <h5 class="card-title">Sobre mí</h5>
+    <p class="small fst-italic">{{ cv.bio|default:"No hay biografía disponible." }}</p>
 
-    <h5 class="card-title">cv Details</h5>
+    <h5 class="card-title">Información Personal</h5>
 
     <div class="row">
-        <div class="col-lg-3 col-md-4 label ">Full Name</div>
-        <div class="col-lg-9 col-md-8">{{ cv.user.get_full_name }}</div>
+        <div class="col-lg-3 col-md-4 label">Nombre Completo</div>
+        <div class="col-lg-9 col-md-8">{{ cv.full_name }}</div>
     </div>
 
     <div class="row">
-        <div class="col-lg-3 col-md-4 label">Company</div>
-        <div class="col-lg-9 col-md-8">{{cv.company}}</div>
+        <div class="col-lg-3 col-md-4 label">Profesión</div>
+        <div class="col-lg-9 col-md-8">{{ cv.profession|default:"No especificada" }}</div>
     </div>
 
     <div class="row">
-        <div class="col-lg-3 col-md-4 label">Job</div>
-        <div class="col-lg-9 col-md-8">{{cv.job_title}}</div>
+        <div class="col-lg-3 col-md-4 label">Empresa</div>
+        <div class="col-lg-9 col-md-8">{{ cv.company|default:"No especificada" }}</div>
     </div>
 
     <div class="row">
-        <div class="col-lg-3 col-md-4 label">Country</div>
-        <div class="col-lg-9 col-md-8">{{cv.country}}</div>
+        <div class="col-lg-3 col-md-4 label">Cargo</div>
+        <div class="col-lg-9 col-md-8">{{ cv.job_title|default:"No especificado" }}</div>
     </div>
 
     <div class="row">
-        <div class="col-lg-3 col-md-4 label">Address</div>
-        <div class="col-lg-9 col-md-8">{{cv.address}}</div>
+        <div class="col-lg-3 col-md-4 label">Ubicación</div>
+        <div class="col-lg-9 col-md-8">{{ cv.location|default:"No especificada" }}, {{ cv.country|default:"" }}</div>
     </div>
 
     <div class="row">
-        <div class="col-lg-3 col-md-4 label">Phone</div>
-        <div class="col-lg-9 col-md-8">{{cv.phone}}</div>
+        <div class="col-lg-3 col-md-4 label">Dirección</div>
+        <div class="col-lg-9 col-md-8">{{ cv.address|default:"No especificada" }}</div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-3 col-md-4 label">Teléfono</div>
+        <div class="col-lg-9 col-md-8">{{ cv.phone|default:"No especificado" }}</div>
     </div>
 
     <div class="row">
         <div class="col-lg-3 col-md-4 label">Email</div>
-        <div class="col-lg-9 col-md-8">{{cv.user.email}}</div>
+        <div class="col-lg-9 col-md-8">{{ cv.email|default:cv.user.email }}</div>
     </div>
 
-    <div class="row">
-        <div class="col-lg-3 col-md-4 label">Email opt</div>
-        <div class="col-lg-9 col-md-8">{{cv.email}}</div>
+    <!-- Recent Experience -->
+    {% if cv.experiences.exists %}
+    <h5 class="card-title mt-4">Experiencia Reciente</h5>
+    {% for exp in cv.experiences.all|slice:":2" %}
+    <div class="resume-item pb-2">
+        <h6>{{ exp.job_title }} en {{ exp.company_name }}</h6>
+        <span class="text-muted">{{ exp.start_date|date:"M Y" }} - {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}Presente{% endif %}</span>
+        <p class="small">{{ exp.description|truncatechars:100 }}</p>
     </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- Skills Summary -->
+    {% if cv.skills_list.exists %}
+    <h5 class="card-title mt-4">Habilidades Principales</h5>
+    <div class="row">
+        {% for skill in cv.skills_list.all|slice:":6" %}
+        <div class="col-md-6">
+            <div class="skill-item">
+                <span>{{ skill.skill_name }}</span>
+                <span class="badge bg-secondary float-end">{{ skill.get_proficiency_level_display }}</span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
 
 </div>

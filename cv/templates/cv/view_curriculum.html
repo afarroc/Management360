@@ -1,0 +1,216 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}{{ cv.full_name }} - Currículum{% endblock %}
+
+{% block content %}
+<div class="pagetitle">
+    <h1>Currículum de {{ cv.full_name }}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+            <li class="breadcrumb-item">CVs</li>
+            <li class="breadcrumb-item active">{{ cv.full_name }}</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section profile">
+    <div class="row">
+        <!-- Profile Picture and Basic Info -->
+        <div class="col-xl-4">
+            <div class="card">
+                <div class="card-body profile-card pt-4 d-flex flex-column align-items-center">
+                    {% if cv.profile_picture %}
+                        <img src="{{ cv.profile_picture.url }}" alt="Profile" class="rounded-circle" width="120" height="120">
+                    {% else %}
+                        <img src="{% static 'img/default-avatar.png' %}" alt="Profile" class="rounded-circle" width="120" height="120">
+                    {% endif %}
+                    <h2>{{ cv.full_name }}</h2>
+                    <h3>{{ cv.profession }}</h3>
+                    <div class="social-links mt-2">
+                        {% if cv.linkedin_url %}
+                            <a href="{{ cv.linkedin_url }}" target="_blank" class="linkedin"><i class="bi bi-linkedin"></i></a>
+                        {% endif %}
+                        {% if cv.github_url %}
+                            <a href="{{ cv.github_url }}" target="_blank" class="github"><i class="bi bi-github"></i></a>
+                        {% endif %}
+                        {% if cv.twitter_url %}
+                            <a href="{{ cv.twitter_url }}" target="_blank" class="twitter"><i class="bi bi-twitter"></i></a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CV Details -->
+        <div class="col-xl-8">
+            <div class="card">
+                <div class="card-body pt-3">
+                    <!-- Tabs -->
+                    <ul class="nav nav-tabs nav-tabs-bordered">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#profile-overview">
+                                Información General
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-experience">
+                                Experiencia
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-education">
+                                Educación
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-skills">
+                                Habilidades
+                            </button>
+                        </li>
+
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-languages">
+                                Idiomas
+                            </button>
+                        </li>
+
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-certifications">
+                                Certificaciones
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content pt-2">
+                        <!-- Overview Tab -->
+                        <div class="tab-pane fade show active profile-overview" id="profile-overview">
+                            <h5 class="card-title">Sobre mí</h5>
+                            <p class="small fst-italic">{{ cv.bio|default:"No hay biografía disponible." }}</p>
+
+                            <h5 class="card-title">Detalles del Perfil</h5>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Nombre Completo</div>
+                                <div class="col-lg-9 col-md-8">{{ cv.full_name }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Profesión</div>
+                                <div class="col-lg-9 col-md-8">{{ cv.profession }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Empresa</div>
+                                <div class="col-lg-9 col-md-8">{{ cv.company|default:"No especificada" }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Ubicación</div>
+                                <div class="col-lg-9 col-md-8">{{ cv.location|default:"No especificada" }}, {{ cv.country|default:"" }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Teléfono</div>
+                                <div class="col-lg-9 col-md-8">{{ cv.phone|default:"No especificado" }}</div>
+                            </div>
+                            <div class="row">
+                                <div class="col-lg-3 col-md-4 label">Email</div>
+                                <div class="col-lg-9 col-md-8">{{ cv.email|default:cv.user.email }}</div>
+                            </div>
+                        </div>
+
+                        <!-- Experience Tab -->
+                        <div class="tab-pane fade profile-experience pt-3" id="profile-experience">
+                            <h5 class="card-title">Experiencia Laboral</h5>
+                            {% for exp in cv.experiences.all %}
+                                <div class="resume-item pb-0">
+                                    <h4>{{ exp.job_title }}</h4>
+                                    <h5>{{ exp.start_date|date:"M Y" }} - {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}Presente{% endif %}</h5>
+                                    <p><em>{{ exp.company_name }}</em></p>
+                                    <p>{{ exp.description }}</p>
+                                </div>
+                            {% empty %}
+                                <p>No hay experiencia laboral registrada.</p>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Education Tab -->
+                        <div class="tab-pane fade profile-education pt-3" id="profile-education">
+                            <h5 class="card-title">Educación</h5>
+                            {% for edu in cv.educations.all %}
+                                <div class="resume-item">
+                                    <h4>{{ edu.degree }}</h4>
+                                    <h5>{{ edu.start_date|date:"M Y" }} - {% if edu.end_date %}{{ edu.end_date|date:"M Y" }}{% else %}Presente{% endif %}</h5>
+                                    <p><em>{{ edu.institution_name }}</em></p>
+                                    <p>{{ edu.field_of_study }}</p>
+                                    {% if edu.description %}
+                                        <p>{{ edu.description }}</p>
+                                    {% endif %}
+                                </div>
+                            {% empty %}
+                                <p>No hay educación registrada.</p>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Skills Tab -->
+                        <div class="tab-pane fade profile-skills pt-3" id="profile-skills">
+                            <h5 class="card-title">Habilidades</h5>
+                            <div class="row skills">
+                                {% for skill in cv.skills_list.all %}
+                                    <div class="col-lg-6">
+                                        <div class="progress">
+                                            <span class="skill">{{ skill.skill_name }} <i class="val">{{ skill.get_proficiency_level_display }}</i></span>
+                                            <div class="progress-bar-wrap">
+                                                <div class="progress-bar" role="progressbar" style="width: {% if skill.proficiency_level == 'B' %}25{% elif skill.proficiency_level == 'I' %}50{% else %}75{% endif %}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% empty %}
+                                    <p>No hay habilidades registradas.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Languages Tab -->
+                        <div class="tab-pane fade profile-languages pt-3" id="profile-languages">
+                            <h5 class="card-title">Idiomas</h5>
+                            <div class="row">
+                                {% for language in cv.languages.all %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card h-100">
+                                            <div class="card-body">
+                                                <h6 class="card-title">{{ language.language_name }}</h6>
+                                                <span class="badge bg-primary">{{ language.get_proficiency_level_display }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% empty %}
+                                    <p>No hay idiomas registrados.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Certifications Tab -->
+                        <div class="tab-pane fade profile-certifications pt-3" id="profile-certifications">
+                            <h5 class="card-title">Certificaciones</h5>
+                            {% for cert in cv.certifications.all %}
+                                <div class="resume-item pb-2">
+                                    <h4>{{ cert.certification_name }}</h4>
+                                    <h5>{{ cert.issuing_organization }}</h5>
+                                    <p><em>Emitida: {{ cert.issue_date|date:"M Y" }}
+                                    {% if cert.expiration_date %} - Expira: {{ cert.expiration_date|date:"M Y" }}{% endif %}</em></p>
+                                    {% if cert.credential_id %}
+                                        <p><strong>ID de Credencial:</strong> {{ cert.credential_id }}</p>
+                                    {% endif %}
+                                    {% if cert.credential_url %}
+                                        <p><a href="{{ cert.credential_url }}" target="_blank" class="btn btn-sm btn-outline-primary">Ver Credencial</a></p>
+                                    {% endif %}
+                                </div>
+                            {% empty %}
+                                <p>No hay certificaciones registradas.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

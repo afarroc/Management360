@@ -9,13 +9,94 @@
             <form method="post" enctype="multipart/form-data" class="mt-4">
                 {% csrf_token %}
                 
-                <!-- Formulario principal -->
+                <!-- Información Personal -->
                 <div class="card mb-4">
                     <div class="card-header">
                         <h4>Información Personal</h4>
                     </div>
                     <div class="card-body">
-                        {{ form|crispy }}
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.full_name|as_crispy_field }}
+                                {{ form.bio|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.profile_picture.id_for_label }}" class="form-label">Foto de Perfil</label>
+                                    {{ form.profile_picture }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información Corporativa -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Información Corporativa</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.employee_id|as_crispy_field }}
+                                {{ form.department|as_crispy_field }}
+                                {{ form.corporate_position|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.manager|as_crispy_field }}
+                                {{ form.hire_date|as_crispy_field }}
+                                {{ form.office_location|as_crispy_field }}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.company|as_crispy_field }}
+                                {{ form.job_title|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.role|as_crispy_field }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información de Contacto -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Información de Contacto</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.email|as_crispy_field }}
+                                {{ form.phone|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.location|as_crispy_field }}
+                                {{ form.country|as_crispy_field }}
+                                {{ form.address|as_crispy_field }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Redes Sociales -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Redes Sociales y Perfiles Profesionales</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.linkedin_url|as_crispy_field }}
+                                {{ form.github_url|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.twitter_url|as_crispy_field }}
+                                {{ form.facebook_url|as_crispy_field }}
+                                {{ form.instagram_url|as_crispy_field }}
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
@@ -63,6 +144,36 @@
                         {% endfor %}
                     </div>
                 </div>
+
+                <!-- Idiomas -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Idiomas</h4>
+                    </div>
+                    <div class="card-body">
+                        {{ language_formset.management_form }}
+                        {% for form in language_formset %}
+                            <div class="formset-row mb-3 p-3 border rounded">
+                                {{ form|crispy }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Certificaciones -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4>Certificaciones</h4>
+                    </div>
+                    <div class="card-body">
+                        {{ certification_formset.management_form }}
+                        {% for form in certification_formset %}
+                            <div class="formset-row mb-3 p-3 border rounded">
+                                {{ form|crispy }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
                 
                 <button type="submit" class="btn btn-primary">Guardar Cambios</button>
                 <a href="{% url 'cv:cv_detail' %}" class="btn btn-secondary">Cancelar</a>
@@ -76,22 +187,54 @@
 <script src="{% static 'js/jquery.formset.js' %}"></script>
 <script>
     $(function() {
-        $('.formset-row').formset({
+        // Configurar formset de experiencia
+        $('.experience-formset').formset({
             prefix: '{{ experience_formset.prefix }}',
+            formCssClass: 'dynamic-formset',
+            deleteCssClass: 'delete-row',
             deleteText: 'Eliminar',
-            addText: 'Añadir otro'
+            addText: 'Añadir experiencia',
+            addCssClass: 'add-row btn btn-outline-primary btn-sm'
         });
-        
+
+        // Configurar formset de educación
         $('.education-formset').formset({
             prefix: '{{ education_formset.prefix }}',
+            formCssClass: 'dynamic-formset',
+            deleteCssClass: 'delete-row',
             deleteText: 'Eliminar',
-            addText: 'Añadir otro'
+            addText: 'Añadir educación',
+            addCssClass: 'add-row btn btn-outline-primary btn-sm'
         });
-        
+
+        // Configurar formset de habilidades
         $('.skill-formset').formset({
             prefix: '{{ skill_formset.prefix }}',
+            formCssClass: 'dynamic-formset',
+            deleteCssClass: 'delete-row',
             deleteText: 'Eliminar',
-            addText: 'Añadir otro'
+            addText: 'Añadir habilidad',
+            addCssClass: 'add-row btn btn-outline-primary btn-sm'
+        });
+
+        // Configurar formset de idiomas
+        $('.language-formset').formset({
+            prefix: '{{ language_formset.prefix }}',
+            formCssClass: 'dynamic-formset',
+            deleteCssClass: 'delete-row',
+            deleteText: 'Eliminar',
+            addText: 'Añadir idioma',
+            addCssClass: 'add-row btn btn-outline-primary btn-sm'
+        });
+
+        // Configurar formset de certificaciones
+        $('.certification-formset').formset({
+            prefix: '{{ certification_formset.prefix }}',
+            formCssClass: 'dynamic-formset',
+            deleteCssClass: 'delete-row',
+            deleteText: 'Eliminar',
+            addText: 'Añadir certificación',
+            addCssClass: 'add-row btn btn-outline-primary btn-sm'
         });
     });
 </script>

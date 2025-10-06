@@ -1048,6 +1048,26 @@ def markdown(text):
     return mark_safe(process_markdown(text))
 
 @register.filter
+def render_content(text):
+    """
+    Renderiza contenido que puede contener HTML5, Markdown o texto plano.
+    Detecta automáticamente el formato y lo procesa apropiadamente.
+    """
+    if not text:
+        return ''
+
+    # Verificar si contiene HTML (búsqueda de etiquetas comunes)
+    import re
+    html_pattern = re.compile(r'<[^>]+>')
+
+    if html_pattern.search(text):
+        # Si contiene HTML, renderizarlo directamente
+        return mark_safe(text)
+    else:
+        # Si no contiene HTML, procesar como Markdown
+        return mark_safe(process_markdown(text))
+
+@register.filter
 def has_structured_content(lesson):
     """
     Verifica si una lección tiene contenido estructurado

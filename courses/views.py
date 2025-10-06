@@ -2137,9 +2137,17 @@ def my_standalone_lessons(request):
         module__isnull=True
     ).order_by('-updated_at')
 
+    # Calcular estadísticas
+    published_count = lessons.filter(is_published=True).count()
+    draft_count = lessons.filter(is_published=False).count()
+    featured_count = lessons.filter(is_featured=True).count()
+
     context = {
         'lessons': lessons,
         'title': 'Mis Lecciones Independientes',
+        'published_count': published_count,
+        'draft_count': draft_count,
+        'featured_count': featured_count,
     }
 
     return render(request, 'courses/my_standalone_lessons.html', context)

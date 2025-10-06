@@ -1,0 +1,22 @@
+{% extends "courses/base.html" %}
+
+{% block course_content %}
+<div class="content-manager-layout">
+    <aside class="content-sidebar">
+        {% include "courses/includes/content_manager_sidebar.html" %}
+    </aside>
+
+    <main class="content-main">
+        {% block cms_content %}
+        {% endblock %}
+    </main>
+
+    <!-- Panel Lateral -->
+    <div class="content-panel">
+        {% include "courses/includes/content_manager_create_panel.html" %}
+    </div>
+
+    <!-- Modal de Vista Previa -->
+    {% include "courses/includes/content_manager_modal.html" %}
+</div>
+{% endblock %}

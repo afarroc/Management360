@@ -30,6 +30,15 @@ def lobby(request):
             'icon': 'bi-house',
             'items': Room.objects.all().order_by('-created_at')[:5]
         },
+        {
+            'title': 'Navigation Test Zone',
+            'url_name': 'rooms:create_navigation_test_zone',
+            'detail_url_name': None,
+            'icon': 'bi-compass',
+            'items': [],
+            'description': 'Zona de pruebas con estructura jerárquica de 4 niveles para testing de navegación',
+            'action_text': 'Crear/Acceder a Zona de Pruebas'
+        },
         # Puedes agregar más secciones aquí si lo necesitas
     ]
 
@@ -2257,3 +2266,593 @@ def get_player_status(request):
             'success': False,
             'message': 'Error interno del sistema.'
         }, status=500)
+
+
+@login_required
+def create_navigation_test_zone(request):
+    """
+    Vista para crear la zona de pruebas de navegación con estructura jerárquica de 4 niveles
+    y conexiones interconectadas (puertas, portales, objetos).
+    """
+    from django.db import transaction
+
+    # Usar transacción para asegurar atomicidad
+    with transaction.atomic():
+        # Nivel 1: Habitación raíz
+        root_room, created = Room.objects.get_or_create(
+            name='Navigation Test Zone',
+            defaults={
+                'description': 'Zona de pruebas para testing de navegación por habitaciones interconectadas',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'OFFICE',
+                'x': 0, 'y': 0, 'z': 0,
+                'length': 20, 'width': 20, 'height': 5,
+                'color_primary': '#4CAF50',
+                'color_secondary': '#2196F3',
+                'material_type': 'CONCRETE',
+                'lighting_intensity': 80,
+                'temperature': 22.0
+            }
+        )
+
+        # Nivel 2: Sectores principales
+        alpha_sector, _ = Room.objects.get_or_create(
+            name='Alpha Sector',
+            defaults={
+                'description': 'Sector Alpha - Área de desarrollo y testing',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'OFFICE',
+                'parent_room': root_room,
+                'x': 25, 'y': 0, 'z': 0,
+                'length': 15, 'width': 15, 'height': 4,
+                'color_primary': '#FF9800',
+                'color_secondary': '#F44336',
+                'material_type': 'METAL',
+                'lighting_intensity': 70
+            }
+        )
+
+        beta_sector, _ = Room.objects.get_or_create(
+            name='Beta Sector',
+            defaults={
+                'description': 'Sector Beta - Área de producción',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'MEETING',
+                'parent_room': root_room,
+                'x': 0, 'y': 25, 'z': 0,
+                'length': 12, 'width': 18, 'height': 4,
+                'color_primary': '#9C27B0',
+                'color_secondary': '#673AB7',
+                'material_type': 'GLASS',
+                'lighting_intensity': 60
+            }
+        )
+
+        gamma_sector, _ = Room.objects.get_or_create(
+            name='Gamma Sector',
+            defaults={
+                'description': 'Sector Gamma - Área administrativa',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'LOUNGE',
+                'parent_room': root_room,
+                'x': -20, 'y': 0, 'z': 0,
+                'length': 18, 'width': 12, 'height': 4,
+                'color_primary': '#00BCD4',
+                'color_secondary': '#009688',
+                'material_type': 'WOOD',
+                'lighting_intensity': 75
+            }
+        )
+
+        # Nivel 3: Sub-sectores
+        # Alpha sub-sectores
+        alpha_1, _ = Room.objects.get_or_create(
+            name='Alpha-1',
+            defaults={
+                'description': 'Sub-sector Alpha-1 - Desarrollo frontend',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'OFFICE',
+                'parent_room': alpha_sector,
+                'x': 30, 'y': 5, 'z': 0,
+                'length': 10, 'width': 8, 'height': 3,
+                'color_primary': '#FF5722',
+                'color_secondary': '#E64A19'
+            }
+        )
+
+        alpha_2, _ = Room.objects.get_or_create(
+            name='Alpha-2',
+            defaults={
+                'description': 'Sub-sector Alpha-2 - Desarrollo backend',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'OFFICE',
+                'parent_room': alpha_sector,
+                'x': 30, 'y': -5, 'z': 0,
+                'length': 10, 'width': 8, 'height': 3,
+                'color_primary': '#2196F3',
+                'color_secondary': '#1976D2'
+            }
+        )
+
+        alpha_3, _ = Room.objects.get_or_create(
+            name='Alpha-3',
+            defaults={
+                'description': 'Sub-sector Alpha-3 - Testing y QA',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'MEETING',
+                'parent_room': alpha_sector,
+                'x': 45, 'y': 0, 'z': 0,
+                'length': 8, 'width': 10, 'height': 3,
+                'color_primary': '#4CAF50',
+                'color_secondary': '#388E3C'
+            }
+        )
+
+        # Beta sub-sectores
+        beta_1, _ = Room.objects.get_or_create(
+            name='Beta-1',
+            defaults={
+                'description': 'Sub-sector Beta-1 - Producción primaria',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'OFFICE',
+                'parent_room': beta_sector,
+                'x': 5, 'y': 30, 'z': 0,
+                'length': 8, 'width': 12, 'height': 3,
+                'color_primary': '#9C27B0',
+                'color_secondary': '#7B1FA2'
+            }
+        )
+
+        beta_2, _ = Room.objects.get_or_create(
+            name='Beta-2',
+            defaults={
+                'description': 'Sub-sector Beta-2 - Producción secundaria',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'OFFICE',
+                'parent_room': beta_sector,
+                'x': -5, 'y': 30, 'z': 0,
+                'length': 8, 'width': 12, 'height': 3,
+                'color_primary': '#FF9800',
+                'color_secondary': '#F57C00'
+            }
+        )
+
+        # Gamma sub-sectores
+        gamma_1, _ = Room.objects.get_or_create(
+            name='Gamma-1',
+            defaults={
+                'description': 'Sub-sector Gamma-1 - Administración general',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'LOUNGE',
+                'parent_room': gamma_sector,
+                'x': -25, 'y': 5, 'z': 0,
+                'length': 10, 'width': 6, 'height': 3,
+                'color_primary': '#00BCD4',
+                'color_secondary': '#00ACC1'
+            }
+        )
+
+        gamma_2, _ = Room.objects.get_or_create(
+            name='Gamma-2',
+            defaults={
+                'description': 'Sub-sector Gamma-2 - Recursos humanos',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'MEETING',
+                'parent_room': gamma_sector,
+                'x': -25, 'y': -5, 'z': 0,
+                'length': 10, 'width': 6, 'height': 3,
+                'color_primary': '#8BC34A',
+                'color_secondary': '#689F38'
+            }
+        )
+
+        gamma_3, _ = Room.objects.get_or_create(
+            name='Gamma-3',
+            defaults={
+                'description': 'Sub-sector Gamma-3 - Finanzas',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'OFFICE',
+                'parent_room': gamma_sector,
+                'x': -40, 'y': 0, 'z': 0,
+                'length': 12, 'width': 8, 'height': 3,
+                'color_primary': '#FFC107',
+                'color_secondary': '#FF8F00'
+            }
+        )
+
+        gamma_4, _ = Room.objects.get_or_create(
+            name='Gamma-4',
+            defaults={
+                'description': 'Sub-sector Gamma-4 - Legal',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'MEETING',
+                'parent_room': gamma_sector,
+                'x': -25, 'y': -15, 'z': 0,
+                'length': 8, 'width': 8, 'height': 3,
+                'color_primary': '#795548',
+                'color_secondary': '#5D4037'
+            }
+        )
+
+        # Nivel 4: Sub-sub-sectores
+        alpha_1a, _ = Room.objects.get_or_create(
+            name='Alpha-1A',
+            defaults={
+                'description': 'Sub-sub-sector Alpha-1A - UI/UX Design',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'OFFICE',
+                'parent_room': alpha_1,
+                'x': 35, 'y': 8, 'z': 0,
+                'length': 6, 'width': 5, 'height': 3,
+                'color_primary': '#E91E63',
+                'color_secondary': '#C2185B'
+            }
+        )
+
+        alpha_1b, _ = Room.objects.get_or_create(
+            name='Alpha-1B',
+            defaults={
+                'description': 'Sub-sub-sector Alpha-1B - Frontend Development',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'OFFICE',
+                'parent_room': alpha_1,
+                'x': 35, 'y': 2, 'z': 0,
+                'length': 6, 'width': 5, 'height': 3,
+                'color_primary': '#3F51B5',
+                'color_secondary': '#303F9F'
+            }
+        )
+
+        gamma_3x, _ = Room.objects.get_or_create(
+            name='Gamma-3X',
+            defaults={
+                'description': 'Sub-sub-sector Gamma-3X - Contabilidad',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'OFFICE',
+                'parent_room': gamma_3,
+                'x': -45, 'y': 3, 'z': 0,
+                'length': 6, 'width': 6, 'height': 3,
+                'color_primary': '#FF5722',
+                'color_secondary': '#D84315'
+            }
+        )
+
+        gamma_3y, _ = Room.objects.get_or_create(
+            name='Gamma-3Y',
+            defaults={
+                'description': 'Sub-sub-sector Gamma-3Y - Auditoría',
+                'owner': request.user,
+                'creator': request.user,
+                'permissions': 'public',
+                'room_type': 'MEETING',
+                'parent_room': gamma_3,
+                'x': -45, 'y': -3, 'z': 0,
+                'length': 6, 'width': 6, 'height': 3,
+                'color_primary': '#607D8B',
+                'color_secondary': '#455A64'
+            }
+        )
+
+        # Crear conexiones físicas (puertas) entre habitaciones del mismo nivel
+        # Función helper para crear conexiones bidireccionales
+        def create_door_connection(from_room, to_room, direction_from, direction_to, door_name_suffix=""):
+            # Crear entrada en habitación from
+            entrance_from, _ = EntranceExit.objects.get_or_create(
+                room=from_room,
+                face=direction_from,
+                defaults={
+                    'name': f'Puerta a {to_room.name}{door_name_suffix}',
+                    'description': f'Conecta a {to_room.name}',
+                    'enabled': True,
+                    'door_type': 'SINGLE',
+                    'material': 'WOOD',
+                    'color': '#8B4513'
+                }
+            )
+
+            # Crear entrada en habitación to
+            entrance_to, _ = EntranceExit.objects.get_or_create(
+                room=to_room,
+                face=direction_to,
+                defaults={
+                    'name': f'Puerta desde {from_room.name}{door_name_suffix}',
+                    'description': f'Conecta desde {from_room.name}',
+                    'enabled': True,
+                    'door_type': 'SINGLE',
+                    'material': 'WOOD',
+                    'color': '#8B4513'
+                }
+            )
+
+            # Crear conexión
+            connection, _ = RoomConnection.objects.get_or_create(
+                from_room=from_room,
+                to_room=to_room,
+                entrance=entrance_from,
+                defaults={
+                    'bidirectional': True,
+                    'energy_cost': 5
+                }
+            )
+
+            # Asignar conexión a la entrada de destino
+            entrance_to.connection = connection
+            entrance_to.save()
+
+            return entrance_from, entrance_to
+
+        # Conexiones horizontales (mismo nivel)
+        # Nivel 2: entre sectores
+        create_door_connection(root_room, alpha_sector, 'NORTH', 'SOUTH')
+        create_door_connection(root_room, beta_sector, 'EAST', 'WEST')
+        create_door_connection(root_room, gamma_sector, 'WEST', 'EAST')
+
+        # Nivel 3: conexiones en Alpha
+        create_door_connection(alpha_1, alpha_2, 'EAST', 'WEST')
+        create_door_connection(alpha_2, alpha_3, 'EAST', 'WEST')
+
+        # Nivel 3: conexiones en Beta
+        create_door_connection(beta_1, beta_2, 'NORTH', 'SOUTH')
+
+        # Nivel 3: conexiones en Gamma
+        create_door_connection(gamma_1, gamma_2, 'NORTH', 'SOUTH')
+        create_door_connection(gamma_2, gamma_3, 'WEST', 'EAST')
+        create_door_connection(gamma_3, gamma_4, 'SOUTH', 'NORTH')
+
+        # Nivel 4: conexiones
+        create_door_connection(alpha_1a, alpha_1b, 'EAST', 'WEST')
+        create_door_connection(gamma_3x, gamma_3y, 'NORTH', 'SOUTH')
+
+        # Crear portales entre niveles diferentes
+        def create_portal(from_room, to_room, entrance_from, entrance_to, portal_name):
+            portal, _ = Portal.objects.get_or_create(
+                entrance=entrance_from,
+                exit=entrance_to,
+                defaults={
+                    'name': portal_name,
+                    'energy_cost': 15,
+                    'cooldown': 60  # 1 minuto
+                }
+            )
+            return portal
+
+        # Portales entre niveles
+        # De Alpha Sector a Beta-1
+        alpha_entrance = EntranceExit.objects.filter(room=alpha_sector, face='UP').first()
+        if not alpha_entrance:
+            alpha_entrance, _ = EntranceExit.objects.get_or_create(
+                room=alpha_sector,
+                face='UP',
+                defaults={
+                    'name': 'Portal Ascendente',
+                    'description': 'Portal a Beta Sector',
+                    'enabled': True,
+                    'door_type': 'SINGLE',
+                    'material': 'METAL',
+                    'color': '#2196F3'
+                }
+            )
+
+        beta1_entrance = EntranceExit.objects.filter(room=beta_1, face='DOWN').first()
+        if not beta1_entrance:
+            beta1_entrance, _ = EntranceExit.objects.get_or_create(
+                room=beta_1,
+                face='DOWN',
+                defaults={
+                    'name': 'Portal Descendente',
+                    'description': 'Portal desde Alpha Sector',
+                    'enabled': True,
+                    'door_type': 'SINGLE',
+                    'material': 'METAL',
+                    'color': '#2196F3'
+                }
+            )
+
+        create_portal(alpha_sector, beta_1, alpha_entrance, beta1_entrance, 'Portal Alpha-Beta')
+
+        # De Beta Sector a Gamma-2
+        beta_entrance = EntranceExit.objects.filter(room=beta_sector, face='UP').first()
+        if not beta_entrance:
+            beta_entrance, _ = EntranceExit.objects.get_or_create(
+                room=beta_sector,
+                face='UP',
+                defaults={
+                    'name': 'Portal Ascendente',
+                    'description': 'Portal a Gamma Sector',
+                    'enabled': True,
+                    'door_type': 'SINGLE',
+                    'material': 'METAL',
+                    'color': '#9C27B0'
+                }
+            )
+
+        gamma2_entrance = EntranceExit.objects.filter(room=gamma_2, face='DOWN').first()
+        if not gamma2_entrance:
+            gamma2_entrance, _ = EntranceExit.objects.get_or_create(
+                room=gamma_2,
+                face='DOWN',
+                defaults={
+                    'name': 'Portal Descendente',
+                    'description': 'Portal desde Beta Sector',
+                    'enabled': True,
+                    'door_type': 'SINGLE',
+                    'material': 'METAL',
+                    'color': '#9C27B0'
+                }
+            )
+
+        create_portal(beta_sector, gamma_2, beta_entrance, gamma2_entrance, 'Portal Beta-Gamma')
+
+        # De Gamma Sector a Alpha-1
+        gamma_entrance = EntranceExit.objects.filter(room=gamma_sector, face='UP').first()
+        if not gamma_entrance:
+            gamma_entrance, _ = EntranceExit.objects.get_or_create(
+                room=gamma_sector,
+                face='UP',
+                defaults={
+                    'name': 'Portal Ascendente',
+                    'description': 'Portal a Alpha Sector',
+                    'enabled': True,
+                    'door_type': 'SINGLE',
+                    'material': 'METAL',
+                    'color': '#FF9800'
+                }
+            )
+
+        alpha1_entrance = EntranceExit.objects.filter(room=alpha_1, face='DOWN').first()
+        if not alpha1_entrance:
+            alpha1_entrance, _ = EntranceExit.objects.get_or_create(
+                room=alpha_1,
+                face='DOWN',
+                defaults={
+                    'name': 'Portal Descendente',
+                    'description': 'Portal desde Gamma Sector',
+                    'enabled': True,
+                    'door_type': 'SINGLE',
+                    'material': 'METAL',
+                    'color': '#FF9800'
+                }
+            )
+
+        create_portal(gamma_sector, alpha_1, gamma_entrance, alpha1_entrance, 'Portal Gamma-Alpha')
+
+        # De Alpha-1 a Gamma-3X
+        alpha1_portal_entrance = EntranceExit.objects.filter(room=alpha_1, face='UP').first()
+        if not alpha1_portal_entrance:
+            alpha1_portal_entrance, _ = EntranceExit.objects.get_or_create(
+                room=alpha_1,
+                face='UP',
+                defaults={
+                    'name': 'Portal Dimensional',
+                    'description': 'Portal a Gamma-3X',
+                    'enabled': True,
+                    'door_type': 'SINGLE',
+                    'material': 'GLASS',
+                    'color': '#00BCD4'
+                }
+            )
+
+        gamma3x_entrance = EntranceExit.objects.filter(room=gamma_3x, face='DOWN').first()
+        if not gamma3x_entrance:
+            gamma3x_entrance, _ = EntranceExit.objects.get_or_create(
+                room=gamma_3x,
+                face='DOWN',
+                defaults={
+                    'name': 'Portal Dimensional',
+                    'description': 'Portal desde Alpha-1',
+                    'enabled': True,
+                    'door_type': 'SINGLE',
+                    'material': 'GLASS',
+                    'color': '#00BCD4'
+                }
+            )
+
+        create_portal(alpha_1, gamma_3x, alpha1_portal_entrance, gamma3x_entrance, 'Portal Dimensional Alpha-Gamma')
+
+        # De Beta-2 a Alpha-1A
+        beta2_portal_entrance = EntranceExit.objects.filter(room=beta_2, face='UP').first()
+        if not beta2_portal_entrance:
+            beta2_portal_entrance, _ = EntranceExit.objects.get_or_create(
+                room=beta_2,
+                face='UP',
+                defaults={
+                    'name': 'Portal Express',
+                    'description': 'Portal a Alpha-1A',
+                    'enabled': True,
+                    'door_type': 'SINGLE',
+                    'material': 'METAL',
+                    'color': '#4CAF50'
+                }
+            )
+
+        alpha1a_entrance = EntranceExit.objects.filter(room=alpha_1a, face='DOWN').first()
+        if not alpha1a_entrance:
+            alpha1a_entrance, _ = EntranceExit.objects.get_or_create(
+                room=alpha_1a,
+                face='DOWN',
+                defaults={
+                    'name': 'Portal Express',
+                    'description': 'Portal desde Beta-2',
+                    'enabled': True,
+                    'door_type': 'SINGLE',
+                    'material': 'METAL',
+                    'color': '#4CAF50'
+                }
+            )
+
+        create_portal(beta_2, alpha_1a, beta2_portal_entrance, alpha1a_entrance, 'Portal Express Beta-Alpha')
+
+        # Crear objetos de conexión en habitaciones específicas
+        def create_connection_object(room, name, obj_type, position_x, position_y):
+            obj, _ = RoomObject.objects.get_or_create(
+                room=room,
+                name=name,
+                defaults={
+                    'position_x': position_x,
+                    'position_y': position_y,
+                    'object_type': obj_type,
+                    'effect': {'connection_type': 'teleport', 'target_room': 'Gamma-3Y'},
+                    'interaction_cooldown': 30
+                }
+            )
+            return obj
+
+        # Objeto de conexión en Alpha-1A que conecta a Gamma-3Y
+        create_connection_object(alpha_1a, 'Cristal Dimensional', 'DOOR', 3, 2)
+
+        # Objeto de conexión en Gamma-3Y que conecta de vuelta
+        create_connection_object(gamma_3y, 'Cristal Dimensional', 'PORTAL', 3, 2)
+
+        # Teletransportar al usuario a la habitación raíz si no está ya ahí
+        player_profile, _ = PlayerProfile.objects.get_or_create(
+            user=request.user,
+            defaults={
+                'current_room': root_room,
+                'energy': 100,
+                'productivity': 50,
+                'social': 50,
+                'position_x': 10,
+                'position_y': 10
+            }
+        )
+
+        if player_profile.current_room != root_room:
+            player_profile.current_room = root_room
+            player_profile.position_x = 10
+            player_profile.position_y = 10
+            player_profile.save()
+
+        messages.success(request, 'Zona de pruebas de navegación creada exitosamente. Te hemos teletransportado a la habitación raíz.')
+        return redirect('rooms:room_detail', pk=root_room.pk)
