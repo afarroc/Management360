@@ -29,6 +29,7 @@ urlpatterns = [
     path('bots/', include('bots.urls', namespace='bots')),
     path('help/', include('help.urls', namespace='help')),
     path('tools/', include('tools.urls')),
+    path('bitacora/', include('bitacora.urls', namespace='bitacora')),
     
     # API Endpoints (alphabetical order)
     path('api/csrf/', views.get_csrf, name='api-csrf'),

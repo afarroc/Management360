@@ -1,0 +1,302 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Mensajes de confirmación y éxito -->
+{% if messages %}
+<div class="alert alert-info" role="alert">
+    {% for message in messages %}
+    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
+        {% endfor %}
+</div>
+{% endif %}
+
+<div class="pagetitle">
+    <h1>Dashboard de Bitácora</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item active">Bitácora</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+<section class="section dashboard">
+    <div class="row">
+
+        <!-- Estadísticas principales -->
+        <div class="col-lg-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bar-chart-line me-2"></i>Resumen de Actividad
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+
+                        <!-- Primera fila: Métricas principales -->
+                        <div class="col-lg-6">
+                            <div class="row g-3">
+                                <!-- Total de entradas -->
+                                <div class="col-md-6">
+                                    <div class="card info-card sales-card h-100 border-0 shadow-sm">
+                                        <div class="card-body text-center">
+                                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2">
+                                                <i class="bi bi-journal-text"></i>
+                                            </div>
+                                            <h6 class="card-title mb-1">Total de Entradas</h6>
+                                            <h4 class="mb-1">{{ stats.total_entries }}</h4>
+                                            <div class="text-success small">
+                                                <i class="bi bi-arrow-up"></i> {{ stats.entries_this_month }} este mes
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Entradas públicas -->
+                                <div class="col-md-6">
+                                    <div class="card info-card revenue-card h-100 border-0 shadow-sm">
+                                        <div class="card-body text-center">
+                                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2">
+                                                <i class="bi bi-eye"></i>
+                                            </div>
+                                            <h6 class="card-title mb-1">Entradas Públicas</h6>
+                                            <h4 class="mb-1">{{ stats.public_entries }}</h4>
+                                            <div class="text-muted small">{{ stats.public_percentage }}% del total</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Segunda fila: Métricas complementarias -->
+                        <div class="col-lg-6">
+                            <div class="row g-3">
+                                <!-- Categorías activas -->
+                                <div class="col-md-6">
+                                    <div class="card info-card customers-card h-100 border-0 shadow-sm">
+                                        <div class="card-body text-center">
+                                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2">
+                                                <i class="bi bi-tags"></i>
+                                            </div>
+                                            <h6 class="card-title mb-1">Categorías Usadas</h6>
+                                            <h4 class="mb-1">{{ stats.categories_used }}</h4>
+                                            <div class="text-muted small">de {{ stats.total_categories }} disponibles</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Adjuntos -->
+                                <div class="col-md-6">
+                                    <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+                                        <div class="card-body text-center">
+                                            <div class="card-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                                <i class="bi bi-paperclip"></i>
+                                            </div>
+                                            <h6 class="card-title mb-1">Archivos Adjuntos</h6>
+                                            <h4 class="mb-1">{{ stats.total_attachments }}</h4>
+                                            <div class="text-muted small">archivos multimedia</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel de acciones rápidas -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Acciones Rápidas</h5>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'bitacora:create' %}" class="btn btn-primary">Nueva Entrada</a>
+                        <a href="{% url 'bitacora:list' %}" class="btn btn-outline-primary">Ver Todas</a>
+                    </div>
+
+                    <hr>
+
+                    <h6>Crear desde Plantilla</h6>
+                    <div class="d-grid gap-1">
+                        <a href="{% url 'bitacora:create' %}?template=personal" class="btn btn-sm btn-outline-secondary">
+                            Reflexión Personal
+                        </a>
+                        <a href="{% url 'bitacora:create' %}?template=trabajo" class="btn btn-sm btn-outline-secondary">
+                            Nota de Trabajo
+                        </a>
+                        <a href="{% url 'bitacora:create' %}?template=idea" class="btn btn-sm btn-outline-secondary">
+                            Idea Creativa
+                        </a>
+                        <a href="{% url 'bitacora:create' %}?template=meta" class="btn btn-sm btn-outline-secondary">
+                            Meta/Objetivo
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integración GTD -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Integración GTD</h5>
+                    <div class="mb-3">
+                        <h6 class="text-primary">Inbox Items Relacionados</h6>
+                        {% if gtd_items %}
+                        <div class="list-group list-group-flush">
+                            {% for item in gtd_items|slice:":5" %}
+                            <a href="#" class="list-group-item list-group-item-action py-2">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <small class="text-truncate">{{ item.title }}</small>
+                                    <small class="text-muted">{{ item.created_at|date:"d/m" }}</small>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted small">No hay items pendientes en el inbox</p>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <h6 class="text-success">Tareas Activas</h6>
+                        {% if active_tasks %}
+                        <div class="list-group list-group-flush">
+                            {% for task in active_tasks|slice:":3" %}
+                            <a href="#" class="list-group-item list-group-item-action py-2">
+                                <small class="text-truncate">{{ task.title }}</small>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted small">No hay tareas activas</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenido principal -->
+        <div class="col-lg-8">
+
+            <!-- Entradas recientes -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Entradas Recientes</h5>
+                        <a href="{% url 'bitacora:list' %}" class="btn btn-sm btn-outline-primary">Ver Todas</a>
+                    </div>
+
+                    {% if recent_entries %}
+                    <div class="list-group list-group-flush">
+                        {% for entry in recent_entries|slice:":8" %}
+                        <a href="{% url 'bitacora:detail' entry.pk %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ entry.titulo }}</h6>
+                                    <p class="mb-1 text-muted small">{{ entry.contenido|striptags|truncatechars:100 }}</p>
+                                    <div class="d-flex gap-2">
+                                        <span class="badge bg-secondary">{{ entry.get_categoria_display }}</span>
+                                        {% if entry.tags.all %}
+                                        {% for tag in entry.tags.all|slice:":2" %}
+                                        <span class="badge bg-light text-dark">{{ tag.name }}</span>
+                                        {% endfor %}
+                                        {% endif %}
+                                        {% if entry.attachments.all %}
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-paperclip"></i> {{ entry.attachments.count }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ entry.fecha_creacion|date:"d/m H:i" }}</small>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+
+                    {% if recent_entries|length > 8 %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'bitacora:list' %}" class="btn btn-outline-secondary">Ver más entradas</a>
+                    </div>
+                    {% endif %}
+
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-journal-x fs-1 text-muted mb-3"></i>
+                        <h6 class="text-muted mb-3">No tienes entradas aún</h6>
+                        <a href="{% url 'bitacora:create' %}" class="btn btn-primary">Crear Primera Entrada</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Distribución por categorías -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Distribución por Categorías</h5>
+                        <span class="badge bg-primary">{{ category_stats|length }} categorías</span>
+                    </div>
+
+                    {% if category_stats %}
+                    <div class="row">
+                        {% for category, data in category_stats.items %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="flex-grow-1">
+                                    <strong>{{ category }}</strong>
+                                    <div class="progress mt-1" style="height: 8px;">
+                                        <div class="progress-bar bg-primary" role="progressbar"
+                                             style="width: {{ data.percentage }}%;"
+                                             aria-valuenow="{{ data.percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="ms-3 text-end">
+                                    <div class="fw-bold">{{ data.count }}</div>
+                                    <small class="text-muted">{{ data.percentage }}%</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <p class="text-muted mb-0">No hay datos disponibles</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Búsqueda rápida -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">Búsqueda Rápida</h5>
+                    <form method="get" action="{% url 'bitacora:list' %}">
+                        <div class="input-group mb-3">
+                            <input type="text" name="q" class="form-control" placeholder="Buscar entradas..." value="{{ request.GET.q }}">
+                            <button class="btn btn-outline-secondary" type="submit">Buscar</button>
+                        </div>
+                    </form>
+
+                    <h6>Filtros por categoría:</h6>
+                    <div class="d-flex flex-wrap gap-1">
+                        <a href="?categoria=personal" class="badge bg-secondary">Personal</a>
+                        <a href="?categoria=trabajo" class="badge bg-secondary">Trabajo</a>
+                        <a href="?categoria=idea" class="badge bg-secondary">Ideas</a>
+                        <a href="?categoria=reflexion" class="badge bg-secondary">Reflexión</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</section>
+
+
+{% endblock %}

@@ -1,0 +1,234 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<!-- Mensajes de confirmación y éxito -->
+{% if messages %}
+<div class="alert alert-info" role="alert">
+    {% for message in messages %}
+    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
+        {% endfor %}
+</div>
+{% endif %}
+
+<div class="pagetitle">
+    <h1>Bloques de Contenido</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'bitacora:list' %}">Bitácora</a></li>
+            {% if selected_entry %}
+            <li class="breadcrumb-item"><a href="{% url 'bitacora:detail' selected_entry.pk %}">{{ selected_entry.titulo|truncatechars:20 }}</a></li>
+            {% endif %}
+            <li class="breadcrumb-item active">Bloques de Contenido</li>
+        </ol>
+    </nav>
+</div><!-- End Page Title -->
+
+{% if selected_entry %}
+<div class="alert alert-info">
+    <h6><i class="bi bi-info-circle me-2"></i>Insertando en: "{{ selected_entry.titulo }}"</h6>
+    <p class="mb-0">Selecciona un bloque de contenido para insertarlo en esta entrada de bitácora.</p>
+</div>
+{% endif %}
+
+<section class="section dashboard">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-puzzle me-2"></i>Bloques de Contenido Disponibles
+                    </h5>
+                    <a href="{% url 'bitacora:list' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Volver a Bitácora
+                    </a>
+                </div>
+                <div class="card-body">
+
+                    <!-- Filtros -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <form method="get" class="d-flex gap-2">
+                                <select name="content_type" class="form-select">
+                                    <option value="">Todos los tipos</option>
+                                    {% for type_value, type_label in content_types %}
+                                    <option value="{{ type_value }}" {% if request.GET.content_type == type_value %}selected{% endif %}>
+                                        {{ type_label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn-outline-primary">Filtrar</button>
+                            </form>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <small class="text-muted">{{ content_blocks|length }} bloques disponibles</small>
+                        </div>
+                    </div>
+
+                    <!-- Lista de bloques -->
+                    {% if content_blocks %}
+                    <div class="row">
+                        {% for block in content_blocks %}
+                        <div class="col-lg-6 col-xl-4 mb-4">
+                            <div class="card h-100 border-left-primary">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="card-title mb-0">{{ block.title }}</h6>
+                                    <div>
+                                        {% if block.is_featured %}
+                                        <span class="badge bg-warning text-dark">Destacado</span>
+                                        {% endif %}
+                                        {% if not block.is_public %}
+                                        <span class="badge bg-secondary">Privado</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    {% if block.description %}
+                                    <p class="card-text text-muted small">{{ block.description }}</p>
+                                    {% endif %}
+
+                                    <div class="mb-3">
+                                        <span class="badge bg-info">{{ block.get_content_type_display }}</span>
+                                        {% if block.category %}
+                                        <span class="badge bg-light text-dark">{{ block.category }}</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Preview del contenido -->
+                                    <div class="content-preview mb-3 p-2 bg-light rounded small">
+                                        {% if block.content_type == 'text' %}
+                                        <p class="mb-0">{{ block.get_content|truncatechars:100 }}</p>
+                                        {% elif block.content_type == 'html' %}
+                                        <div>{{ block.get_content|truncatechars:100|safe }}</div>
+                                        {% elif block.content_type == 'markdown' %}
+                                        <code>{{ block.get_content|truncatechars:100 }}</code>
+                                        {% elif block.content_type == 'json' %}
+                                        <code class="text-muted">{{ block.get_content|truncatechars:100 }}</code>
+                                        {% else %}
+                                        <em class="text-muted">{{ block.get_content_type_display }}</em>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Tags -->
+                                    {% if block.get_tags_list %}
+                                    <div class="mb-3">
+                                        {% for tag in block.get_tags_list %}
+                                        <span class="badge bg-light text-dark me-1">{{ tag }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Estadísticas -->
+                                    <div class="d-flex justify-content-between align-items-center text-muted small">
+                                        <span>Usado {{ block.usage_count }} vez{{ block.usage_count|pluralize }}</span>
+                                        <span>{{ block.updated_at|date:"d/m/Y" }}</span>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="d-flex gap-2">
+                                        {% if selected_entry %}
+                                        <a href="{% url 'bitacora:insert_content_block' selected_entry.pk block.id %}"
+                                           class="btn btn-primary btn-sm flex-fill"
+                                           onclick="return confirm('¿Insertar el bloque \"{{ block.title }}\" en la entrada \"{{ selected_entry.titulo }}\"?')">
+                                            <i class="bi bi-plus-circle me-1"></i>Insertar en Entrada
+                                        </a>
+                                        {% else %}
+                                        <button type="button" class="btn btn-primary btn-sm flex-fill insert-to-editor"
+                                                data-block-id="{{ block.id }}"
+                                                data-block-title="{{ block.title|escapejs }}"
+                                                data-block-type="{{ block.content_type }}"
+                                                data-block-content="{{ block.content|escapejs }}">
+                                            <i class="bi bi-plus-circle me-1"></i>Insertar en Editor
+                                        </button>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-outline-info btn-sm"
+                                                onclick="previewBlock({{ block.id }}, '{{ block.title|escapejs }}')">
+                                            <i class="bi bi-eye me-1"></i>Preview
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-puzzle-piece fs-1 text-muted"></i>
+                        </div>
+                        <h5 class="text-muted mb-3">No hay bloques de contenido disponibles</h5>
+                        <p class="text-muted">Los bloques de contenido se crean desde la sección de cursos.</p>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Modal para preview -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalTitle">Preview del Bloque</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="previewContent">
+                <!-- El contenido se cargará aquí -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function previewBlock(blockId, blockTitle) {
+    document.getElementById('previewModalTitle').textContent = 'Preview: ' + blockTitle;
+
+    // Aquí iría la lógica para cargar el contenido del bloque
+    // Por simplicidad, mostramos un mensaje
+    document.getElementById('previewContent').innerHTML = `
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle me-2"></i>
+            Preview no disponible. El contenido se mostrará después de insertarlo en la entrada.
+        </div>
+    `;
+
+    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+    modal.show();
+}
+
+// Función para insertar bloque en TinyMCE
+function insertBlockToEditor(blockData) {
+    // Verificar si estamos en una ventana popup
+    if (window.opener && window.opener.insertContentBlock) {
+        // Estamos en una popup, enviar datos a la ventana padre
+        window.opener.insertContentBlock(blockData);
+        window.close();
+    } else {
+        // No estamos en popup, mostrar mensaje de error
+        alert('Esta función solo está disponible cuando se abre desde el editor.');
+    }
+}
+
+// Manejar clics en botones de inserción
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.insert-to-editor').forEach(button => {
+        button.addEventListener('click', function() {
+            const blockData = {
+                id: this.dataset.blockId,
+                title: this.dataset.blockTitle,
+                content_type: this.dataset.blockType,
+                content: this.dataset.blockContent
+            };
+
+            insertBlockToEditor(blockData);
+        });
+    });
+});
+</script>
+
+{% endblock %}
