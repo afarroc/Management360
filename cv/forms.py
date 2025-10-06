@@ -1,5 +1,5 @@
 from django import forms
-from .models import Curriculum, Experience, Education, Skill, Document, Image, Database
+from .models import Curriculum, Experience, Education, Skill, Language, Certification, Document, Image, Database
 from django.core.validators import FileExtensionValidator
 
 class BaseModelForm(forms.ModelForm):
@@ -17,6 +17,7 @@ class CurriculumForm(BaseModelForm):
         widgets = {
             'bio': forms.Textarea(attrs={'rows': 3}),
             'address': forms.TextInput(attrs={'placeholder': 'Calle, número, ciudad'}),
+            'hire_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
 class ExperienceForm(BaseModelForm):
@@ -48,7 +49,7 @@ class SkillForm(BaseModelForm):
         widgets = {
             'proficiency_level': forms.Select(attrs={'class': 'form-control'}),
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['proficiency_level'].choices = [
@@ -57,6 +58,35 @@ class SkillForm(BaseModelForm):
             ('I', 'Intermedio'),
             ('A', 'Avanzado')
         ]
+
+class LanguageForm(BaseModelForm):
+    class Meta:
+        model = Language
+        fields = '__all__'
+        exclude = ['cv']
+        widgets = {
+            'proficiency_level': forms.Select(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['proficiency_level'].choices = [
+            ('', 'Seleccione nivel'),
+            ('B', 'Básico'),
+            ('C', 'Conversacional'),
+            ('F', 'Fluido'),
+            ('N', 'Nativo')
+        ]
+
+class CertificationForm(BaseModelForm):
+    class Meta:
+        model = Certification
+        fields = '__all__'
+        exclude = ['cv']
+        widgets = {
+            'issue_date': forms.DateInput(attrs={'type': 'date'}),
+            'expiration_date': forms.DateInput(attrs={'type': 'date'}),
+        }
 
 class FileUploadForm(forms.Form):
     """Formulario base para subida de archivos"""

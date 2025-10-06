@@ -1,5 +1,5 @@
 # Standard Library Imports
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta, time, date
 from decimal import Decimal
 import csv
 import json
@@ -1483,6 +1483,15 @@ def task_panel(request, task_id=None):
     else:
         tasks_data, active_tasks = task_manager.get_all_tasks()
 
+        # Add active state for each task (for template display)
+        for task_data in tasks_data:
+            task = task_data['task']
+            active_state = task.taskstate_set.filter(status__status_name='In Progress').first()
+            task_data['active_state'] = active_state
+            # Also add completed state for duration calculation
+            completed_state = task.taskstate_set.filter(status__status_name='In Progress').last()
+            task_data['completed_state'] = completed_state
+
         # Calculate statistics for the template
         total_tasks = len(tasks_data)
         in_progress_count = sum(1 for task in tasks_data if task['task'].task_status.status_name == 'In Progress')
@@ -2453,12 +2462,12 @@ def events(request):
             except ObjectDoesNotExist:
                 status_in_progress = None
                 logger.warning("'In Progress' status not found in database")
-            
+
             completed = request.session.setdefault('filtered_completed', True)
             status = request.session.setdefault('filtered_status', status_in_progress)
-            date = request.session.setdefault('filtered_date', today.isoformat())
+            date_str = request.session.setdefault('filtered_date', today.isoformat())
             request.session['first_session'] = False
-            logger.debug(f"Initial filter values - Completed: {completed}, Status: {status}, Date: {date}")
+            logger.debug(f"Initial filter values - Completed: {completed}, Status: {status}, Date: {date_str}")
 
         # Get events data
         logger.info("Retrieving events data")
@@ -2471,8 +2480,8 @@ def events(request):
             logger.info("Processing POST request with new filters")
             completed = request.POST.get('completed', 'False').lower() == 'true'
             status = int(request.POST.get('status')) if request.POST.get('status') else None
-            date = request.POST.get('date')
-            logger.debug(f"Received filter values - Completed: {completed}, Status: {status}, Date: {date}")
+            date_str = request.POST.get('date')
+            logger.debug(f"Received filter values - Completed: {completed}, Status: {status}, Date: {date_str}")
 
             try:
                 # Apply completed filter
@@ -2496,13 +2505,13 @@ def events(request):
                     logger.debug("No status filter applied")
 
                 # Apply date filter
-                if date:
-                    filter_date = datetime.date.fromisoformat(date)
+                if date_str:
+                    filter_date = datetime.strptime(date_str, '%Y-%m-%d').date()
                     events = [event for event in events if event['event'].updated_at.date() == filter_date]
-                    request.session['filtered_date'] = date
-                    logger.info(f"Filtered by date {date}, remaining: {len(events)}")
+                    request.session['filtered_date'] = date_str
+                    logger.info(f"Filtered by date {date_str}, remaining: {len(events)}")
                 else:
-                    request.session['filtered_date'] = date
+                    request.session['filtered_date'] = date_str
                     logger.debug("No date filter applied")
 
             except Status.DoesNotExist as e:
@@ -2515,9 +2524,9 @@ def events(request):
         else:  # GET request
             logger.info("Processing GET request with stored filters")
             status = request.session.get('filtered_status')
-            date = request.session.get('filtered_date')
+            date_str = request.session.get('filtered_date')
             completed = request.session.get('filtered_completed')
-            logger.debug(f"Using stored filter values - Completed: {completed}, Status: {status}, Date: {date}")
+            logger.debug(f"Using stored filter values - Completed: {completed}, Status: {status}, Date: {date_str}")
 
             try:
                 # Apply stored completed filter
@@ -2533,10 +2542,10 @@ def events(request):
                     logger.info(f"Filtered by stored status ID {status}, remaining: {len(events)}")
 
                 # Apply stored date filter
-                if date:
-                    filter_date = datetime.date.fromisoformat(date)
+                if date_str:
+                    filter_date = datetime.strptime(date_str, '%Y-%m-%d').date()
                     events = [event for event in events if event['event'].updated_at.date() == filter_date]
-                    logger.info(f"Filtered by stored date {date}, remaining: {len(events)}")
+                    logger.info(f"Filtered by stored date {date_str}, remaining: {len(events)}")
 
             except Status.DoesNotExist as e:
                 logger.error(f"Status filtering error: {str(e)}", exc_info=True)

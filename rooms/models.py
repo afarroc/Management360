@@ -1,5 +1,7 @@
 ﻿from django.db import models
 from django.contrib.auth.models import User
+from datetime import timedelta
+from django.utils import timezone
 
 class PlayerProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='player_profile')
@@ -51,7 +53,7 @@ class PlayerProfile(models.Model):
         """Devuelve todas las salidas disponibles de la habitación actual."""
         exits = []
         current_room = self.current_room
-        
+
         # 1. Entradas físicas habilitadas
         for entrance in current_room.entrance_exits.filter(enabled=True):
             if entrance.connection:
@@ -63,7 +65,7 @@ class PlayerProfile(models.Model):
                     'to_room': entrance.connection.to_room.id,
                     'energy_cost': entrance.connection.energy_cost
                 })
-        
+
         # 2. Portales activos
         for portal in current_room.portals.all():
             if portal.is_active():
@@ -74,7 +76,7 @@ class PlayerProfile(models.Model):
                     'to_room': portal.exit.room.id,
                     'energy_cost': portal.energy_cost
                 })
-        
+
         # 3. Objetos transportables
         for obj in current_room.room_objects.filter(object_type__in=['DOOR', 'PORTAL']):
             exits.append({
@@ -83,7 +85,31 @@ class PlayerProfile(models.Model):
                 'name': obj.name,
                 'interaction': obj.object_type.lower()
             })
-        
+
+        # 4. Navegación jerárquica (padre/hijo)
+        # Ir al padre (si existe)
+        if current_room.parent_room:
+            exits.append({
+                'type': 'hierarchy',
+                'id': current_room.parent_room.id,
+                'name': f"⬆️ Ir a {current_room.parent_room.name} (padre)",
+                'to_room': current_room.parent_room.id,
+                'energy_cost': 1,  # Costo mínimo para navegación jerárquica
+                'direction': 'UP'
+            })
+
+        # Ir a habitaciones hijas (si existen)
+        child_rooms = current_room.child_of_rooms.filter(is_active=True)
+        for child in child_rooms:
+            exits.append({
+                'type': 'hierarchy',
+                'id': child.id,
+                'name': f"⬇️ Ir a {child.name} (hijo)",
+                'to_room': child.id,
+                'energy_cost': 1,  # Costo mínimo para navegación jerárquica
+                'direction': 'DOWN'
+            })
+
         return exits
 
     def can_use_exit(self, exit_type, exit_id):
@@ -94,6 +120,14 @@ class PlayerProfile(models.Model):
         elif exit_type == 'portal':
             portal = Portal.objects.get(id=exit_id)
             return portal.is_active() and self.energy >= portal.energy_cost
+        elif exit_type == 'hierarchy':
+            # Para navegación jerárquica, verificar que la habitación existe y está activa
+            from .models import Room
+            try:
+                target_room = Room.objects.get(id=exit_id)
+                return target_room.is_active and self.energy >= 1
+            except Room.DoesNotExist:
+                return False
         return True
 
     def use_exit(self, exit_type, exit_id):
@@ -121,6 +155,16 @@ class PlayerProfile(models.Model):
             self.energy -= portal.energy_cost
             portal.last_used = timezone.now()
             portal.save()
+
+        elif exit_type == 'hierarchy':
+            # Navegación jerárquica directa
+            from .models import Room
+            target_room = Room.objects.get(id=exit_id)
+            self.current_room = target_room
+            # Centrar al jugador en la nueva habitación
+            self.position_x = target_room.length // 2
+            self.position_y = target_room.width // 2
+            self.energy -= 1  # Costo mínimo para navegación jerárquica
 
         self.save()
         return True

@@ -1,4 +1,4 @@
-{% extends "courses/base.html" %}
+{% extends "courses/cms_base.html" %}
 {% load static %}
 
 {% block title %}{{ title }} - Management360{% endblock %}
@@ -12,239 +12,7 @@
 <!-- JavaScript para el Gestor de Contenido -->
 <script src="{% static 'js/content_manager.js' %}"></script>
 <script src="{% static 'js/content_manager_forms.js' %}"></script>
-{% endblock %}
-
-{% block course_content %}
-<div class="content-manager-layout">
-    <!-- Sidebar de Navegación -->
-    <div class="content-sidebar">
-        {% include "courses/includes/content_manager_sidebar.html" %}
-    </div>
-
-    <!-- Contenido Principal -->
-    <div class="content-main">
-        <!-- Header Compacto -->
-        <div class="content-header">
-            {% include "courses/includes/content_manager_header_compact.html" %}
-        </div>
-
-        <!-- Dashboard Principal -->
-        <div class="content-dashboard">
-            <!-- Estadísticas Rápidas -->
-            <div class="stats-overview">
-                {% include "courses/includes/content_manager_stats.html" %}
-            </div>
-
-            <!-- Sistema de Creación Simplificado -->
-            <div class="creation-system">
-                <div class="creation-header">
-                    <h4 class="mb-0">
-                        <i class="bi bi-plus-circle me-2 text-primary"></i>
-                        Crear Nuevo Bloque de Contenido
-                    </h4>
-                    <p class="text-muted mb-0">Selecciona una categoría y tipo de contenido</p>
-                </div>
-
-                <!-- Selector de Categorías -->
-                <div class="categories-selector">
-                    <div class="categories-grid">
-                        <div class="category-card" data-category="text">
-                            <div class="category-icon">
-                                <i class="bi bi-textarea-t text-info"></i>
-                            </div>
-                            <div class="category-info">
-                                <div class="category-name">Contenido de Texto</div>
-                                <div class="category-desc">Texto, Markdown, citas</div>
-                            </div>
-                        </div>
-
-                        <div class="category-card" data-category="media">
-                            <div class="category-icon">
-                                <i class="bi bi-play-circle text-success"></i>
-                            </div>
-                            <div class="category-info">
-                                <div class="category-name">Multimedia</div>
-                                <div class="category-desc">Imágenes y videos</div>
-                            </div>
-                        </div>
-
-                        <div class="category-card" data-category="interactive">
-                            <div class="category-icon">
-                                <i class="bi bi-hand-index-thumb text-warning"></i>
-                            </div>
-                            <div class="category-info">
-                                <div class="category-name">Interactivos</div>
-                                <div class="category-desc">Botones, alertas, formularios</div>
-                            </div>
-                        </div>
-
-                        <div class="category-card" data-category="structural">
-                            <div class="category-icon">
-                                <i class="bi bi-grid-3x3-gap text-primary"></i>
-                            </div>
-                            <div class="category-info">
-                                <div class="category-name">Estructural</div>
-                                <div class="category-desc">HTML, listas, tablas, tarjetas</div>
-                            </div>
-                        </div>
-
-                        <div class="category-card" data-category="utility">
-                            <div class="category-icon">
-                                <i class="bi bi-gear text-secondary"></i>
-                            </div>
-                            <div class="category-info">
-                                <div class="category-name">Utilidades</div>
-                                <div class="category-desc">Código, íconos, separadores</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Contenedor de Tipos de Contenido -->
-                <div id="contentTypesContainer" class="content-types-container" style="display: none;">
-                    <!-- Los tipos se cargarán dinámicamente aquí -->
-                </div>
-
-                <!-- Contenedor del Formulario -->
-                <div id="contentFormContainer" class="content-form-container" style="display: none;">
-                    <!-- El formulario se cargará dinámicamente aquí -->
-                </div>
-            </div>
-
-            <!-- Bloques Recientes -->
-            <div class="recent-blocks-section">
-                {% include "courses/includes/content_manager_recent_blocks.html" %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Panel Lateral Derecho (Crear Bloque) -->
-    <div class="content-panel" id="createPanel">
-        {% include "courses/includes/content_manager_create_panel.html" %}
-    </div>
-
-    <!-- Modal de Vista Previa -->
-    {% include "courses/includes/content_manager_modal.html" %}
-</div>
 <script>
-// Funciones legacy simplificadas para compatibilidad
-function previewBlock(slug) {
-    fetch(`/courses/content/${slug}/preview/`)
-        .then(response => response.text())
-        .then(html => {
-            document.getElementById('previewContent').innerHTML = html;
-            new bootstrap.Modal(document.getElementById('previewModal')).show();
-        })
-        .catch(error => {
-            console.error('Error loading preview:', error);
-            document.getElementById('previewContent').innerHTML = '<div class="alert alert-danger">Error al cargar la vista previa</div>';
-            new bootstrap.Modal(document.getElementById('previewModal')).show();
-        });
-}
-
-function duplicateBlock(slug) {
-    if (confirm('¿Estás seguro de que quieres duplicar este bloque?')) {
-        fetch(`/courses/content/${slug}/duplicate/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                location.reload();
-            } else {
-                alert('Error al duplicar el bloque');
-            }
-        });
-    }
-}
-
-function deleteBlock(slug, title) {
-    if (confirm(`¿Estás seguro de que quieres eliminar el bloque "${title}"?`)) {
-        fetch(`/courses/content/${slug}/delete/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            }
-        })
-        .then(response => {
-            if (response.ok) {
-                location.reload();
-            } else {
-                alert('Error al eliminar el bloque');
-            }
-        });
-    }
-}
-
-// Funciones legacy del panel lateral (mantenidas por compatibilidad)
-function openCreatePanel(type) {
-    // Redirigir al nuevo sistema de categorías
-    if (window.contentManagerForms) {
-        // Si es un tipo simple, seleccionar la categoría correspondiente
-        const categoryMap = {
-            'html': 'structural', 'bootstrap': 'structural', 'text': 'text',
-            'markdown': 'text', 'image': 'media', 'video': 'media',
-            'json': 'structural'
-        };
-        const category = categoryMap[type] || 'utility';
-        window.contentManagerForms.selectCategory(category);
-        // Scroll to form
-        document.querySelector('.creation-system').scrollIntoView({ behavior: 'smooth' });
-    }
-}
-
-function closeCreatePanel() {
-    // Legacy function - no longer needed
-}
-
-function showCreateOptions() {
-    // Redirigir al formulario completo
-    window.location.href = "{% url 'courses:create_content_block_default' %}";
-}
-
-function showTemplates() {
-    alert('Funcionalidad de plantillas próximamente disponible');
-}
-
-function exportBlocks() {
-    alert('Funcionalidad de exportación próximamente disponible');
-}
-
-// Filtros de búsqueda (si existen)
-const searchInput = document.getElementById('searchBlocks');
-const typeFilter = document.getElementById('filterType');
-const visibilityFilter = document.getElementById('filterVisibility');
-
-if (searchInput) searchInput.addEventListener('input', filterBlocks);
-if (typeFilter) typeFilter.addEventListener('change', filterBlocks);
-if (visibilityFilter) visibilityFilter.addEventListener('change', filterBlocks);
-
-function filterBlocks() {
-    const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-    const typeFilterValue = typeFilter ? typeFilter.value : '';
-    const visibilityFilterValue = visibilityFilter ? visibilityFilter.value : '';
-
-    const blocks = document.querySelectorAll('.block-card');
-
-    blocks.forEach(block => {
-        const title = block.querySelector('.block-title').textContent.toLowerCase();
-        const type = block.dataset.type;
-        const visibility = block.dataset.visibility;
-
-        const matchesSearch = title.includes(searchTerm);
-        const matchesType = !typeFilterValue || type === typeFilterValue;
-        const matchesVisibility = !visibilityFilterValue || visibility === visibilityFilterValue;
-
-        if (matchesSearch && matchesType && matchesVisibility) {
-            block.style.display = '';
-        } else {
-            block.style.display = 'none';
-        }
-    });
-}
-
 // Navegación de sidebar
 document.addEventListener('DOMContentLoaded', function() {
     // Manejar navegación de sidebar
@@ -258,5 +26,58 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+{% endblock %}
 
+{% block cms_content %}
+<!-- Header -->
+<div class="content-blocks-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <h1><i class="bi bi-grid-3x3-gap me-3"></i>Gestor de Contenido</h1>
+                <p class="lead mb-0 mt-2">
+                    Sistema de gestión de bloques reutilizables
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end">
+                <div class="mt-4">
+                    <i class="bi bi-house-door fs-1 text-white-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contenido Principal -->
+<div class="container">
+    <!-- Estadísticas -->
+    {% if user_blocks %}
+    <div class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-number">{{ user_blocks|length }}</span>
+                <span class="stat-label">Mis Bloques</span>
+            </div>
+            {% if featured_blocks %}
+            <div class="stat-item">
+                <span class="stat-number">{{ featured_blocks|length }}</span>
+                <span class="stat-label">Destacados</span>
+            </div>
+            {% endif %}
+            <div class="stat-item">
+                <span class="stat-number">{{ total_blocks }}</span>
+                <span class="stat-label">Total Público</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Bloques Recientes -->
+    <div class="recent-blocks-section">
+        {% include "courses/includes/content_manager_recent_blocks.html" %}
+    </div>
+</div>
+
+<!-- Modal de Vista Previa -->
+{% include "courses/includes/content_manager_modal.html" %}
 {% endblock %}

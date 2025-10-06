@@ -1,4 +1,4 @@
-{% extends "courses/base.html" %}
+{% extends "courses/cms_base.html" %}
 {% load static %}
 
 {% block title %}{{ title }} - CMS{% endblock %}
@@ -131,49 +131,6 @@
     font-size: 0.9rem;
 }
 
-/* Content type selector */
-.content-type-selector {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.content-type-card {
-    border: 2px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 1rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: white;
-}
-
-.content-type-card.selected {
-    border-color: #667eea;
-    background: rgba(102, 126, 234, 0.05);
-}
-
-.content-type-card:hover {
-    border-color: #667eea;
-    transform: translateY(-2px);
-}
-
-.content-type-icon {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-}
-
-.content-type-title {
-    font-weight: 600;
-    color: #2d3748;
-    margin-bottom: 0.25rem;
-}
-
-.content-type-desc {
-    font-size: 0.875rem;
-    color: #718096;
-}
 
 /* Content fields */
 .content-fields {
@@ -277,10 +234,6 @@
         padding: 1.5rem;
     }
 
-    .content-type-selector {
-        grid-template-columns: 1fr;
-    }
-
     .components-library {
         grid-template-columns: 1fr;
     }
@@ -294,7 +247,7 @@
 </style>
 {% endblock %}
 
-{% block course_content %}
+{% block cms_content %}
 <div class="content-form-container">
     <div class="container">
         <div class="row justify-content-center">
@@ -323,112 +276,37 @@
                             <!-- Tipo de contenido (solo en creación) -->
                             {% if not block %}
                             <div class="form-group">
-                                <label class="form-label">
+                                <label for="id_content_type" class="form-label">
                                     <i class="bi bi-diagram-3 me-1"></i>Tipo de Contenido *
                                 </label>
-                                <div class="content-type-selector">
-                                    <div class="content-type-card" data-type="html">
-                                        <i class="bi bi-code-slash content-type-icon text-primary"></i>
-                                        <div class="content-type-title">HTML Personalizado</div>
-                                        <div class="content-type-desc">Código HTML completo</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="bootstrap">
-                                        <i class="bi bi-bootstrap content-type-icon text-info"></i>
-                                        <div class="content-type-title">Componente Bootstrap</div>
-                                        <div class="content-type-desc">Elementos Bootstrap</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="markdown">
-                                        <i class="bi bi-markdown content-type-icon text-success"></i>
-                                        <div class="content-type-title">Markdown</div>
-                                        <div class="content-type-desc">Sintaxis Markdown</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="json">
-                                        <i class="bi bi-braces content-type-icon text-warning"></i>
-                                        <div class="content-type-title">JSON Estructurado</div>
-                                        <div class="content-type-desc">Datos JSON</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="text">
-                                        <i class="bi bi-textarea content-type-icon text-secondary"></i>
-                                        <div class="content-type-title">Texto Simple</div>
-                                        <div class="content-type-desc">Contenido de texto</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="image">
-                                        <i class="bi bi-image content-type-icon text-info"></i>
-                                        <div class="content-type-title">Imagen</div>
-                                        <div class="content-type-desc">Imagen con configuración</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="video">
-                                        <i class="bi bi-play-circle content-type-icon text-danger"></i>
-                                        <div class="content-type-title">Video</div>
-                                        <div class="content-type-desc">Video embebido</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="quote">
-                                        <i class="bi bi-quote content-type-icon text-warning"></i>
-                                        <div class="content-type-title">Cita</div>
-                                        <div class="content-type-desc">Cita destacada</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="code">
-                                        <i class="bi bi-code content-type-icon text-dark"></i>
-                                        <div class="content-type-title">Código</div>
-                                        <div class="content-type-desc">Bloque de código</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="list">
-                                        <i class="bi bi-list-check content-type-icon text-success"></i>
-                                        <div class="content-type-title">Lista</div>
-                                        <div class="content-type-desc">Lista ordenada/desordenada</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="table">
-                                        <i class="bi bi-table content-type-icon text-primary"></i>
-                                        <div class="content-type-title">Tabla</div>
-                                        <div class="content-type-desc">Tabla de datos</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="card">
-                                        <i class="bi bi-card-text content-type-icon text-info"></i>
-                                        <div class="content-type-title">Tarjeta</div>
-                                        <div class="content-type-desc">Componente de tarjeta</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="alert">
-                                        <i class="bi bi-exclamation-triangle content-type-icon text-warning"></i>
-                                        <div class="content-type-title">Alerta</div>
-                                        <div class="content-type-desc">Mensaje de alerta</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="button">
-                                        <i class="bi bi-hand-index content-type-icon text-success"></i>
-                                        <div class="content-type-title">Botón</div>
-                                        <div class="content-type-desc">Botón interactivo</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="form">
-                                        <i class="bi bi-ui-checks content-type-icon text-secondary"></i>
-                                        <div class="content-type-title">Formulario</div>
-                                        <div class="content-type-desc">Formulario simple</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="divider">
-                                        <i class="bi bi-dash content-type-icon text-muted"></i>
-                                        <div class="content-type-title">Separador</div>
-                                        <div class="content-type-desc">Línea divisoria</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="icon">
-                                        <i class="bi bi-star content-type-icon text-primary"></i>
-                                        <div class="content-type-title">Ícono</div>
-                                        <div class="content-type-desc">Ícono con texto</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="progress">
-                                        <i class="bi bi-bar-chart content-type-icon text-info"></i>
-                                        <div class="content-type-title">Progreso</div>
-                                        <div class="content-type-desc">Barra de progreso</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="badge">
-                                        <i class="bi bi-tag content-type-icon text-warning"></i>
-                                        <div class="content-type-title">Insignia</div>
-                                        <div class="content-type-desc">Etiqueta/insignia</div>
-                                    </div>
-                                    <div class="content-type-card" data-type="timeline">
-                                        <i class="bi bi-clock content-type-icon text-dark"></i>
-                                        <div class="content-type-title">Línea de Tiempo</div>
-                                        <div class="content-type-desc">Cronología de eventos</div>
-                                    </div>
-                                </div>
-                                <input type="hidden" name="content_type" id="id_content_type" value="{{ content_block.content_type|default:'html' }}">
+                                <select name="content_type" id="id_content_type" class="form-control" required>
+                                    <option value="">Seleccionar tipo de contenido...</option>
+                                    <optgroup label="Contenido Básico">
+                                        <option value="text" {% if content_block.content_type == 'text' %}selected{% endif %}>Texto Simple</option>
+                                        <option value="html" {% if content_block.content_type == 'html' %}selected{% endif %}>HTML Personalizado</option>
+                                        <option value="markdown" {% if content_block.content_type == 'markdown' %}selected{% endif %}>Markdown</option>
+                                        <option value="quote" {% if content_block.content_type == 'quote' %}selected{% endif %}>Cita</option>
+                                        <option value="code" {% if content_block.content_type == 'code' %}selected{% endif %}>Código</option>
+                                    </optgroup>
+                                    <optgroup label="Multimedia">
+                                        <option value="image" {% if content_block.content_type == 'image' %}selected{% endif %}>Imagen</option>
+                                        <option value="video" {% if content_block.content_type == 'video' %}selected{% endif %}>Video</option>
+                                    </optgroup>
+                                    <optgroup label="Interactivo">
+                                        <option value="button" {% if content_block.content_type == 'button' %}selected{% endif %}>Botón</option>
+                                        <option value="alert" {% if content_block.content_type == 'alert' %}selected{% endif %}>Alerta</option>
+                                        <option value="form" {% if content_block.content_type == 'form' %}selected{% endif %}>Formulario</option>
+                                        <option value="card" {% if content_block.content_type == 'card' %}selected{% endif %}>Tarjeta</option>
+                                    </optgroup>
+                                    <optgroup label="Utilidades">
+                                        <option value="list" {% if content_block.content_type == 'list' %}selected{% endif %}>Lista</option>
+                                        <option value="table" {% if content_block.content_type == 'table' %}selected{% endif %}>Tabla</option>
+                                        <option value="divider" {% if content_block.content_type == 'divider' %}selected{% endif %}>Separador</option>
+                                        <option value="icon" {% if content_block.content_type == 'icon' %}selected{% endif %}>Ícono</option>
+                                        <option value="progress" {% if content_block.content_type == 'progress' %}selected{% endif %}>Progreso</option>
+                                        <option value="badge" {% if content_block.content_type == 'badge' %}selected{% endif %}>Insignia</option>
+                                    </optgroup>
+                                </select>
                             </div>
                             {% endif %}
 
@@ -996,28 +874,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Selector de tipo de contenido
 function initializeContentTypeSelector() {
-    const typeCards = document.querySelectorAll('.content-type-card');
+    const contentTypeSelect = document.getElementById('id_content_type');
 
-    typeCards.forEach(card => {
-        card.addEventListener('click', function() {
-            const type = this.dataset.type;
-
-            // Remover selección previa
-            typeCards.forEach(c => c.classList.remove('selected'));
-            // Agregar selección actual
-            this.classList.add('selected');
-
-            // Actualizar campo oculto
-            document.getElementById('id_content_type').value = type;
-
-            // Mostrar campos correspondientes
+    if (contentTypeSelect) {
+        contentTypeSelect.addEventListener('change', function() {
+            const type = this.value;
             showContentFields(type);
             selectedContentType = type;
         });
-    });
 
-    // Mostrar campos del tipo seleccionado inicialmente
-    showContentFields(selectedContentType);
+        // Mostrar campos del tipo seleccionado inicialmente
+        const initialType = contentTypeSelect.value || 'text';
+        showContentFields(initialType);
+        selectedContentType = initialType;
+    }
 }
 
 function showContentFields(type) {

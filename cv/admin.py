@@ -26,9 +26,9 @@ class SkillInline(admin.TabularInline):
 # ======================
 @admin.register(Curriculum)
 class CurriculumAdmin(admin.ModelAdmin):
-    list_display = ('user', 'full_name', 'profession', 'role', 'created_at')
-    list_filter = ('role', 'created_at')
-    search_fields = ('user__username', 'full_name', 'profession', 'company')
+    list_display = ('user', 'full_name', 'employee_id', 'department', 'corporate_position', 'role', 'created_at')
+    list_filter = ('role', 'department', 'hire_date', 'created_at')
+    search_fields = ('user__username', 'full_name', 'employee_id', 'profession', 'company', 'department')
     ordering = ('-created_at',)
     inlines = [ExperienceInline, EducationInline, SkillInline]
     
@@ -39,41 +39,51 @@ class CurriculumAdmin(admin.ModelAdmin):
         }),
         ('Personal Information', {
             'fields': (
-                'full_name', 
-                'profession', 
-                'bio', 
+                'full_name',
+                'profession',
+                'bio',
                 'profile_picture'
+            )
+        }),
+        ('Corporate Information', {
+            'fields': (
+                'employee_id',
+                'department',
+                'corporate_position',
+                'manager',
+                'hire_date',
+                'office_location'
+            )
+        }),
+        ('Professional Information', {
+            'fields': (
+                'role',
+                'company',
+                'job_title'
             )
         }),
         ('Contact Information', {
             'fields': (
-                'location', 
-                'phone', 
-                'email', 
+                'location',
+                'phone',
+                'email',
                 'address',
                 'country'
             )
         }),
         ('Social Media', {
             'fields': (
-                'linkedin_url', 
-                'github_url', 
+                'linkedin_url',
+                'github_url',
                 'twitter_url',
                 'facebook_url',
                 'instagram_url'
             ),
             'classes': ('collapse',)
         }),
-        ('Professional Information', {
-            'fields': (
-                'role', 
-                'company', 
-                'job_title'
-            )
-        }),
         ('Timestamps', {
             'fields': (
-                'created_at', 
+                'created_at',
                 'updated_at'
             ),
             'classes': ('collapse',)

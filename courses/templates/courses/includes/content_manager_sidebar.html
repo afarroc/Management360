@@ -8,23 +8,23 @@
     </div>
 
     <nav class="sidebar-menu">
-        <a href="#dashboard" class="sidebar-link active" data-section="dashboard">
+        <a href="{% url 'courses:content_manager' %}" class="sidebar-link {% if request.resolver_match.url_name == 'content_manager' %}active{% endif %}" data-section="dashboard">
             <i class="bi bi-house-door me-2"></i>
             Dashboard
         </a>
 
-        <a href="{% url 'courses:my_content_blocks' %}" class="sidebar-link">
+        <a href="{% url 'courses:my_content_blocks' %}" class="sidebar-link {% if request.resolver_match.url_name == 'my_content_blocks' %}active{% endif %}">
             <i class="bi bi-folder me-2"></i>
             Mis Bloques
             <span class="badge bg-primary ms-auto">{{ user_own_blocks }}</span>
         </a>
 
-        <a href="{% url 'courses:public_content_blocks' %}" class="sidebar-link">
+        <a href="{% url 'courses:public_content_blocks' %}" class="sidebar-link {% if request.resolver_match.url_name == 'public_content_blocks' %}active{% endif %}">
             <i class="bi bi-globe me-2"></i>
             Biblioteca
         </a>
 
-        <a href="{% url 'courses:featured_content_blocks' %}" class="sidebar-link">
+        <a href="{% url 'courses:featured_content_blocks' %}" class="sidebar-link {% if request.resolver_match.url_name == 'featured_content_blocks' %}active{% endif %}">
             <i class="bi bi-star me-2"></i>
             Destacados
         </a>
