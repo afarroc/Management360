@@ -2,22 +2,45 @@
 <!-- ======= Sidebar ======= -->
 <aside id="sidebar" class="sidebar">
     <ul class="sidebar-nav" id="sidebar-nav">
+        <!-- Dashboard -->
         {% include 'layouts/includes/nav-content/dashboard.html' %}
+
         {% if user.username %}
+        <!-- Management Section -->
+        <li class="nav-heading">Management</li>
         {% include 'layouts/includes/nav-content/projects.html' %}
         {% include 'layouts/includes/nav-content/tasks.html' %}
         {% include 'layouts/includes/nav-content/events.html' %}
         {% include 'layouts/includes/nav-content/management.html' %}
-        {% include 'layouts/includes/nav-content/curriculum.html' %}
-        {% include 'layouts/includes/nav-content/kpis.html' %}
-        {% include 'layouts/includes/nav-content/rooms.html' %}
-        {% include 'layouts/includes/nav-content/tools.html' %}
-        {% include 'layouts/includes/nav-content/configuration.html' %}
-        {% include 'layouts/includes/nav-content/chat.html' %}
+
+        <!-- Learning Section -->
+        <li class="nav-heading">Learning</li>
         {% include 'layouts/includes/nav-content/courses.html' %}
-        {% endif %}
+        {% include 'layouts/includes/nav-content/curriculum.html' %}
+
+        <!-- Communication Section -->
+        <li class="nav-heading">Communication</li>
+        {% include 'layouts/includes/nav-content/chat.html' %}
+        {% include 'layouts/includes/nav-content/rooms.html' %}
+
+        <!-- Analytics Section -->
+        <li class="nav-heading">Analytics</li>
+        {% include 'layouts/includes/nav-content/kpis.html' %}
+
+        <!-- Tools Section -->
+        <li class="nav-heading">Tools</li>
+        {% include 'layouts/includes/nav-content/tools.html' %}
+
+        <!-- Account & Settings -->
+        <li class="nav-heading">Account</li>
         {% include 'layouts/includes/nav-content/account.html' %}
+        {% include 'layouts/includes/nav-content/configuration.html' %}
+
+        <!-- Help & Support -->
+        <li class="nav-heading">Help & Support</li>
+        {% include 'layouts/includes/nav-content/help.html' %}
         {% include 'layouts/includes/nav-content/pages.html' %}
+        {% endif %}
     </ul>
 
     <style>

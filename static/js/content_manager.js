@@ -852,3 +852,54 @@ function deleteBlock(slug, title) {
         });
     }
 }
+
+// Funciones para el panel de creación
+function openCreatePanel(type) {
+    const panel = document.querySelector('.content-panel');
+    if (panel) {
+        panel.classList.add('open');
+        // Si se especifica un tipo, seleccionarlo
+        if (type) {
+            const select = document.getElementById('panelContentType');
+            if (select) {
+                select.value = type;
+                changePanelContentType();
+            }
+        }
+    }
+}
+
+function closeCreatePanel() {
+    const panel = document.querySelector('.content-panel');
+    if (panel) {
+        panel.classList.remove('open');
+    }
+}
+
+function changePanelContentType() {
+    const select = document.getElementById('panelContentType');
+    const form = document.getElementById('panelCreateForm');
+    const initialMessage = document.getElementById('panelInitialMessage');
+    const dynamicFields = document.getElementById('panelDynamicFields');
+
+    if (!select || !form || !initialMessage || !dynamicFields) return;
+
+    const type = select.value;
+    if (type) {
+        form.style.display = 'block';
+        initialMessage.style.display = 'none';
+        document.getElementById('panelBlockType').value = type;
+
+        // Aquí puedes agregar lógica para mostrar campos específicos según el tipo
+        // Por simplicidad, mostramos todos los campos básicos
+        dynamicFields.innerHTML = '';
+    } else {
+        form.style.display = 'none';
+        initialMessage.style.display = 'block';
+    }
+}
+
+function showCreateOptions() {
+    // Mostrar opciones adicionales de creación
+    alert('Funcionalidad adicional próximamente');
+}

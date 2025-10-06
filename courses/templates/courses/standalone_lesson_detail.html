@@ -4,6 +4,22 @@
 {% block title %}{{ lesson.title }} - Lección Independiente{% endblock %}
 
 {% block extra_head %}
+<!-- MathJax Configuration -->
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['\\(', '\\)'], ['$', '$']],
+    displayMath: [['\\[', '\\]'], ['$$', '$$']],
+    processEscapes: true,
+    processEnvironments: true
+  },
+  options: {
+    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+  }
+};
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
 <style>
 .standalone-lesson-container {
     background: #f8f9fa;
@@ -285,7 +301,7 @@
                 {% elif lesson.lesson_type == 'text' %}
                     {% if lesson.content %}
                     <div class="rendered-content">
-                        {{ lesson.content|linebreaks }}
+                        {{ lesson.content|render_content }}
                     </div>
                     {% endif %}
 

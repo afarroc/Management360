@@ -49,6 +49,12 @@
           </button>
         </li>
         <li class="nav-item" role="presentation">
+          <button class="nav-link" id="courses-tab" data-bs-toggle="tab" data-bs-target="#courses" type="button" role="tab">
+            <i class="bi bi-book me-2"></i>
+            <span class="d-none d-sm-inline">Courses</span>
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
           <button class="nav-link" id="tools-tab" data-bs-toggle="tab" data-bs-target="#tools" type="button" role="tab">
             <i class="bi bi-tools me-2"></i>
             <span class="d-none d-sm-inline">Tools</span>
@@ -169,7 +175,7 @@
                       <div class="activite-label">{{ activity.timestamp|timesince }} ago</div>
                       <i class="bi bi-circle-fill activity-badge text-{{ activity.get_badge_color }} align-self-start"></i>
                       <div class="activity-content">
-                        {{ activity.message }}
+                        {{ activity.object_repr }}
                         <div class="text-muted small">{{ activity.timestamp|date:"M d, h:i A" }}</div>
                       </div>
                     </div>
@@ -644,6 +650,156 @@
                 <a href="{% url 'create_classification' %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
                   <i class="bi bi-plus"></i> Add Category
                 </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    {# Courses Tab #}
+    <div class="tab-pane fade" id="courses" role="tabpanel">
+      <section class="section">
+        <div class="row">
+          <div class="col-lg-8">
+            {# Courses Overview #}
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="card-title">Courses & Learning</h5>
+                  <div>
+                    <a href="{% url 'courses:courses_list' %}" class="btn btn-sm btn-primary">
+                      <i class="bi bi-search"></i> Explore Courses
+                    </a>
+                    <a href="{% url 'courses:create_course_wizard' %}" class="btn btn-sm btn-outline-success">
+                      <i class="bi bi-plus"></i> Create Course
+                    </a>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="card course-card mb-3">
+                      <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                          <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                            <i class="bi bi-book text-primary fs-4"></i>
+                          </div>
+                          <div>
+                            <h6 class="mb-1">Browse Courses</h6>
+                            <small class="text-muted">Explore available courses</small>
+                          </div>
+                        </div>
+                        <a href="{% url 'courses:courses_list' %}" class="btn btn-outline-primary btn-sm">
+                          <i class="bi bi-search me-1"></i>View All Courses
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="card course-card mb-3">
+                      <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                          <div class="bg-success bg-opacity-10 rounded-circle p-3 me-3">
+                            <i class="bi bi-file-earmark-text text-success fs-4"></i>
+                          </div>
+                          <div>
+                            <h6 class="mb-1">Free Lessons</h6>
+                            <small class="text-muted">Independent learning content</small>
+                          </div>
+                        </div>
+                        <a href="{% url 'courses:standalone_lessons_list' %}" class="btn btn-outline-success btn-sm">
+                          <i class="bi bi-book-open me-1"></i>View Free Content
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <a href="{% url 'courses:dashboard' %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                  <i class="bi bi-speedometer2 me-1"></i>Go to Courses Dashboard
+                </a>
+              </div>
+            </div>
+
+            {# Recent Course Activity #}
+            <div class="card shadow-sm mt-4">
+              <div class="card-body">
+                <h5 class="card-title">Learning Resources</h5>
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="d-flex align-items-center p-3 border rounded mb-3">
+                      <i class="bi bi-journal-text text-primary fs-3 me-3"></i>
+                      <div>
+                        <h6 class="mb-1">My Courses</h6>
+                        <small class="text-muted">Manage your enrolled courses</small>
+                        <br>
+                        <a href="{% url 'courses:dashboard' %}" class="btn btn-sm btn-outline-primary mt-2">
+                          <i class="bi bi-eye me-1"></i>View Dashboard
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="d-flex align-items-center p-3 border rounded mb-3">
+                      <i class="bi bi-pencil-square text-success fs-3 me-3"></i>
+                      <div>
+                        <h6 class="mb-1">Create Content</h6>
+                        <small class="text-muted">Author courses and lessons</small>
+                        <br>
+                        <a href="{% url 'courses:manage_courses' %}" class="btn btn-sm btn-outline-success mt-2">
+                          <i class="bi bi-plus-circle me-1"></i>Manage Courses
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-4">
+            {# Course Statistics #}
+            <div class="card shadow-sm">
+              <div class="card-body">
+                <h5 class="card-title">Learning Stats</h5>
+                <div class="list-group list-group-flush">
+                  <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-book me-2 text-primary"></i>Available Courses</span>
+                    <span class="badge bg-primary">Browse</span>
+                  </div>
+                  <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-file-earmark-text me-2 text-success"></i>Free Lessons</span>
+                    <span class="badge bg-success">Explore</span>
+                  </div>
+                  <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-bar-chart me-2 text-info"></i>Learning Tools</span>
+                    <span class="badge bg-info">Available</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {# Quick Course Actions #}
+            <div class="card shadow-sm mt-4">
+              <div class="card-body">
+                <h5 class="card-title">Quick Actions</h5>
+                <div class="d-grid gap-2">
+                  <a href="{% url 'courses:create_standalone_lesson' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i>Create Lesson
+                  </a>
+                  <a href="{% url 'courses:content_manager' %}" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-cubes me-1"></i>Content Manager
+                  </a>
+                  <a href="{% url 'courses:manage_categories' %}" class="btn btn-outline-info btn-sm">
+                    <i class="bi bi-tags me-1"></i>Categories
+                  </a>
+                  <a href="{% url 'courses:modules_overview' %}" class="btn btn-outline-warning btn-sm">
+                    <i class="bi bi-diagram-3 me-1"></i>Modules
+                  </a>
+                </div>
               </div>
             </div>
           </div>

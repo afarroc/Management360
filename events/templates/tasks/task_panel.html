@@ -45,13 +45,13 @@
                     <div class="card">
                         <div class="card-body">
                             <div class="row g-3">
-                                <div class="col-md-4">
+                                <div class="col-12 col-md-4">
                                     <div class="input-group">
                                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                                         <input type="text" class="form-control" id="searchInput" placeholder="Search tasks...">
                                     </div>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-6 col-md-3">
                                     <select class="form-select" id="statusFilter">
                                         <option value="">All Status</option>
                                         <option value="To Do">To Do</option>
@@ -60,7 +60,7 @@
                                         <option value="Blocked">Blocked</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-6 col-md-3">
                                     <select class="form-select" id="projectFilter">
                                         <option value="">All Projects</option>
                                         {% for project in projects %}
@@ -68,7 +68,7 @@
                                         {% endfor %}
                                     </select>
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-12 col-md-2">
                                     <button type="button" class="btn btn-outline-secondary w-100" id="clearFilters">
                                         <i class="bi bi-x-circle"></i> Clear
                                     </button>

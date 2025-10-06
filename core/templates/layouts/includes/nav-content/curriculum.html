@@ -1,20 +1,41 @@
 <li class="nav-item">
     <a class="nav-link collapsed" data-bs-target="#cv-nav" data-bs-toggle="collapse" href="{% url 'cv:cv_detail' %}">
-        <i class="bi bi-calendar"></i><span>Profile</span><i class="bi bi-chevron-down ms-auto"></i>
+        <i class="bi bi-person-circle"></i><span>Currículum</span><i class="bi bi-chevron-down ms-auto"></i>
     </a>
     <ul id="cv-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
 
         <li>
             <a href="{% url 'cv:cv_detail' %}">
-                <i class="bi bi-circle"></i><span>My Profile</span>
+                <i class="bi bi-circle"></i><span>Mi Perfil</span>
             </a>
         </li>
         <li>
             <a href="{% url 'cv:cv_edit' %}">
-                <i class="bi bi-circle"></i><span>Profile Edit</span>
+                <i class="bi bi-circle"></i><span>Editar Perfil</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'cv:docsview' %}">
+                <i class="bi bi-circle"></i><span>Documentos</span>
+            </a>
+        </li>
+        <li class="nav-heading">Subir Archivos</li>
+        <li>
+            <a href="{% url 'cv:document_upload' %}">
+                <i class="bi bi-circle"></i><span>Documento</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'cv:image_upload' %}">
+                <i class="bi bi-circle"></i><span>Imagen</span>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'cv:upload_db' %}">
+                <i class="bi bi-circle"></i><span>Base de Datos</span>
             </a>
         </li>
 
-  
+
     </ul>
 </li><!-- End cv Nav -->
