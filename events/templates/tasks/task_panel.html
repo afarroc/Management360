@@ -206,102 +206,279 @@
 
                 <!-- Tasks Display Area -->
                 <div class="col-12">
-                    <!-- Table View (Default) -->
-                    <div id="tableView" class="view-container">
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h5 class="card-title mb-0"><i class="bi bi-table me-2"></i>Tasks List</h5>
-                                <div class="d-flex gap-2">
-                                    <span class="badge bg-secondary" id="selectedCount">0 selected</span>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" id="bulkDeleteBtn" style="display: none;">
-                                        <i class="bi bi-trash"></i> Delete Selected
+                    <!-- View Selector -->
+                    <div class="card mb-3">
+                        <div class="card-body py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary active" data-view="table">
+                                        <i class="bi bi-table me-1"></i> Table
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" data-view="kanban">
+                                        <i class="bi bi-grid-3x3-gap me-1"></i> Kanban
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" data-view="cards">
+                                        <i class="bi bi-card-text me-1"></i> Cards
                                     </button>
                                 </div>
-                            </div>
-                            <div class="card-body">
-                                {% include 'tasks/includes/task_top.html' %}
+                                <div class="d-flex gap-2 align-items-center">
+                                    <span class="text-muted small" id="taskCount">{{ tasks_data|length }} tasks</span>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                                data-bs-toggle="dropdown">
+                                            <i class="bi bi-gear"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><h6 class="dropdown-header">View Options</h6></li>
+                                            <li>
+                                                <a class="dropdown-item" href="#" id="compactViewToggle">
+                                                    <i class="bi bi-layout-text-sidebar me-2"></i>
+                                                    <span>Compact View</span>
+                                                    <i class="bi bi-check2 ms-auto" style="display: none;"></i>
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><h6 class="dropdown-header">Actions</h6></li>
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'task_export' %}">
+                                                    <i class="bi bi-download me-2"></i> Export Tasks
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'task_create' %}">
+                                                    <i class="bi bi-plus-circle me-2"></i> Create Task
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Board View (Kanban) -->
-                    <div id="boardView" class="view-container" style="display: none;">
-                        <div class="row">
-                            <!-- To Do Column -->
-                            <div class="col-md-3">
-                                <div class="card">
-                                    <div class="card-header bg-light">
-                                        <h6 class="card-title mb-0">
-                                            <i class="bi bi-list-task text-secondary me-2"></i>
-                                            To Do ({{ pending_count }})
-                                        </h6>
+                    <!-- Table View -->
+                           <!-- ... código anterior ... -->
+                    
+                    <!-- Table View -->
+                    <div id="tableView" class="view-container">
+                        <div class="card">
+                            <div class="card-body p-0">
+                                <!-- tasks/includes/task_table_optimized.html -->
+                                {% if tasks_data %}
+                                    {% include 'tasks/includes/task_table_optimized.html' %}
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="bi bi-list-check display-1 text-muted mb-3"></i>
+                                        <h5 class="text-muted">No tasks found</h5>
+                                        <a href="{% url 'task_create' %}" class="btn btn-primary btn-sm mt-2">
+                                            Create Your First Task
+                                        </a>
                                     </div>
-                                    <div class="card-body p-2" id="todoColumn">
-                                        {% for data in tasks_data %}
-                                            {% if data.task.task_status.status_name == 'To Do' %}
-                                                {% include 'tasks/includes/task_kanban_card.html' with task=data.task %}
-                                            {% endif %}
-                                        {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- ... código posterior ... -->
+                    <!-- Kanban View -->
+                    <div id="kanbanView" class="view-container" style="display: none;">
+                        <div class="kanban-container">
+                            <!-- tasks/includes/task_kanban_board.html -->
+                            <div class="row g-3">
+                                {% regroup tasks_data by task.task_status as status_groups %}
+                                
+                                {% for status_group in status_groups %}
+                                <div class="col-xl-3 col-lg-4 col-md-6">
+                                    <div class="card kanban-column h-100">
+                                        <div class="card-header d-flex justify-content-between align-items-center 
+                                                    {% if status_group.grouper.status_name == 'In Progress' %}bg-warning
+                                                    {% elif status_group.grouper.status_name == 'Completed' %}bg-success
+                                                    {% elif status_group.grouper.status_name == 'Blocked' %}bg-danger
+                                                    {% else %}bg-light{% endif %}">
+                                            <div>
+                                                <h6 class="mb-0 {% if status_group.grouper.status_name in 'Completed,In Progress,Blocked' %}text-white{% endif %}">
+                                                    <i class="bi 
+                                                        {% if status_group.grouper.status_name == 'In Progress' %}bi-arrow-repeat
+                                                        {% elif status_group.grouper.status_name == 'Completed' %}bi-check-circle
+                                                        {% elif status_group.grouper.status_name == 'Blocked' %}bi-exclamation-triangle
+                                                        {% else %}bi-list-task{% endif %} me-2"></i>
+                                                    {{ status_group.grouper.status_name }}
+                                                </h6>
+                                                <small class="{% if status_group.grouper.status_name in 'Completed,In Progress,Blocked' %}text-white-50{% else %}text-muted{% endif %}">
+                                                    {{ status_group.list|length }} tasks
+                                                </small>
+                                            </div>
+                                            <span class="badge {% if status_group.grouper.status_name in 'Completed,In Progress,Blocked' %}bg-light text-dark{% else %}bg-dark{% endif %}">
+                                                {{ status_group.list|length }}
+                                            </span>
+                                        </div>
+                                        <div class="card-body p-2 kanban-column-body" 
+                                             data-status="{{ status_group.grouper.id }}"
+                                             style="min-height: 400px; max-height: 600px; overflow-y: auto;">
+                                            
+                                            {% for data in status_group.list %}
+                                            <div class="kanban-card mb-2" 
+                                                 data-task-id="{{ data.task.id }}"
+                                                 draggable="true">
+                                                <div class="card border shadow-sm">
+                                                    <div class="card-body p-3">
+                                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                                            <h6 class="mb-0">{{ data.task.title|truncatechars:30 }}</h6>
+                                                            {% if data.task.important %}
+                                                            <i class="bi bi-star-fill text-warning" title="High Priority"></i>
+                                                            {% endif %}
+                                                        </div>
+                                                        
+                                                        <div class="small text-muted mb-2">
+                                                            {% if data.task.project %}
+                                                            <span class="badge bg-light text-dark me-1">
+                                                                {{ data.task.project.title|truncatechars:15 }}
+                                                            </span>
+                                                            {% endif %}
+                                                            {% if data.task.event %}
+                                                            <span class="badge bg-light text-dark">
+                                                                {{ data.task.event.title|truncatechars:15 }}
+                                                            </span>
+                                                            {% endif %}
+                                                        </div>
+                                                        
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <div>
+                                                                <small class="text-muted">
+                                                                    <i class="bi bi-person"></i> {{ data.task.assigned_to.username }}
+                                                                </small>
+                                                            </div>
+                                                            <div>
+                                                                {% if data.task.ticket_price > 0 %}
+                                                                <small class="text-success fw-bold">
+                                                                    ${{ data.task.ticket_price }}
+                                                                </small>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- Task Metadata -->
+                                                        <div class="mt-2 small">
+                                                            <div class="d-flex justify-content-between">
+                                                                <span>Created: {{ data.task.created_at|date:"M d" }}</span>
+                                                                <span>Updated: {{ data.task.updated_at|date:"M d" }}</span>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- Actions -->
+                                                        <div class="mt-3 d-flex gap-1">
+                                                            <a href="{% url 'task_panel_with_id' data.task.id %}" 
+                                                               class="btn btn-sm btn-outline-primary flex-grow-1">
+                                                                <i class="bi bi-eye"></i> View
+                                                            </a>
+                                                            <div class="form-check form-switch">
+                                                                <input class="form-check-input task-status-switch" 
+                                                                       type="checkbox"
+                                                                       data-task-id="{{ data.task.id }}"
+                                                                       data-status-url="{% url 'task_change_status_ajax' %}"
+                                                                       {% if data.task.task_status.status_name == 'In Progress' %}checked{% endif %}
+                                                                       {% if data.task.task_status.status_name == 'Completed' %}disabled{% endif %}>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {% empty %}
+                                            <div class="text-center py-4">
+                                                <i class="bi bi-inbox display-6 text-muted"></i>
+                                                <p class="text-muted small mt-2">No tasks in this column</p>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <!-- Add Task Button -->
+                                        <div class="card-footer bg-transparent">
+                                            <a href="{% url 'task_create' %}?status={{ status_group.grouper.id }}" 
+                                               class="btn btn-sm btn-outline-secondary w-100">
+                                                <i class="bi bi-plus"></i> Add Task
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
+                                {% endfor %}
                             </div>
+                        </div>
+                    </div>
 
-                            <!-- In Progress Column -->
-                            <div class="col-md-3">
-                                <div class="card">
-                                    <div class="card-header bg-warning">
-                                        <h6 class="card-title mb-0 text-white">
-                                            <i class="bi bi-arrow-repeat me-2"></i>
-                                            In Progress ({{ in_progress_count }})
-                                        </h6>
-                                    </div>
-                                    <div class="card-body p-2" id="inProgressColumn">
-                                        {% for data in tasks_data %}
-                                            {% if data.task.task_status.status_name == 'In Progress' %}
-                                                {% include 'tasks/includes/task_kanban_card.html' with task=data.task %}
+                    <!-- Cards View -->
+                    <div id="cardsView" class="view-container" style="display: none;">
+                        <div class="row" id="cardsContainer">
+                            {% for data in tasks_data %}
+                            <div class="col-xl-4 col-lg-6 col-md-6 mb-3">
+                                <!-- tasks/includes/task_card_compact.html -->
+                                <div class="card h-100">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-0">{{ data.task.title|truncatechars:25 }}</h6>
+                                            <small class="text-muted">
+                                                {{ data.task.created_at|date:"M d, Y" }}
+                                            </small>
+                                        </div>
+                                        <div>
+                                            {% if data.task.important %}
+                                            <i class="bi bi-star-fill text-warning" title="High Priority"></i>
                                             {% endif %}
-                                        {% endfor %}
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="small text-muted mb-3">
+                                            {{ data.task.description|truncatechars:80|default:"No description" }}
+                                        </p>
+                                        
+                                        <div class="mb-3">
+                                            <span class="badge" style="background-color: {{ data.task.task_status.color }};">
+                                                {{ data.task.task_status.status_name }}
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <small class="text-muted">
+                                                <i class="bi bi-person"></i> {{ data.task.assigned_to.username }}
+                                            </small>
+                                            {% if data.task.ticket_price > 0 %}
+                                            <small class="text-success fw-bold">
+                                                ${{ data.task.ticket_price }}
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Progress -->
+                                        <div class="mb-3">
+                                            <div class="progress" style="height: 5px;">
+                                                {% if data.task.task_status.status_name == 'Completed' %}
+                                                <div class="progress-bar bg-success" style="width: 100%"></div>
+                                                {% elif data.task.task_status.status_name == 'In Progress' %}
+                                                <div class="progress-bar bg-primary" style="width: 50%"></div>
+                                                {% else %}
+                                                <div class="progress-bar bg-secondary" style="width: 0%"></div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <div class="d-flex justify-content-between">
+                                            <a href="{% url 'task_panel_with_id' data.task.id %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                            <div class="form-check form-switch">
+                                                <input class="form-check-input task-status-switch" 
+                                                       type="checkbox"
+                                                       data-task-id="{{ data.task.id }}"
+                                                       data-status-url="{% url 'task_change_status_ajax' %}"
+                                                       {% if data.task.task_status.status_name == 'In Progress' %}checked{% endif %}
+                                                       {% if data.task.task_status.status_name == 'Completed' %}disabled{% endif %}>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Completed Column -->
-                            <div class="col-md-3">
-                                <div class="card">
-                                    <div class="card-header bg-success">
-                                        <h6 class="card-title mb-0 text-white">
-                                            <i class="bi bi-check-circle me-2"></i>
-                                            Completed ({{ completed_count }})
-                                        </h6>
-                                    </div>
-                                    <div class="card-body p-2" id="completedColumn">
-                                        {% for data in tasks_data %}
-                                            {% if data.task.task_status.status_name == 'Completed' %}
-                                                {% include 'tasks/includes/task_kanban_card.html' with task=data.task %}
-                                            {% endif %}
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Blocked Column -->
-                            <div class="col-md-3">
-                                <div class="card">
-                                    <div class="card-header bg-danger">
-                                        <h6 class="card-title mb-0 text-white">
-                                            <i class="bi bi-exclamation-triangle me-2"></i>
-                                            Blocked (0)
-                                        </h6>
-                                    </div>
-                                    <div class="card-body p-2" id="blockedColumn">
-                                        {% for data in tasks_data %}
-                                            {% if data.task.task_status.status_name == 'Blocked' %}
-                                                {% include 'tasks/includes/task_kanban_card.html' with task=data.task %}
-                                            {% endif %}
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
@@ -445,126 +622,786 @@
 <script src="{% static 'assets/js/task-panel.js' %}?v={{ now|date:'U' }}"></script>
 
 <!-- Task Panel Specific Enhancements -->
+<!-- Task Panel Specific Enhancements -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // View Toggle Functionality
-    const toggleViewBtn = document.getElementById('toggleViewBtn');
-    const tableView = document.getElementById('tableView');
-    const boardView = document.getElementById('boardView');
-    const toggleIcon = toggleViewBtn.querySelector('i');
-    const toggleText = toggleViewBtn.querySelector('span');
+    // ============================================================
+    // FUNCIONES DE UTILIDAD
+    // ============================================================
 
-    toggleViewBtn.addEventListener('click', function() {
-        if (tableView.style.display === 'none') {
-            tableView.style.display = 'block';
-            boardView.style.display = 'none';
-            toggleIcon.className = 'bi bi-grid';
-            toggleText.textContent = 'Board View';
+    // Función para mostrar notificaciones toast
+    function showToast(message, type = 'success') {
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+
+        const container = document.querySelector('.toast-container') || createToastContainer();
+        container.appendChild(toast);
+
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+
+        toast.addEventListener('hidden.bs.toast', () => toast.remove());
+    }
+
+    function createToastContainer() {
+        const container = document.createElement('div');
+        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+        return container;
+    }
+
+    // Función para manejar cambio de estado vía AJAX
+    function changeTaskStatusAjax(taskId, newStatusName, action = null) {
+        const statusUrl = "{% url 'task_change_status_ajax' %}";
+        const formData = new FormData();
+        formData.append('task_id', taskId);
+        
+        if (action) {
+            formData.append('action', action);
         } else {
-            tableView.style.display = 'none';
-            boardView.style.display = 'block';
-            toggleIcon.className = 'bi bi-table';
-            toggleText.textContent = 'Table View';
+            formData.append('new_status_name', newStatusName);
         }
+        
+        return fetch(statusUrl, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                return data;
+            } else {
+                throw new Error(data.error || 'Error updating task status');
+            }
+        });
+    }
+
+    // Mostrar/ocultar controles extendidos cuando cambia el estado
+    function updateExtendedControls(taskId, newStatusOrIsInProgress) {
+        const taskRow = document.querySelector(`tr[data-task-id="${taskId}"]`);
+        if (!taskRow) return;
+        
+        const extendedControls = taskRow.querySelector('.task-extended-controls');
+        const switchElement = taskRow.querySelector('.task-status-switch');
+        
+        if (extendedControls && switchElement) {
+            // Determinar si está en 'In Progress'
+            const isInProgress = typeof newStatusOrIsInProgress === 'boolean' 
+                ? newStatusOrIsInProgress 
+                : newStatusOrIsInProgress === 'In Progress';
+            
+            // Mostrar/ocultar controles extendidos
+            if (isInProgress) {
+                extendedControls.classList.remove('d-none');
+            } else {
+                extendedControls.classList.add('d-none');
+                // Resetear checkbox de completado
+                const completeCheckbox = extendedControls.querySelector('.task-complete-checkbox');
+                if (completeCheckbox) completeCheckbox.checked = false;
+            }
+        }
+    }
+
+    // ============================================================
+    // FUNCIONALIDAD DE VISTAS Y FILTROS
+    // ============================================================
+
+    // View Toggle Functionality
+    const viewButtons = document.querySelectorAll('[data-view]');
+    const viewContainers = {
+        'table': document.getElementById('tableView'),
+        'kanban': document.getElementById('kanbanView'),
+        'cards': document.getElementById('cardsView')
+    };
+
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const view = this.getAttribute('data-view');
+            
+            viewButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            Object.keys(viewContainers).forEach(key => {
+                viewContainers[key].style.display = key === view ? 'block' : 'none';
+            });
+            
+            localStorage.setItem('taskViewPreference', view);
+        });
     });
+
+    // Restore view preference
+    const savedView = localStorage.getItem('taskViewPreference') || 'table';
+    const savedButton = document.querySelector(`[data-view="${savedView}"]`);
+    if (savedButton) savedButton.click();
+
+    // Compact view toggle
+    const compactToggle = document.getElementById('compactViewToggle');
+    if (compactToggle) {
+        const checkIcon = compactToggle.querySelector('.bi-check2');
+        
+        compactToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            const isActive = checkIcon.style.display !== 'none';
+            
+            if (isActive) {
+                checkIcon.style.display = 'none';
+                document.body.classList.remove('compact-view');
+            } else {
+                checkIcon.style.display = 'block';
+                document.body.classList.add('compact-view');
+            }
+            
+            localStorage.setItem('compactView', !isActive);
+        });
+        
+        // Restore compact view preference
+        if (localStorage.getItem('compactView') === 'true') {
+            compactToggle.click();
+        }
+    }
 
     // Enhanced Search with Debounce
     const searchInput = document.getElementById('searchInput');
     let searchTimeout;
 
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            const query = this.value.toLowerCase();
-            const rows = document.querySelectorAll('#taskTableBody tr');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const query = this.value.toLowerCase();
+                const taskRows = document.querySelectorAll('.task-row');
+                let visibleCount = 0;
 
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(query) ? '' : 'none';
-            });
-        }, 300);
-    });
+                taskRows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    if (text.includes(query)) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                document.getElementById('visibleTasks').textContent = visibleCount;
+            }, 300);
+        });
+    }
 
     // Status Filter
     const statusFilter = document.getElementById('statusFilter');
-    statusFilter.addEventListener('change', function() {
-        const selectedStatus = this.value;
-        const rows = document.querySelectorAll('#taskTableBody tr');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', filterTasks);
+    }
 
-        rows.forEach(row => {
-            const statusBadge = row.querySelector('.badge');
-            if (!selectedStatus || statusBadge.textContent.trim() === selectedStatus) {
+    // Project Filter
+    const projectFilter = document.getElementById('projectFilter');
+    if (projectFilter) {
+        projectFilter.addEventListener('change', filterTasks);
+    }
+
+    // Clear Filters
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', function() {
+            if (searchInput) searchInput.value = '';
+            if (statusFilter) statusFilter.value = '';
+            if (projectFilter) projectFilter.value = '';
+            filterTasks();
+        });
+    }
+
+    function filterTasks() {
+        if (!searchInput || !statusFilter || !projectFilter) return;
+        
+        const status = statusFilter.value;
+        const projectId = projectFilter.value;
+        const searchQuery = searchInput.value.toLowerCase();
+        const taskRows = document.querySelectorAll('.task-row');
+        let visibleCount = 0;
+
+        taskRows.forEach(row => {
+            const rowStatus = row.getAttribute('data-status');
+            const rowProject = row.getAttribute('data-project');
+            const rowText = row.textContent.toLowerCase();
+
+            const statusMatch = !status || rowStatus === status;
+            const projectMatch = !projectId || rowProject === projectId;
+            const searchMatch = !searchQuery || rowText.includes(searchQuery);
+
+            if (statusMatch && projectMatch && searchMatch) {
                 row.style.display = '';
+                visibleCount++;
             } else {
                 row.style.display = 'none';
             }
         });
-    });
 
-    // Export Functionality
-    document.getElementById('exportBtn').addEventListener('click', function() {
-        // Trigger CSV export
-        window.location.href = '{% url "task_export" %}';
-    });
-
-    // Bulk Actions
-    const bulkEditBtn = document.getElementById('bulkEditBtn');
-    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
-    const selectedCount = document.getElementById('selectedCount');
-
-    // Update selected count
-    function updateSelectedCount() {
-        const checkedBoxes = document.querySelectorAll('#taskTableBody input[type="checkbox"]:checked');
-        const count = checkedBoxes.length;
-        selectedCount.textContent = count + ' selected';
-
-        if (count > 0) {
-            bulkDeleteBtn.style.display = 'inline-block';
-        } else {
-            bulkDeleteBtn.style.display = 'none';
-        }
+        const visibleTasksEl = document.getElementById('visibleTasks');
+        const taskCountEl = document.getElementById('taskCount');
+        if (visibleTasksEl) visibleTasksEl.textContent = visibleCount;
+        if (taskCountEl) taskCountEl.textContent = `${visibleCount} tasks`;
     }
 
-    // Attach event listeners to checkboxes
-    document.addEventListener('change', function(e) {
-        if (e.target.matches('#taskTableBody input[type="checkbox"]')) {
+    // ============================================================
+    // SELECCIÓN MASIVA
+    // ============================================================
+
+    const selectAllCheckbox = document.getElementById('selectAllTasks');
+    const taskCheckboxes = document.querySelectorAll('.task-checkbox');
+    const deleteSelectedBtn = document.getElementById('deleteSelected');
+    const exportSelectedBtn = document.getElementById('exportSelected');
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            taskCheckboxes.forEach(checkbox => checkbox.checked = isChecked);
             updateSelectedCount();
+        });
+    }
+
+    function updateSelectedCount() {
+        if (!deleteSelectedBtn || !exportSelectedBtn || !selectAllCheckbox) return;
+        
+        const checkedBoxes = document.querySelectorAll('.task-checkbox:checked');
+        const count = checkedBoxes.length;
+        
+        deleteSelectedBtn.disabled = count === 0;
+        selectAllCheckbox.checked = count > 0 && count === taskCheckboxes.length;
+        selectAllCheckbox.indeterminate = count > 0 && count < taskCheckboxes.length;
+    }
+
+    taskCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectedCount);
+    });
+
+    if (deleteSelectedBtn) {
+        deleteSelectedBtn.addEventListener('click', function() {
+            const checkedBoxes = document.querySelectorAll('.task-checkbox:checked');
+            if (checkedBoxes.length === 0) return;
+
+            if (confirm(`Are you sure you want to delete ${checkedBoxes.length} task(s)?`)) {
+                const ids = Array.from(checkedBoxes).map(cb => cb.value);
+                console.log('Bulk delete IDs:', ids);
+                // Implement bulk delete logic here
+            }
+        });
+    }
+
+    if (exportSelectedBtn) {
+        exportSelectedBtn.addEventListener('click', function() {
+            const checkedBoxes = document.querySelectorAll('.task-checkbox:checked');
+            if (checkedBoxes.length === 0) return;
+
+            const ids = Array.from(checkedBoxes).map(cb => cb.value);
+            console.log('Export selected IDs:', ids);
+            // Implement export logic here
+        });
+    }
+
+    // ============================================================
+    // FUNCIONALIDAD EXTENDIDA DE CAMBIO DE ESTADO
+    // ============================================================
+
+    // Event listener para el switch principal
+    document.addEventListener('change', function(e) {
+        // Switch principal (In Progress <-> To Do)
+        if (e.target && e.target.classList.contains('task-status-switch')) {
+            const switchElement = e.target;
+            const taskId = switchElement.getAttribute('data-task-id');
+            const isChecked = switchElement.checked;
+            
+            // Evitar múltiples clics
+            if (switchElement.disabled) return;
+            switchElement.disabled = true;
+            
+            // Determinar acción basada en el estado del switch
+            const action = isChecked ? 'activate' : 'deactivate';
+            
+            changeTaskStatusAjax(taskId, null, action)
+                .then(data => {
+                    console.log('Switch action completed:', data);
+                    showToast(data.message || 'Task status updated successfully', 'success');
+                    
+                    // Actualizar controles extendidos
+                    updateExtendedControls(taskId, isChecked);
+                    
+                    // Recargar página para actualizar todos los datos
+                    setTimeout(() => location.reload(), 1000);
+                })
+                .catch(error => {
+                    console.error('Error in switch action:', error);
+                    // Revertir el switch si hay error
+                    switchElement.checked = !isChecked;
+                    showToast(error.message, 'error');
+                })
+                .finally(() => {
+                    switchElement.disabled = false;
+                });
+        }
+        
+        // Checkbox de completado
+        if (e.target && e.target.classList.contains('task-complete-checkbox')) {
+            const checkbox = e.target;
+            const taskId = checkbox.getAttribute('data-task-id');
+            
+            if (checkbox.checked && !checkbox.disabled) {
+                // Mostrar confirmación
+                if (confirm('Are you sure you want to mark this task as completed?\n\nThis will also update the associated project if this is the last active task.')) {
+                    checkbox.disabled = true;
+                    
+                    changeTaskStatusAjax(taskId, 'Completed')
+                        .then(data => {
+                            console.log('Task marked as completed:', data);
+                            showToast(data.message || 'Task marked as completed', 'success');
+                            
+                            // Actualizar el switch (deshabilitar para 'Completed')
+                            const switchElement = document.querySelector(`.task-status-switch[data-task-id="${taskId}"]`);
+                            if (switchElement) {
+                                switchElement.checked = false;
+                                switchElement.disabled = true;
+                                updateExtendedControls(taskId, false);
+                            }
+                            
+                            setTimeout(() => location.reload(), 1000);
+                        })
+                        .catch(error => {
+                            console.error('Error completing task:', error);
+                            checkbox.checked = false;
+                            showToast(error.message, 'error');
+                        })
+                        .finally(() => {
+                            checkbox.disabled = false;
+                        });
+                } else {
+                    // Si el usuario cancela, desmarcar el checkbox
+                    checkbox.checked = false;
+                }
+            }
         }
     });
 
-    // Bulk Delete
-    bulkDeleteBtn.addEventListener('click', function() {
-        const checkedBoxes = document.querySelectorAll('#taskTableBody input[type="checkbox"]:checked');
-        if (checkedBoxes.length === 0) return;
-
-        if (confirm(`Are you sure you want to delete ${checkedBoxes.length} task(s)?`)) {
-            const ids = Array.from(checkedBoxes).map(cb => cb.value);
-            // Implement bulk delete logic here
-            console.log('Bulk delete IDs:', ids);
+    // Event listener para opciones del dropdown
+    document.addEventListener('click', function(e) {
+        // Opción de estado específico
+        if (e.target && e.target.classList.contains('task-status-option')) {
+            e.preventDefault();
+            const taskId = e.target.getAttribute('data-task-id');
+            const statusName = e.target.getAttribute('data-status-name');
+            
+            if (confirm(`Change task status to "${statusName}"?`)) {
+                changeTaskStatusAjax(taskId, statusName)
+                    .then(data => {
+                        console.log(`Task status changed to ${statusName}:`, data);
+                        showToast(data.message || `Task status changed to ${statusName}`, 'success');
+                        
+                        // Actualizar el switch basado en el nuevo estado
+                        const switchElement = document.querySelector(`.task-status-switch[data-task-id="${taskId}"]`);
+                        if (switchElement && !switchElement.disabled) {
+                            // Marcar el switch solo si el nuevo estado es 'In Progress'
+                            switchElement.checked = statusName === 'In Progress';
+                            
+                            // Actualizar controles extendidos
+                            updateExtendedControls(taskId, statusName === 'In Progress');
+                        }
+                        
+                        setTimeout(() => location.reload(), 1000);
+                    })
+                    .catch(error => {
+                        console.error('Error changing task status:', error);
+                        showToast(error.message, 'error');
+                    });
+            }
         }
+        
+        // Opción de bloquear
+        if (e.target && e.target.classList.contains('task-block-option')) {
+            e.preventDefault();
+            const taskId = e.target.getAttribute('data-task-id');
+            
+            if (confirm('Mark this task as Blocked?\n\nThis will prevent further work on this task until it is unblocked.')) {
+                changeTaskStatusAjax(taskId, 'Blocked')
+                    .then(data => {
+                        console.log('Task marked as blocked:', data);
+                        showToast(data.message || 'Task marked as blocked', 'success');
+                        
+                        // Actualizar el switch (desmarcar para 'Blocked')
+                        const switchElement = document.querySelector(`.task-status-switch[data-task-id="${taskId}"]`);
+                        if (switchElement && !switchElement.disabled) {
+                            switchElement.checked = false;
+                            updateExtendedControls(taskId, false);
+                        }
+                        
+                        setTimeout(() => location.reload(), 1000);
+                    })
+                    .catch(error => {
+                        console.error('Error blocking task:', error);
+                        showToast(error.message, 'error');
+                    });
+            }
+        }
+    });
+
+    // Confirmación de doble clic en checkbox de completado
+    document.addEventListener('dblclick', function(e) {
+        if (e.target && e.target.classList.contains('task-complete-checkbox')) {
+            e.preventDefault();
+            const checkbox = e.target;
+            const taskId = checkbox.getAttribute('data-task-id');
+            
+            // Mostrar diálogo de confirmación avanzada
+            const confirmation = confirm(
+                '⚠️ DOUBLE-CLICK CONFIRMATION ⚠️\n\n' +
+                'Are you absolutely sure you want to mark this task as COMPLETED?\n\n' +
+                'This action will:\n' +
+                '1. Change task status to "Completed"\n' +
+                '2. Update associated project status\n' +
+                '3. Calculate and assign credits\n' +
+                '4. Cannot be undone automatically\n\n' +
+                'Click OK to proceed or Cancel to abort.'
+            );
+            
+            if (confirmation && !checkbox.disabled) {
+                checkbox.checked = true;
+                checkbox.disabled = true;
+                
+                changeTaskStatusAjax(taskId, 'Completed')
+                    .then(data => {
+                        console.log('Task completed with double-click confirmation:', data);
+                        showToast('Task marked as completed with double confirmation!', 'success');
+                        
+                        // Actualizar el switch
+                        const switchElement = document.querySelector(`.task-status-switch[data-task-id="${taskId}"]`);
+                        if (switchElement) {
+                            switchElement.checked = false;
+                            switchElement.disabled = true;
+                            updateExtendedControls(taskId, false);
+                        }
+                        
+                        setTimeout(() => location.reload(), 1500);
+                    })
+                    .catch(error => {
+                        console.error('Error in double-click completion:', error);
+                        checkbox.checked = false;
+                        checkbox.disabled = false;
+                        showToast(error.message, 'error');
+                    });
+            }
+        }
+    });
+
+    // ============================================================
+    // INICIALIZACIÓN
+    // ============================================================
+
+    // Inicializar controles extendidos basados en estado actual
+    const taskRows = document.querySelectorAll('.task-row');
+    taskRows.forEach(row => {
+        const taskId = row.getAttribute('data-task-id');
+        const status = row.getAttribute('data-status');
+        updateExtendedControls(taskId, status);
     });
 
     // Keyboard Shortcuts
     document.addEventListener('keydown', function(e) {
         // Ctrl/Cmd + F for search focus
-        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f' && searchInput) {
             e.preventDefault();
             searchInput.focus();
         }
 
-        // Ctrl/Cmd + B for board view toggle
-        if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        // Ctrl/Cmd + 1,2,3 for view switching
+        if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= '3') {
             e.preventDefault();
-            toggleViewBtn.click();
+            const viewIndex = parseInt(e.key) - 1;
+            const views = ['table', 'kanban', 'cards'];
+            const button = document.querySelector(`[data-view="${views[viewIndex]}"]`);
+            if (button) button.click();
         }
     });
 
-    // Auto-refresh for real-time updates (optional)
+    // Auto-refresh para actualizaciones en tiempo real (opcional)
     setInterval(function() {
-        // Check for updates every 30 seconds
         console.log('Checking for task updates...');
     }, 30000);
 });
 </script>
+
+<!-- Compact View CSS -->
+<style>
+.compact-view .card {
+    margin-bottom: 0.5rem;
+}
+
+.compact-view .table td,
+.compact-view .table th {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.compact-view .kanban-card {
+    margin-bottom: 0.25rem;
+}
+
+.compact-view .btn-sm {
+    padding: 0.125rem 0.25rem;
+    font-size: 0.75rem;
+}
+
+/* ============================================================
+   ESTILOS PARA CONTROLES EXTENDIDOS DE TAREAS
+   ============================================================ */
+
+.task-extended-controls {
+    transition: all 0.3s ease;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 4px;
+    margin-top: 2px;
+}
+
+.task-extended-controls.show {
+    opacity: 1;
+    max-height: 100px;
+}
+
+.task-extended-controls .form-check {
+    margin-bottom: 0;
+}
+
+.task-extended-controls .form-check-input {
+    width: 16px;
+    height: 16px;
+    margin-top: 0;
+    margin-right: 4px;
+}
+
+.task-extended-controls .form-check-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    cursor: pointer;
+}
+
+.task-extended-controls .dropdown-toggle {
+    padding: 2px 6px;
+    font-size: 0.8rem;
+    border-radius: 3px;
+}
+
+.task-status-option .badge {
+    width: 10px;
+    height: 10px;
+    padding: 0;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* Animación para checkbox de completado */
+.task-complete-checkbox:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.task-complete-checkbox:checked:focus {
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* Indicador visual para tareas bloqueadas */
+.task-row[data-status="Blocked"] {
+    opacity: 0.7;
+    background-color: rgba(220, 53, 69, 0.05) !important;
+}
+
+.task-row[data-status="Blocked"]:hover {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+}
+
+/* Tooltip para controles */
+[title] {
+    cursor: help;
+}
+
+/* Mejoras visuales para la columna de acciones */
+.task-row .btn-group {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.task-row .form-check.form-switch {
+    margin-left: 0.5rem;
+}
+
+/* Estilos para el switch principal */
+.task-status-switch {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.task-status-switch:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .task-extended-controls .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .task-extended-controls .dropdown {
+        margin-top: 4px;
+        align-self: flex-end;
+    }
+    
+    .table td:nth-child(9), 
+    .table th:nth-child(9) {
+        min-width: 150px;
+    }
+}
+</style>
+<!-- Compact View CSS -->
+<style>
+.compact-view .card {
+    margin-bottom: 0.5rem;
+}
+
+.compact-view .table td,
+.compact-view .table th {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.compact-view .kanban-card {
+    margin-bottom: 0.25rem;
+}
+
+.compact-view .btn-sm {
+    padding: 0.125rem 0.25rem;
+    font-size: 0.75rem;
+}
+
+/* ============================================================
+   ESTILOS PARA CONTROLES EXTENDIDOS DE TAREAS
+   ============================================================ */
+
+/* Estilos para controles extendidos de tareas */
+.task-extended-controls {
+    transition: all 0.3s ease;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 4px;
+    margin-top: 2px;
+}
+
+.task-extended-controls.show {
+    opacity: 1;
+    max-height: 100px;
+}
+
+.task-extended-controls .form-check {
+    margin-bottom: 0;
+}
+
+.task-extended-controls .form-check-input {
+    width: 16px;
+    height: 16px;
+    margin-top: 0;
+    margin-right: 4px;
+}
+
+.task-extended-controls .form-check-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    cursor: pointer;
+}
+
+.task-extended-controls .dropdown-toggle {
+    padding: 2px 6px;
+    font-size: 0.8rem;
+    border-radius: 3px;
+}
+
+.task-status-option .badge {
+    width: 10px;
+    height: 10px;
+    padding: 0;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* Animación para checkbox de completado */
+.task-complete-checkbox:checked {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.task-complete-checkbox:checked:focus {
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* Indicador visual para tareas bloqueadas */
+.task-row[data-status="Blocked"] {
+    opacity: 0.7;
+    background-color: rgba(220, 53, 69, 0.05) !important;
+}
+
+.task-row[data-status="Blocked"]:hover {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+}
+
+/* Tooltip para controles */
+[title] {
+    cursor: help;
+}
+
+/* Mejoras visuales para la columna de acciones */
+.task-row .btn-group {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.task-row .form-check.form-switch {
+    margin-left: 0.5rem;
+}
+
+/* Estilos para el switch principal */
+.task-status-switch {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.task-status-switch:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .task-extended-controls .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .task-extended-controls .dropdown {
+        margin-top: 4px;
+        align-self: flex-end;
+    }
+    
+    .table td:nth-child(9), 
+    .table th:nth-child(9) {
+        min-width: 150px;
+    }
+}
+</style>
 
 {% endblock %}

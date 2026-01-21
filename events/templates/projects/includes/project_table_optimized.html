@@ -1,0 +1,168 @@
+<!-- projects/includes/project_table_optimized.html -->
+<div class="table-responsive">
+    <table class="table table-hover mb-0" id="projectTable">
+        <thead class="table-light">
+            <tr>
+                <th width="40" class="text-center">
+                    <input type="checkbox" class="form-check-input" id="selectAllProjects">
+                </th>
+                <th>Project</th>
+                <th width="120">Status</th>
+                <th width="100">Tasks</th>
+                <th width="120">Progress</th>
+                <th width="100">Completion</th>
+                <th width="120">Last Updated</th>
+                <th width="150" class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="projectTableBody">
+            {% for project_data in projects_data %}
+            <tr class="project-row" 
+                data-task-id="{{ project_data.project.id }}"
+                data-status="{{ project_data.project.project_status.status_name }}"
+                data-completion="{{ project_data.completion_rate }}">
+                
+                <!-- Checkbox -->
+                <td class="text-center">
+                    <input type="checkbox" class="form-check-input project-checkbox" 
+                           value="{{ project_data.project.id }}">
+                </td>
+                
+                <!-- Project Info -->
+                <td>
+                    <div class="d-flex align-items-start">
+                        <div class="me-2">
+                            <i class="bi bi-folder-fill text-primary"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0">
+                                <a href="{% url 'project_panel_with_id' project_data.project.id %}" 
+                                   class="text-dark text-decoration-none">
+                                    {{ project_data.project.title|truncatechars:40 }}
+                                </a>
+                            </h6>
+                            <div class="small text-muted">
+                                <i class="bi bi-person"></i> {{ project_data.project.host.username }}
+                                {% if project_data.project.event %}
+                                <span class="ms-2">
+                                    <i class="bi bi-calendar-event"></i> {{ project_data.project.event.title|truncatechars:15 }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                
+                <!-- Status -->
+                <td>
+                    <span class="badge project-status-badge project-status-{{ project_data.project.project_status.status_name|lower|cut:' ' }}">
+                        {% if project_data.project.project_status.icon %}
+                        <i class="{{ project_data.project.project_status.icon }} me-1"></i>
+                        {% endif %}
+                        {{ project_data.project.project_status.status_name }}
+                    </span>
+                </td>
+                
+                <!-- Tasks Count -->
+                <td>
+                    <div class="d-flex flex-column">
+                        <span class="fw-bold">{{ project_data.count_tasks }}</span>
+                        <small class="text-muted">
+                            <span class="text-success">{{ project_data.completed_tasks }}✓</span> /
+                            <span class="text-primary">{{ project_data.in_progress_tasks }}→</span>
+                        </small>
+                    </div>
+                </td>
+                
+                <!-- Progress Bar -->
+                <td>
+                    <div class="d-flex flex-column">
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar 
+                                {% if project_data.completion_rate > 80 %}bg-success
+                                {% elif project_data.completion_rate > 30 %}bg-primary
+                                {% else %}bg-warning{% endif %}" 
+                                style="width: {{ project_data.completion_rate }}%">
+                            </div>
+                        </div>
+                        <small class="text-muted mt-1" style="font-size: 0.7rem;">
+                            {{ project_data.completion_rate|floatformat:0 }}%
+                        </small>
+                    </div>
+                </td>
+                
+                <!-- Completion Rate -->
+                <td>
+                    <div class="text-center">
+                        <span class="fw-bold 
+                            {% if project_data.completion_rate > 80 %}text-success
+                            {% elif project_data.completion_rate > 30 %}text-primary
+                            {% else %}text-warning{% endif %}">
+                            {{ project_data.completion_rate|floatformat:0 }}%
+                        </span>
+                        <div class="small text-muted">
+                            {{ project_data.completed_tasks }}/{{ project_data.count_tasks }}
+                        </div>
+                    </div>
+                </td>
+                
+                <!-- Last Updated -->
+                <td>
+                    <small class="text-muted">
+                        {{ project_data.project.updated_at|date:"M d, Y" }}
+                    </small>
+                    <br>
+                    <small class="text-muted" style="font-size: 0.7rem;">
+                        {{ project_data.project.updated_at|timesince }} ago
+                    </small>
+                </td>
+                
+                <!-- Actions -->
+                <td class="text-end">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <a href="{% url 'project_panel_with_id' project_data.project.id %}" 
+                           class="btn btn-outline-primary" title="View">
+                            <i class="bi bi-eye"></i>
+                        </a>
+                        <a href="{% url 'project_edit' project_data.project.id %}" 
+                           class="btn btn-outline-secondary" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <a href="{% url 'tasks' %}?project_id={{ project_data.project.id }}" 
+                           class="btn btn-outline-info" title="View Tasks">
+                            <i class="bi bi-list-task"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="text-center py-4">
+                    <i class="bi bi-folder display-1 text-muted mb-3"></i>
+                    <h5 class="text-muted">No projects found</h5>
+                    <a href="{% url 'project_create' %}" class="btn btn-primary btn-sm mt-2">
+                        Create Your First Project
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Table Footer -->
+<div class="card-footer bg-transparent border-top-0 pt-3">
+    <div class="d-flex justify-content-between align-items-center">
+        <div class="small text-muted">
+            Showing <span id="visibleProjects">{{ projects_data|length }}</span> of {{ projects_data|length }} projects
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="exportSelected">
+                <i class="bi bi-download"></i> Export Selected
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" id="deleteSelected" disabled>
+                <i class="bi bi-trash"></i> Delete
+            </button>
+        </div>
+    </div>
+</div>

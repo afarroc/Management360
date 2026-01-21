@@ -3,9 +3,10 @@
 
 <!-- Load global panel styles -->
 <link rel="stylesheet" href="{% static 'assets/css/panel-styles.css' %}">
+<link rel="stylesheet" href="{% static 'assets/css/alerts-styles.css' %}">
 
 <style>
-/* Project Panel specific styles - keeping only non-duplicate styles */
+/* Project Panel specific styles */
 
 /* Enhanced card styles specific to project panel */
 .project-card {
@@ -31,7 +32,7 @@
     background: linear-gradient(135deg, #ffffff, #f8f9fa);
     border: 1px solid rgba(0,0,0,0.05);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    margin-bottom: 0; /* Prevent extra margins */
+    margin-bottom: 0;
 }
 
 .info-card:hover {
@@ -39,25 +40,8 @@
     box-shadow: 0 8px 25px rgba(0,0,0,0.15);
 }
 
-/* Ensure proper spacing between cards */
-.info-card + .info-card {
-    margin-top: 0;
-}
-
-/* Enhanced card body spacing */
 .info-card .card-body {
     padding: 1.25rem;
-}
-
-/* Progress bar spacing */
-.info-card .progress {
-    margin: 0.5rem 0;
-}
-
-/* Footer spacing */
-.info-card .card-footer {
-    padding: 0.75rem 1.25rem;
-    background-color: rgba(0,0,0,0.02);
 }
 
 .info-card .card-icon {
@@ -81,37 +65,95 @@
 .progress-bar {
     border-radius: 10px;
     transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
 }
 
-.progress-bar::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    animation: shimmer 2s infinite;
+/* Task status indicators */
+.task-status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+}
+
+.task-status-completed {
+    background-color: #28a745;
+}
+
+.task-status-in-progress {
+    background-color: #007bff;
+    animation: pulse 2s infinite;
+}
+
+.task-status-todo {
+    background-color: #6c757d;
+}
+
+.task-status-blocked {
+    background-color: #dc3545;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Project status badges */
+.project-status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.project-status-active {
+    background-color: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+    border: 1px solid rgba(0, 123, 255, 0.2);
+}
+
+.project-status-completed {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.project-status-blocked {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+/* Table enhancements */
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.02);
+}
+
+/* Compact view styles */
+.compact-view .card {
+    margin-bottom: 0.5rem;
+}
+
+.compact-view .table td,
+.compact-view .table th {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* Loading animations */
+.loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
 }
 
 @keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
 }
 
-/* Progress bars */
-.progress {
-    border-radius: 10px;
-    background-color: rgba(0,0,0,0.05);
-}
-
-.progress-bar {
-    border-radius: 10px;
-    transition: width 0.6s ease;
-}
-
-/* Dark mode support for project panel */
+/* Dark mode support */
 @media (prefers-color-scheme: dark) {
     .project-card {
         background-color: #2d3748;
@@ -121,22 +163,21 @@
     .project-card .card-header {
         background: linear-gradient(135deg, #4a5568, #2d3748);
     }
+    
+    .info-card {
+        background: linear-gradient(135deg, #2d3748, #1a202c);
+        border-color: #4a5568;
+    }
 }
 
-/* Responsive spacing adjustments */
+/* Responsive adjustments */
 @media (max-width: 768px) {
     .info-card .card-body {
         padding: 1rem;
     }
-
-    .info-card .card-footer {
-        padding: 0.5rem 1rem;
-    }
-
-    /* Reduce gap on mobile */
-    .row.g-4 {
-        --bs-gutter-x: 1rem;
-        --bs-gutter-y: 1rem;
+    
+    .table-responsive {
+        font-size: 0.875rem;
     }
 }
 
@@ -144,12 +185,7 @@
     .info-card .card-body {
         padding: 0.75rem;
     }
-
-    .info-card .card-footer {
-        padding: 0.5rem 0.75rem;
-    }
-
-    /* Stack cards vertically on very small screens */
+    
     .col-xxl-3.col-md-6 {
         margin-bottom: 1rem;
     }
@@ -158,345 +194,580 @@
 
 {% block content %}
 
-<!-- Page Title -->
+<!-- Enhanced Page Header -->
 <div class="pagetitle">
-    <h1><i class="bi bi-folder-fill me-2"></i>{{title}}</h1>
-    <nav>
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}"><i class="bi bi-house-door"></i></a></li>
-            <li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects</a></li>
-            <li class="breadcrumb-item active">{{title}}</li>
-        </ol>
-    </nav>
-</div><!-- End Page Title -->
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-folder-fill me-2"></i>{{ title }}</h1>
+            <nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'index' %}"><i class="bi bi-house-door"></i></a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects</a></li>
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary btn-sm" id="toggleViewBtn">
+                <i class="bi bi-grid"></i> <span>Board View</span>
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="exportBtn">
+                <i class="bi bi-download"></i> Export
+            </button>
+            <a href="{% url 'project_create' %}" class="btn btn-success btn-sm">
+                <i class="bi bi-plus-circle"></i> Create Project
+            </a>
+        </div>
+    </div>
+</div><!-- End Enhanced Page Title -->
 
 <section class="section dashboard">
-
     <div class="row">
-        <!-- Left side columns -->
-        <div class="col-lg-8">
+
+        <!-- Main Content Area -->
+        <div class="col-lg-9">
             <div class="row">
 
-                {% if projects %}
-        <!-- Key Statistics - Enhanced Spacing -->
-        <div class="col-12 mb-4">
-            <div class="row g-4">
-                <!-- Active Projects -->
-                <div class="col-xxl-3 col-md-6">
-                    <div class="card info-card sales-card h-100">
-                        <div class="card-body d-flex flex-column">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h5 class="card-title mb-1">
-                                        <i class="bi bi-folder-fill text-primary me-2"></i>
-                                        Active Projects
-                                    </h5>
-                                    <span class="badge bg-primary">Total</span>
-                                </div>
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10">
-                                    <i class="bi bi-folder-fill text-primary fs-4"></i>
-                                </div>
-                            </div>
-
-                            <div class="mt-auto">
-                                <div class="d-flex align-items-baseline mb-2">
-                                    <h3 class="text-primary mb-0 fw-bold">{{ total_projects }}</h3>
-                                    <small class="text-muted ms-2">projects</small>
-                                </div>
-
-                                {% if total_projects %}
-                                <div class="mb-2">
-                                    <small class="text-muted d-block">Active Rate</small>
-                                    <div class="progress" style="height: 6px;">
-                                        <div class="progress-bar bg-primary" role="progressbar"
-                                             style="width: {% widthratio in_progress_count total_projects 100 %}%"
-                                             aria-valuenow="{% widthratio in_progress_count total_projects 100 %}"
-                                             aria-valuemin="0" aria-valuemax="100">
-                                        </div>
+                {% if projects_data %}
+                <!-- Advanced Filters & Search -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-12 col-md-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                        <input type="text" class="form-control" id="searchInput" placeholder="Search projects...">
                                     </div>
-                                    <small class="text-primary fw-bold mt-1 d-block">
-                                        {% widthratio in_progress_count total_projects 100 %}% active
-                                    </small>
                                 </div>
-                                {% else %}
-                                <small class="text-muted">No projects available</small>
-                                {% endif %}
-
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <small class="text-muted">
-                                        <i class="bi bi-check-circle me-1"></i>Completed
-                                    </small>
-                                    <span class="badge bg-light text-dark">{{ completed_count }}</span>
+                                <div class="col-6 col-md-3">
+                                    <select class="form-select" id="statusFilter">
+                                        <option value="">All Status</option>
+                                        {% for status in project_statuses %}
+                                        <option value="{{ status.status_name }}">{{ status.status_name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <select class="form-select" id="completionFilter">
+                                        <option value="">Completion Rate</option>
+                                        <option value="high">High (&gt;80%)</option>
+                                        <option value="medium">Medium (30-80%)</option>
+                                        <option value="low">Low (&lt;30%)</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-2">
+                                    <button type="button" class="btn btn-outline-secondary w-100" id="clearFilters">
+                                        <i class="bi bi-x-circle"></i> Clear
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Work in Progress -->
-                <div class="col-xxl-3 col-md-6">
-                    <div class="card info-card revenue-card h-100">
-                        <div class="card-body d-flex flex-column">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h5 class="card-title mb-1">
-                                        <i class="bi bi-play-circle-fill text-warning me-2"></i>
-                                        In Progress
-                                    </h5>
-                                    <span class="badge bg-warning text-dark">Active</span>
-                                </div>
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-warning bg-opacity-10">
-                                    <i class="bi bi-gear-fill text-warning fs-4"></i>
-                                </div>
-                            </div>
-
-                            <div class="mt-auto">
-                                <div class="d-flex align-items-baseline mb-2">
-                                    <h3 class="text-warning mb-0 fw-bold">{{ in_progress_count }}</h3>
-                                    <small class="text-muted ms-2">projects</small>
-                                </div>
-
-                                {% if total_projects %}
-                                <div class="mb-2">
-                                    <small class="text-muted d-block">Progress Rate</small>
-                                    <div class="progress" style="height: 6px;">
-                                        <div class="progress-bar bg-warning" role="progressbar"
-                                             style="width: {% widthratio in_progress_count total_projects 100 %}%"
-                                             aria-valuenow="{% widthratio in_progress_count total_projects 100 %}"
-                                             aria-valuemin="0" aria-valuemax="100">
+                <!-- Enhanced Statistics Cards -->
+                <div class="col-12 mb-4">
+                    <div class="row">
+                        <!-- Total Projects -->
+                        <div class="col-xxl-3 col-md-6">
+                            <div class="card info-card sales-card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Projects <span>| Overview</span></h5>
+                                    <div class="d-flex align-items-center">
+                                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-folder-fill"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6>{{ total_projects }}</h6>
+                                            <span class="text-primary small pt-1 fw-bold">Active Projects</span>
+                                            <div class="progress mt-2" style="height: 4px;">
+                                                <div class="progress-bar bg-primary" style="width: 100%"></div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <small class="text-warning fw-bold mt-1 d-block">
-                                        {% widthratio in_progress_count total_projects 100 %}% of total
-                                    </small>
                                 </div>
-                                {% else %}
-                                <small class="text-muted">No active projects</small>
-                                {% endif %}
+                            </div>
+                        </div>
 
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <small class="text-muted">
-                                        <i class="bi bi-clock me-1"></i>Working on
-                                    </small>
-                                    <span class="badge bg-light text-dark">{{ in_progress_count }}</span>
+                        <!-- In Progress -->
+                        <div class="col-xxl-3 col-md-6">
+                            <div class="card info-card revenue-card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">In Progress <span>| Active</span></h5>
+                                    <div class="d-flex align-items-center">
+                                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-gear-fill"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6>{{ in_progress_count }}</h6>
+                                            <span class="text-warning small pt-1 fw-bold">Working On</span>
+                                            <div class="progress mt-2" style="height: 4px;">
+                                                <div class="progress-bar bg-warning" style="width: {% widthratio in_progress_count total_projects 100 %}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Completed -->
+                        <div class="col-xxl-3 col-md-6">
+                            <div class="card info-card customers-card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">Completed <span>| Done</span></h5>
+                                    <div class="d-flex align-items-center">
+                                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6>{{ completed_count }}</h6>
+                                            <span class="text-success small pt-1 fw-bold">Finished</span>
+                                            <div class="progress mt-2" style="height: 4px;">
+                                                <div class="progress-bar bg-success" style="width: {% widthratio completed_count total_projects 100 %}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Tasks -->
+                        <div class="col-xxl-3 col-md-6">
+                            <div class="card info-card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">Total Tasks <span>| All Projects</span></h5>
+                                    <div class="d-flex align-items-center">
+                                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-info-light">
+                                            <i class="bi bi-list-check text-info"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6>{{ total_tasks }}</h6>
+                                            <span class="text-info small pt-1 fw-bold">Tasks</span>
+                                            <div class="progress mt-2" style="height: 4px;">
+                                                <div class="progress-bar bg-info" style="width: {% if total_projects %}{% widthratio total_tasks total_projects|add:0 10 %}{% else %}0{% endif %}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Success Rate -->
-                <div class="col-xxl-3 col-md-6">
-                    <div class="card info-card customers-card h-100">
-                        <div class="card-body d-flex flex-column">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h5 class="card-title mb-1">
-                                        <i class="bi bi-trophy-fill text-success me-2"></i>
-                                        Success Rate
-                                    </h5>
-                                    <span class="badge bg-success">Completed</span>
+                <!-- Quick Actions Panel -->
+                <div class="col-12 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0"><i class="bi bi-gear-fill me-2"></i>Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-2">
+                                <div class="col-md-3">
+                                    <a href="{% url 'project_create' %}" class="btn btn-success w-100">
+                                        <i class="bi bi-plus-circle me-1"></i>
+                                        <span class="d-block">Create Project</span>
+                                    </a>
                                 </div>
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-success bg-opacity-10">
-                                    <i class="bi bi-trophy-fill text-success fs-4"></i>
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-primary w-100" id="bulkEditBtn">
+                                        <i class="bi bi-pencil me-1"></i>
+                                        <span class="d-block">Bulk Edit</span>
+                                    </button>
                                 </div>
-                            </div>
-
-                            <div class="mt-auto">
-                                <div class="d-flex align-items-baseline mb-2">
-                                    <h3 class="text-success mb-0 fw-bold">
-                                        {% if total_projects %}
-                                            {% widthratio completed_count total_projects 100 %}%
-                                        {% else %}
-                                            0%
-                                        {% endif %}
-                                    </h3>
-                                    <small class="text-muted ms-2">completion</small>
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-info w-100" id="exportProjectsBtn">
+                                        <i class="bi bi-download me-1"></i>
+                                        <span class="d-block">Export</span>
+                                    </button>
                                 </div>
-
-                                {% if total_projects %}
-                                <div class="mb-2">
-                                    <small class="text-muted d-block">Completion Rate</small>
-                                    <div class="progress" style="height: 6px;">
-                                        <div class="progress-bar bg-success" role="progressbar"
-                                             style="width: {% widthratio completed_count total_projects 100 %}%"
-                                             aria-valuenow="{% widthratio completed_count total_projects 100 %}"
-                                             aria-valuemin="0" aria-valuemax="100">
-                                        </div>
-                                    </div>
-                                    <small class="text-success fw-bold mt-1 d-block">
-                                        {{ completed_count }} completed
-                                    </small>
-                                </div>
-                                {% else %}
-                                <small class="text-muted">No projects to complete</small>
-                                {% endif %}
-
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <small class="text-muted">
-                                        <i class="bi bi-check-circle me-1"></i>Finished
-                                    </small>
-                                    <span class="badge bg-light text-dark">{{ completed_count }}</span>
+                                <div class="col-md-3">
+                                    <button type="button" class="btn btn-warning w-100" id="filterProjectsBtn">
+                                        <i class="bi bi-funnel me-1"></i>
+                                        <span class="d-block">Advanced Filter</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Task Efficiency -->
-                <div class="col-xxl-3 col-md-6">
-                    <div class="card info-card h-100">
-                        <div class="card-body d-flex flex-column">
-                            <div class="d-flex justify-content-between align-items-start mb-3">
-                                <div>
-                                    <h5 class="card-title mb-1">
-                                        <i class="bi bi-list-check text-info me-2"></i>
-                                        Task Load
-                                    </h5>
-                                    <span class="badge bg-info">Per Project</span>
+                <!-- Projects Display Area -->
+                <div class="col-12">
+                    <!-- View Selector -->
+                    <div class="card mb-3">
+                        <div class="card-body py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-outline-primary active" data-view="table">
+                                        <i class="bi bi-table me-1"></i> Table
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" data-view="cards">
+                                        <i class="bi bi-card-text me-1"></i> Cards
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" data-view="grid">
+                                        <i class="bi bi-grid-3x3-gap me-1"></i> Grid
+                                    </button>
                                 </div>
-                                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-info bg-opacity-10">
-                                    <i class="bi bi-list-check text-info fs-4"></i>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <span class="text-muted small" id="projectCount">{{ projects_data|length }} projects</span>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                                data-bs-toggle="dropdown">
+                                            <i class="bi bi-gear"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><h6 class="dropdown-header">View Options</h6></li>
+                                            <li>
+                                                <a class="dropdown-item" href="#" id="compactViewToggle">
+                                                    <i class="bi bi-layout-text-sidebar me-2"></i>
+                                                    <span>Compact View</span>
+                                                    <i class="bi bi-check2 ms-auto" style="display: none;"></i>
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><h6 class="dropdown-header">Actions</h6></li>
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'project_export' %}">
+                                                    <i class="bi bi-download me-2"></i> Export Projects
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="{% url 'project_create' %}">
+                                                    <i class="bi bi-plus-circle me-2"></i> Create Project
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
-                            <div class="mt-auto">
-                                <div class="d-flex align-items-baseline mb-2">
-                                    <h3 class="text-info mb-0 fw-bold">
-                                        {% if total_projects %}
-                                            {% widthratio total_tasks total_projects 1 %}
-                                        {% else %}
-                                            0
-                                        {% endif %}
-                                    </h3>
-                                    <small class="text-muted ms-2">avg tasks</small>
-                                </div>
+                    <!-- Table View -->
+                    <div id="tableView" class="view-container">
+                        <div class="card">
+                            <div class="card-body p-0">
+                                <!-- projects/includes/project_table_optimized.html -->
+                                {% if projects_data %}
+                                    {% include 'projects/includes/project_table_optimized.html' %}
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="bi bi-folder display-1 text-muted mb-3"></i>
+                                        <h5 class="text-muted">No projects found</h5>
+                                        <a href="{% url 'project_create' %}" class="btn btn-primary btn-sm mt-2">
+                                            Create Your First Project
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
 
-                                {% if total_projects %}
-                                <div class="mb-2">
-                                    <small class="text-muted d-block">Task Distribution</small>
-                                    <div class="progress" style="height: 6px;">
-                                        <div class="progress-bar bg-info" role="progressbar"
-                                             style="width: {% if total_tasks %}50{% else %}0{% endif %}%"
-                                             aria-valuenow="{% if total_tasks %}50{% else %}0{% endif %}"
-                                             aria-valuemin="0" aria-valuemax="100">
+                    <!-- Cards View -->
+                    <div id="cardsView" class="view-container" style="display: none;">
+                        <div class="row" id="cardsContainer">
+                            {% for project_data in projects_data %}
+                            <div class="col-xl-4 col-lg-6 col-md-6 mb-3">
+                                <!-- Project Card -->
+                                <div class="card h-100 project-card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-0">{{ project_data.project.title|truncatechars:25 }}</h6>
+                                            <small class="text-muted">
+                                                {{ project_data.project.created_at|date:"M d, Y" }}
+                                            </small>
+                                        </div>
+                                        <div>
+                                            <span class="badge project-status-badge project-status-{{ project_data.project.project_status.status_name|lower|cut:' ' }}">
+                                                {{ project_data.project.project_status.status_name }}
+                                            </span>
                                         </div>
                                     </div>
-                                    <small class="text-info fw-bold mt-1 d-block">
-                                        {{ total_tasks }} total tasks
-                                    </small>
-                                </div>
-                                {% else %}
-                                <small class="text-muted">No tasks available</small>
-                                {% endif %}
-
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <small class="text-muted">
-                                        <i class="bi bi-bar-chart me-1"></i>Distribution
-                                    </small>
-                                    <span class="badge bg-light text-dark">{{ total_tasks }}</span>
+                                    <div class="card-body">
+                                        <p class="small text-muted mb-3">
+                                            {{ project_data.project.description|truncatechars:80|default:"No description" }}
+                                        </p>
+                                        
+                                        <!-- Project Stats -->
+                                        <div class="mb-3">
+                                            <div class="row text-center">
+                                                <div class="col-4">
+                                                    <small class="text-muted d-block">Tasks</small>
+                                                    <span class="fw-bold">{{ project_data.count_tasks }}</span>
+                                                </div>
+                                                <div class="col-4">
+                                                    <small class="text-muted d-block">Done</small>
+                                                    <span class="fw-bold text-success">{{ project_data.completed_tasks }}</span>
+                                                </div>
+                                                <div class="col-4">
+                                                    <small class="text-muted d-block">Progress</small>
+                                                    <span class="fw-bold">{{ project_data.completion_rate|floatformat:0 }}%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Progress Bar -->
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <small class="text-muted">Completion</small>
+                                                <small class="text-muted">{{ project_data.completion_rate|floatformat:0 }}%</small>
+                                            </div>
+                                            <div class="progress" style="height: 6px;">
+                                                <div class="progress-bar 
+                                                    {% if project_data.completion_rate > 80 %}bg-success
+                                                    {% elif project_data.completion_rate > 30 %}bg-primary
+                                                    {% else %}bg-warning{% endif %}" 
+                                                    style="width: {{ project_data.completion_rate }}%">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Project Info -->
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <small class="text-muted">
+                                                <i class="bi bi-person"></i> {{ project_data.project.host.username }}
+                                            </small>
+                                            {% if project_data.project.ticket_price > 0 %}
+                                            <small class="text-success fw-bold">
+                                                <i class="bi bi-coin"></i> ${{ project_data.project.ticket_price }}
+                                            </small>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Task Status Overview -->
+                                        <div class="small text-muted mb-3">
+                                            <div class="d-flex flex-wrap gap-1">
+                                                {% if project_data.completed_tasks %}
+                                                <span class="badge bg-success bg-opacity-10 text-success">
+                                                    <span class="task-status-indicator task-status-completed"></span>
+                                                    {{ project_data.completed_tasks }} done
+                                                </span>
+                                                {% endif %}
+                                                {% if project_data.in_progress_tasks %}
+                                                <span class="badge bg-primary bg-opacity-10 text-primary">
+                                                    <span class="task-status-indicator task-status-in-progress"></span>
+                                                    {{ project_data.in_progress_tasks }} active
+                                                </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <div class="d-flex justify-content-between">
+                                            <a href="{% url 'project_panel_with_id' project_data.project.id %}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i> View
+                                            </a>
+                                            <a href="{% url 'project_edit' project_data.project.id %}" 
+                                               class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </a>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-
-
-                {% include 'projects/control/control.html' %}
-                {% include 'projects/includes/project_top.html' %}
-                {% else %}
-                {% endif %}
-
-                
-                {% if project_data %}
-                {% include 'projects/includes/project_card.html' %}
-                {% include 'projects/includes/project_tasks.html' %}
-                
-                {% else %}
-                {% endif %}
-
-            </div>
-        </div><!-- End Left side columns -->
-        <!-- Right side columns -->
-        <div class="col-lg-4">
-
-            <!-- Quick Actions -->
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-gear-fill me-2"></i>Quick Actions</h5>
-
-                    <!-- Primary Actions -->
-                    <div class="d-grid gap-2 mb-3">
-                        <a href="{% url 'project_create' %}" class="btn btn-success">
-                            <i class="bi bi-plus-circle me-2"></i>Create Project
-                        </a>
-                        <a href="{% url 'projects' %}" class="btn btn-outline-primary">
-                            <i class="bi bi-eye me-2"></i>View All Projects
-                        </a>
-                    </div>
-
-                    <!-- Search -->
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Quick Search</label>
-                        <div class="input-group">
-                            <input type="text" id="searchInput" class="form-control" placeholder="Search projects..." onkeyup="searchProjects()">
-                            <button class="btn btn-outline-secondary" type="button" onclick="clearSearch()">
-                                <i class="bi bi-x"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Status Filter -->
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Filter by Status</label>
-                        <select class="form-select" onchange="filterByStatus(this.value)">
-                            <option value="all">All Projects</option>
-                            {% for status in project_statuses %}
-                            <option value="{{ status.id }}">{{ status.status_name }}</option>
                             {% endfor %}
-                        </select>
+                        </div>
                     </div>
 
-                    <!-- Export -->
-                    <div class="d-grid">
-                        <button type="button" class="btn btn-outline-warning" onclick="exportProjects()">
-                            <i class="bi bi-download me-2"></i>Export Data
-                        </button>
+                    <!-- Grid View -->
+                    <div id="gridView" class="view-container" style="display: none;">
+                        <div class="row">
+                            {% for project_data in projects_data %}
+                            <div class="col-xl-3 col-lg-4 col-md-6 mb-3">
+                                <!-- Mini Project Card -->
+                                <div class="card h-100">
+                                    <div class="card-body text-center p-3">
+                                        <div class="mb-3">
+                                            <i class="bi bi-folder display-6 text-primary"></i>
+                                        </div>
+                                        <h6 class="mb-2">{{ project_data.project.title|truncatechars:20 }}</h6>
+                                        
+                                        <div class="mb-3">
+                                            <span class="badge bg-light text-dark">
+                                                {{ project_data.count_tasks }} tasks
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="progress mb-3" style="height: 4px;">
+                                            <div class="progress-bar 
+                                                {% if project_data.completion_rate > 80 %}bg-success
+                                                {% elif project_data.completion_rate > 30 %}bg-primary
+                                                {% else %}bg-warning{% endif %}" 
+                                                style="width: {{ project_data.completion_rate }}%">
+                                            </div>
+                                        </div>
+                                        
+                                        <small class="text-muted d-block mb-2">
+                                            {{ project_data.completion_rate|floatformat:0 }}% complete
+                                        </small>
+                                        
+                                        <a href="{% url 'project_panel_with_id' project_data.project.id %}" 
+                                           class="btn btn-sm btn-outline-primary w-100">
+                                            <i class="bi bi-box-arrow-in-right"></i> Open
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                {% elif project_data %}
+                    <!-- Single Project Detail View -->
+                    <div class="col-12">
+                        <div class="card project-card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0"><i class="bi bi-eye me-2"></i>Project Details</h5>
+                            </div>
+                            <div class="card-body">
+                                {% include 'projects/includes/project_card.html' %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Project Tasks -->
+                    <div class="col-12">
+                        <div class="card project-card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0"><i class="bi bi-list-task me-2"></i>Project Tasks</h5>
+                            </div>
+                            <div class="card-body">
+                                {% include 'projects/includes/project_tasks.html' %}
+                            </div>
+                        </div>
+                    </div>
+
+                {% else %}
+                    <!-- Empty State -->
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body text-center py-5">
+                                <i class="bi bi-folder display-1 text-muted mb-3"></i>
+                                <h4 class="text-muted">No Projects Found</h4>
+                                <p class="text-muted mb-4">Get started by creating your first project or adjusting your filters.</p>
+                                <a href="{% url 'project_create' %}" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle me-1"></i> Create First Project
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+            </div>
+        </div><!-- End Main Content Area -->
+
+        <!-- Enhanced Sidebar -->
+        <div class="col-lg-3">
+
+            <!-- Quick Stats Sidebar -->
+            {% if projects_data %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0"><i class="bi bi-bar-chart me-2"></i>Quick Stats</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="small">Overall Progress</span>
+                            <span class="small fw-bold">
+                                {% if total_projects and total_tasks %}
+                                    {% widthratio completed_tasks_sum total_tasks 100 %}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-success" style="width: 
+                                {% if total_projects and total_tasks %}
+                                    {% widthratio completed_tasks_sum total_tasks 100 %}%
+                                {% else %}
+                                    0
+                                {% endif %}%">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="small">Active Rate</span>
+                            <span class="small fw-bold">{% widthratio in_progress_count total_projects 100 %}%</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-primary" style="width: {% widthratio in_progress_count total_projects 100 %}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between">
+                            <span class="small">Task Distribution</span>
+                            <span class="small fw-bold">
+                                {% if total_projects %}
+                                    {{ avg_tasks_per_project|floatformat:1 }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-info" style="width: 
+                                {% if total_projects %}
+                                    {% widthratio avg_tasks_per_project 20 100 %}
+                                {% else %}
+                                    0
+                                {% endif %}%">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Status Distribution -->
+                    <div class="mt-4">
+                        <h6 class="small fw-bold mb-2">Status Distribution</h6>
+                        <div class="d-flex flex-wrap gap-1">
+                            <span class="badge bg-primary bg-opacity-10 text-primary small">
+                                {{ in_progress_count }} In Progress
+                            </span>
+                            <span class="badge bg-success bg-opacity-10 text-success small">
+                                {{ completed_count }} Completed
+                            </span>
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary small">
+                                {{ pending_count }} Pending
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
+            {% endif %}
 
             <!-- Recent Activity -->
-            <div class="card">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0"><i class="bi bi-activity me-2"></i>Recent Activity</h6>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-activity me-2"></i>Recent Activity</h5>
                     <div class="activity">
-                        {% for project_info in projects|slice:":5" %}
+                        {% for project_data in projects_data|slice:":5" %}
                         <div class="activity-item d-flex mb-2">
                             <div class="activity-label me-2">
-                                <span class="badge bg-{% if project_info.project.project_status.status_name == 'Completed' %}success{% elif project_info.project.project_status.status_name == 'In Progress' %}warning{% else %}secondary{% endif %}">
-                                    <i class="bi bi-{% if project_info.project.project_status.status_name == 'Completed' %}check-circle{% elif project_info.project.project_status.status_name == 'In Progress' %}play-circle{% else %}pause-circle{% endif %} me-1"></i>
-                                    {{ project_info.project.project_status.status_name|slice:":1" }}
+                                <span class="badge bg-{% if project_data.project.project_status.status_name == 'Completed' %}success{% elif project_data.project.project_status.status_name == 'In Progress' %}warning{% else %}secondary{% endif %}">
+                                    <i class="bi bi-{% if project_data.project.project_status.status_name == 'Completed' %}check-circle{% elif project_data.project.project_status.status_name == 'In Progress' %}play-circle{% else %}pause-circle{% endif %} me-1"></i>
                                 </span>
                             </div>
                             <div class="activity-content flex-grow-1">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
-                                        <strong class="text-truncate" style="max-width: 150px;" title="{{ project_info.project.title }}">
-                                            {{ project_info.project.title|truncatechars:20 }}
+                                        <strong class="text-truncate" style="max-width: 150px;" title="{{ project_data.project.title }}">
+                                            {{ project_data.project.title|truncatechars:20 }}
                                         </strong>
                                         <div class="text-muted small">
-                                            <i class="bi bi-list-check me-1"></i>{{ project_info.count_tasks }} tasks
-                                            {% if project_info.project.event %}
-                                            • <i class="bi bi-calendar-event me-1"></i>{{ project_info.project.event.title|truncatechars:15 }}
-                                            {% endif %}
+                                            <i class="bi bi-list-check me-1"></i>{{ project_data.count_tasks }} tasks
+                                            • {{ project_data.completion_rate|floatformat:0 }}%
                                         </div>
                                     </div>
-                                    <small class="text-muted">{{ project_info.project.updated_at|timesince }}</small>
+                                    <small class="text-muted">{{ project_data.project.updated_at|timesince }}</small>
                                 </div>
                             </div>
                         </div>
@@ -507,7 +778,7 @@
                         </div>
                         {% endfor %}
                     </div>
-                    {% if projects|length > 5 %}
+                    {% if projects_data|length > 5 %}
                     <div class="text-center mt-2">
                         <a href="{% url 'projects' %}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-eye me-1"></i>View All Projects
@@ -517,63 +788,401 @@
                 </div>
             </div>
 
-        </div><!-- End Right side columns -->
-        <!-- Key Metrics Overview -->
-        <div class="col-12">
+            <!-- Help & Resources -->
             <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0"><i class="bi bi-question-circle me-2"></i>Help & Resources</h6>
+                </div>
                 <div class="card-body">
-                    <h5 class="card-title"><i class="bi bi-bar-chart-line me-2"></i>Key Metrics</h5>
-                    <div class="row text-center">
-                        <div class="col-md-3">
-                            <div class="border-end">
-                                <h4 class="text-primary mb-1">{{ total_projects }}</h4>
-                                <p class="text-muted small mb-0">Active Projects</p>
-                                <small class="text-success">
-                                    <i class="bi bi-arrow-up me-1"></i>{{ in_progress_count }} in progress
-                                </small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="border-end">
-                                <h4 class="text-success mb-1">{{ completed_count }}</h4>
-                                <p class="text-muted small mb-0">Completed</p>
-                                <small class="text-info">
-                                    <i class="bi bi-check-circle me-1"></i>{{ total_tasks }} total tasks
-                                </small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="border-end">
-                                <h4 class="text-warning mb-1">
-                                    {% widthratio in_progress_count total_projects 100 %}%
-                                </h4>
-                                <p class="text-muted small mb-0">Completion Rate</p>
-                                <small class="text-muted">
-                                    <i class="bi bi-graph-up me-1"></i>Active ratio
-                                </small>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <h4 class="text-info mb-1">
-                                {% if total_projects %}
-                                    {% widthratio total_tasks total_projects 1 %}
-                                {% else %}
-                                    0
-                                {% endif %}
-                            </h4>
-                            <p class="text-muted small mb-0">Avg Tasks/Project</p>
-                            <small class="text-muted">
-                                <i class="bi bi-list-check me-1"></i>Task distribution
-                            </small>
-                        </div>
+                    <div class="d-grid gap-2">
+                        <a href="#" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-book me-1"></i> Project Management Guide
+                        </a>
+                        <a href="#" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-play-circle me-1"></i> Video Tutorials
+                        </a>
+                        <a href="#" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-chat-dots me-1"></i> Support Chat
+                        </a>
                     </div>
                 </div>
             </div>
-        </div>
+
+        </div><!-- End Enhanced Sidebar -->
+
     </div>
 </section>
 
+<!-- Enhanced Scripts -->
 <script src="{% static 'assets/js/panel-scripts.js' %}?v={{ now|date:'U' }}"></script>
 <script src="{% static 'assets/js/project-panel.js' %}?v={{ now|date:'U' }}"></script>
+
+<!-- Project Panel Specific JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ============================================================
+    // FUNCIONALIDAD DE VISTAS Y FILTROS
+    // ============================================================
+
+    // View Toggle Functionality
+    const viewButtons = document.querySelectorAll('[data-view]');
+    const viewContainers = {
+        'table': document.getElementById('tableView'),
+        'cards': document.getElementById('cardsView'),
+        'grid': document.getElementById('gridView')
+    };
+
+    viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const view = this.getAttribute('data-view');
+            
+            viewButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            Object.keys(viewContainers).forEach(key => {
+                if (viewContainers[key]) {
+                    viewContainers[key].style.display = key === view ? 'block' : 'none';
+                }
+            });
+            
+            localStorage.setItem('projectViewPreference', view);
+        });
+    });
+
+    // Restore view preference
+    const savedView = localStorage.getItem('projectViewPreference') || 'table';
+    const savedButton = document.querySelector(`[data-view="${savedView}"]`);
+    if (savedButton) savedButton.click();
+
+    // Compact view toggle
+    const compactToggle = document.getElementById('compactViewToggle');
+    if (compactToggle) {
+        const checkIcon = compactToggle.querySelector('.bi-check2');
+        
+        compactToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            const isActive = checkIcon.style.display !== 'none';
+            
+            if (isActive) {
+                checkIcon.style.display = 'none';
+                document.body.classList.remove('compact-view');
+            } else {
+                checkIcon.style.display = 'block';
+                document.body.classList.add('compact-view');
+            }
+            
+            localStorage.setItem('compactView', !isActive);
+        });
+        
+        // Restore compact view preference
+        if (localStorage.getItem('compactView') === 'true') {
+            compactToggle.click();
+        }
+    }
+
+    // Enhanced Search with Debounce
+    const searchInput = document.getElementById('searchInput');
+    let searchTimeout;
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const query = this.value.toLowerCase();
+                filterProjects(query);
+            }, 300);
+        });
+    }
+
+    // Status Filter
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) {
+        statusFilter.addEventListener('change', function() {
+            filterProjects();
+        });
+    }
+
+    // Completion Filter
+    const completionFilter = document.getElementById('completionFilter');
+    if (completionFilter) {
+        completionFilter.addEventListener('change', function() {
+            filterProjects();
+        });
+    }
+
+    // Clear Filters
+    const clearFiltersBtn = document.getElementById('clearFilters');
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', function() {
+            if (searchInput) searchInput.value = '';
+            if (statusFilter) statusFilter.value = '';
+            if (completionFilter) completionFilter.value = '';
+            filterProjects();
+        });
+    }
+
+    function filterProjects(searchQuery = null) {
+        if (!searchInput && !searchQuery) return;
+        
+        const status = statusFilter ? statusFilter.value : '';
+        const completion = completionFilter ? completionFilter.value : '';
+        const query = searchQuery || (searchInput ? searchInput.value.toLowerCase() : '');
+        
+        let visibleCount = 0;
+        
+        // Filter table rows
+        const tableRows = document.querySelectorAll('.project-row');
+        if (tableRows.length > 0) {
+            tableRows.forEach(row => {
+                const rowStatus = row.getAttribute('data-status');
+                const rowCompletion = parseFloat(row.getAttribute('data-completion') || 0);
+                const rowText = row.textContent.toLowerCase();
+                
+                const statusMatch = !status || rowStatus === status;
+                const completionMatch = !completion || (
+                    (completion === 'high' && rowCompletion > 80) ||
+                    (completion === 'medium' && rowCompletion >= 30 && rowCompletion <= 80) ||
+                    (completion === 'low' && rowCompletion < 30)
+                );
+                const searchMatch = !query || rowText.includes(query);
+                
+                if (statusMatch && completionMatch && searchMatch) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        // Filter cards
+        const cards = document.querySelectorAll('#cardsContainer .col-xl-4');
+        if (cards.length > 0) {
+            cards.forEach(card => {
+                const cardText = card.textContent.toLowerCase();
+                const cardMatch = !query || cardText.includes(query);
+                
+                if (cardMatch) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+        
+        // Update counters
+        const projectCountEl = document.getElementById('projectCount');
+        const visibleProjectsEl = document.getElementById('visibleProjects');
+        
+        if (projectCountEl) projectCountEl.textContent = `${visibleCount} projects`;
+        if (visibleProjectsEl) visibleProjectsEl.textContent = visibleCount;
+    }
+
+    // ============================================================
+    // SELECCIÓN MASIVA
+    // ============================================================
+
+    const selectAllCheckbox = document.getElementById('selectAllProjects');
+    const projectCheckboxes = document.querySelectorAll('.project-checkbox');
+    const deleteSelectedBtn = document.getElementById('deleteSelected');
+    const exportSelectedBtn = document.getElementById('exportSelected');
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            projectCheckboxes.forEach(checkbox => checkbox.checked = isChecked);
+            updateSelectedCount();
+        });
+    }
+
+    function updateSelectedCount() {
+        if (!deleteSelectedBtn || !exportSelectedBtn || !selectAllCheckbox) return;
+        
+        const checkedBoxes = document.querySelectorAll('.project-checkbox:checked');
+        const count = checkedBoxes.length;
+        
+        deleteSelectedBtn.disabled = count === 0;
+        exportSelectedBtn.disabled = count === 0;
+        selectAllCheckbox.checked = count > 0 && count === projectCheckboxes.length;
+        selectAllCheckbox.indeterminate = count > 0 && count < projectCheckboxes.length;
+    }
+
+    if (projectCheckboxes.length > 0) {
+        projectCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectedCount);
+        });
+    }
+
+    if (deleteSelectedBtn) {
+        deleteSelectedBtn.addEventListener('click', function() {
+            const checkedBoxes = document.querySelectorAll('.project-checkbox:checked');
+            if (checkedBoxes.length === 0) return;
+
+            if (confirm(`Are you sure you want to delete ${checkedBoxes.length} project(s)?`)) {
+                const ids = Array.from(checkedBoxes).map(cb => cb.value);
+                // Implement bulk delete logic here
+                console.log('Bulk delete project IDs:', ids);
+            }
+        });
+    }
+
+    if (exportSelectedBtn) {
+        exportSelectedBtn.addEventListener('click', function() {
+            const checkedBoxes = document.querySelectorAll('.project-checkbox:checked');
+            if (checkedBoxes.length === 0) return;
+
+            const ids = Array.from(checkedBoxes).map(cb => cb.value);
+            console.log('Export selected project IDs:', ids);
+            // Implement export logic here
+        });
+    }
+
+    // ============================================================
+    // FUNCIONALIDADES ADICIONALES
+    // ============================================================
+
+    // Toggle View Button
+    const toggleViewBtn = document.getElementById('toggleViewBtn');
+    if (toggleViewBtn) {
+        toggleViewBtn.addEventListener('click', function() {
+            const isGridView = this.querySelector('i').classList.contains('bi-grid');
+            
+            if (isGridView) {
+                this.innerHTML = '<i class="bi bi-table"></i> <span>Table View</span>';
+                // Switch to board/grid view
+                const gridButton = document.querySelector('[data-view="grid"]');
+                if (gridButton) gridButton.click();
+            } else {
+                this.innerHTML = '<i class="bi bi-grid"></i> <span>Board View</span>';
+                // Switch to table view
+                const tableButton = document.querySelector('[data-view="table"]');
+                if (tableButton) tableButton.click();
+            }
+        });
+    }
+
+    // Export Button
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            // Implement export functionality
+            console.log('Export all projects');
+        });
+    }
+
+    // Quick Action Buttons
+    const bulkEditBtn = document.getElementById('bulkEditBtn');
+    const exportProjectsBtn = document.getElementById('exportProjectsBtn');
+    const filterProjectsBtn = document.getElementById('filterProjectsBtn');
+
+    if (bulkEditBtn) {
+        bulkEditBtn.addEventListener('click', function() {
+            const checkedBoxes = document.querySelectorAll('.project-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                alert('Please select at least one project to edit.');
+                return;
+            }
+            console.log('Bulk edit projects');
+        });
+    }
+
+    if (exportProjectsBtn) {
+        exportProjectsBtn.addEventListener('click', function() {
+            window.location.href = "{% url 'project_export' %}";
+        });
+    }
+
+    if (filterProjectsBtn) {
+        filterProjectsBtn.addEventListener('click', function() {
+            // Show advanced filter modal or panel
+            console.log('Show advanced filters');
+        });
+    }
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + F for search focus
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f' && searchInput) {
+            e.preventDefault();
+            searchInput.focus();
+        }
+
+        // Ctrl/Cmd + 1,2,3 for view switching
+        if ((e.ctrlKey || e.metaKey) && e.key >= '1' && e.key <= '3') {
+            e.preventDefault();
+            const viewIndex = parseInt(e.key) - 1;
+            const views = ['table', 'cards', 'grid'];
+            const button = document.querySelector(`[data-view="${views[viewIndex]}"]`);
+            if (button) button.click();
+        }
+    });
+
+    // Auto-refresh for real-time updates (optional)
+    setInterval(function() {
+        console.log('Checking for project updates...');
+        // Implement real-time update logic here
+    }, 30000);
+
+    // Initialize filters on page load
+    filterProjects();
+});
+</script>
+
+<!-- Compact View CSS -->
+<style>
+.compact-view .card {
+    margin-bottom: 0.5rem;
+}
+
+.compact-view .table td,
+.compact-view .table th {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.compact-view .btn-sm {
+    padding: 0.125rem 0.25rem;
+    font-size: 0.75rem;
+}
+
+/* Hover effects for interactive elements */
+.project-row:hover {
+    background-color: rgba(0, 123, 255, 0.02) !important;
+    cursor: pointer;
+}
+
+.project-card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Animation for status changes */
+@keyframes statusChange {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.status-updated {
+    animation: statusChange 0.5s ease;
+}
+
+/* Responsive table adjustments */
+@media (max-width: 768px) {
+    .table td:nth-child(3),
+    .table th:nth-child(3) {
+        display: none;
+    }
+}
+
+@media (max-width: 576px) {
+    .table td:nth-child(4),
+    .table th:nth-child(4),
+    .table td:nth-child(6),
+    .table th:nth-child(6) {
+        display: none;
+    }
+}
+</style>
 
 {% endblock %}
