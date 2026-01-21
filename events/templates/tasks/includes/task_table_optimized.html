@@ -1,0 +1,431 @@
+<!-- tasks/includes/task_table_optimized.html -->
+<div class="table-responsive">
+    <table class="table table-hover mb-0" id="taskTable">
+        <thead class="table-light">
+            <tr>
+                <th width="40" class="text-center">
+                    <input type="checkbox" class="form-check-input" id="selectAllTasks">
+                </th>
+                <th>Task</th>
+                <th width="120">Project</th>
+                <th width="100">Event</th>
+                <th width="100">Priority</th>
+                <th width="120">Status</th>
+                <th width="100">Duration</th>
+                <th width="100">Progress</th>
+                <th width="150" class="text-end">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="taskTableBody">
+            {% for data in tasks_data %}
+            <tr class="task-row" 
+                data-task-id="{{ data.task.id }}"
+                data-priority="{{ data.task.important|yesno:'high,normal' }}"
+                data-status="{{ data.task.task_status.status_name }}"
+                data-project="{{ data.task.project.id|default:'' }}"
+                data-project-status="{{ data.task.project.project_status.status_name|default:'' }}"
+                data-due-date="{{ data.task.due_date|default:'' }}">
+                
+                <!-- Checkbox -->
+                <td class="text-center">
+                    <input type="checkbox" class="form-check-input task-checkbox" 
+                           value="{{ data.task.id }}">
+                </td>
+                
+                <!-- Task Info -->
+                <td>
+                    <div class="d-flex align-items-start">
+                        <div class="me-2">
+                            {% if data.task.important %}
+                            <i class="bi bi-star-fill text-warning" title="High Priority"></i>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-0">
+                                <a href="{% url 'task_panel_with_id' data.task.id %}" 
+                                   class="text-dark text-decoration-none">
+                                    {{ data.task.title|truncatechars:40 }}
+                                </a>
+                            </h6>
+                            <div class="small text-muted">
+                                <i class="bi bi-person"></i> {{ data.task.assigned_to.username }}
+                                {% if data.task.ticket_price > 0 %}
+                                <span class="ms-2">
+                                    <i class="bi bi-coin"></i> ${{ data.task.ticket_price }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                
+                <!-- Project with status -->
+                <td>
+                    {% if data.task.project %}
+                    <div class="d-flex flex-column">
+                        <a href="{% url 'project_panel_with_id' data.task.project.id %}" 
+                           class="badge bg-light text-dark text-decoration-none mb-1"
+                           title="{{ data.task.project.title }}">
+                            {{ data.task.project.title|truncatechars:15 }}
+                        </a>
+                        
+                        <!-- Project Status Badge -->
+                        <div class="d-flex align-items-center">
+                            <span class="badge" 
+                                  style="background-color: {{ data.task.project.project_status.color|default:'#6c757d' }};
+                                         font-size: 0.7rem; padding: 0.2rem 0.4rem;">
+                                {% if data.task.project.project_status.icon %}
+                                <i class="{{ data.task.project.project_status.icon }} me-1"></i>
+                                {% endif %}
+                                {{ data.task.project.project_status.status_name }}
+                            </span>
+                            
+                            <!-- Project completion indicator -->
+                            {% if data.task.project.project_status.status_name == 'Completed' %}
+                            <i class="bi bi-check-circle-fill text-success ms-1" style="font-size: 0.8rem;" 
+                               title="Project Completed"></i>
+                            {% elif data.task.project.project_status.status_name == 'In Progress' %}
+                            <i class="bi bi-arrow-repeat text-primary ms-1" style="font-size: 0.8rem;"
+                               title="Project In Progress"></i>
+                            {% elif data.task.project.project_status.status_name == 'Blocked' %}
+                            <i class="bi bi-exclamation-triangle text-danger ms-1" style="font-size: 0.8rem;"
+                               title="Project Blocked"></i>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Project completion percentage (if available) -->
+                        {% if data.task.project.project_status.status_name == 'In Progress' %}
+                        <div class="progress mt-1" style="height: 3px;">
+                            <div class="progress-bar bg-primary" style="width: 50%"></div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="text-center">
+                        <span class="text-muted">-</span>
+                        <br>
+                        <small class="text-muted" style="font-size: 0.7rem;">No project</small>
+                    </div>
+                    {% endif %}
+                </td>
+                
+                <!-- Event -->
+                <td>
+                    {% if data.task.event %}
+                    <a href="{% url 'event_panel_with_id' data.task.event.id %}" 
+                       class="badge bg-light text-dark text-decoration-none"
+                       title="{{ data.task.event.title }}">
+                        {{ data.task.event.title|truncatechars:15 }}
+                    </a>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                
+                <!-- Priority -->
+                <td>
+                    {% if data.task.important %}
+                    <div class="d-flex flex-column align-items-center">
+                        <span class="badge bg-warning text-dark">High</span>
+                        <small class="text-muted mt-1" style="font-size: 0.7rem;">
+                            <i class="bi bi-star-fill"></i>
+                        </small>
+                    </div>
+                    {% else %}
+                    <span class="badge bg-secondary">Normal</span>
+                    {% endif %}
+                </td>
+                
+                <!-- Status -->
+                <td>
+                    <div class="d-flex flex-column">
+                        <span class="badge" 
+                              style="background-color: {{ data.task.task_status.color }};">
+                            {% if data.task.task_status.icon %}
+                            <i class="{{ data.task.task_status.icon }} me-1"></i>
+                            {% endif %}
+                            {{ data.task.task_status.status_name }}
+                        </span>
+                        
+                        <!-- Status indicators -->
+                        {% if data.task.task_status.status_name == 'In Progress' %}
+                        <small class="text-primary mt-1" style="font-size: 0.7rem;">
+                            <i class="bi bi-arrow-clockwise"></i> Active
+                        </small>
+                        {% elif data.task.task_status.status_name == 'Completed' %}
+                        <small class="text-success mt-1" style="font-size: 0.7rem;">
+                            <i class="bi bi-check-circle"></i> Done
+                        </small>
+                        {% elif data.task.task_status.status_name == 'Blocked' %}
+                        <small class="text-danger mt-1" style="font-size: 0.7rem;">
+                            <i class="bi bi-slash-circle"></i> Blocked
+                        </small>
+                        {% endif %}
+                    </div>
+                </td>
+                
+                <!-- Duration -->
+                <td>
+                    {% load tz %}
+                    {% if data.task.task_status.status_name == 'In Progress' %}
+                        {% with data.active_state as active_state %}
+                            {% if active_state %}
+                            <div class="d-flex flex-column">
+                                <small class="text-info d-block">
+                                    <i class="bi bi-clock"></i>
+                                    {% timezone "America/Lima" %}
+                                        {{ active_state.start_time|timesince }}
+                                    {% endtimezone %}
+                                </small>
+                                <small class="text-muted" style="font-size: 0.7rem;">
+                                    Active
+                                </small>
+                            </div>
+                            {% else %}
+                            <small class="text-muted">-</small>
+                            {% endif %}
+                        {% endwith %}
+                    {% elif data.task.task_status.status_name == 'Completed' %}
+                        {% with data.completed_state as completed_state %}
+                            {% if completed_state and completed_state.end_time %}
+                            <div class="d-flex flex-column">
+                                <small class="text-success d-block">
+                                    <i class="bi bi-check-circle"></i>
+                                    {% with completed_state.start_time|timeuntil:completed_state.end_time as duration %}
+                                        {{ duration }}
+                                    {% endwith %}
+                                </small>
+                                <small class="text-muted" style="font-size: 0.7rem;">
+                                    Completed
+                                </small>
+                            </div>
+                            {% else %}
+                            <small class="text-muted">-</small>
+                            {% endif %}
+                        {% endwith %}
+                    {% else %}
+                    <small class="text-muted">-</small>
+                    {% endif %}
+                </td>
+                
+                <!-- Progress -->
+                <td>
+                    <div class="d-flex flex-column">
+                        <div class="progress" style="height: 6px;">
+                            {% if data.task.task_status.status_name == 'Completed' %}
+                            <div class="progress-bar bg-success" style="width: 100%"></div>
+                            {% elif data.task.task_status.status_name == 'In Progress' %}
+                            <div class="progress-bar bg-primary" style="width: 50%"></div>
+                            {% else %}
+                            <div class="progress-bar bg-secondary" style="width: 0%"></div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Project progress indicator (if task has project) -->
+                        {% if data.task.project %}
+                        <div class="mt-1">
+                            <small class="text-muted d-flex justify-content-between" style="font-size: 0.65rem;">
+                                <span>Project:</span>
+                                {% if data.task.project.project_status.status_name == 'Completed' %}
+                                <span class="text-success">100%</span>
+                                {% elif data.task.project.project_status.status_name == 'In Progress' %}
+                                <span class="text-primary">50%</span>
+                                {% else %}
+                                <span>0%</span>
+                                {% endif %}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </td>
+                
+                <!-- Actions -->
+                <td class="text-end">
+                    <div class="d-flex flex-column align-items-end gap-1">
+                        <!-- Switch principal y botón de vista -->
+                        <div class="d-flex align-items-center">
+                            <div class="form-check form-switch me-2">
+                                <input class="form-check-input task-status-switch" 
+                                       type="checkbox"
+                                       data-task-id="{{ data.task.id }}"
+                                       data-status-url="{% url 'task_change_status_ajax' %}"
+                                       {% if data.task.task_status.status_name == 'In Progress' %}checked{% endif %}
+                                       {% if data.task.task_status.status_name == 'Completed' %}disabled{% endif %}
+                                       title="Toggle In Progress/To Do">
+                                <label class="form-check-label small ms-2 text-muted">Active</label>
+                            </div>
+                            
+                            <a href="{% url 'task_panel_with_id' data.task.id %}" 
+                               class="btn btn-outline-primary btn-sm" title="View" style="padding: 0.15rem 0.3rem;">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </div>
+                        
+                        <!-- Controles extendidos (solo visible cuando está en In Progress) -->
+                        <div class="task-extended-controls {% if data.task.task_status.status_name != 'In Progress' %}d-none{% endif %}" 
+                             data-task-id="{{ data.task.id }}">
+                            <div class="d-flex align-items-center gap-1">
+                                <!-- Checkbox de completado -->
+                                <div class="form-check form-check-inline me-1">
+                                    <input class="form-check-input task-complete-checkbox" 
+                                           type="checkbox"
+                                           data-task-id="{{ data.task.id }}"
+                                           data-status-url="{% url 'task_change_status_ajax' %}"
+                                           id="completeCheck{{ data.task.id }}">
+                                    <label class="form-check-label small" for="completeCheck{{ data.task.id }}" 
+                                           title="Mark as Completed">
+                                        <i class="bi bi-check-square"></i> Complete
+                                    </label>
+                                </div>
+                                
+                                <!-- Dropdown para otros estados -->
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle py-0 px-1" 
+                                            type="button" 
+                                            id="statusMenu{{ data.task.id }}"
+                                            data-bs-toggle="dropdown" 
+                                            aria-expanded="false"
+                                            title="Change to other status">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="statusMenu{{ data.task.id }}">
+                                        <li><h6 class="dropdown-header">Change Status</h6></li>
+                                        {% for status in other_task_statuses %}
+                                            {% if status.status_name != 'In Progress' and status.status_name != 'Completed' %}
+                                            <li>
+                                                <a class="dropdown-item task-status-option" 
+                                                   href="#"
+                                                   data-task-id="{{ data.task.id }}"
+                                                   data-status-name="{{ status.status_name }}">
+                                                    <span class="badge me-2" style="background-color: {{ status.color }};">&nbsp;</span>
+                                                    {{ status.status_name }}
+                                                </a>
+                                            </li>
+                                            {% endif %}
+                                        {% endfor %}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-danger task-block-option" 
+                                               href="#"
+                                               data-task-id="{{ data.task.id }}">
+                                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                                Mark as Blocked
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="9" class="text-center py-4">
+                    <i class="bi bi-list-check display-1 text-muted mb-3"></i>
+                    <h5 class="text-muted">No tasks found</h5>
+                    <a href="{% url 'task_create' %}" class="btn btn-primary btn-sm mt-2">
+                        Create Your First Task
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Table Footer -->
+<div class="card-footer bg-transparent border-top-0 pt-3">
+    <div class="d-flex justify-content-between align-items-center">
+        <div class="small text-muted">
+            Showing <span id="visibleTasks">{{ tasks_data|length }}</span> of {{ tasks_data|length }} tasks
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="exportSelected">
+                <i class="bi bi-download"></i> Export Selected
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" id="deleteSelected" disabled>
+                <i class="bi bi-trash"></i> Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- CSS adicional para mejor visualización -->
+<style>
+.project-status-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.project-status-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+}
+
+.project-progress-indicator {
+    height: 3px;
+    margin-top: 2px;
+    background-color: #e9ecef;
+    border-radius: 1.5px;
+    overflow: hidden;
+}
+
+.project-progress-fill {
+    height: 100%;
+    background-color: #007bff;
+    transition: width 0.3s ease;
+}
+
+/* Estilos para badges de estado de proyecto */
+.badge[style*="background-color: #28a745"],
+.badge.bg-success {
+    background-color: #28a745 !important;
+}
+
+.badge[style*="background-color: #007bff"],
+.badge.bg-primary {
+    background-color: #007bff !important;
+}
+
+.badge[style*="background-color: #dc3545"],
+.badge.bg-danger {
+    background-color: #dc3545 !important;
+}
+
+.badge[style*="background-color: #ffc107"],
+.badge.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
+.badge[style*="background-color: #6c757d"],
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Tooltips para iconos de estado */
+[title] {
+    cursor: help;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+    .table td:nth-child(3) {
+        min-width: 130px;
+    }
+}
+
+@media (max-width: 992px) {
+    .table td:nth-child(3) {
+        min-width: 120px;
+    }
+    
+    .badge {
+        font-size: 0.65rem !important;
+        padding: 0.15rem 0.3rem !important;
+    }
+}
+</style>

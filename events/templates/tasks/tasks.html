@@ -3,22 +3,22 @@
 <link rel="stylesheet" href="{% static 'assets/css/alerts-styles.css' %}">
 {% block content %}
 
-
 <!-- Mensajes de confirmación y éxito -->
 {% if messages %}
 <div class="alert alert-info" role="alert">
     {% for message in messages %}
     <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
-        {% endfor %}
+    {% endfor %}
 </div>
 {% endif %}
 
 <div class="pagetitle">
-    <h1>Dashboard</h1>
+    <h1>Dashboard de Tareas</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="index.html">Home</a></li>
-            <li class="breadcrumb-item active">Dashboard</li>
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'tasks' %}">Tareas</a></li>
+            <li class="breadcrumb-item active">Listado</li>
         </ol>
     </nav>
 </div><!-- End Page Title -->
@@ -26,36 +26,101 @@
 <section class="section dashboard">
     <div class="row">
 
-        <!-- Left side columns -->
-        <div class="col-lg-8">
-            <div class="row">
-            {% if tasks %}
-         
-            {% include 'tasks/includes/task_total.html' %}
-
-
-            {% include 'tasks/includes/task_recent.html' %}
-            {% else %}
-
-            {% endif %}
-
+        <!-- Main Content Area -->
+        <div class="col-lg-12">
+            
+            <!-- Alertas si existen -->
+            {% if alerts %}
+            <div class="mb-4">
+                {% for alert in alerts %}
+                <div class="alert alert-{{ alert.type }} alert-dismissible fade show" role="alert">
+                    <i class="bi {{ alert.icon }} me-2"></i>
+                    <strong>{{ alert.title }}</strong> - {{ alert.message }}
+                    {% if alert.action_url %}
+                    <a href="{{ alert.action_url }}" class="btn btn-sm btn-outline-{{ alert.type }} ms-2">
+                        {{ alert.action_text }}
+                    </a>
+                    {% endif %}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endfor %}
             </div>
-        </div><!-- End Left side columns -->
-
-        <!-- Right side columns -->
-        <div class="col-lg-4">
-            {% if instructions %} 
-            {% include 'layouts/includes/information/info_links_card.html' %}
             {% endif %}
 
-            {% include 'layouts/includes/information/info_acordeon.html' %}
+            <!-- Header con acciones -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-list-check me-2"></i>Tareas
+                            <span class="badge bg-primary ms-2">{{ tasks|length }}</span>
+                        </h5>
+                        <div class="btn-group">
+                            <a href="{% url 'task_create' %}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle me-1"></i> Nueva Tarea
+                            </a>
+                            <a href="{% url 'task_panel' %}" class="btn btn-outline-primary">
+                                <i class="bi bi-kanban me-1"></i> Panel de Tareas
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
 
-        </div><!-- End Right side columns -->
+            <!-- Tabla de tareas -->
+            {% if tasks_data %}
+            <div class="card">
+                <div class="card-body">
+                    <!-- Incluir tabla optimizada -->
+                    {% include 'tasks/includes/task_table_optimized.html' %}
+                </div>
+            </div>
+            {% else %}
+            <!-- Estado vacío -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="bi bi-list-check display-1 text-muted mb-3"></i>
+                    <h4 class="text-muted">No hay tareas</h4>
+                    <p class="text-muted mb-4">Crea tu primera tarea para empezar a organizar tu trabajo.</p>
+                    <a href="{% url 'task_create' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-plus-circle me-1"></i> Crear Tarea
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- ... (código posterior) ... -->
+        </div><!-- End Main Content Area -->
 
     </div>
 </section>
 
+<!-- Scripts para funcionalidades -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtro de búsqueda
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.className = 'form-control';
+    searchInput.placeholder = 'Buscar tareas...';
+    searchInput.style.marginBottom = '10px';
+    
+    const cardBody = document.querySelector('.card .card-body');
+    if (cardBody) {
+        cardBody.parentNode.insertBefore(searchInput, cardBody);
+        
+        searchInput.addEventListener('keyup', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('table tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+    }
+});
+</script>
+
 {% endblock %}
-
-

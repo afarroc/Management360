@@ -1,3 +1,4 @@
+# events/urls.py
 from django.urls import path, include
 from . import views
 from .setup_views import SetupView
