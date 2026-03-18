@@ -4,184 +4,277 @@
 
 {% block content %}
 
-<!-- Mensajes de confirmación y éxito -->
+<!-- Mensajes del sistema -->
 {% if messages %}
-<div class="alert alert-info" role="alert">
+<div class="alert-container mb-4">
     {% for message in messages %}
-    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
-        {% endfor %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
 </div>
 {% endif %}
 
+<!-- Header de la página -->
 <div class="pagetitle">
-    <h1>{{ entry.titulo }}</h1>
-    <nav>
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'bitacora:list' %}">Bitácora</a></li>
-            <li class="breadcrumb-item active">{{ entry.titulo|truncatechars:30 }}</li>
-        </ol>
-    </nav>
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1>{{ entry.titulo }}</h1>
+            <nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'bitacora:dashboard' %}">Bitácora</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'bitacora:list' %}">Entradas</a></li>
+                    <li class="breadcrumb-item active text-truncate" style="max-width: 200px;">{{ entry.titulo }}</li>
+                </ol>
+            </nav>
+        </div>
+        <a href="{% url 'bitacora:list' %}" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left me-1"></i> Volver
+        </a>
+    </div>
 </div><!-- End Page Title -->
 
-<section class="section dashboard">
+<section class="section">
     <div class="row">
+
+        <!-- ======= Contenido Principal ======= -->
         <div class="col-lg-8">
+
+            <!-- Card Principal -->
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="badge bg-primary">{{ entry.get_categoria_display }}</span>
-                        {% if entry.mood %}
-                        <span class="badge bg-info ms-2">Estado: {{ entry.mood }}</span>
-                        {% endif %}
-                        {% if entry.is_public %}
-                        <span class="badge bg-success ms-2">Público</span>
-                        {% else %}
-                        <span class="badge bg-secondary ms-2">Privado</span>
-                        {% endif %}
-                    </div>
-                    <div class="btn-group" role="group">
-                        <a href="{% url 'bitacora:update' entry.pk %}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-pencil"></i> Editar
-                        </a>
-                        <a href="{% url 'bitacora:delete' entry.pk %}" class="btn btn-sm btn-outline-danger">
-                            <i class="bi bi-trash"></i> Eliminar
-                        </a>
-                        <a href="{% url 'bitacora:list' %}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-arrow-left"></i> Volver
-                        </a>
+                <!-- Header con acciones y badges -->
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="badge bg-primary">
+                                <i class="bi bi-tag me-1"></i>{{ entry.get_categoria_display }}
+                            </span>
+                            {% if entry.is_public %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-globe me-1"></i>Pública
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-lock me-1"></i>Privada
+                            </span>
+                            {% endif %}
+                            {% if entry.mood %}
+                            <span class="badge bg-info">
+                                <i class="bi bi-emoji-smile me-1"></i>{{ entry.mood }}
+                            </span>
+                            {% endif %}
+                            {% if entry.attachments.exists %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-paperclip me-1"></i>{{ entry.attachments.count }} adjunto{{ entry.attachments.count|pluralize }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                    data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'bitacora:update' entry.pk %}">
+                                        <i class="bi bi-pencil me-2"></i>Editar entrada
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{% url 'bitacora:update' entry.pk %}#attachments">
+                                        <i class="bi bi-paperclip me-2"></i>Gestionar adjuntos
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#">
+                                        <i class="bi bi-copy me-2"></i>Duplicar entrada
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#">
+                                        <i class="bi bi-share me-2"></i>Compartir
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{% url 'bitacora:delete' entry.pk %}">
+                                        <i class="bi bi-trash me-2"></i>Eliminar entrada
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
                 </div>
+
+                <!-- Contenido de la entrada -->
                 <div class="card-body">
-                    <div class="entry-content mb-4">
-                        {{ entry.contenido|safe }}
-                    </div>
+                    
+                    <!-- Contenido principal (HTML de TinyMCE) -->
+                    <article class="entry-content mb-5" style="white-space: pre-wrap; word-wrap: break-word;">
+                        {% autoescape off %}
+                        {{ entry.contenido|linebreaksbr|safe }}
+                        {% endautoescape %}
+                    </article>
 
                     <!-- Tags -->
                     {% if entry.tags.all %}
-                    <div class="mb-3">
-                        <strong>Tags:</strong>
-                        {% for tag in entry.tags.all %}
-                        <span class="badge bg-light text-dark me-1">{{ tag.name }}</span>
-                        {% endfor %}
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center mb-2">
+                            <h6 class="mb-0 me-2">
+                                <i class="bi bi-tags text-primary"></i>
+                            </h6>
+                            <strong class="small">Etiquetas:</strong>
+                        </div>
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for tag in entry.tags.all %}
+                            <span class="badge bg-light text-dark border">
+                                <i class="bi bi-tag-fill me-1 text-primary"></i>{{ tag.name }}
+                            </span>
+                            {% endfor %}
+                        </div>
                     </div>
                     {% endif %}
 
-                    <!-- Ubicación -->
-                    {% if entry.latitud and entry.longitud %}
-                    <div class="mb-3">
-                        <strong><i class="bi bi-geo-alt"></i> Ubicación:</strong> {{ entry.latitud }}, {{ entry.longitud }}
+                    <!-- Relaciones con otras apps -->
+                    {% if entry.related_event or entry.related_task or entry.related_project or entry.related_room %}
+                    <div class="mb-4">
+                        <h6 class="mb-3">
+                            <i class="bi bi-link-45deg text-primary me-2"></i>
+                            Relaciones
+                        </h6>
+                        <div class="row g-2">
+                            {% if entry.related_event %}
+                            <div class="col-md-6">
+                                <div class="card border">
+                                    <div class="card-body py-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3">
+                                                <i class="bi bi-calendar-event text-primary"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <small class="text-muted d-block">Evento relacionado</small>
+                                                <strong class="d-block">{{ entry.related_event.title }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if entry.related_task %}
+                            <div class="col-md-6">
+                                <div class="card border">
+                                    <div class="card-body py-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3">
+                                                <i class="bi bi-check-circle text-success"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <small class="text-muted d-block">Tarea relacionada</small>
+                                                <strong class="d-block">{{ entry.related_task.title }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if entry.related_project %}
+                            <div class="col-md-6">
+                                <div class="card border">
+                                    <div class="card-body py-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3">
+                                                <i class="bi bi-folder text-warning"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <small class="text-muted d-block">Proyecto relacionado</small>
+                                                <strong class="d-block">{{ entry.related_project.title }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if entry.related_room %}
+                            <div class="col-md-6">
+                                <div class="card border">
+                                    <div class="card-body py-2">
+                                        <div class="d-flex align-items-center">
+                                            <div class="me-3">
+                                                <i class="bi bi-house-door text-info"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <small class="text-muted d-block">Habitación relacionada</small>
+                                                <strong class="d-block">{{ entry.related_room.name }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
                     {% endif %}
 
-                    <!-- Relaciones -->
-                    {% if entry.related_event %}
-                    <div class="mb-3">
-                        <strong><i class="bi bi-calendar-event"></i> Evento relacionado:</strong>
-                        <a href="#" class="text-decoration-none">{{ entry.related_event.title }}</a>
-                    </div>
-                    {% endif %}
-                    {% if entry.related_task %}
-                    <div class="mb-3">
-                        <strong><i class="bi bi-check-circle"></i> Tarea relacionada:</strong>
-                        <a href="#" class="text-decoration-none">{{ entry.related_task.title }}</a>
-                    </div>
-                    {% endif %}
-                    {% if entry.related_project %}
-                    <div class="mb-3">
-                        <strong><i class="bi bi-folder"></i> Proyecto relacionado:</strong>
-                        <a href="#" class="text-decoration-none">{{ entry.related_project.title }}</a>
-                    </div>
-                    {% endif %}
-                    {% if entry.related_room %}
-                    <div class="mb-3">
-                        <strong><i class="bi bi-house"></i> Habitación relacionada:</strong>
-                        <a href="#" class="text-decoration-none">{{ entry.related_room.name }}</a>
-                    </div>
-                    {% endif %}
-
-                    <!-- Contenido estructurado -->
+                    <!-- Contenido Estructurado -->
                     {% if rendered_structured_content %}
                     <div class="mb-4">
-                        <h5><i class="bi bi-puzzle"></i> Contenido Estructurado:</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">
+                                <i class="bi bi-puzzle text-primary me-2"></i>
+                                Contenido Estructurado
+                            </h6>
+                            <span class="badge bg-primary">{{ rendered_structured_content|length }} bloque{{ rendered_structured_content|length|pluralize }}</span>
+                        </div>
+                        
                         <div class="structured-content">
                             {% for block in rendered_structured_content %}
-                            <div class="content-block mb-3 p-3 border rounded bg-light">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 class="mb-0">{{ block.title }}</h6>
-                                    <span class="badge bg-info">{{ block.type }}</span>
+                            <div class="content-block card mb-3 border">
+                                <div class="card-header bg-light py-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-secondary me-2">{{ block.type|default:"content" }}</span>
+                                            <strong class="small">{{ block.title|default:"Sin título" }}</strong>
+                                        </div>
+                                        <small class="text-muted">
+                                            {{ block.inserted_at|date:"d/m/Y H:i"|default:"Sin fecha" }}
+                                        </small>
+                                    </div>
                                 </div>
-
-                                <div class="content-body">
-                                    {% if block.type == 'html' %}
-                                        <div>{{ block.content|safe }}</div>
+                                <div class="card-body">
+                                    {% if block.type and block.type|slice:"0:3" == 'ad_' %}
+                                        {% render_content_block block %}
+                                    {% elif block.type == 'html' %}
+                                        <div class="html-content">{{ block.content|safe }}</div>
                                     {% elif block.type == 'text' %}
-                                        <p>{{ block.content }}</p>
+                                        <div class="text-content" style="white-space: pre-wrap; word-wrap: break-word;">{{ block.content }}</div>
                                     {% elif block.type == 'markdown' %}
-                                        <pre><code>{{ block.content }}</code></pre>
-                                    {% elif block.type == 'json' and block.rendered_content %}
-                                        {{ block.rendered_content|safe }}
-                                    {% elif block.type == 'ad_banner' %}
-                                        {% render_content_block block %}
-                                    {% elif block.type == 'ad_card' %}
-                                        {% render_content_block block %}
-                                    {% elif block.type == 'ad_alert' %}
-                                        {% render_content_block block %}
-                                    {% elif block.type == 'ad_testimonial' %}
-                                        {% render_content_block block %}
-                                    {% elif block.type == 'ad_countdown' %}
-                                        {% render_content_block block %}
-                                    {% elif block.type == 'ad_feature' %}
-                                        {% render_content_block block %}
-                                    {% elif block.type == 'ad_comparison' %}
-                                        {% render_content_block block %}
-                                    {% elif block.type == 'ad_achievement' %}
-                                        {% render_content_block block %}
+                                        <div class="markdown-content">{{ block.content|linebreaks }}</div>
+                                    {% elif block.type == 'json' %}
+                                        <pre class="bg-dark text-light p-3 rounded"><code>{{ block.content|safe }}</code></pre>
                                     {% elif block.type == 'image' %}
-                                        {% if block.content %}
                                         <img src="{{ block.content }}" alt="{{ block.title }}" class="img-fluid rounded">
-                                        {% endif %}
                                     {% elif block.type == 'video' %}
-                                        {% if block.content %}
-                                        <video controls class="w-100">
+                                        <video controls class="w-100 rounded">
                                             <source src="{{ block.content }}" type="video/mp4">
-                                            Tu navegador no soporta video.
                                         </video>
-                                        {% endif %}
                                     {% elif block.type == 'quote' %}
-                                        <blockquote class="blockquote">
+                                        <blockquote class="blockquote border-start border-primary ps-3" style="white-space: pre-wrap; word-wrap: break-word;">
                                             <p class="mb-0">{{ block.content }}</p>
+                                            {% if block.title %}
+                                            <footer class="blockquote-footer mt-2">{{ block.title }}</footer>
+                                            {% endif %}
                                         </blockquote>
                                     {% elif block.type == 'code' %}
-                                        <pre><code>{{ block.content }}</code></pre>
-                                    {% elif block.type == 'list' %}
-                                        <div>{{ block.content|safe }}</div>
-                                    {% elif block.type == 'table' %}
-                                        <div>{{ block.content|safe }}</div>
-                                    {% elif block.type == 'card' %}
-                                        <div>{{ block.content|safe }}</div>
-                                    {% elif block.type == 'alert' %}
-                                        <div>{{ block.content|safe }}</div>
-                                    {% elif block.type == 'button' %}
-                                        <div>{{ block.content|safe }}</div>
-                                    {% elif block.type == 'form' %}
-                                        <div>{{ block.content|safe }}</div>
-                                    {% elif block.type == 'divider' %}
-                                        <hr>
-                                    {% elif block.type == 'icon' %}
-                                        <i class="{{ block.content }}"></i>
-                                    {% elif block.type == 'progress' %}
-                                        <div>{{ block.content|safe }}</div>
-                                    {% elif block.type == 'badge' %}
-                                        <div>{{ block.content|safe }}</div>
-                                    {% elif block.type == 'timeline' %}
-                                        <div>{{ block.content|safe }}</div>
+                                        <pre class="bg-light p-3 border rounded"><code>{{ block.content }}</code></pre>
                                     {% else %}
-                                        <div>{{ block.content|safe }}</div>
+                                        <div style="white-space: pre-wrap; word-wrap: break-word;">{{ block.rendered_content|safe }}</div>
                                     {% endif %}
                                 </div>
-
-                                <small class="text-muted">Insertado: {{ block.inserted_at|date:"d/m/Y H:i" }}</small>
                             </div>
                             {% endfor %}
                         </div>
@@ -190,36 +283,78 @@
 
                     <!-- Adjuntos multimedia -->
                     {% if entry.attachments.all %}
-                    <div class="mb-3">
-                        <h5><i class="bi bi-paperclip"></i> Adjuntos:</h5>
-                        <div class="row">
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">
+                                <i class="bi bi-paperclip text-primary me-2"></i>
+                                Archivos Adjuntos
+                            </h6>
+                            <span class="badge bg-warning text-dark">{{ entry.attachments.count }} archivo{{ entry.attachments.count|pluralize }}</span>
+                        </div>
+                        
+                        <div class="row g-3">
                             {% for attachment in entry.attachments.all %}
-                            <div class="col-md-6 col-lg-4 mb-3">
-                                <div class="card h-100">
-                                    <div class="card-body text-center">
-                                        {% if attachment.tipo == 'image' %}
-                                        <img src="{{ attachment.archivo.url }}" alt="{{ attachment.descripcion }}" class="img-fluid rounded mb-2" style="max-height: 150px;">
-                                        {% elif attachment.tipo == 'audio' %}
-                                        <i class="bi bi-music-note-beamed fs-1 text-primary mb-2"></i>
-                                        <audio controls class="w-100">
-                                            <source src="{{ attachment.archivo.url }}" type="audio/mpeg">
-                                            Tu navegador no soporta audio.
-                                        </audio>
-                                        {% elif attachment.tipo == 'video' %}
-                                        <i class="bi bi-play-circle fs-1 text-primary mb-2"></i>
-                                        <video controls class="w-100" style="max-height: 150px;">
-                                            <source src="{{ attachment.archivo.url }}" type="video/mp4">
-                                            Tu navegador no soporta video.
-                                        </video>
-                                        {% else %}
-                                        <i class="bi bi-file-earmark fs-1 text-secondary mb-2"></i>
-                                        <a href="{{ attachment.archivo.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                            Descargar {{ attachment.tipo }}
-                                        </a>
-                                        {% endif %}
-                                        {% if attachment.descripcion %}
-                                        <p class="card-text small text-muted mt-2">{{ attachment.descripcion }}</p>
-                                        {% endif %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card border h-100 attachment-card">
+                                    <div class="card-body">
+                                        <div class="text-center mb-3">
+                                            {% if attachment.tipo == 'image' %}
+                                            <div class="image-preview mb-2">
+                                                <img src="{{ attachment.archivo.url }}" 
+                                                     alt="{{ attachment.descripcion|default:'Imagen adjunta' }}"
+                                                     class="img-fluid rounded" 
+                                                     style="max-height: 120px; object-fit: cover;">
+                                            </div>
+                                            <span class="badge bg-success">Imagen</span>
+                                            {% elif attachment.tipo == 'audio' %}
+                                            <div class="mb-3">
+                                                <i class="bi bi-file-earmark-music text-primary" style="font-size: 3rem;"></i>
+                                            </div>
+                                            <span class="badge bg-info">Audio</span>
+                                            {% elif attachment.tipo == 'video' %}
+                                            <div class="mb-3">
+                                                <i class="bi bi-file-earmark-play text-danger" style="font-size: 3rem;"></i>
+                                            </div>
+                                            <span class="badge bg-danger">Video</span>
+                                            {% else %}
+                                            <div class="mb-3">
+                                                <i class="bi bi-file-earmark-text text-secondary" style="font-size: 3rem;"></i>
+                                            </div>
+                                            <span class="badge bg-secondary">Documento</span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div class="attachment-info">
+                                            <h6 class="card-title small text-truncate mb-2">
+                                                {{ attachment.archivo.name|cut:"bitacora/attachments/" }}
+                                            </h6>
+                                            
+                                            {% if attachment.descripcion %}
+                                            <p class="card-text small text-muted mb-2" style="white-space: pre-wrap; word-wrap: break-word;">
+                                                {{ attachment.descripcion }}
+                                            </p>
+                                            {% endif %}
+                                            
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <small class="text-muted">
+                                                    {{ attachment.fecha_subida|date:"d/m" }}
+                                                </small>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{{ attachment.archivo.url }}" 
+                                                       class="btn btn-outline-primary" 
+                                                       target="_blank" 
+                                                       title="Ver/Descargar">
+                                                        <i class="bi bi-download"></i>
+                                                    </a>
+                                                    <button type="button" 
+                                                            class="btn btn-outline-secondary" 
+                                                            onclick="navigator.clipboard.writeText('{{ attachment.archivo.url }}')"
+                                                            title="Copiar URL">
+                                                        <i class="bi bi-clipboard"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -228,77 +363,412 @@
                     </div>
                     {% endif %}
 
-                    <div class="text-muted small border-top pt-3">
-                        <div class="row">
+                    <!-- Metadata de la entrada -->
+                    <div class="border-top pt-3">
+                        <div class="row g-3">
                             <div class="col-md-6">
-                                <strong>Creado:</strong> {{ entry.fecha_creacion|date:"d/m/Y H:i" }}
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-calendar-plus text-primary me-2"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Creada</small>
+                                        <strong>{{ entry.fecha_creacion|date:"d/m/Y H:i" }}</strong>
+                                    </div>
+                                </div>
                             </div>
                             {% if entry.fecha_actualizacion != entry.fecha_creacion %}
                             <div class="col-md-6">
-                                <strong>Actualizado:</strong> {{ entry.fecha_actualizacion|date:"d/m/Y H:i" }}
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-calendar-check text-success me-2"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Actualizada</small>
+                                        <strong>{{ entry.fecha_actualizacion|date:"d/m/Y H:i" }}</strong>
+                                    </div>
+                                </div>
                             </div>
                             {% endif %}
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-person-circle text-info me-2"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Autor</small>
+                                        <strong>{{ entry.autor.get_full_name|default:entry.autor.username }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            {% if entry.latitud and entry.longitud %}
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-geo-alt text-warning me-2"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Ubicación</small>
+                                        <strong>{{ entry.latitud|floatformat:4 }}, {{ entry.longitud|floatformat:4 }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer con acciones -->
+                <div class="card-footer bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted">ID: {{ entry.id }}</small>
+                        </div>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'bitacora:update' entry.pk %}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-pencil me-1"></i>Editar
+                            </a>
+                            <a href="{% url 'bitacora:delete' entry.pk %}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash me-1"></i>Eliminar
+                            </a>
+                            <a href="{% url 'bitacora:list' %}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-list-ul me-1"></i>Lista
+                            </a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Sidebar con información adicional -->
+        <!-- ======= Sidebar de Información ======= -->
         <div class="col-lg-4">
-            <div class="card">
+            
+            <!-- Card de Resumen -->
+            <div class="card mb-4">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">Información</h5>
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-info-circle text-primary me-2"></i>
+                        Resumen de la Entrada
+                    </h6>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <strong>Categoría:</strong><br>
-                        <span class="badge bg-primary">{{ entry.get_categoria_display }}</span>
+                        <small class="text-muted d-block mb-1">Categoría</small>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-primary me-2">{{ entry.get_categoria_display }}</span>
+                            <small class="text-muted">{{ entry.fecha_creacion|date:"M Y" }}</small>
+                        </div>
                     </div>
-
+                    
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-1">Visibilidad</small>
+                        <div class="d-flex align-items-center">
+                            {% if entry.is_public %}
+                            <i class="bi bi-globe text-success me-2"></i>
+                            <span class="text-success">Entrada pública</span>
+                            {% else %}
+                            <i class="bi bi-lock text-secondary me-2"></i>
+                            <span class="text-secondary">Entrada privada</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
                     {% if entry.mood %}
                     <div class="mb-3">
-                        <strong>Estado de ánimo:</strong><br>
-                        <span class="text-info">{{ entry.mood }}</span>
+                        <small class="text-muted d-block mb-1">Estado de ánimo</small>
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-emoji-smile text-info me-2"></i>
+                            <span>{{ entry.mood }}</span>
+                        </div>
                     </div>
                     {% endif %}
-
+                    
                     <div class="mb-3">
-                        <strong>Visibilidad:</strong><br>
-                        {% if entry.is_public %}
-                        <span class="text-success"><i class="bi bi-eye"></i> Público</span>
-                        {% else %}
-                        <span class="text-secondary"><i class="bi bi-eye-slash"></i> Privado</span>
-                        {% endif %}
-                    </div>
-
-                    {% if entry.tags.all %}
-                    <div class="mb-3">
-                        <strong>Tags:</strong><br>
-                        {% for tag in entry.tags.all %}
-                        <span class="badge bg-light text-dark me-1 mb-1">{{ tag.name }}</span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-
-                    <div class="mb-3">
-                        <strong>Estadísticas:</strong><br>
-                        <small class="text-muted">
-                            {% if rendered_structured_content %}
-                            {{ rendered_structured_content|length }} bloque{{ rendered_structured_content|length|pluralize }} estructurado{{ rendered_structured_content|length|pluralize }}
-                            {% endif %}
+                        <small class="text-muted d-block mb-1">Conteo de contenido</small>
+                        <div class="row g-2 text-center">
                             {% if entry.attachments.all %}
-                            {% if rendered_structured_content %}<br>{% endif %}
-                            {{ entry.attachments.count }} adjunto{{ entry.attachments.count|pluralize }}
-                            {% else %}
-                            {% if not rendered_structured_content %}Sin contenido adicional{% endif %}
+                            <div class="col-6">
+                                <div class="p-2 bg-light rounded">
+                                    <i class="bi bi-paperclip d-block text-primary"></i>
+                                    <small class="d-block">{{ entry.attachments.count }}</small>
+                                    <small class="text-muted">Adjuntos</small>
+                                </div>
+                            </div>
                             {% endif %}
-                        </small>
+                            {% if rendered_structured_content %}
+                            <div class="col-6">
+                                <div class="p-2 bg-light rounded">
+                                    <i class="bi bi-puzzle d-block text-success"></i>
+                                    <small class="d-block">{{ rendered_structured_content|length }}</small>
+                                    <small class="text-muted">Bloques</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if entry.tags.all %}
+                            <div class="col-6">
+                                <div class="p-2 bg-light rounded">
+                                    <i class="bi bi-tags d-block text-warning"></i>
+                                    <small class="d-block">{{ entry.tags.count }}</small>
+                                    <small class="text-muted">Etiquetas</small>
+                                </div>
+                            </div>
+                            {% endif %}
+                            <div class="col-6">
+                                <div class="p-2 bg-light rounded">
+                                    <i class="bi bi-calendar d-block text-info"></i>
+                                    <small class="d-block">{{ entry.fecha_creacion|date:"d" }}</small>
+                                    <small class="text-muted">{{ entry.fecha_creacion|date:"M" }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card de Navegación -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-arrow-left-right text-primary me-2"></i>
+                        Navegación
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'bitacora:list' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-list-ul me-2"></i>Ver todas las entradas
+                        </a>
+                        <a href="{% url 'bitacora:create' %}" class="btn btn-outline-success">
+                            <i class="bi bi-plus-circle me-2"></i>Crear nueva entrada
+                        </a>
+                        <a href="{% url 'bitacora:dashboard' %}" class="btn btn-outline-info">
+                            <i class="bi bi-speedometer2 me-2"></i>Ir al dashboard
+                        </a>
+                    </div>
+                    
+                    {% if entry.get_previous_by_fecha_creacion %}
+                    <div class="mt-3">
+                        <small class="text-muted d-block mb-1">Entrada anterior</small>
+                        <a href="{% url 'bitacora:detail' entry.get_previous_by_fecha_creacion.pk %}" 
+                           class="text-decoration-none">
+                            <div class="d-flex align-items-center p-2 border rounded">
+                                <i class="bi bi-chevron-left text-primary me-2"></i>
+                                <div class="text-truncate">
+                                    <small>{{ entry.get_previous_by_fecha_creacion.titulo|truncatechars:30 }}</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    {% if entry.get_next_by_fecha_creacion %}
+                    <div class="mt-2">
+                        <small class="text-muted d-block mb-1">Siguiente entrada</small>
+                        <a href="{% url 'bitacora:detail' entry.get_next_by_fecha_creacion.pk %}" 
+                           class="text-decoration-none">
+                            <div class="d-flex align-items-center p-2 border rounded">
+                                <div class="flex-grow-1 text-truncate">
+                                    <small>{{ entry.get_next_by_fecha_creacion.titulo|truncatechars:30 }}</small>
+                                </div>
+                                <i class="bi bi-chevron-right text-primary ms-2"></i>
+                            </div>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Card de Acciones Rápidas -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="bi bi-lightning-charge text-primary me-2"></i>
+                        Acciones Rápidas
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-outline-primary text-start" onclick="window.print()">
+                            <i class="bi bi-printer me-2"></i>Imprimir entrada
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary text-start" 
+                                onclick="navigator.clipboard.writeText(window.location.href)">
+                            <i class="bi bi-clipboard me-2"></i>Copiar enlace
+                        </button>
+                        <button type="button" class="btn btn-outline-info text-start" data-bs-toggle="modal" data-bs-target="#shareModal">
+                            <i class="bi bi-share me-2"></i>Compartir entrada
+                        </button>
+                        <a href="{% url 'bitacora:update' entry.pk %}" class="btn btn-outline-warning text-start">
+                            <i class="bi bi-pencil-square me-2"></i>Editar contenido
+                        </a>
+                        <a href="{% url 'bitacora:delete' entry.pk %}" class="btn btn-outline-danger text-start">
+                            <i class="bi bi-trash me-2"></i>Eliminar entrada
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</section>
+
+<!-- Modal para compartir -->
+<div class="modal fade" id="shareModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Compartir entrada</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Enlace de la entrada</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" value="{{ request.build_absolute_uri }}" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyShareLink()">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Compartir en</label>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary">
+                            <i class="bi bi-twitter"></i>
+                        </button>
+                        <button class="btn btn-outline-primary">
+                            <i class="bi bi-facebook"></i>
+                        </button>
+                        <button class="btn btn-outline-primary">
+                            <i class="bi bi-linkedin"></i>
+                        </button>
+                        <button class="btn btn-outline-primary">
+                            <i class="bi bi-envelope"></i>
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</section>
+</div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyShareLink() {
+    const urlInput = document.querySelector('#shareModal input');
+    urlInput.select();
+    document.execCommand('copy');
+    
+    // Mostrar feedback
+    const button = document.querySelector('#shareModal .btn-outline-secondary');
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="bi bi-check"></i>';
+    button.classList.add('btn-success');
+    
+    setTimeout(() => {
+        button.innerHTML = originalHTML;
+        button.classList.remove('btn-success');
+    }, 2000);
+}
+
+// Copiar URL de adjuntos
+document.querySelectorAll('.btn-outline-secondary[onclick*="clipboard"]').forEach(button => {
+    button.addEventListener('click', function() {
+        const originalHTML = this.innerHTML;
+        this.innerHTML = '<i class="bi bi-check"></i>';
+        this.classList.add('btn-success');
+        
+        setTimeout(() => {
+            this.innerHTML = originalHTML;
+            this.classList.remove('btn-success');
+        }, 1500);
+    });
+});
+</script>
+
+<style>
+.entry-content {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+}
+
+.entry-content p {
+    margin-bottom: 1rem;
+}
+
+.entry-content h1, .entry-content h2, .entry-content h3, 
+.entry-content h4, .entry-content h5, .entry-content h6 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.entry-content ul, .entry-content ol {
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+}
+
+.entry-content li {
+    margin-bottom: 0.5rem;
+}
+
+.entry-content blockquote {
+    border-left: 4px solid #ddd;
+    padding-left: 1rem;
+    margin-left: 0;
+    margin-right: 0;
+    margin-bottom: 1rem;
+    color: #666;
+}
+
+.entry-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+.entry-content table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+}
+
+.entry-content table th,
+.entry-content table td {
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+}
+
+.entry-content table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.text-content {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    line-height: 1.6;
+}
+
+.content-block pre {
+    max-height: 300px;
+    overflow: auto;
+}
+
+.attachment-card:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+@media print {
+    .card-footer, .sidebar-card, .dropdown, .btn-group {
+        display: none !important;
+    }
+    
+    .entry-content {
+        font-size: 12pt !important;
+        line-height: 1.5 !important;
+    }
+}
+</style>
 {% endblock %}

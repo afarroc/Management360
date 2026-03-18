@@ -1,3 +1,4 @@
+# bitacora/forms.py
 from django import forms
 from tinymce.widgets import TinyMCE
 from .models import BitacoraEntry, BitacoraAttachment
@@ -27,7 +28,7 @@ class BitacoraEntryForm(forms.ModelForm):
             self.fields['related_project'].queryset = self.fields['related_project'].queryset.filter(host=self.user)
             self.fields['related_room'].queryset = self.fields['related_room'].queryset.filter(owner=self.user)
 
-class BitacoraAttachmentForm(forms.ModelForm):
+class BitacoraAttachmentForm(forms.ModelForm):  # ¡ESTO DEBE EXISTIR!
     class Meta:
         model = BitacoraAttachment
         fields = ['archivo', 'tipo', 'descripcion']
