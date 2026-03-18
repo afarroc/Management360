@@ -1,8 +1,8 @@
 # Management360 — Diseño, Roadmap y Estado de Implementación
 
-> **Última actualización:** 2026-03-17
+> **Última actualización:** 2026-03-18
 > **Contexto:** Plataforma SaaS de Workforce Management (WFM) y Customer Experience (CX)
-> **Apps activas:** 19 | **Archivos Python+HTML:** 693
+> **Apps activas:** 20 | **Archivos Python+HTML:** ~710
 > **Metodología:** Scrum — sprints semanales sincronizados entre apps
 
 ---
@@ -13,7 +13,8 @@ Management360 es una plataforma integral de Workforce Management que combina:
 
 - **Business Intelligence** (app `analyst`) - Procesamiento de datos, ETL, reportes, dashboards
 - **Customer Experience** (app `events`) - Gestión de proyectos, tareas, inbox GTD
-- **Simulación WFM** (app `sim`) - Generación de datos realistas, training, GTR
+- **Simulación WFM** (app `sim`) - Generación de datos realistas, training, GTR, ACD
+- **Simulador Urbano** (app `simcity`) - Micropolis + ABM, tablero Monopoly peruano
 - **Comunicación** (apps `chat`, `rooms`) - Tiempo real, espacios virtuales
 - **Aprendizaje** (app `courses`) - Sistema de cursos y lecciones
 - **Métricas de Contacto** (app `kpis`) - CallRecord, AHT, SL, abandono
@@ -25,16 +26,17 @@ Management360 es una plataforma integral de Workforce Management que combina:
 
 | Componente | Detalle |
 |------------|---------|
-| Backend | Django 4.2+ (Python 3.11) |
-| Base de datos | PostgreSQL 15 (principal) + Redis 7 (cache/sesiones) |
+| Backend | Django 5.1.7 (Python 3.13) |
+| Base de datos | MariaDB 12.2.2 (principal) + Redis 7 (cache/sesiones) |
 | Frontend | Bootstrap 5, HTMX (interactividad parcial), Chart.js 4.4.1 |
-| Tiempo real | Django Channels + WebSockets (chat, rooms) |
+| Tiempo real | Django Channels + Daphne 4.2.1 (ASGI) |
 | Procesamiento de datos | pandas, numpy, openpyxl |
-| Almacenamiento | Media local (desarrollo) / S3 (producción) |
+| Almacenamiento | RemoteMediaStorage (dev: 192.168.18.51) / S3 (prod) |
 | Cache | Redis (sesiones GTR, previews analyst, portapapeles) |
 | API | Django REST Framework (endpoints internos) |
 | Tareas asíncronas | (pendiente implementar Celery) |
-| Despliegue | Termux (dev) / Render (prod) |
+| Despliegue | Termux/Daphne (dev) / Render (prod) |
+| **Engine externo** | **micropolisengine (proot Ubuntu :8001) — solo para `simcity`** |
 
 ---
 
@@ -46,116 +48,62 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | **Fase 2** | Gestión de proyectos y tareas (events) | S2 | ✅ |
 | **Fase 3** | Comunicación en tiempo real (chat, rooms) | S3 | ✅ |
 | **Fase 4** | Plataforma de datos (analyst) | S4 | ✅ |
-| **Fase 5** | Simulador WFM (sim) SIM-1→SIM-6b + integración analyst | S5 | ✅ |
+| **Fase 5** | Simulador WFM (sim) SIM-1→SIM-7a completo (ACD multi-agente) | S5 | ✅ |
 | **Fase 6** | Sistema de aprendizaje (courses) | S6 | ✅ |
-| **Fase 7** | Métricas de contacto (kpis) | S7 | 🔵 |
+| **Fase 7** | Métricas de contacto (kpis) + estabilización bitacora + simcity | S7 | ✅ |
 | **Fase 8** | Automatización y bots (bots) | S8 | ⬜ |
 | **Fase 9** | Optimización y escalado | S9 | ⬜ |
 
 ---
 
-## Sprints Completados
+## Sprint 7 — Completado ✅
 
-### Sprint 1 — Fundación (✅)
-- Configuración inicial Django
-- Apps: `accounts`, `core`, `panel`
-- Sistema de autenticación
-- Template base NiceAdmin
-- Namespaces de URLs establecidos
-
-### Sprint 2 — Gestión de Proyectos (✅)
-- App `events` con modelos: Project, Task, Event, Status
-- Sistema de dependencias entre tareas
-- Inbox GTD con procesamiento de emails CX
-- Kanban board y matriz Eisenhower
-- Programación recurrente de tareas (TaskSchedule)
-
-### Sprint 3 — Comunicación (✅)
-- App `chat` con WebSockets
-- App `rooms` para espacios virtuales
-- Sistema de notificaciones en tiempo real
-- Presencia de usuarios
-- Comandos del asistente IA
-
-### Sprint 4 — Plataforma de Datos (✅)
-- App `analyst` completa (ver ANALYST_PLATFORM_DESIGN.md)
-- Fases 1-5 implementadas: AnalystBase, CrossSource, Report, Dashboard, Pipeline
-- Integración con modelos Django vía ETL
-
-### Sprint 5 — Simulador WFM + Integración (✅)
-- App `sim` completa (ver SIM_DESIGN.md)
-- SIM-1 a SIM-6a implementados
-- Integración nativa con analyst: ETL, Dashboard, Report Builder
-- Training Mode con escenarios y evaluación
-
-### Sprint 6 — Sistema de Aprendizaje (✅)
-- App `courses` con modelos: Course, Module, Lesson, ContentBlock
-- Editor de cursos con bloques reutilizables
-- Sistema de lecciones y progreso
-- Gestor de contenido (CMS)
-- Vista previa en tiempo real
-
----
-
-## Sprint 7 — En Curso 🔵
-
-### Objetivo: Optimización de KPIs y Métricas de Contacto
+### Objetivo: Optimización de KPIs + Estabilización bitacora + Integración simcity
 
 | Tarea | Prioridad | Estado |
 |-------|-----------|--------|
-| KPI-1: Optimizar modelo `CallRecord` con índices compuestos | 🔴 | ⬜ |
-| KPI-2: Implementar caching en dashboard de KPIs | 🔴 | ⬜ |
-| KPI-3: Integrar `CallRecord` con analyst ETL | 🟠 | ⬜ |
-| KPI-4: Dashboard de SL (Service Level) en tiempo real | 🟠 | ⬜ |
-| KPI-5: Reportes de AHT por agente/skill/franja | 🟡 | ⬜ |
-| KPI-6: Exportación optimizada de datos de llamadas | 🟡 | ⬜ |
+| **BIT-1: Refactor `models.py` bitacora** | 🔴 | ✅ |
+| **BIT-2: Refactor `views.py` bitacora** | 🔴 | ✅ |
+| **BIT-3: Migraciones 0003+0004 bitacora** | 🔴 | ✅ |
+| **BIT-4: Refactor `bitacora_tags.py`** | 🟠 | ✅ |
+| **SC-0: Migración simcity_web → M360 (proxy híbrido)** | 🔴 | ✅ |
+| **BIT-5: Auditoría templates bitacora** | 🟡 | ⬜ |
+| **BIT-6: urls.py `<int:pk>` → `<uuid:pk>`** | 🟡 | ⬜ |
+| KPI-1: UUID PK + `fecha` DateField + 5 índices + `created_by` (MySQL IF NOT EXISTS) | 🔴 | ✅ |
+| KPI-2: Cache Redis 5min `kpis:dashboard:{user}:{desde}:{hasta}`, colores fijos | 🔴 | ✅ |
+| KPI-3: `/kpis/api/` JSON + 3 funciones WFM en Report Builder analyst | 🟠 | ✅ |
+| KPI-4: Dashboard sat promedio + top/bottom servicio + total eventos | 🟠 | ✅ |
+| KPI-5: `kpis_aht_report` — agrupa por agente/supervisor/canal/servicio/semana | 🟡 | ✅ |
+| KPI-6: `StreamingHttpResponse` + filtros fecha + chunk_size=500 | 🟡 | ✅ |
+| Namespace `kpis:` + `login_required` + nav template corregido | 🔴 | ✅ |
 | Refactor: Unificar manejo de fechas en todas las apps | 🟡 | ⬜ |
 
 ---
 
 ## Sprint 8 — Planificado ⬜
 
-### Automatización y Bots
-
 | Tarea | Prioridad |
 |-------|-----------|
 | BOT-1: Mejorar motor de asignación de leads en `bots` | 🔴 |
-| BOT-2: Integrar bots con eventos de `sim` (agentes automáticos) | 🔴 |
+| BOT-2: Integrar bots con eventos de `sim` | 🔴 |
 | BOT-3: Pipeline de procesamiento de campañas outbound | 🟠 |
 | BOT-4: Dashboard de rendimiento de bots | 🟠 |
 | BOT-5: Reglas de distribución basadas en skills | 🟡 |
+| SC-1: Nav link en core dashboard para simcity | 🟡 |
+| SC-2: Exportar partida simcity a dataset analyst | 🟠 |
 
 ---
 
 ## Sprint 9 — Planificado ⬜
 
-### Optimización y Escalado
-
 | Tarea | Prioridad |
 |-------|-----------|
 | SCA-1: Implementar Celery para tareas asíncronas | 🔴 |
-| SCA-2: Particionamiento de tablas grandes (Interaction, CallRecord) | 🔴 |
+| SCA-2: Particionamiento de tablas grandes | 🔴 |
 | SCA-3: Estrategia de archivado para datos históricos | 🟠 |
 | SCA-4: Read replicas para reportes pesados | 🟠 |
 | SCA-5: Migración a S3 para archivos media | 🟡 |
 | SCA-6: Optimización de queries N+1 en todas las apps | 🟡 |
-
----
-
-## Backlog Priorizado del Proyecto
-
-| ID | Historia | Prioridad | Esfuerzo | Sprint |
-|----|----------|-----------|----------|--------|
-| P-01 | Como analista WFM, quiero ver SL en tiempo real por skill | 🔴 | M | S7 |
-| P-02 | Como supervisor, quiero dashboard unificado con KPIs de sim + reales | 🔴 | L | S7 |
-| P-03 | Como trainer, quiero asignar agentes reales a sesiones GTR | 🔴 | XL | S8 |
-| P-04 | Como admin, quiero que las tareas pesadas se ejecuten en background | 🔴 | L | S9 |
-| P-05 | Como analista, quiero exportar dashboards a PDF | 🟠 | M | S8 |
-| P-06 | Como usuario, quiero notificaciones push en móvil | 🟠 | L | S9 |
-| P-07 | Como trainer, quiero reporte comparativo agente vs perfil esperado | 🟠 | M | S8 |
-| P-08 | Como admin, quiero auditoría de todas las acciones críticas | 🟠 | M | S9 |
-| P-09 | Como analista, quiero programar reportes automáticos por email | 🟡 | L | S9 |
-| P-10 | Como usuario, quiero tema oscuro en todas las apps | 🟡 | M | S8 |
 
 ---
 
@@ -166,15 +114,21 @@ Management360 es una plataforma integral de Workforce Management que combina:
     accounts ──┬──> events (propietario de proyectos/tareas)
                ├──> analyst (creador de datasets)
                ├──> sim (creador de cuentas)
+               ├──> simcity (propietario de partidas)
                ├──> courses (autor de cursos)
                └──> cv (propietario del CV)
 
     analyst ──┬──> sim (ETL source + dashboard widgets)
               ├──> events (análisis de proyectos/tareas)
+              ├──> simcity (exportar datos de partidas — pendiente)
               └──> kpis (reportes avanzados de llamadas)
 
     sim ──────┬──> analyst (datos para reportes)
               └──> events (creación de tareas desde training?)
+
+    simcity ──┬──> proot:8001 (micropolisengine — engine externo)
+              ├──> analyst (exportar partida como dataset — pendiente)
+              └──> kpis (KPIs urbanos — pendiente)
 
     events ───┬──> chat (notificaciones de tareas)
               └──> rooms (salas para proyectos)
@@ -185,16 +139,38 @@ Management360 es una plataforma integral de Workforce Management que combina:
     courses ──┬──> analyst (análisis de progreso de estudiantes)
               └──> cv (certificaciones)
 
+    bitacora ─┬──> events (related_event, related_task, related_project)
+              ├──> rooms (related_room)
+              ├──> events.Tag (tags M2M)
+              └──> courses.ContentBlock (structured_content)
+
 ### Convenciones de Nombres de Campos
 
-| Concepto | App origen | Campo estándar | Apps que deben usarlo |
-|----------|------------|----------------|----------------------|
-| Fecha de inicio | sim | `fecha` (DateField) + `hora_inicio` (DateTimeField) | analyst, kpis |
-| Usuario creador | Todas | `created_by` (ForeignKey User) | Todas |
-| Identificador público | Todas | `id` = UUIDField primary_key=True | Todas |
-| Soft delete | events | `is_active` BooleanField | analyst (en algunos) |
-| Historial de cambios | events | `*History` models | — |
-| Cache key | analyst | `cache_key` CharField unique | — |
+| Concepto | Campo estándar | Tipo | Notas |
+|----------|----------------|------|-------|
+| PK pública | `id` | `UUIDField(primary_key=True)` | Todas las apps excepto `simcity` |
+| Usuario creador | `created_by` | `ForeignKey(User)` | Convención general |
+| Timestamps | `created_at` / `updated_at` | `DateTimeField` | auto_now_add / auto_now |
+| Soft delete | `is_active` | `BooleanField(default=True)` | Donde aplica |
+
+> **Excepciones documentadas:**
+> - `events` usa `host` para Project/Task/Event — NO cambiar
+> - `rooms` usa `owner` para Room — NO cambiar
+> - `bitacora` usa `fecha_creacion`/`fecha_actualizacion` (en español) — convención interna
+> - `simcity.Game` usa `AutoField` (int) como PK — heredado del engine original
+
+### `accounts.User` — Campos del modelo custom
+
+```python
+class User(AbstractUser):
+    phone      = models.CharField(max_length=20, blank=True, null=True)
+    avatar     = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+```
+
+> Heredado de `AbstractUser`: `username`, `email`, `first_name`, `last_name`,
+> `is_staff`, `is_active`, `date_joined`, `last_login`, `groups`, `user_permissions`.
 
 ---
 
@@ -204,13 +180,14 @@ Management360 es una plataforma integral de Workforce Management que combina:
 |-----|-----------|-------------------|-----------|-------|-----------|
 | analyst | ✅ auto | ✅ | ✅ | 34/50 | 68% |
 | sim | ✅ auto | ✅ | ✅ | 157/157 | 100% |
+| bitacora | ✅ auto | ✅ | ✅ | — | — |
+| simcity | ✅ auto | ✅ | ✅ | — | — |
 | events | ⬜ | ⬜ | ⬜ | — | — |
 | chat | ⬜ | ⬜ | ⬜ | — | — |
 | rooms | ⬜ | ⬜ | ⬜ | — | — |
 | courses | ⬜ | ⬜ | ⬜ | — | — |
-| kpis | ⬜ | ⬜ | ⬜ | — | — |
+| kpis | ⬜ | 🔵 parcial | ⬜ | — | — |
 | bots | ⬜ | ⬜ | ⬜ | — | — |
-| bitacora | ⬜ | ⬜ | ⬜ | — | — |
 | board | ⬜ | ⬜ | ⬜ | — | — |
 | cv | ⬜ | ⬜ | ⬜ | — | — |
 | accounts | ⬜ | ⬜ | ⬜ | — | — |
@@ -224,52 +201,53 @@ Management360 es una plataforma integral de Workforce Management que combina:
 
 ---
 
-## Comandos Útiles para Desarrollo
+## Estructura de `docs/`
 
-    # Generar mapa de cualquier app
-    bash scripts/m360_map.sh app ./kpis        # → KPIS_CONTEXT.md
-    bash scripts/m360_map.sh app ./events      # → EVENTS_CONTEXT.md
-
-    # Auditoría de URLs sin namespace
-    bash scripts/m360_map.sh app ./analyst --audit
-
-    # Ver mapa de URLs completo
-    bash scripts/m360_map.sh urls
-
-    # Tests de sim (referencia)
-    python manage.py test sim.tests.test_generators sim.tests.test_gtr_engine -v 2
-
-    # Seed de perfiles de agente (después de migrar sim)
-    python manage.py seed_agent_profiles
+```
+docs/
+├── PROJECT_DESIGN.md
+├── PROJECT_DEV_REFERENCE.md
+├── plan_gestion_proyectos.md
+├── architecture/
+│   └── README-JS-ARCHITECTURE.md
+├── chat/
+│   └── CHAT_COMMANDS_EXAMPLES.md
+├── courses/
+│   └── COURSE_EDITOR_OPTIMIZATIONS.md
+├── events/
+│   ├── CX_EMAIL_PROCESSING_README.md
+│   └── README-SCHEDULING-SYSTEM.md
+├── faq/
+│   └── gtd_inbox_processing_guide.md
+├── guides/
+│   └── MEDIA_UPLOAD_FIX_README.md
+└── rooms/
+    ├── NAVIGATION_TEST_ZONE_README.md
+    └── README_NAVIGATION.md
+```
 
 ---
 
-## 🔄 Handoff — Cambio de Sesión
+## Incidentes Registrados
 
-> **Estado actual:** Sprint 7 iniciado (kpis). sim Sprint 4 (SIM-7a ACD Simulator) en curso en paralelo.
+### INC-001 — 2026-03-17: `accounts_user` inexistente en BD
+**Síntoma:** `500 Internal Server Error` en cualquier URL autenticada.
+```
+django.db.utils.ProgrammingError: (1146, "Table 'projects.accounts_user' doesn't exist")
+```
+**Causa:** `accounts/migrations/` nunca fue commiteada. Al recrear la BD, Django no pudo
+regenerar las tablas de `accounts`. La tabla `auth_user` (Django default) existía pero
+el proyecto usa `AUTH_USER_MODEL = 'accounts.User'`.
 
-### Archivos para próxima sesión
+**Resolución:**
+1. `python manage.py makemigrations accounts` → `0001_initial.py`
+2. INSERT manual en `django_migrations` (fake) por `InconsistentMigrationHistory`
+3. SQL manual en dbshell para crear tablas físicas
+4. Usuarios restaurados desde `backup_cv_users.json` (hashes intactos)
 
-    # Documentación de referencia
-    cat docs/PROJECT_DESIGN.md
-    cat docs/PROJECT_DEV_REFERENCE.md
+**Prevención:** `accounts/migrations/` commiteada. `.gitignore` corregido (commit `2ea63279`).
 
-    # Mapas de apps prioritarias
-    bash scripts/m360_map.sh app ./kpis        # → KPIS_CONTEXT.md
-    bash scripts/m360_map.sh app ./events      # → EVENTS_CONTEXT.md
-
-    # Código de KPIs para análisis
-    cat kpis/models.py | termux-clipboard-set
-    cat kpis/views.py | termux-clipboard-set
-
-### Tareas pendientes para próxima sesión
-
-1. **sim Sprint 4 (SIM-7a):** Modelos ACD + motor de enrutamiento multi-agente
-2. Optimizar modelo `CallRecord` (índices, consultas frecuentes)
-3. Implementar caching en dashboard de KPIs
-4. Integrar KPIs con analyst ETL
-5. Unificar manejo de fechas entre apps
-6. Crear `EVENTS_DESIGN.md` y `EVENTS_DEV_REFERENCE.md`
+**Estado BD actual:** 141+ tablas. `auth_user` (legacy Django) coexiste con `accounts_user` — a limpiar eventualmente.
 
 ---
 
@@ -278,5 +256,73 @@ Management360 es una plataforma integral de Workforce Management que combina:
 - **Fechas en `sim`:** usar `fecha` (DateField) + `hora_inicio` (DateTimeField) — NO `started_at`
 - **CSRF en JS:** siempre `csrf()` desde cookie, nunca `CSRF_TOKEN` hardcoded
 - **Respuestas JSON:** siempre `{"success": true/false, ...}`
-- **Cache Redis:** TTL estándar 4h para sesiones, 2h para previews
-- **UUIDs:** usar en todos los modelos como PK pública, pero mantener AutoField interno para joins
+- **`timedelta`:** importar desde `datetime`, NO desde `django.utils.timezone`
+- **`events` usa `host`**, **`rooms` usa `owner`** — no son errores
+- **`accounts/migrations/`** debe estar en git — nunca ignorar carpetas migrations
+- **`.gitignore`:** regla `*/migrations/*` primero, excepciones `!app/migrations/**` después
+- **`accounts.User`** tiene campos extra: `phone`, `avatar`, `created_at`, `updated_at`
+- **`simcity`** requiere proot Ubuntu corriendo en :8001 — sin él, todos los endpoints del juego fallan
+- **`micropolisengine`** solo disponible en `/root/micropolis/venv` (proot) — nunca importar en M360/Termux
+- **`simcity.Game`** tiene `engine_game_id` (FK lógica al SQLite de proot) — puede ser `None` si el engine no respondió al crear
+
+---
+
+## 🔄 Handoff — Sesión 2026-03-18
+
+### Commits pusheados (sesión completa)
+
+| Hash | Descripción |
+|------|-------------|
+| `2f326224` | fix(accounts): migrations faltantes — INC-001 |
+| `720aff10` | refactor(bitacora): modelos, vistas, tags, docs |
+| `6f060e90` | docs(project): PROJECT_DESIGN + DEV_REFERENCE |
+| `9683cd41` | fix(bitacora): migraciones 0003+0004 force-add |
+| `2ea63279` | fix(.gitignore): lógica de migraciones corregida |
+| `a9f6ccf4` | feat(simcity): app migrada desde simcity_web — proxy híbrido Termux/proot |
+| _(pendiente)_ | docs(simcity): DESIGN + DEV_REFERENCE |
+| _(pendiente)_ | docs(project): PROJECT_DESIGN + DEV_REFERENCE actualizados |
+
+### Trabajo de DeepSeek — SIN commitear (~300 archivos)
+
+| Área | Cambios |
+|------|---------|
+| `accounts/models.py` | User custom: phone, avatar, created_at, updated_at |
+| `sim` | SIM-7a ACD completo — migraciones 0005+0006 aplicadas |
+| `events` | 6 bugs corregidos en forms/views |
+| `cv` | Admin con campos incorrectos corregido |
+| `kpis` | Migración con dependencia incorrecta corregida |
+| `docs/` | READMEs reorganizados en subcarpetas |
+| ~58 archivos más | FKs actualizadas a `settings.AUTH_USER_MODEL` en todo el proyecto |
+
+> ⚠️ TODO el trabajo de DeepSeek está en la rama local sin commitear.
+> INC-002 (2026-03-18): `Duplicate column name created_at` en kpis.0002 — resuelto con `RunSQL IF NOT EXISTS` + `SeparateDatabaseAndState`.
+> Hacer commits progresivos por app antes de la próxima sesión de desarrollo.
+
+### Pendiente próxima sesión
+
+1. **Commits pendientes** — hacer commits por app (accounts, sim, events, cv, kpis, docs)
+2. **BIT-5** — auditoría de 6 templates de bitacora
+3. **BIT-6** — `urls.py` `<int:pk>` → `<uuid:pk>`
+4. **Sprint 8** — app `bots`: motor de asignación + integración sim
+5. **simcity bugs SC-1/SC-2/SC-3** — ver SIMCITY_DEV_REFERENCE.md
+
+### Comandos para arrancar próxima sesión
+
+```bash
+# PRIMERO — levantar engine simcity en proot
+ubuntu
+cd /root/micropolis/simcity_web && source /root/micropolis/venv/bin/activate
+python manage.py runserver 0.0.0.0:8001 &
+
+# LUEGO — M360 en Termux
+cd ~/projects/Management360 && source venv/bin/activate
+
+# Ver qué hay sin commitear por app
+git diff --stat HEAD | grep "\.py" | head -30
+
+# Mapa actualizado
+bash scripts/m360_map.sh
+
+# Templates bitacora
+ls bitacora/templates/bitacora/
+```

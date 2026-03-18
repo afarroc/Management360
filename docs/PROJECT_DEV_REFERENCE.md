@@ -1,8 +1,8 @@
 # Referencia de Desarrollo — Proyecto Management360
 
 > **Audiencia:** Desarrolladores del proyecto y asistentes de IA (Claude, Copilot, etc.)
-> **Actualizado:** 2026-03-17 (sesión nocturna) | **Apps:** 19 | **Archivos Python+HTML:** 696
-> **Basado en:** PROJECT_CONTEXT.md, ANALYST_DEV_REFERENCE.md, SIM_DEV_REFERENCE.md
+> **Actualizado:** 2026-03-18 | **Apps:** 20 | **Archivos Python+HTML:** ~710
+> **Basado en:** PROJECT_CONTEXT.md, ANALYST_DEV_REFERENCE.md, SIM_DEV_REFERENCE.md, SIMCITY_DEV_REFERENCE.md
 
 ---
 
@@ -15,15 +15,16 @@
 | 3. Manejo de fechas (CRÍTICO) | Estándar por app |
 | 4. Sistema de caché | Redis keys, TTLs, patrones |
 | 5. Seguridad | CSRF, permisos, namespaces |
-| 6. Integración analyst ↔ sim | ETL, dashboards, reportes |
-| 7. Integración events ↔ chat | Notificaciones, tiempo real |
-| 8. APIs internas | Estructura de respuestas, autenticación |
-| 9. Frontend unificado | HTMX, Bootstrap, Chart.js |
-| 10. Testing | Por app, cobertura |
-| 11. Despliegue | build.sh, variables de entorno |
-| 12. Migraciones | Orden, dependencias entre apps |
-| 13. Documentación | Estándar por app |
-| 14. Bugs conocidos globales | Issues que afectan múltiples apps |
+| 6. Modelo User (accounts) | Campos custom, imports correctos |
+| 7. Integración analyst ↔ sim | ETL, dashboards, reportes |
+| 8. App simcity — arquitectura híbrida | Engine proot, proxy, arranque |
+| 9. APIs internas | Estructura de respuestas, autenticación |
+| 10. Frontend unificado | HTMX, Bootstrap, Chart.js |
+| 11. Testing | Por app, cobertura |
+| 12. Despliegue | build.sh, variables de entorno |
+| 13. Migraciones | Orden, dependencias entre apps |
+| 14. Documentación | Estándar por app |
+| 15. Bugs conocidos globales | Issues que afectan múltiples apps |
 
 ---
 
@@ -36,15 +37,15 @@
     ├── build.sh
     ├── requirements.txt
     ├── .env
-    ├── panel/                 # Configuración principal (settings, middleware, routers)
-    ├── docs/                  # Documentación (DESIGN + DEV_REFERENCE por app)
-    ├── scripts/               # Utilidades (app_map.sh, m360_map.sh, setup/)
+    ├── panel/                 # Configuración principal (settings, middleware)
+    ├── docs/                  # Documentación (ver estructura completa en PROJECT_DESIGN.md)
+    ├── scripts/               # Utilidades (app_map.sh, m360_map.sh, setup/, utils/, tests/)
     ├── services/              # Servicios independientes (media_server.py)
     │
     ├── accounts/              # Autenticación, perfiles — AUTH_USER_MODEL
-    ├── analyst/               # Plataforma de datos (ver ANALYST_*)
+    ├── analyst/               # Plataforma de datos
     ├── api/                   # API REST pública
-    ├── bitacora/              # Bitácora personal GTD
+    ├── bitacora/              # Bitácora personal GTD ← refactorizada 2026-03-18
     ├── board/                 # Kanban board
     ├── bots/                  # Automatizaciones
     ├── campaigns/             # Campañas outbound
@@ -58,7 +59,33 @@
     ├── memento/               # Recordatorios
     ├── passgen/               # Generador de contraseñas
     ├── rooms/                 # Salas virtuales
-    └── sim/                   # Simulador WFM (ver SIM_*)
+    ├── sim/                   # Simulador WFM — SIM-7a ACD completo
+    └── simcity/               # Simulador urbano Micropolis ← añadida 2026-03-18
+
+### Resumen de apps
+
+| App | Namespace | Endpoints | Notas |
+|-----|-----------|-----------|-------|
+| `accounts` | `accounts` | 11 | Autenticación, Perfiles, CV |
+| `analyst` | `analyst` | 99 | Plataforma de datos (5 fases, SIM-4 integrado) |
+| `api` | `api` | 4 | API REST pública |
+| `bitacora` | `bitacora` | 9 | Bitácora personal GTD |
+| `board` | `board` | 8 | Kanban board |
+| `bots` | `bots` | 11 | Automatizaciones, bots |
+| `campaigns` | `campaigns` | 6 | Campañas, outreach |
+| `chat` | `chat` | 40 | Chat en tiempo real, rooms, mensajes |
+| `core` | `core` | 16 | Dashboard, URL-map, Home |
+| `courses` | `courses` | 59 | Cursos, lecciones, curriculum |
+| `cv` | `cv` | 14 | Curriculum Vitae dinámico |
+| `events` | `events` | 145 | Eventos, Proyectos, Tareas (app principal) |
+| `help` | `help` | 10 | Centro de ayuda, tickets |
+| `kpis` | `kpis` | 4 | KPIs, AHT Dashboard, CallRecord |
+| `memento` | `memento` | 6 | Recordatorios, memoria personal |
+| `panel` | `panel` | 27 | Panel de configuración del proyecto |
+| `passgen` | `passgen` | 2 | Generador de contraseñas |
+| `rooms` | `rooms` | 53 | Salas virtuales, channels |
+| `sim` | `sim` | 48 | Simulador WFM — SIM-1→SIM-7a completo |
+| `simcity` | `simcity` | 12 | Simulador urbano — proxy proot:8001 |
 
 ### Convenciones de nomenclatura
 
@@ -78,10 +105,11 @@
 
 ### Models
 
-    # Estándar de IDs — TODAS las apps
+    # PK pública — TODAS las apps excepto simcity
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    # Auditoría — campo estándar: created_by (NO autor, NO host para nuevos modelos)
+    # Autoría — campo estándar: created_by
+    # SIEMPRE usar settings.AUTH_USER_MODEL, NUNCA importar User directamente
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -98,164 +126,109 @@
         ACTIVO   = 'activo',   'Activo'
         INACTIVO = 'inactivo', 'Inactivo'
 
-    # Índices compuestos para consultas frecuentes
-    class Meta:
-        indexes = [
-            models.Index(fields=['created_by', 'created_at']),
-            models.Index(fields=['is_active', 'created_at']),
-        ]
-
 > **Excepciones documentadas:**
-> - `events`: usa `host` para Project/Task/Event — convención propia, NO cambiar
-> - `rooms`: usa `owner` para Room — convención propia, NO cambiar
-> - `bitacora`: usa `fecha_creacion`/`fecha_actualizacion` (en español) — mantener por consistencia interna
+> - `events`: usa `host` para Project/Task/Event — NO cambiar
+> - `rooms`: usa `owner` para Room — NO cambiar
+> - `bitacora`: usa `fecha_creacion`/`fecha_actualizacion` (en español) y `created_by`
+> - `simcity.Game`: usa `AutoField` (int) como PK — heredado del engine original
+
+### Import correcto de User
+
+    # CORRECTO — en models.py
+    from django.conf import settings
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, ...)
+
+    # CORRECTO — en views.py, forms.py, otros
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    # INCORRECTO — causa error si AUTH_USER_MODEL cambia
+    from django.contrib.auth.models import User
 
 ### Views
 
-    # Vista GET (HTML)
     @login_required
     def panel_view(request):
-        context = {
-            'items': Item.objects.filter(created_by=request.user),
-        }
+        context = {'items': Item.objects.filter(created_by=request.user, is_active=True)}
         return render(request, 'app/panel.html', context)
 
-    # Vista POST (JSON)
     @login_required
     @require_POST
     def api_action(request):
         try:
             data = json.loads(request.body)
-            # ... lógica
             return JsonResponse({'success': True, 'data': result})
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=400)
 
-### URLs
-
-    app_name = 'kpis'
-
-    urlpatterns = [
-        path('dashboard/', views.dashboard, name='dashboard'),
-        path('export-data/', views.export_data, name='export_data'),
-        path('api/stats/', views.api_stats, name='api_stats'),
-    ]
-
-### Templates
-
-    {% extends 'base.html' %}
-    {% block title %}Mi App - Management360{% endblock %}
-
-    {% block content %}
-    <div id="app-root" class="container-fluid">
-        <!-- contenido específico de la app -->
-    </div>
-    {% endblock %}
-
-    {% block extra_js %}
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // inicialización
-        });
-    </script>
-    {% endblock %}
-
 ### CSRF Token en JavaScript
 
-    // FUNCIÓN CORRECTA — usar en todas las apps
+    // CORRECTO
     function csrf() {
         return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
     }
+    fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrf() }, body: ... })
 
-    // USO EN FETCH
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrf()
-        },
-        body: JSON.stringify(data)
-    })
-
-    // INCORRECTO — NO USAR
+    // INCORRECTO
     // fetch(url, { headers: { 'X-CSRFToken': CSRF_TOKEN } })  // ReferenceError
 
 ### Respuestas JSON unificadas
 
-    # Éxito
-    {"success": true, "data": {...}, "message": "..."}
-
-    # Error
-    {"success": false, "error": "Mensaje de error", "code": "ERROR_CODE"}
+    {"success": true, "data": {...}}
+    {"success": false, "error": "..."}
 
 ---
 
 ## 3. Manejo de Fechas — CRÍTICO ⚠️
 
-### Estándar por App
-
 | App | Modelo | Campo(s) de fecha | Ordenamiento |
 |-----|--------|-------------------|--------------|
 | **sim** | `Interaction` | `fecha` (DateField) + `hora_inicio` (DateTimeField) | `order_by('fecha', 'hora_inicio')` |
-| **kpis** | `CallRecord` | `start_time` (DateTimeField) | `order_by('start_time')` |
+| **kpis** | `CallRecord` | `fecha` (DateField) + `semana` (IntegerField calculado) | `order_by('fecha', 'agente')` |
 | **events** | `Task` | `due_date` (DateField) | `order_by('due_date')` |
 | **events** | `Event` | `start_date` (DateTimeField) | `order_by('start_date')` |
 | **chat** | `Message` | `timestamp` (DateTimeField) | `order_by('timestamp')` |
 | **bitacora** | `BitacoraEntry` | `fecha_creacion` (DateTimeField) | `order_by('-fecha_creacion')` |
 | **courses** | `Lesson` | `created_at` (DateTimeField) | `order_by('order', 'created_at')` |
+| **simcity** | `Game` | `created_at` / `updated_at` (DateTimeField) | `order_by('-created_at')` |
 
-### ⚠️ ERROR COMÚN: `timedelta` NO es parte de `django.utils.timezone`
+### ⚠️ `timedelta` NO es parte de `django.utils.timezone`
 
-    # INCORRECTO — causa AttributeError en runtime (bug detectado en bitacora/views.py)
+    # INCORRECTO — AttributeError en runtime
     week_start = today - timezone.timedelta(days=today.weekday())
 
     # CORRECTO
     from datetime import timedelta
     week_start = today - timedelta(days=today.weekday())
 
-### ⚠️ ERROR COMÚN: `started_at` NO EXISTE en `sim.Interaction`
+### ⚠️ `start_time` NO EXISTE en `kpis.CallRecord`
 
-    # INCORRECTO — Causa FieldError
-    interactions = Interaction.objects.filter(started_at__gte=date)
+    # INCORRECTO
+    CallRecord.objects.filter(start_time__gte=date)
+    # CORRECTO — campo migrado en 0002_refactor_callrecord
+    CallRecord.objects.filter(fecha__gte=date, fecha__lte=date_to)
 
+### ⚠️ `started_at` NO EXISTE en `sim.Interaction`
+
+    # INCORRECTO
+    Interaction.objects.filter(started_at__gte=date)
     # CORRECTO
-    interactions = Interaction.objects.filter(fecha__gte=date).order_by('fecha', 'hora_inicio')
-
-### ⚠️ ERROR COMÚN: Mezclar `DateTimeField` con `DateField`
-
-    # Si filtras por fecha en DateTimeField, usar __date
-    calls = CallRecord.objects.filter(start_time__date=target_date)
-
-    # Si tienes DateField separado, usarlo directamente
-    interactions = Interaction.objects.filter(fecha=target_date)
+    Interaction.objects.filter(fecha__gte=date).order_by('fecha', 'hora_inicio')
 
 ---
 
 ## 4. Sistema de Caché (Redis)
 
-### Keys y TTLs estándar
+| Prefix | App | TTL | Ejemplo |
+|--------|-----|-----|---------|
+| `df_preview_` | analyst | 2h | `df_preview_{uuid}` |
+| `stored_dataset_` | analyst | ∞ | `stored_dataset_{uuid}` |
+| `clip_` | analyst | 24h | `clip_{session_key}_{key}` |
+| `gtr:session:` | sim | 4h | `gtr:session:{sid}` |
+| `chat:presence:` | chat | 5min | `chat:presence:{user_id}` |
+| `kpis:dashboard:` | kpis | 5min | `kpis:dashboard:{user_id}:{desde}:{hasta}` |
 
-| Prefix | App | Contenido | TTL | Ejemplo |
-|--------|-----|-----------|-----|---------|
-| `df_preview_` | analyst | DataFrame preview | 2h | `df_preview_{uuid}` |
-| `stored_dataset_` | analyst | Dataset persistido | ∞ | `stored_dataset_{uuid}` |
-| `clip_` | analyst | Portapapeles de sesión | 24h | `clip_{session_key}_{key}` |
-| `gtr:session:` | sim | Sesión GTR activa | 4h | `gtr:session:{sid}` |
-| `gtr:interactions:` | sim | Interacciones GTR temporales | 4h | `gtr:interactions:{sid}` |
-| `chat:presence:` | chat | Presencia de usuario | 5min | `chat:presence:{user_id}` |
-| `dashboard:` | kpis | Dashboard cache | 5min | `dashboard:kpis:{user_id}` |
-
-### Patrón de uso en vistas
-
-    from django.core.cache import cache
-
-    def get_dashboard_data(user):
-        cache_key = f'dashboard:kpis:{user.id}'
-        data = cache.get(cache_key)
-        if data is None:
-            data = calcular_datos_pesados(user)
-            cache.set(cache_key, data, 300)  # 5 minutos
-        return data
+`simcity` no usa Redis — el estado del mapa se persiste directamente en MariaDB (JSONField).
 
 ---
 
@@ -263,105 +236,161 @@
 
 ### Permisos
 
-    # Siempre filtrar por usuario en queryset
-    queryset = MyModel.objects.filter(created_by=request.user)
-
-    # NUNCA asumir que pk en URL pertenece al usuario
     obj = get_object_or_404(MyModel, pk=pk, created_by=request.user)
 
 ### @csrf_exempt — PROHIBIDO en vistas con datos de usuario
 
-    # INCORRECTO — vulnerabilidad CSRF (detectado en bitacora/views.py upload_image)
-    @login_required
+    # INCORRECTO (corregido en bitacora/views.py y simcity/views.py)
     @csrf_exempt
-    def upload_image(request): ...
+    def mi_vista(request): ...
 
-    # CORRECTO — TinyMCE puede enviar CSRF token normalmente
+    # CORRECTO
     @login_required
-    def upload_image(request): ...
+    def mi_vista(request): ...  # CSRF lo maneja el middleware
 
-### Renders HTML desde modelos — PROHIBIDO
+### Render HTML en modelos — PROHIBIDO
 
-    # INCORRECTO — XSS potencial + responsabilidad equivocada
+    # INCORRECTO — XSS + responsabilidad única violada
     class MyModel(models.Model):
         def render_html(self):
-            return f'<div>{self.user_content}</div>'  # user_content sin escapar
+            return f'<div>{self.user_content}</div>'
 
-    # CORRECTO — usar templatetags o mark_safe con escape explícito
-    # En bitacora_tags.py:
+    # CORRECTO — en templatetags con escape()
     @register.simple_tag
-    def render_content_block(block):
-        content = escape(block.get('content', ''))
-        return mark_safe(f'<div class="content-block">{content}</div>')
+    def render_block(block):
+        return mark_safe(f'<div>{escape(block.get("content",""))}</div>')
 
 ---
 
-## 6. Integración analyst ↔ sim
+## 6. Modelo User (`accounts`)
 
-Ver `ANALYST_DEV_REFERENCE.md` y `SIM_DEV_REFERENCE.md` para detalles completos.
+### Campos custom de `accounts.User`
 
-    # ETL source apuntando a sim
-    source = ETLSource.objects.create(
-        model_path='sim.Interaction',
-        filters={'sim_account': account_id}
+```python
+# accounts/models.py
+from django.contrib.auth.models import AbstractUser
+
+class User(AbstractUser):
+    phone      = models.CharField(max_length=20, blank=True, null=True)
+    avatar     = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+```
+
+Campos heredados de `AbstractUser` disponibles: `username`, `email`, `first_name`,
+`last_name`, `is_staff`, `is_active`, `date_joined`, `last_login`.
+
+### Settings requerido
+
+    # panel/settings.py
+    AUTH_USER_MODEL = 'accounts.User'
+
+### Acceso correcto en cualquier parte del código
+
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    # En models.py — siempre con settings
+    from django.conf import settings
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, ...)
+
+---
+
+## 7. Integración analyst ↔ sim
+
+Ver `ANALYST_DEV_REFERENCE.md` y `SIM_DEV_REFERENCE.md`.
+
+`sim` ahora incluye SIM-7a (ACD multi-agente) — migraciones 0005+0006 aplicadas.
+
+---
+
+## 8. App `simcity` — Arquitectura Híbrida
+
+`simcity` es la única app de M360 que depende de un proceso externo. El engine
+`micropolisengine` (librería C compilada con SWIG) solo está disponible en
+proot Ubuntu y **no puede instalarse en el venv de Termux**.
+
+### Arranque obligatorio
+
+```bash
+# Terminal 1 — proot Ubuntu (engine)
+ubuntu
+cd /root/micropolis/simcity_web
+source /root/micropolis/venv/bin/activate
+python manage.py runserver 0.0.0.0:8001
+
+# Terminal 2 — Termux (M360)
+cd ~/projects/Management360 && source venv/bin/activate
+python manage.py runserver
+```
+
+### Flujo de una request
+
+```
+Browser → M360:8000/simcity/api/game/<id>/tick/
+    → simcity/views.py (@login_required, verifica created_by)
+    → simcity/services.py (requests.post → proot:8001/api/game/<engine_id>/tick/)
+    → simcity_web engine procesa Micropolis + ABM
+    → respuesta JSON con map_data actualizado
+    → M360 sincroniza Game en MariaDB
+    → respuesta al browser
+```
+
+### Campo `engine_game_id`
+
+```python
+# simcity/models.py
+engine_game_id = models.IntegerField(null=True, blank=True)
+```
+
+Vincula el `Game` de M360 (MariaDB) con el `Game` del SQLite de proot.
+Puede ser `None` si el engine no respondió durante la creación — siempre
+verificar antes de llamar a `services.py`.
+
+### Manejo de engine offline (SC-3 pendiente)
+
+```python
+from requests.exceptions import ConnectionError as EngineOffline
+
+try:
+    data = engine.engine_tick(game.engine_game_id, n)
+except EngineOffline:
+    return JsonResponse(
+        {'success': False, 'error': 'Engine offline — levantar proot:8001'},
+        status=503
     )
+```
 
-    # Dashboard widget con datos de sim
-    widget = DashboardWidget.objects.create(
-        dashboard=dashboard,
-        source_type='sim_run',
-        config={'metric': 'service_level', 'period': 'daily'}
-    )
+Ver `SIMCITY_DEV_REFERENCE.md` para documentación completa.
 
 ---
 
-## 7. Integración events ↔ chat
+## 9. APIs Internas
 
-    # Notificación de tarea desde events
-    from chat.models import Conversation
-    conv = Conversation.objects.get_or_create_for_task(task)
-    conv.send_system_message(f'Tarea "{task.titulo}" actualizada')
-
----
-
-## 8. APIs Internas
-
-### Autenticación
-
-    # Todas las APIs internas requieren login
     @login_required
     def api_items(request):
         items = Item.objects.filter(created_by=request.user)
-        return JsonResponse({
-            'success': True,
-            'data': list(items.values('id', 'name'))
-        })
+        return JsonResponse({'success': True, 'data': list(items.values('id', 'name'))})
 
 ---
 
-## 9. Frontend Unificado
+## 10. Frontend Unificado
 
-### HTMX para interactividad parcial
+La mayoría de las apps usan Bootstrap 5 + HTMX. **Excepción: `simcity`** usa
+JS vanilla con Canvas 2D y CSS custom propio — no agregar Bootstrap al template
+del juego.
 
-    <button hx-get="/api/items/?page=2"
-            hx-target="#items-list"
-            hx-swap="beforeend">
+    <!-- HTMX (apps estándar) -->
+    <button hx-get="/api/items/?page=2" hx-target="#items-list" hx-swap="beforeend">
         Cargar más
     </button>
 
-### Bootstrap + Chart.js
-
-    const ctx = document.getElementById('myChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'bar',
-        data: { labels: ['Ene', 'Feb', 'Mar'], datasets: [{ data: [12, 19, 3] }] }
-    });
+    // Chart.js
+    new Chart(ctx, { type: 'bar', data: { labels: [...], datasets: [...] } });
 
 ---
 
-## 10. Testing
-
-### Cobertura actual
+## 11. Testing
 
 | App | Tests | Cobertura |
 |-----|-------|-----------|
@@ -369,18 +398,14 @@ Ver `ANALYST_DEV_REFERENCE.md` y `SIM_DEV_REFERENCE.md` para detalles completos.
 | analyst | 34/50 | 68% |
 | Otras | — | — |
 
-### Ejecutar tests
-
     python manage.py test sim.tests.test_generators sim.tests.test_gtr_engine -v 2
 
 ---
 
-## 11. Despliegue
+## 12. Despliegue
 
 ### build.sh (producción)
 
-    #!/usr/bin/env bash
-    set -o errexit
     pip install --no-cache-dir -r requirements.txt
     python manage.py migrate auth
     python manage.py migrate contenttypes
@@ -388,67 +413,61 @@ Ver `ANALYST_DEV_REFERENCE.md` y `SIM_DEV_REFERENCE.md` para detalles completos.
     python manage.py migrate --no-input
     python manage.py collectstatic --no-input
 
+> ⚠️ En producción, `simcity` requiere que el engine proot esté accesible
+> en `ENGINE_BASE_URL`. Configurar como variable de entorno para prod.
+
 ### Variables de entorno (.env)
 
     SECRET_KEY=...
     DEBUG=False
-    ALLOWED_HOSTS=...
+    AUTH_USER_MODEL=accounts.User
     DATABASE_URL=mysql://user:pass@localhost:3306/projects
     REDIS_URL=redis://:password@localhost:6379/0
-    EMAIL_HOST=smtp.gmail.com
-    AWS_ACCESS_KEY_ID=...
+    SIMCITY_ENGINE_URL=http://localhost:8001   # URL del engine Micropolis
 
 ---
 
-## 12. Migraciones
+## 13. Migraciones
+
+### Estado actual (2026-03-18)
+
+| App | Última migración | Notas |
+|-----|-----------------|-------|
+| accounts | 0001_initial | User custom con phone, avatar, timestamps |
+| bitacora | 0004_uuid_primary_keys | UUID pk en entry + attachment |
+| sim | 0006_rename_... | SIM-7a ACD multi-agente completo |
+| simcity | 0001_initial | Game con created_by + engine_game_id |
+| events | 0003_alter_... | — |
+| cv | 0001_initial | — |
+| memento | 0007_alter_... | — |
+| kpis | 0002_refactor_callrecord | UUID col + fecha DateField + 5 índices (MySQL-safe IF NOT EXISTS) |
 
 ### Orden de dependencias entre apps
 
 1. `contenttypes`, `auth` (Django core)
-2. **`accounts`** — PRIMERO antes que cualquier otra app (AUTH_USER_MODEL)
-3. `events` (depende de accounts)
-4. `analyst`, `sim`, `courses` (independientes)
-5. `chat`, `rooms` (dependen de accounts)
-6. `kpis` (independiente)
-7. `bots` (depende de events, analyst)
-8. `bitacora` (depende de events, rooms, courses)
-9. Otras apps
+2. **`accounts`** — PRIMERO (AUTH_USER_MODEL)
+3. `events`, `analyst`, `sim`, `courses`, `simcity`
+4. `chat`, `rooms`, `bitacora`, `bots`
+5. Resto de apps
 
-### ⚠️ REGLA CRÍTICA: Nunca ignorar carpetas migrations/ en .gitignore
+### ⚠️ REGLA CRÍTICA: Nunca ignorar migrations/ en .gitignore
 
-La pérdida de `accounts/migrations/` causó INC-001 (tabla inexistente en BD).
-Verificar que todas las apps tengan migrations/ trackeadas:
+El `.gitignore` fue corregido (commit `2ea63279`) — regla `*/migrations/*` primero,
+excepciones `!app/migrations/**` por app después.
 
     git ls-files --others --exclude-standard | grep migrations
-    # Si devuelve algo → hacer git add
+    # Si devuelve algo → git add -f
 
-### Comandos útiles
+### Proceso UUID swap de PK (documentado en bitacora)
 
-    # Ver estado completo
-    python manage.py showmigrations
-
-    # Migración con desincronización (BD recreada)
-    python manage.py migrate --fake-initial     # aplica fake solo a 0001 donde tabla ya existe
-
-    # Crear migración vacía para RunPython
-    python manage.py makemigrations app_name --empty --name descripcion
-
-    # Backup antes de migración riesgosa
-    python manage.py dumpdata app_name --indent 2 > backup_app_$(date +%Y%m%d).json
-
-### Proceso para migración con cambio de PK (int → UUID)
-
-    # 1. Backup
-    python manage.py dumpdata bitacora --indent 2 > bitacora_backup.json
-
-    # 2. Agregar campo UUID temporal (no-pk) en migración
-    # 3. RunPython para popular UUIDs
-    # 4. Segunda migración para swap de PK
-    # NUNCA hacer el swap en una sola migración con datos existentes
+1. Backup: `dumpdata`
+2. Campo `uuid_new` temporal + `RunPython` para poblar
+3. `SeparateDatabaseAndState` con SQL directo via `cursor.execute`
+4. No usar `makemigrations` automático para el swap en MariaDB
 
 ---
 
-## 13. Documentación
+## 14. Documentación
 
 ### 3 tipos de documento por app
 
@@ -458,78 +477,49 @@ Verificar que todas las apps tengan migrations/ trackeadas:
 | `APP_DEV_REFERENCE.md` | Devs / Claude | Manual técnico |
 | `APP_DESIGN.md` | PM / Claude | Diseño, fases, roadmap |
 
-> El CONTEXT.md es **auto-generado** — nunca editar manualmente.
-
-### Generar mapas
-
-    bash scripts/m360_map.sh app ./bitacora   # → BITACORA_CONTEXT.md
-    bash scripts/m360_map.sh app ./kpis       # → KPIS_CONTEXT.md
-    bash scripts/m360_map.sh                  # → PROJECT_CONTEXT.md completo
+    bash scripts/m360_map.sh app ./bitacora
+    bash scripts/m360_map.sh app ./simcity
+    bash scripts/m360_map.sh app ./kpis
+    bash scripts/m360_map.sh              # PROJECT_CONTEXT.md completo
 
 ---
 
-## 14. Bugs Conocidos Globales
+## 15. Bugs Conocidos Globales
 
 | # | Estado | App | Descripción |
 |---|--------|-----|-------------|
-| 1 | ✅ Corregido | analyst | `clean_file()` duplicado en forms.py |
-| 2 | ✅ Corregido | analyst/sim | `started_at` inexistente en sim.Interaction |
-| 3 | ✅ Corregido | analyst | UUID Python en JS → `_safe_json_str()` |
-| 4 | ✅ Corregido | sim | `@keyframes` dentro de `<script>` en training.html |
-| 9 | ✅ Corregido | sim | `expected_vol` gauss negativo en `_generate_window_*` |
-| 10 | ✅ Resuelto | accounts | `accounts_user` tabla inexistente — INC-001 (ver PROJECT_DESIGN.md) |
-| 11 | ⬜ Pendiente | bitacora | `timezone.timedelta` → debe ser `from datetime import timedelta` |
-| 12 | ⬜ Pendiente | bitacora | `@csrf_exempt` en `upload_image` — remover |
-| 13 | ⬜ Pendiente | bitacora | N+1 en `total_attachments` del dashboard stats |
-| 14 | ⬜ Pendiente | bitacora | Lógica HTML render en modelos (350 líneas) → mover a templatetags |
-| 15 | ⬜ Pendiente | bitacora | Imports lazy dentro de métodos y en medio del archivo |
-| 5  | ⬜ Pendiente | chat | Notificaciones no siempre marcan como leídas |
-| 6  | ⬜ Pendiente | events | Consultas N+1 en dashboard de proyectos |
-| 7  | ⬜ Pendiente | kpis | Falta de índices en CallRecord |
-| 8  | ⬜ Pendiente | courses | Editor de contenido lento con muchos bloques |
+| 1 | ✅ | analyst | `clean_file()` duplicado en forms.py |
+| 2 | ✅ | analyst/sim | `started_at` inexistente en sim.Interaction |
+| 3 | ✅ | analyst | UUID Python en JS → `_safe_json_str()` |
+| 4 | ✅ | sim | `@keyframes` dentro de `<script>` |
+| 9 | ✅ | sim | `expected_vol` gauss negativo |
+| 10 | ✅ | accounts | `accounts_user` tabla inexistente — INC-001 |
+| 11 | ✅ | bitacora | `timezone.timedelta` → `from datetime import timedelta` |
+| 12 | ✅ | bitacora | `@csrf_exempt` en `upload_image` |
+| 13 | ✅ | bitacora | N+1 en `total_attachments` |
+| 14 | ✅ | bitacora | HTML render en modelos → movido a templatetags |
+| 15 | ✅ | bitacora | Imports lazy → movidos al tope |
+| 16 | ✅ | bitacora | `content_block` no renderizaba en bitacora_tags |
+| 18 | ✅ | events | Bloque `try` sin `except` en `assign_to_available_user()` |
+| 19 | ✅ | events | `STATUS_CHOICES` incorrecto en `TaskFilterForm` |
+| 20 | ✅ | events | Campos incorrectos en `TaskScheduleForm` |
+| 21 | ✅ | events | Campos incorrectos en `InboxItemForm` |
+| 22 | ✅ | events | Falta `get_user_model()` en `AssignAttendeesForm` |
+| 23 | ✅ | events | Falta import de `Group` en `setup_views.py` |
+| 24 | ✅ | cv | Admin con campos inexistentes |
+| 25 | ✅ | kpis | Migración con dependencia incorrecta |
+| 5  | ⬜ | chat | Notificaciones no siempre marcan como leídas |
+| 6  | ⬜ | events | Consultas N+1 en dashboard de proyectos |
+| 7  | ✅ | kpis | Índices compuestos + fecha DateField + UUID — KPI-1 Sprint 7 |
+| 8  | ⬜ | courses | Editor de contenido lento con muchos bloques |
+| 17 | ⬜ | bitacora | `urls.py` usa `<int:pk>` en lugar de `<uuid:pk>` (BIT-6) |
+| SC-1 | ⬜ | simcity | `generate_zr_block` no está en urls.py de M360 |
+| SC-2 | ⬜ | simcity | `mobMoneyBtn` no llama a la API — solo loguea warning |
+| SC-3 | ⬜ | simcity | Engine offline da 500 genérico — falta manejo de `ConnectionError` |
 
----
+| 26 | ✅ | kpis | `ForeignKey(User)` en lugar de `settings.AUTH_USER_MODEL` — E301 |
+| 27 | ✅ | kpis | `Duplicate column name created_at` en 0002 — IF NOT EXISTS |
+| 28 | ✅ | scripts | `m360_map.sh`/`app_map.sh` convertidos en stubs — restaurados |
 
-## Handoff — Resumen para Próxima Sesión
-
-### Estado al 2026-03-17
-
-**BD:** 141 tablas, todas OK. Usuarios `su` (pk=1) y `arturo` (pk=2) restaurados.
-
-**bitacora — trabajo en progreso:**
-
-| Archivo | Estado | Notas |
-|---------|--------|-------|
-| `models.py` | ✅ Refactorizado | UUID pk, created_by, is_active, TextChoices, sin render HTML |
-| `views.py` | ⬜ Pendiente | 5 issues identificados (bugs #11-15) |
-| `forms.py` | ✅ OK | Sin cambios necesarios |
-| `urls.py` | 🟡 Menor | Naming `dashboard` vs `list` ambiguo |
-| `migración 0003` | ⬜ Pendiente | Generada parcialmente, falta RunPython para UUID swap |
-
-### Archivos para arrancar próxima sesión
-
-    # Mapa actualizado
-    bash scripts/m360_map.sh app ./bitacora
-
-    # Código pendiente de revisar
-    cat bitacora/views.py | termux-clipboard-set
-    cat bitacora/templatetags/bitacora_tags.py | termux-clipboard-set
-
-### Checklist bitacora
-
-- [x] Analizar models.py
-- [x] Analizar views.py, forms.py, urls.py
-- [x] Refactorizar models.py
-- [ ] Refactorizar views.py
-- [ ] Revisar bitacora_tags.py (render HTML movido desde models)
-- [ ] Generar migración 0003 completa con RunPython
-- [ ] Generar BITACORA_DESIGN.md
-- [ ] Generar BITACORA_DEV_REFERENCE.md
-
-### Checklist Sprint 7 (kpis) — retomar después de bitacora
-
-- [ ] Revisar índices de CallRecord
-- [ ] Implementar caching en dashboard de KPIs
-- [ ] Crear ETL source para KPIs en analyst
-- [ ] Unificar manejo de fechas
-- [ ] Documentar KPIs (CONTEXT, DESIGN, DEV_REFERENCE)
+> Bugs 18-25 corregidos por DeepSeek — pendientes de commit.
+> Bugs SC-1/SC-2/SC-3 documentados en `SIMCITY_DEV_REFERENCE.md`.
