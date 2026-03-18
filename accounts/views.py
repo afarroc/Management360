@@ -12,7 +12,9 @@ from django.contrib.auth.forms import (
     PasswordResetForm,
     SetPasswordForm,
 )
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.contrib.auth.views import (
     PasswordChangeView,
     PasswordResetConfirmView,
@@ -27,8 +29,7 @@ from django.views.decorators.csrf import csrf_exempt
 
 # Local imports
 from .forms import SignUpForm
-from tools.views.file_views import file_tree_view
-
+from analyst.views.file_views import file_tree_view
 # Logger configuration
 logger = logging.getLogger(__name__)
 
