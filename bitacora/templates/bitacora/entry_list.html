@@ -9,255 +9,473 @@
 <div class="alert alert-info" role="alert">
     {% for message in messages %}
     <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
-        {% endfor %}
+    {% endfor %}
 </div>
 {% endif %}
 
 <div class="pagetitle">
-    <h1>Mi Bitácora</h1>
-    <nav>
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
-            <li class="breadcrumb-item active">Bitácora</li>
-        </ol>
-    </nav>
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1>Mi Bitácora</h1>
+            <nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'bitacora:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Todas las Entradas</li>
+                </ol>
+            </nav>
+        </div>
+        <a href="{% url 'bitacora:create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Nueva Entrada
+        </a>
+    </div>
 </div><!-- End Page Title -->
 
-<section class="section dashboard">
+<section class="section">
     <div class="row">
 
-        <!-- Barra lateral de filtros -->
+        <!-- ======= Barra Lateral de Filtros ======= -->
         <div class="col-lg-3">
+            
+            <!-- Card de Filtros -->
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-funnel me-2"></i>Filtros
-                    </h5>
-                </div>
                 <div class="card-body">
-                    <form method="get" id="filter-form">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-funnel me-2 text-primary"></i>
+                            Filtros y Búsqueda
+                        </h5>
+                        {% if request.GET %}
+                        <a href="{% url 'bitacora:list' %}" class="btn btn-sm btn-outline-secondary" title="Limpiar filtros">
+                            <i class="bi bi-x-circle"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+
+                    <form method="get" id="filter-form" class="mb-4">
                         <!-- Búsqueda por texto -->
                         <div class="mb-3">
-                            <label class="form-label">Buscar</label>
-                            <input type="text" name="q" class="form-control form-control-sm"
-                                   placeholder="Título o contenido..." value="{{ request.GET.q }}">
+                            <label class="form-label small fw-bold">Búsqueda</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">
+                                    <i class="bi bi-search"></i>
+                                </span>
+                                <input type="text" name="q" class="form-control"
+                                       placeholder="Título, contenido..."
+                                       value="{{ request.GET.q }}">
+                            </div>
                         </div>
 
                         <!-- Filtro por categoría -->
                         <div class="mb-3">
-                            <label class="form-label">Categoría</label>
-                            <select name="categoria" class="form-select form-select-sm">
-                                <option value="">Todas</option>
-                                {% for choice_value, choice_label in entry.CATEGORIA_CHOICES %}
-                                <option value="{{ choice_value }}" {% if request.GET.categoria == choice_value %}selected{% endif %}>
-                                    {{ choice_label }}
-                                </option>
-                                {% endfor %}
-                            </select>
+                            <label class="form-label small fw-bold">Categoría</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">
+                                    <i class="bi bi-tag"></i>
+                                </span>
+                                <select name="categoria" class="form-select">
+                                    <option value="">Todas las categorías</option>
+                                    {% for value, label in entry.CATEGORIA_CHOICES %}
+                                    <option value="{{ value }}" 
+                                            {% if request.GET.categoria == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                         </div>
 
-                        <!-- Filtro por fecha -->
+                        <!-- Filtro por período -->
                         <div class="mb-3">
-                            <label class="form-label">Período</label>
-                            <select name="periodo" class="form-select form-select-sm">
-                                <option value="">Todos</option>
-                                <option value="hoy" {% if request.GET.periodo == 'hoy' %}selected{% endif %}>Hoy</option>
-                                <option value="semana" {% if request.GET.periodo == 'semana' %}selected{% endif %}>Esta semana</option>
-                                <option value="mes" {% if request.GET.periodo == 'mes' %}selected{% endif %}>Este mes</option>
-                            </select>
+                            <label class="form-label small fw-bold">Período</label>
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text">
+                                    <i class="bi bi-calendar"></i>
+                                </span>
+                                <select name="periodo" class="form-select">
+                                    <option value="">Todos los períodos</option>
+                                    <option value="hoy" {% if request.GET.periodo == 'hoy' %}selected{% endif %}>
+                                        Hoy
+                                    </option>
+                                    <option value="semana" {% if request.GET.periodo == 'semana' %}selected{% endif %}>
+                                        Esta semana
+                                    </option>
+                                    <option value="mes" {% if request.GET.periodo == 'mes' %}selected{% endif %}>
+                                        Este mes
+                                    </option>
+                                    <option value="ano" {% if request.GET.periodo == 'ano' %}selected{% endif %}>
+                                        Este año
+                                    </option>
+                                </select>
+                            </div>
                         </div>
 
                         <!-- Filtro por visibilidad -->
                         <div class="mb-3">
-                            <label class="form-label">Visibilidad</label>
-                            <select name="publico" class="form-select form-select-sm">
-                                <option value="">Todas</option>
-                                <option value="1" {% if request.GET.publico == '1' %}selected{% endif %}>Públicas</option>
-                                <option value="0" {% if request.GET.publico == '0' %}selected{% endif %}>Privadas</option>
-                            </select>
+                            <label class="form-label small fw-bold">Visibilidad</label>
+                            <div class="d-flex gap-2">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="publico" id="all" 
+                                           value="" {% if not request.GET.publico %}checked{% endif %}>
+                                    <label class="form-check-label" for="all">Todas</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="publico" id="public" 
+                                           value="1" {% if request.GET.publico == '1' %}checked{% endif %}>
+                                    <label class="form-check-label text-success" for="public">
+                                        <i class="bi bi-eye me-1"></i>Públicas
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="publico" id="private" 
+                                           value="0" {% if request.GET.publico == '0' %}checked{% endif %}>
+                                    <label class="form-check-label text-secondary" for="private">
+                                        <i class="bi bi-eye-slash me-1"></i>Privadas
+                                    </label>
+                                </div>
+                            </div>
                         </div>
 
+                        <!-- Botones de acción -->
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-sm">Aplicar Filtros</button>
-                            <a href="{% url 'bitacora:list' %}" class="btn btn-outline-secondary btn-sm">Limpiar</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-funnel me-1"></i> Aplicar Filtros
+                            </button>
+                            {% if request.GET %}
+                            <a href="{% url 'bitacora:list' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i> Limpiar Filtros
+                            </a>
+                            {% endif %}
                         </div>
                     </form>
-                </div>
-            </div>
 
-            <!-- Acciones rápidas -->
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h6 class="card-title">Acciones</h6>
-                    <div class="d-grid gap-2">
-                        <a href="{% url 'bitacora:create' %}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-plus-circle me-1"></i>Nueva Entrada
-                        </a>
-                        <a href="{% url 'bitacora:list' %}?categoria=personal" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-person me-1"></i>Personales
-                        </a>
-                        <a href="{% url 'bitacora:list' %}?categoria=trabajo" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-briefcase me-1"></i>Trabajo
-                        </a>
-                        <a href="{% url 'bitacora:list' %}?categoria=idea" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-lightbulb me-1"></i>Ideas
-                        </a>
-                        <a href="{% url 'bitacora:list' %}?categoria=meta" class="btn btn-outline-secondary btn-sm">
-                            <i class="bi bi-target me-1"></i>Meta/Objetivo
-                        </a>
-                    </div>
-
-                    <!-- Estado de filtros aplicados -->
+                    <!-- Mostrar filtros activos -->
                     {% if request.GET %}
-                    <div class="mt-3">
-                        <small class="text-muted">Filtros aplicados:</small>
-                        <div class="d-flex flex-wrap gap-1 mt-1">
+                    <div class="border-top pt-3">
+                        <h6 class="small fw-bold mb-2">Filtros aplicados:</h6>
+                        <div class="d-flex flex-wrap gap-1">
                             {% if request.GET.q %}
-                            <span class="badge bg-info">Búsqueda: "{{ request.GET.q }}"</span>
+                            <span class="badge bg-info">
+                                <i class="bi bi-search me-1"></i> "{{ request.GET.q }}"
+                            </span>
                             {% endif %}
                             {% if request.GET.categoria %}
-                            <span class="badge bg-secondary">Categoría: {{ request.GET.categoria|title }}</span>
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-tag me-1"></i> {{ request.GET.categoria|title }}
+                            </span>
                             {% endif %}
                             {% if request.GET.periodo %}
-                            <span class="badge bg-warning text-dark">Período: {{ request.GET.periodo|title }}</span>
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-calendar me-1"></i> {{ request.GET.periodo|title }}
+                            </span>
                             {% endif %}
-                            {% if request.GET.publico %}
-                            <span class="badge bg-success">Visibilidad: {% if request.GET.publico == '1' %}Públicas{% else %}Privadas{% endif %}</span>
+                            {% if request.GET.publico == '1' %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-eye me-1"></i> Públicas
+                            </span>
+                            {% elif request.GET.publico == '0' %}
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-eye-slash me-1"></i> Privadas
+                            </span>
                             {% endif %}
                         </div>
                     </div>
                     {% endif %}
                 </div>
             </div>
-        </div>
 
-        <!-- Lista principal -->
-        <div class="col-lg-9">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-journal-text me-2"></i>Mis Entradas
-                        {% if entries %}
-                        <span class="badge bg-primary ms-2">{{ entries|length }} de {{ page_obj.paginator.count }}</span>
-                        {% endif %}
+            <!-- Acciones Rápidas por Categoría -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-lightning-charge me-2 text-primary"></i>
+                        Categorías Rápidas
                     </h5>
-                    <div class="btn-group" role="group">
-                        <a href="?view=grid{% for key, value in request.GET.items %}{% if key != 'view' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="btn btn-sm btn-outline-secondary {% if request.GET.view == 'grid' %}active{% endif %}">
-                            <i class="bi bi-grid"></i>
+                    <div class="d-grid gap-2">
+                        {% for value, label in entry.CATEGORIA_CHOICES|slice:":6" %}
+                        <a href="{% url 'bitacora:list' %}?categoria={{ value }}" 
+                           class="btn btn-outline-secondary text-start {% if request.GET.categoria == value %}active{% endif %}">
+                            {% if value == 'personal' %}<i class="bi bi-person me-2"></i>{% endif %}
+                            {% if value == 'trabajo' %}<i class="bi bi-briefcase me-2"></i>{% endif %}
+                            {% if value == 'viaje' %}<i class="bi bi-geo-alt me-2"></i>{% endif %}
+                            {% if value == 'idea' %}<i class="bi bi-lightbulb me-2"></i>{% endif %}
+                            {% if value == 'meta' %}<i class="bi bi-target me-2"></i>{% endif %}
+                            {% if value == 'reflexion' %}<i class="bi bi-chat-left-text me-2"></i>{% endif %}
+                            {{ label }}
                         </a>
-                        <a href="?{% for key, value in request.GET.items %}{% if key != 'view' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="btn btn-sm btn-outline-secondary {% if request.GET.view != 'grid' %}active{% endif %}">
-                            <i class="bi bi-list"></i>
+                        {% endfor %}
+                        {% if entry.CATEGORIA_CHOICES|length > 6 %}
+                        <div class="text-center mt-2">
+                            <a href="#" class="small text-primary" data-bs-toggle="collapse" data-bs-target="#moreCategories">
+                                <i class="bi bi-chevron-down me-1"></i> Más categorías
+                            </a>
+                        </div>
+                        <div class="collapse mt-2" id="moreCategories">
+                            <div class="d-grid gap-2">
+                                {% for value, label in entry.CATEGORIA_CHOICES|slice:"6:" %}
+                                <a href="{% url 'bitacora:list' %}?categoria={{ value }}" 
+                                   class="btn btn-outline-secondary btn-sm text-start">
+                                    {{ label }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de Resultados -->
+            {% if entries %}
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-info-circle me-2 text-primary"></i>
+                        Información
+                    </h5>
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-muted">Entradas encontradas:</span>
+                            <span class="small fw-bold">{{ page_obj.paginator.count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-muted">Mostrando:</span>
+                            <span class="small fw-bold">{{ entries|length }} por página</span>
+                        </div>
+                        {% if request.GET %}
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-muted">Filtros activos:</span>
+                            <span class="small fw-bold">{{ request.GET.items|length }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'bitacora:dashboard' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i> Volver al Dashboard
                         </a>
                     </div>
                 </div>
-                <div class="card-body p-0">
+            </div>
+            {% endif %}
 
-                    {% if entries %}
-                    {% if request.GET.view == 'grid' %}
-                    <!-- Vista Grid -->
-                    <div class="row g-0">
-                        {% for entry in entries %}
-                        <div class="col-md-6 col-lg-4">
-                            <div class="border-end border-bottom p-3 h-100">
-                                <div class="d-flex flex-column h-100">
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-2">
-                                            <a href="{% url 'bitacora:detail' entry.pk %}" class="text-decoration-none text-dark">
-                                                {{ entry.titulo|truncatechars:40 }}
-                                            </a>
-                                        </h6>
-                                        <p class="text-muted small mb-2">{{ entry.contenido|striptags|truncatechars:100 }}</p>
-                                        <div class="d-flex gap-1 flex-wrap mb-2">
-                                            <span class="badge bg-secondary">{{ entry.get_categoria_display }}</span>
-                                            {% if entry.tags.all %}
-                                            {% for tag in entry.tags.all|slice:":1" %}
-                                            <span class="badge bg-light text-dark">{{ tag.name }}</span>
-                                            {% endfor %}
-                                            {% endif %}
-                                            {% if entry.attachments.all %}
-                                            <span class="badge bg-info">
-                                                <i class="bi bi-paperclip"></i> {{ entry.attachments.count }}
-                                            </span>
-                                            {% endif %}
-                                            {% if entry.structured_content %}
-                                            <span class="badge bg-success">
-                                                <i class="bi bi-puzzle"></i> {{ entry.structured_content|length }}
-                                            </span>
-                                            {% endif %}
-                                            {% if entry.structured_content %}
-                                            <span class="badge bg-success">
-                                                <i class="bi bi-puzzle"></i> {{ entry.structured_content|length }}
-                                            </span>
-                                            {% endif %}
-                                            {% if entry.structured_content %}
-                                            <span class="badge bg-success">
-                                                <i class="bi bi-puzzle"></i> {{ entry.structured_content|length }}
-                                            </span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    <div class="d-flex justify-content-between align-items-center mt-2">
-                                        <small class="text-muted">{{ entry.fecha_creacion|date:"d/m" }}</small>
-                                        <div class="btn-group" role="group">
-                                            <a href="{% url 'bitacora:detail' entry.pk %}" class="btn btn-sm btn-outline-primary" title="Ver">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                            <a href="{% url 'bitacora:update' entry.pk %}" class="btn btn-sm btn-outline-secondary" title="Editar">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                        </div>
+        </div>
+
+        <!-- ======= Contenido Principal ======= -->
+        <div class="col-lg-9">
+
+            <!-- Header con controles de vista -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-1">
+                                <i class="bi bi-journal-text me-2 text-primary"></i>
+                                Mis Entradas
+                            </h5>
+                            <p class="text-muted small mb-0">
+                                {% if page_obj.paginator.count == 0 %}
+                                No hay entradas disponibles
+                                {% else %}
+                                Mostrando <strong>{{ page_obj.start_index }}-{{ page_obj.end_index }}</strong> 
+                                de <strong>{{ page_obj.paginator.count }}</strong> entradas
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <!-- Ordenar -->
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                        data-bs-toggle="dropdown">
+                                    <i class="bi bi-sort-down me-1"></i> Ordenar
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="?sort=-fecha_creacion">Más recientes</a></li>
+                                    <li><a class="dropdown-item" href="?sort=fecha_creacion">Más antiguas</a></li>
+                                    <li><a class="dropdown-item" href="?sort=titulo">Por título (A-Z)</a></li>
+                                    <li><a class="dropdown-item" href="?sort=-titulo">Por título (Z-A)</a></li>
+                                </ul>
+                            </div>
+                            <!-- Vista -->
+                            <div class="btn-group" role="group">
+                                <a href="?view=list{% for key, value in request.GET.items %}{% if key != 'view' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                                   class="btn btn-sm btn-outline-secondary {% if request.GET.view != 'grid' %}active{% endif %}">
+                                    <i class="bi bi-list-ul"></i>
+                                </a>
+                                <a href="?view=grid{% for key, value in request.GET.items %}{% if key != 'view' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                                   class="btn btn-sm btn-outline-secondary {% if request.GET.view == 'grid' %}active{% endif %}">
+                                    <i class="bi bi-grid-3x3"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Entradas -->
+            {% if entries %}
+
+                {% if request.GET.view == 'grid' %}
+                <!-- Vista Grid -->
+                <div class="row g-3">
+                    {% for entry in entries %}
+                    <div class="col-md-6 col-xl-4">
+                        <div class="card h-100 border entry-card">
+                            {% if entry.attachments.exists %}
+                            <div class="position-relative">
+                                <img src="{{ entry.attachments.first.archivo.url }}" 
+                                     class="card-img-top" alt="{{ entry.titulo }}"
+                                     style="height: 150px; object-fit: cover;">
+                                {% if entry.attachments.count > 1 %}
+                                <span class="badge bg-primary position-absolute top-0 end-0 m-2">
+                                    +{{ entry.attachments.count|add:"-1" }}
+                                </span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            <div class="card-body d-flex flex-column">
+                                <div class="mb-2">
+                                    <span class="badge bg-light text-dark">
+                                        {{ entry.get_categoria_display }}
+                                    </span>
+                                    {% if entry.is_public %}
+                                    <span class="badge bg-success ms-1">Pública</span>
+                                    {% endif %}
+                                </div>
+                                <h6 class="card-title mb-2">
+                                    <a href="{% url 'bitacora:detail' entry.pk %}" class="text-decoration-none text-dark">
+                                        {{ entry.titulo|truncatechars:40 }}
+                                    </a>
+                                </h6>
+                                <p class="card-text small text-muted flex-grow-1">
+                                    {{ entry.contenido|striptags|truncatechars:100 }}
+                                </p>
+                                <div class="mb-2">
+                                    {% for tag in entry.tags.all|slice:":3" %}
+                                    <span class="badge bg-light text-dark border small">{{ tag.name }}</span>
+                                    {% endfor %}
+                                    {% if entry.tags.count > 3 %}
+                                    <span class="small text-muted">+{{ entry.tags.count|add:"-3" }}</span>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-auto">
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar me-1"></i>
+                                        {{ entry.fecha_creacion|date:"d M" }}
+                                    </small>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'bitacora:detail' entry.pk %}" 
+                                           class="btn btn-outline-primary" title="Ver">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'bitacora:update' entry.pk %}" 
+                                           class="btn btn-outline-secondary" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        {% endfor %}
                     </div>
-                    {% else %}
-                    <!-- Vista Lista (por defecto) -->
+                    {% endfor %}
+                </div>
+
+                {% else %}
+                <!-- Vista Lista (por defecto) -->
+                <div class="card">
                     <div class="list-group list-group-flush">
                         {% for entry in entries %}
-                        <div class="list-group-item px-3 py-3">
-                            <div class="row align-items-center">
-                                <div class="col-md-8">
-                                    <div class="d-flex align-items-start">
-                                        <div class="flex-grow-1">
-                                            <h6 class="mb-1">
-                                                <a href="{% url 'bitacora:detail' entry.pk %}" class="text-decoration-none text-dark">
+                        <div class="list-group-item p-3">
+                            <div class="row align-items-center g-2">
+                                <div class="col-auto">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <div class="mb-1">
+                                            <span class="badge bg-light text-dark">
+                                                {{ entry.get_categoria_display }}
+                                            </span>
+                                        </div>
+                                        {% if entry.attachments.exists %}
+                                        <div class="text-center">
+                                            <i class="bi bi-paperclip text-primary"></i>
+                                            <small class="d-block">{{ entry.attachments.count }}</small>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <div class="d-flex flex-column">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <h6 class="mb-0">
+                                                <a href="{% url 'bitacora:detail' entry.pk %}" 
+                                                   class="text-decoration-none text-dark">
                                                     {{ entry.titulo }}
                                                 </a>
                                                 {% if entry.is_public %}
-                                                <i class="bi bi-eye text-success ms-1" title="Pública"></i>
+                                                <i class="bi bi-eye text-success ms-1" title="Entrada pública"></i>
                                                 {% else %}
-                                                <i class="bi bi-eye-slash text-muted ms-1" title="Privada"></i>
+                                                <i class="bi bi-eye-slash text-muted ms-1" title="Entrada privada"></i>
                                                 {% endif %}
                                             </h6>
-                                            <p class="text-muted small mb-2">{{ entry.contenido|striptags|truncatechars:150 }}</p>
-                                            <div class="d-flex gap-2 align-items-center">
-                                                <span class="badge bg-secondary">{{ entry.get_categoria_display }}</span>
-                                                {% if entry.mood %}
-                                                <span class="badge bg-info">{{ entry.mood }}</span>
-                                                {% endif %}
-                                                {% if entry.tags.all %}
-                                                {% for tag in entry.tags.all|slice:":2" %}
-                                                <span class="badge bg-light text-dark">{{ tag.name }}</span>
-                                                {% endfor %}
-                                                {% endif %}
-                                                {% if entry.attachments.all %}
-                                                <span class="badge bg-info">
-                                                    <i class="bi bi-paperclip"></i> {{ entry.attachments.count }}
-                                                </span>
-                                                {% endif %}
-                                            </div>
+                                            <small class="text-muted text-nowrap ms-2">
+                                                {{ entry.fecha_creacion|date:"d/m/Y H:i" }}
+                                            </small>
+                                        </div>
+                                        <p class="text-muted small mb-2">
+                                            {{ entry.contenido|striptags|truncatechars:150 }}
+                                        </p>
+                                        <div class="d-flex flex-wrap gap-1 align-items-center">
+                                            {% if entry.mood %}
+                                            <span class="badge bg-info">
+                                                <i class="bi bi-emoji-smile me-1"></i>{{ entry.mood }}
+                                            </span>
+                                            {% endif %}
+                                            {% for tag in entry.tags.all|slice:":3" %}
+                                            <span class="badge bg-light text-dark">{{ tag.name }}</span>
+                                            {% endfor %}
+                                            {% if entry.tags.count > 3 %}
+                                            <span class="small text-muted">+{{ entry.tags.count|add:"-3" }} más</span>
+                                            {% endif %}
+                                            {% if entry.structured_content %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-puzzle me-1"></i>{{ entry.structured_content|length }} bloques
+                                            </span>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-4 text-end">
-                                    <div class="d-flex flex-column align-items-end gap-2">
-                                        <small class="text-muted">{{ entry.fecha_creacion|date:"d/m/Y H:i" }}</small>
-                                        <div class="btn-group" role="group">
-                                            <a href="{% url 'bitacora:detail' entry.pk %}" class="btn btn-sm btn-outline-primary">Ver</a>
-                                            <a href="{% url 'bitacora:update' entry.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a>
-                                            <a href="{% url 'bitacora:delete' entry.pk %}" class="btn btn-sm btn-outline-danger">Eliminar</a>
+                                <div class="col-auto">
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'bitacora:detail' entry.pk %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            Ver
+                                        </a>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                    type="button" data-bs-toggle="dropdown">
+                                                <i class="bi bi-three-dots"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li>
+                                                    <a class="dropdown-item" href="{% url 'bitacora:update' entry.pk %}">
+                                                        <i class="bi bi-pencil me-2"></i>Editar
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="{% url 'bitacora:delete' entry.pk %}">
+                                                        <i class="bi bi-trash me-2"></i>Eliminar
+                                                    </a>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <a class="dropdown-item" href="#">
+                                                        <i class="bi bi-clipboard me-2"></i>Copiar
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="#">
+                                                        <i class="bi bi-share me-2"></i>Compartir
+                                                    </a>
+                                                </li>
+                                            </ul>
                                         </div>
                                     </div>
                                 </div>
@@ -265,66 +483,95 @@
                         </div>
                         {% endfor %}
                     </div>
-                    {% endif %}
-
-                    {% else %}
-                    <!-- Estado vacío -->
-                    <div class="text-center py-5">
-                        <div class="mb-4">
-                            <i class="bi bi-journal-x fs-1 text-muted"></i>
-                        </div>
-                        <h5 class="text-muted mb-3">No tienes entradas aún</h5>
-                        <p class="text-muted mb-4">Comienza a documentar tus pensamientos y experiencias</p>
-                        <a href="{% url 'bitacora:create' %}" class="btn btn-primary btn-lg">
-                            <i class="bi bi-plus-circle me-2"></i>Crear Primera Entrada
-                        </a>
-                    </div>
-                    {% endif %}
-
                 </div>
+                {% endif %}
 
                 <!-- Paginación -->
                 {% if is_paginated %}
-                <div class="card-footer">
-                    <nav aria-label="Paginación">
-                        <ul class="pagination pagination-sm justify-content-center mb-0">
+                <nav aria-label="Paginación" class="mt-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted">
+                                Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                            </small>
+                        </div>
+                        <ul class="pagination pagination-sm mb-0">
                             {% if page_obj.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                                   aria-label="Anterior">
                                     <i class="bi bi-chevron-left"></i>
                                 </a>
                             </li>
                             {% endif %}
 
                             {% for num in page_obj.paginator.page_range %}
-                            {% if page_obj.number == num %}
-                            <li class="page-item active">
-                                <span class="page-link">{{ num }}</span>
-                            </li>
-                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
-                            </li>
-                            {% endif %}
+                                {% if num == page_obj.number %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                                {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                        {{ num }}
+                                    </a>
+                                </li>
+                                {% elif num == page_obj.number|add:'-3' or num == page_obj.number|add:'3' %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                                {% endif %}
                             {% endfor %}
 
                             {% if page_obj.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                                   aria-label="Siguiente">
                                     <i class="bi bi-chevron-right"></i>
                                 </a>
                             </li>
                             {% endif %}
                         </ul>
-                        <div class="text-center mt-2">
-                            <small class="text-muted">
-                                Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }} entradas
-                            </small>
-                        </div>
-                    </nav>
-                </div>
+                    </div>
+                </nav>
                 {% endif %}
+
+            {% else %}
+            <!-- Estado vacío -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <div class="mb-4">
+                        <i class="bi bi-journal-x text-muted" style="font-size: 4rem;"></i>
+                    </div>
+                    <h5 class="text-muted mb-3">No se encontraron entradas</h5>
+                    <p class="text-muted mb-4">
+                        {% if request.GET %}
+                        No hay resultados para los filtros aplicados. 
+                        <a href="{% url 'bitacora:list' %}" class="text-primary">Limpiar filtros</a>
+                        {% else %}
+                        Comienza a documentar tus pensamientos, proyectos y reflexiones.
+                        {% endif %}
+                    </p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="{% url 'bitacora:create' %}" class="btn btn-primary btn-lg">
+                            <i class="bi bi-plus-circle me-2"></i>Crear Primera Entrada
+                        </a>
+                        {% if request.GET %}
+                        <a href="{% url 'bitacora:list' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle me-2"></i>Mostrar Todas
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
+            {% endif %}
+
         </div>
 
     </div>

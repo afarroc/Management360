@@ -2,180 +2,709 @@
 {% load static %}
 {% load crispy_forms_tags %}
 
+{% block extra_css %}
 <!-- TinyMCE CDN -->
 <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<style>
+/* Estilos específicos para el formulario */
+#div_id_contenido .form-control {
+    min-height: 400px;
+}
 
+.content-block-preview {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 15px;
+    margin-bottom: 10px;
+    background-color: #f8f9fa;
+}
+
+.content-block-preview h6 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+.content-block-preview .badge {
+    font-size: 0.75em;
+}
+
+.form-section {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.form-section h5 {
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.location-fields .row {
+    align-items: center;
+}
+
+.location-map {
+    height: 200px;
+    background: #e9ecef;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+}
+
+.location-map i {
+    font-size: 3rem;
+}
+
+.tags-selector .select2-selection {
+    min-height: 100px;
+}
+
+.required-field label:after {
+    content: " *";
+    color: #dc3545;
+}
+
+/* Estilos para el editor TinyMCE */
+.tox.tox-tinymce {
+    border-radius: 6px;
+    border: 1px solid #ced4da !important;
+}
+
+.tox .tox-edit-area__iframe {
+    background-color: white;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .form-section {
+        padding: 15px;
+    }
+    
+    .location-fields .row > div {
+        margin-bottom: 15px;
+    }
+}
+</style>
+{% endblock %}
 
 {% block content %}
 
-<!-- Mensajes de confirmación y éxito -->
+<!-- Mensajes del sistema -->
 {% if messages %}
-<div class="alert alert-info" role="alert">
+<div class="alert-container mb-4">
     {% for message in messages %}
-    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
-        {% endfor %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
 </div>
 {% endif %}
 
+<!-- Header de la página -->
 <div class="pagetitle">
-    <h1>{% if object %}Editar{% else %}Nueva{% endif %} Entrada</h1>
-    <nav>
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'bitacora:list' %}">Bitácora</a></li>
-            <li class="breadcrumb-item active">{% if object %}Editar{% else %}Nueva{% endif %} Entrada</li>
-        </ol>
-    </nav>
+    <div class="d-flex justify-content-between align-items-start">
+        <div>
+            <h1>{% if object %}Editar{% else %}Nueva{% endif %} Entrada de Bitácora</h1>
+            <nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'bitacora:dashboard' %}">Bitácora</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'bitacora:list' %}">Entradas</a></li>
+                    <li class="breadcrumb-item active">{% if object %}Editar{% else %}Crear{% endif %}</li>
+                </ol>
+            </nav>
+        </div>
+        {% if object %}
+        <a href="{% url 'bitacora:detail' object.pk %}" class="btn btn-outline-primary">
+            <i class="bi bi-eye me-1"></i> Ver Entrada
+        </a>
+        {% endif %}
+    </div>
 </div><!-- End Page Title -->
 
-<section class="section dashboard">
+<section class="section">
     <div class="row">
         <div class="col-lg-12">
+            
+            <!-- Formulario Principal -->
             <div class="card">
                 <div class="card-body">
-                    <form method="post">
+                    <form method="post" enctype="multipart/form-data" id="entry-form">
                         {% csrf_token %}
-                        {{ form|crispy }}
-                        <!-- Sección de contenido estructurado -->
-                        <div class="mt-4 border-top pt-3">
-                            <h6><i class="bi bi-puzzle me-2"></i>Contenido Estructurado</h6>
-                            <p class="text-muted small">Enriquece tu entrada con bloques de contenido reutilizable desde el sistema de cursos.</p>
+                        
+                        <!-- Sección: Información Básica -->
+                        <div class="form-section">
+                            <h5><i class="bi bi-card-text text-primary me-2"></i> Información Básica</h5>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    {{ form.titulo|as_crispy_field }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ form.categoria|as_crispy_field }}
+                                </div>
+                            </div>
+                        </div>
 
-                            {% if object %}
-                            <a href="{% url 'bitacora:content_blocks' %}?entry={{ object.pk }}" class="btn btn-outline-info btn-sm" target="_blank">
-                                <i class="bi bi-plus-circle me-1"></i>Insertar Bloque de Contenido
-                            </a>
+                        <!-- Sección: Contenido Principal -->
+                        <div class="form-section">
+                            <h5><i class="bi bi-pencil text-primary me-2"></i> Contenido</h5>
+                            {{ form.contenido|as_crispy_field }}
+                            
+                            <!-- Acciones para el editor -->
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="openContentBlocksGallery()">
+                                        <i class="bi bi-puzzle me-1"></i> Insertar Bloque de Contenido
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="insertSampleContent()">
+                                        <i class="bi bi-magic me-1"></i> Contenido de Ejemplo
+                                    </button>
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i> Usa el editor para dar formato a tu contenido
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Sección: Metadata y Configuración -->
+                        <div class="form-section">
+                            <h5><i class="bi bi-gear text-primary me-2"></i> Configuración</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.mood|as_crispy_field }}
+                                    </div>
+                                    <div class="mb-3">
+                                        {{ form.tags|as_crispy_field }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        {{ form.is_public|as_crispy_field }}
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Visibilidad</label>
+                                        <div class="form-text small">
+                                            {% if object and object.is_public %}
+                                            <span class="text-success">
+                                                <i class="bi bi-eye me-1"></i> Esta entrada es pública y puede ser vista por otros usuarios.
+                                            </span>
+                                            {% else %}
+                                            <span class="text-secondary">
+                                                <i class="bi bi-eye-slash me-1"></i> Esta entrada es privada y solo tú puedes verla.
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sección: Ubicación -->
+                        <div class="form-section">
+                            <h5><i class="bi bi-geo-alt text-primary me-2"></i> Ubicación</h5>
+                            <div class="row location-fields">
+                                <div class="col-md-8">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            {{ form.latitud|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-6">
+                                            {{ form.longitud|as_crispy_field }}
+                                        </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="getCurrentLocation()">
+                                            <i class="bi bi-compass me-1"></i> Usar mi ubicación actual
+                                        </button>
+                                        <small class="text-muted ms-2">
+                                            Opcional: Agrega coordenadas para geolocalizar la entrada
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="location-map">
+                                        <div class="text-center">
+                                            <i class="bi bi-geo-alt-fill"></i>
+                                            <p class="mt-2 small">Vista previa de ubicación</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sección: Relaciones -->
+                        <div class="form-section">
+                            <h5><i class="bi bi-link-45deg text-primary me-2"></i> Relaciones</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {{ form.related_event|as_crispy_field }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.related_task|as_crispy_field }}
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    {{ form.related_project|as_crispy_field }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.related_room|as_crispy_field }}
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i> Vincula esta entrada con eventos, tareas, proyectos o habitaciones
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Sección: Contenido Estructurado -->
+                        {% if object and object.pk %}
+                        <div class="form-section" id="structured-content-section">
+                            <h5><i class="bi bi-puzzle text-primary me-2"></i> Contenido Estructurado</h5>
+                            
+                            <div class="mb-3">
+                                <p class="text-muted">
+                                    Los bloques de contenido estructurado se insertan automáticamente desde el editor y se procesan al guardar.
+                                </p>
+                                
+                                <a href="{% url 'bitacora:content_blocks' %}?entry={{ object.pk }}" 
+                                   class="btn btn-outline-info" 
+                                   target="_blank">
+                                    <i class="bi bi-plus-circle me-1"></i> Explorar Biblioteca de Bloques
+                                </a>
+                                
+                                <button type="button" class="btn btn-outline-secondary ms-2" onclick="openContentBlocksGallery()">
+                                    <i class="bi bi-window-plus me-1"></i> Insertar en Editor
+                                </button>
+                            </div>
 
                             {% if object.structured_content %}
-                            <div class="mt-3">
-                                <h6 class="text-muted">Bloques Insertados ({{ object.structured_content|length }}):</h6>
-                                <div class="list-group list-group-flush">
+                            <div class="mt-4">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6 class="mb-0">
+                                        Bloques Insertados
+                                        <span class="badge bg-primary ms-2">{{ object.structured_content|length }}</span>
+                                    </h6>
+                                    <small class="text-muted">Estos bloques se procesan automáticamente al guardar</small>
+                                </div>
+                                
+                                <div class="list-group">
                                     {% for block in object.structured_content %}
-                                    <div class="list-group-item py-2">
+                                    <div class="list-group-item">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <div>
-                                                <strong>{{ block.title }}</strong>
-                                                <span class="badge bg-secondary ms-2">{{ block.content_type }}</span>
+                                                <strong>{{ block.title|default:"Sin título" }}</strong>
+                                                <span class="badge bg-secondary ms-2">{{ block.type|default:"content" }}</span>
+                                                {% if block.content_type %}
+                                                <span class="badge bg-light text-dark ms-1">{{ block.content_type }}</span>
+                                                {% endif %}
                                             </div>
-                                            <small class="text-muted">{{ block.inserted_at|date:"d/m H:i" }}</small>
+                                            <div class="text-end">
+                                                {% if block.inserted_at %}
+                                                <small class="text-muted d-block">{{ block.inserted_at|date:"d/m/Y H:i" }}</small>
+                                                {% endif %}
+                                            </div>
                                         </div>
                                     </div>
                                     {% endfor %}
                                 </div>
                             </div>
                             {% else %}
-                            <div class="alert alert-info mt-2">
-                                <small>💡 <strong>Tip:</strong> Después de guardar esta entrada, podrás insertar bloques de contenido estructurado para enriquecerla.</small>
+                            <div class="alert alert-info mt-3">
+                                <div class="d-flex">
+                                    <div class="me-3">
+                                        <i class="bi bi-info-circle-fill fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="alert-heading">Añade contenido estructurado</h6>
+                                        <p class="mb-0">
+                                            Usa el botón "Insertar Bloque de Contenido" en el editor para añadir componentes predefinidos.
+                                            Los bloques se extraerán automáticamente del contenido HTML al guardar.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                             {% endif %}
                         </div>
                         {% endif %}
 
-                        <div class="d-flex justify-content-end gap-2 mt-3">
-                            <a href="{% url 'bitacora:list' %}" class="btn btn-secondary">Cancelar</a>
-                            <button type="submit" class="btn btn-primary">Guardar</button>
+                        <!-- Botones de Acción -->
+                        <div class="border-top pt-4 mt-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <a href="{% if object %}{% url 'bitacora:detail' object.pk %}{% else %}{% url 'bitacora:list' %}{% endif %}" 
+                                       class="btn btn-outline-secondary">
+                                        <i class="bi bi-x-circle me-1"></i> Cancelar
+                                    </a>
+                                    <button type="button" class="btn btn-outline-primary ms-2" onclick="saveDraft()">
+                                        <i class="bi bi-save me-1"></i> Guardar Borrador
+                                    </button>
+                                </div>
+                                <div>
+                                    <button type="submit" name="action" value="save" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-check-circle me-1"></i> 
+                                        {% if object %}Actualizar Entrada{% else %}Crear Entrada{% endif %}
+                                    </button>
+                                    {% if object %}
+                                    <button type="submit" name="action" value="save_and_continue" class="btn btn-outline-success ms-2">
+                                        <i class="bi bi-check-all me-1"></i> Guardar y Continuar
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
             </div>
+
+            <!-- Panel de Ayuda -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-question-circle text-primary me-2"></i>
+                        Ayuda y Consejos
+                    </h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="d-flex mb-3">
+                                <div class="me-3 text-primary">
+                                    <i class="bi bi-type fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6>Formato de Texto</h6>
+                                    <p class="small text-muted mb-0">
+                                        Usa el editor WYSIWYG para dar formato a tu texto con negritas, listas, encabezados, etc.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex mb-3">
+                                <div class="me-3 text-success">
+                                    <i class="bi bi-puzzle fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6>Contenido Estructurado</h6>
+                                    <p class="small text-muted mb-0">
+                                        Inserta bloques predefinidos desde la biblioteca de contenido para añadir elementos complejos.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex mb-3">
+                                <div class="me-3 text-warning">
+                                    <i class="bi bi-tag fs-4"></i>
+                                </div>
+                                <div>
+                                    <h6>Organización</h6>
+                                    <p class="small text-muted mb-0">
+                                        Usa categorías, etiquetas y relaciones para organizar tus entradas y encontrarlas fácilmente.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </section>
 
+{% endblock %}
+
+{% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar TinyMCE manualmente
-    tinymce.init({
-        selector: 'textarea[name="contenido"]', // Selector por nombre del campo
-        height: 600,
-        width: '100%',
-        menubar: 'file edit view insert format tools table help',
-        plugins: 'advlist autolink lists link image charmap print preview anchor searchreplace visualblocks code fullscreen insertdatetime media table paste codesample help wordcount emoticons hr pagebreak nonbreaking anchor toc insertdatetime advlist lists checklist link image media table paste wordcount spellchecker a11ychecker tinymcespellchecker permanentpen powerpaste casechange formatpainter pageembed tinycomments mentions quickbars linkchecker autocorrect typography mergetags',
-        toolbar1: 'undo redo | formatselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist checklist | outdent indent | removeformat',
-        toolbar2: 'link image media | emoticons charmap | code codesample | fullscreen preview | insertdatetime | table | hr pagebreak nonbreaking anchor toc | permanentpen powerpaste casechange formatpainter pageembed tinycomments mentions quickbars linkchecker autocorrect typography mergetags',
-        toolbar3: 'contentblock',
-        content_css: '/static/assets/css/style.css',
-        skin: 'oxide',
-        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, San Francisco, Segoe UI, Roboto, Helvetica Neue, sans-serif; font-size: 14px; }',
-        branding: false,
-        resize: true,
-        image_advtab: true,
-        image_title: true,
-        automatic_uploads: true,
-        file_picker_types: 'image',
-        paste_data_images: true,
-        images_upload_url: '/bitacora/upload-image/',
-        images_upload_credentials: true,
-        setup: function(editor) {
-            editor.ui.registry.addButton('contentblock', {
-                text: 'Insertar Bloque',
-                icon: 'template',
-                tooltip: 'Insertar bloque de contenido estructurado',
-                onAction: function() {
-                    window.openContentBlocksGallery();
-                }
-            });
+    console.log('=== INICIALIZANDO FORMULARIO BITÁCORA ===');
+
+    // ============================================
+    // CONFIGURACIÓN DE TINYMCE - VERSIÓN CORREGIDA
+    // ============================================
+    
+    // Función principal para inicializar TinyMCE
+    function initializeTinyMCE() {
+        // Verificar si TinyMCE está disponible
+        if (typeof tinymce === 'undefined') {
+            console.error('❌ ERROR: TinyMCE no está disponible en window.tinymce');
+            showToast('Error: Editor no disponible. Recarga la página.', 'error');
+            return false;
         }
-    });
-
-    // Función para insertar bloque de contenido en TinyMCE
-    window.insertContentBlock = function(blockData) {
-        const editor = tinymce.get('contenido'); // Usar el nombre del campo
-        if (editor) {
-            let htmlContent = '';
-
-            // Generar HTML basado en el tipo de contenido
-            switch(blockData.content_type) {
-                case 'html':
-                case 'bootstrap':
-                    htmlContent = blockData.content;
-                    break;
-                case 'text':
-                    htmlContent = `<p>${blockData.content}</p>`;
-                    break;
-                case 'markdown':
-                    htmlContent = `<pre><code>${blockData.content}</code></pre>`;
-                    break;
-                case 'image':
-                    htmlContent = `<img src="${blockData.content}" alt="${blockData.title}" class="img-fluid">`;
-                    break;
-                case 'video':
-                    htmlContent = `<video controls class="w-100"><source src="${blockData.content}" type="video/mp4">Tu navegador no soporta video.</video>`;
-                    break;
-                case 'quote':
-                    htmlContent = `<blockquote class="blockquote"><p class="mb-0">${blockData.content}</p></blockquote>`;
-                    break;
-                case 'code':
-                    htmlContent = `<pre><code>${blockData.content}</code></pre>`;
-                    break;
-                case 'card':
-                    htmlContent = `<div class="card"><div class="card-body">${blockData.content}</div></div>`;
-                    break;
-                case 'alert':
-                    htmlContent = `<div class="alert alert-info">${blockData.content}</div>`;
-                    break;
-                default:
-                    htmlContent = blockData.content;
+        
+        console.log('✅ TinyMCE disponible, versión:', tinymce.majorVersion);
+        
+        // Remover cualquier instancia previa
+        try {
+            tinymce.remove();
+            console.log('🗑️ Instancias previas removidas');
+        } catch (e) {
+            console.log('ℹ️ No había instancias previas');
+        }
+        
+        // Configuración simplificada y robusta
+        const tinyConfig = {
+            selector: 'textarea[name="contenido"]',
+            height: 500,
+            width: '100%',
+            menubar: 'edit view format tools',
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
+                'preview', 'anchor', 'searchreplace', 'visualblocks',
+                'code', 'fullscreen', 'insertdatetime', 'media', 'table',
+                'paste', 'help', 'wordcount'
+            ],
+            toolbar: 'undo redo | formatselect | bold italic underline | ' +
+                     'alignleft aligncenter alignright alignjustify | ' +
+                     'bullist numlist outdent indent | link image | ' +
+                     'removeformat | help',
+            content_style: 'body { font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; }',
+            branding: false,
+            promotion: false,
+            resize: true,
+            setup: function(editor) {
+                console.log('✅ Editor TinyMCE inicializado para:', editor.id);
+                
+                editor.on('init', function() {
+                    console.log('🎉 Editor completamente cargado');
+                    showToast('Editor listo', 'success');
+                });
+                
+                editor.on('change', function() {
+                    console.log('📝 Contenido modificado');
+                });
             }
-
-            // Insertar en el editor
-            editor.insertContent(`<div class="content-block" data-block-id="${blockData.id}" data-block-type="${blockData.content_type}">
-                <h5>${blockData.title}</h5>
-                ${htmlContent}
-                <small class="text-muted">Bloque insertado desde biblioteca de contenido</small>
-            </div><br>`);
+        };
+        
+        // Inicializar TinyMCE
+        try {
+            const editorInstance = tinymce.init(tinyConfig);
+            console.log('✅ TinyMCE inicializado exitosamente');
+            return true;
+        } catch (error) {
+            console.error('❌ Error al inicializar TinyMCE:', error);
+            showToast('Error en el editor: ' + error.message, 'error');
+            return false;
         }
+    }
+    
+    // Función para verificar carga de TinyMCE con reintentos
+    function checkAndInitializeTinyMCE() {
+        const maxAttempts = 8;
+        let attempts = 0;
+        
+        console.log('🔍 Verificando carga de TinyMCE...');
+        
+        const checkInterval = setInterval(function() {
+            attempts++;
+            console.log(`Intento ${attempts}/${maxAttempts}`);
+            
+            if (typeof tinymce !== 'undefined') {
+                clearInterval(checkInterval);
+                console.log('✅ TinyMCE detectado');
+                
+                // Pequeña pausa para asegurar carga completa
+                setTimeout(function() {
+                    initializeTinyMCE();
+                }, 100);
+                
+            } else if (attempts >= maxAttempts) {
+                clearInterval(checkInterval);
+                console.error('❌ TinyMCE no se cargó después de ' + maxAttempts + ' intentos');
+                
+                // Mostrar textarea básico
+                const textarea = document.querySelector('textarea[name="contenido"]');
+                if (textarea) {
+                    textarea.style.display = 'block';
+                    textarea.style.height = '400px';
+                    textarea.style.width = '100%';
+                    textarea.style.padding = '10px';
+                    console.log('📝 Usando textarea básico como fallback');
+                }
+                
+                showToast('Usando editor básico', 'warning');
+            }
+        }, 500);
+    }
+    
+    // Iniciar el proceso de carga
+    checkAndInitializeTinyMCE();
+    
+    // ============================================
+    // FUNCIONES DE UTILIDAD
+    // ============================================
+    
+    // Función para mostrar notificaciones
+    window.showToast = function(message, type = 'info') {
+        // Crear contenedor si no existe
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toast-container';
+            toastContainer.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 999999;
+                max-width: 350px;
+            `;
+            document.body.appendChild(toastContainer);
+        }
+        
+        // Crear toast
+        const toastId = 'toast-' + Date.now();
+        const toast = document.createElement('div');
+        toast.id = toastId;
+        toast.className = `alert alert-${type} alert-dismissible fade show shadow mb-2`;
+        toast.style.cssText = 'animation: slideIn 0.3s ease-out;';
+        toast.innerHTML = `
+            <div class="d-flex align-items-center">
+                <div class="flex-grow-1">${message}</div>
+                <button type="button" class="btn-close btn-sm" 
+                        onclick="document.getElementById('${toastId}').remove()"></button>
+            </div>
+        `;
+        
+        toastContainer.appendChild(toast);
+        
+        // Auto-remover después de 5 segundos
+        setTimeout(() => {
+            const element = document.getElementById(toastId);
+            if (element) {
+                element.remove();
+            }
+        }, 5000);
     };
-
-    // Función para abrir la galería de bloques
-    window.openContentBlocksGallery = function() {
-        // Obtener el ID de la entrada actual si existe
-        const urlParams = new URLSearchParams(window.location.search);
-        const entryId = urlParams.get('entry') || 'current';
-
-        const galleryUrl = `/bitacora/content-blocks/?entry=${entryId}`;
-        window.open(galleryUrl, 'contentBlocksGallery', 'width=1000,height=700,scrollbars=yes,resizable=yes');
+    
+    // Agregar estilos de animación
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        .tox.tox-tinymce {
+            border-radius: 6px !important;
+            border: 1px solid #ced4da !important;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // ============================================
+    // OTRAS FUNCIONALIDADES DEL FORMULARIO
+    // ============================================
+    
+    // Select2 para tags
+    if (typeof $ !== 'undefined' && $.fn.select2) {
+        $('#id_tags').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'Selecciona o escribe etiquetas',
+            tags: true,
+            width: '100%'
+        });
+    }
+    
+    // Geolocalización
+    window.getCurrentLocation = function() {
+        if (!navigator.geolocation) {
+            showToast('Geolocalización no soportada', 'warning');
+            return;
+        }
+        
+        showToast('Obteniendo ubicación...', 'info');
+        
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = document.getElementById('id_latitud');
+                const lng = document.getElementById('id_longitud');
+                
+                if (lat && lng) {
+                    lat.value = position.coords.latitude.toFixed(6);
+                    lng.value = position.coords.longitude.toFixed(6);
+                    showToast('Ubicación obtenida', 'success');
+                }
+            },
+            function(error) {
+                let message = 'Error: ';
+                switch(error.code) {
+                    case 1: message += 'Permiso denegado'; break;
+                    case 2: message += 'Ubicación no disponible'; break;
+                    case 3: message += 'Tiempo agotado'; break;
+                    default: message += 'Error desconocido';
+                }
+                showToast(message, 'error');
+            }
+        );
     };
+    
+    // Validación del formulario
+    const form = document.getElementById('entry-form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const title = document.getElementById('id_titulo').value.trim();
+            
+            if (!title) {
+                e.preventDefault();
+                showToast('Ingresa un título para la entrada', 'warning');
+                document.getElementById('id_titulo').focus();
+                return;
+            }
+            
+            // Obtener contenido del editor
+            let contenido = '';
+            if (typeof tinymce !== 'undefined') {
+                const editor = tinymce.get('contenido');
+                if (editor) {
+                    contenido = editor.getContent().trim();
+                }
+            }
+            
+            // Fallback al textarea
+            if (!contenido || contenido === '<p></p>') {
+                const textarea = document.querySelector('textarea[name="contenido"]');
+                if (textarea) {
+                    contenido = textarea.value.trim();
+                }
+            }
+            
+            if (!contenido || contenido === '' || contenido === '<p></p>') {
+                if (!confirm('¿Deseas guardar la entrada sin contenido?')) {
+                    e.preventDefault();
+                    return;
+                }
+            }
+            
+            // Mostrar indicador de carga
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                const originalHTML = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Guardando...';
+                submitBtn.disabled = true;
+                
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalHTML;
+                    submitBtn.disabled = false;
+                }, 5000);
+            }
+        });
+    }
+    
+    console.log('=== FORMULARIO INICIALIZADO CORRECTAMENTE ===');
 });
 </script>
 {% endblock %}
