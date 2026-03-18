@@ -1,0 +1,662 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}CV Tradicional - {{ cv.full_name }}{% endblock %}
+
+{# ============================================ #}
+{# ESTILOS CSS                                  #}
+{# ============================================ #}
+{% block extra_css %}
+<style>
+    /* ==================================================================
+       ESTILOS BASE
+       ================================================================== */
+    
+    /* Cards */
+    .card {
+        border: none;
+        box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        transition: transform 0.2s, box-shadow 0.2s;
+        margin-bottom: 20px;
+    }
+    
+    .card:hover {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    /* Títulos de sección */
+    .card-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #2c3e50;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    /* Badges de habilidades */
+    .badge.bg-light {
+        background-color: #f8f9fa !important;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+    
+    .badge.bg-light:hover {
+        background-color: #0d6efd !important;
+        color: white !important;
+        border-color: #0d6efd !important;
+    }
+    
+    /* Bordes inferiores */
+    .border-bottom {
+        border-bottom-color: #f0f0f0 !important;
+    }
+    
+    /* Enlaces sociales */
+    .social-links a {
+        transition: color 0.2s;
+    }
+    
+    .social-links a:hover {
+        color: #0d6efd !important;
+    }
+    
+    /* Foto de perfil */
+    .profile-img-wrapper {
+        width: 170px;
+    }
+    
+    .profile-img {
+        object-fit: cover;
+        aspect-ratio: 170/227;
+    }
+    
+    /* ==================================================================
+       TOOLBAR DE ACCIONES RÁPIDAS (como quick_actions)
+       ================================================================== */
+    .action-toolbar {
+        margin-bottom: 25px;
+    }
+    
+    .action-toolbar .card {
+        border-radius: 10px !important;
+        overflow: hidden;
+    }
+    
+    .action-toolbar .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-bottom: none;
+    }
+    
+    .action-toolbar .card-header .card-title {
+        color: white;
+        margin: 0;
+        border-bottom: none;
+    }
+    
+    .action-toolbar .card-body {
+        background: #f8f9fa;
+        padding: 1rem !important;
+    }
+    
+    .action-toolbar .btn-group {
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    
+    .action-toolbar .btn-outline-primary,
+    .action-toolbar .btn-outline-success,
+    .action-toolbar .btn-outline-secondary,
+    .action-toolbar .btn-outline-info,
+    .action-toolbar .btn-outline-dark {
+        border-width: 2px;
+        transition: all 0.3s ease;
+    }
+    
+    .action-toolbar .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(13,110,253,0.3);
+    }
+    
+    .action-toolbar .btn-outline-success:hover {
+        background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(25,135,84,0.3);
+    }
+    
+    .action-toolbar .btn-outline-secondary:hover {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(108,117,125,0.3);
+    }
+    
+    .action-toolbar .btn-outline-info:hover {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(23,162,184,0.3);
+    }
+    
+    .action-toolbar .btn-outline-dark:hover {
+        background: linear-gradient(135deg, #212529 0%, #1a1e21 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(33,37,41,0.3);
+    }
+    
+    .action-toolbar .vr {
+        height: 30px;
+        margin: auto 0.5rem;
+        background: #dee2e6;
+        opacity: 0.5;
+    }
+    
+    /* ==================================================================
+       ESTILOS COMPACTOS PARA PDF
+       ================================================================== */
+    .pdf-export .card {
+        box-shadow: none !important;
+        border: 1px solid #dee2e6 !important;
+        margin-bottom: 8px !important;
+    }
+    
+    .pdf-export .card-body {
+        padding: 8px 12px !important;
+    }
+    
+    .pdf-export .card-title {
+        margin: 0 !important;
+        padding: 0 !important;
+        font-size: 1rem !important;
+        border-bottom: 1px solid #dee2e6 !important;
+    }
+    
+    .pdf-export .mb-4 {
+        margin-bottom: 4px !important;
+    }
+    
+    .pdf-export .border-bottom {
+        margin-bottom: 4px !important;
+        padding-bottom: 4px !important;
+    }
+    
+    .pdf-export hr {
+        margin: 8px 0 !important;
+    }
+    
+    .pdf-export .badge {
+        padding: 2px 6px !important;
+        font-size: 0.75rem !important;
+    }
+    
+    .pdf-export h1 {
+        font-size: 2rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+    
+    .pdf-export .lead {
+        font-size: 1rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .pdf-export .social-links a {
+        font-size: 0.8rem !important;
+    }
+    
+    .pdf-export .profile-img-wrapper {
+        width: 130px !important;
+    }
+    
+    /* ==================================================================
+       ESPACIO SUPERIOR PARA EL SECTION - ¡AHORA SÍ FUNCIONA!
+       ================================================================== */
+    section.section {
+        padding-top: 30px !important;
+    }
+    
+    /* Espacio adicional para la primera card dentro del section */
+    section.section .card:first-child {
+        margin-top: 15px !important;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .action-toolbar .d-flex {
+            justify-content: center !important;
+        }
+        
+        .action-toolbar .btn-group {
+            margin: 2px;
+        }
+        
+        .action-toolbar .vr {
+            display: none;
+        }
+        
+        .action-toolbar .btn-sm {
+            padding: 0.3rem 0.6rem;
+        }
+        
+        section.section {
+            padding-top: 20px !important;
+        }
+    }
+</style>
+{% endblock %}
+
+
+{# ============================================ #}
+{# CONTENIDO PRINCIPAL                          #}
+{# ============================================ #}
+{% block content %}
+
+<!-- ========================================== -->
+<!-- TÍTULO Y MIGAS DE PAN                       -->
+<!-- ========================================== -->
+<div class="pagetitle">
+    <h1>CV Tradicional</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'cv:cv_detail' %}">Perfil</a></li>
+            <li class="breadcrumb-item active">CV Tradicional</li>
+        </ol>
+    </nav>
+</div>
+
+
+<!-- ========================================== -->
+<!-- BARRA DE ACCIONES RÁPIDAS                   -->
+<!-- ========================================== -->
+<div class="action-toolbar">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header py-2">
+            <h6 class="card-title mb-0 fs-6 fw-bold">
+                <i class="bi bi-tools me-2"></i>
+                Acciones Rápidas
+            </h6>
+        </div>
+        <div class="card-body py-3">
+            <div class="d-flex flex-wrap gap-2 justify-content-end">
+                <!-- Grupo de exportación -->
+                <div class="btn-group" role="group">
+                    <button onclick="exportToPDF()" class="btn btn-outline-primary btn-sm" title="Exportar PDF">
+                        <i class="bi bi-file-pdf"></i> <span class="d-none d-md-inline">PDF</span>
+                    </button>
+                    <button onclick="exportToHTML()" class="btn btn-outline-success btn-sm" title="Exportar HTML">
+                        <i class="bi bi-file-code"></i> <span class="d-none d-md-inline">HTML</span>
+                    </button>
+                </div>
+
+                <!-- Separador -->
+                <div class="vr mx-1"></div>
+
+                <!-- Grupo de navegación -->
+                <div class="btn-group" role="group">
+                    <a href="{% url 'cv:cv_detail' %}" class="btn btn-outline-secondary btn-sm" title="Perfil">
+                        <i class="bi bi-person-badge"></i> <span class="d-none d-md-inline">Perfil</span>
+                    </a>
+                    <a href="{% url 'cv:cv_edit' %}" class="btn btn-outline-info btn-sm" title="Editar">
+                        <i class="bi bi-pencil-square"></i> <span class="d-none d-md-inline">Editar</span>
+                    </a>
+                </div>
+
+                <!-- Menú Más -->
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-dark btn-sm dropdown-toggle" 
+                            data-bs-toggle="dropdown">
+                        <i class="bi bi-grid-3x3-gap-fill"></i> <span class="d-none d-md-inline">Más</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width: 200px;">
+                        <li><a class="dropdown-item" href="{% url 'cv:docsview' %}"><i class="bi bi-folder me-2"></i>Documentos</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'cv:edit_personal' %}"><i class="bi bi-person me-2"></i>Editar Personal</a></li>
+                        <li><a class="dropdown-item" href="{% url 'cv:edit_experience' %}"><i class="bi bi-briefcase me-2"></i>Editar Experiencia</a></li>
+                        <li><a class="dropdown-item" href="{% url 'cv:edit_education' %}"><i class="bi bi-mortarboard me-2"></i>Editar Educación</a></li>
+                        <li><a class="dropdown-item" href="{% url 'cv:edit_skills' %}"><i class="bi bi-star me-2"></i>Editar Habilidades</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-muted" href="#" onclick="window.print()"><i class="bi bi-printer me-2"></i>Imprimir</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ========================================== -->
+<!-- CARD DEL HEADER (foto + datos personales)  -->
+<!-- ========================================== -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <!-- Columna izquierda: datos personales -->
+            <div class="col-md-8">
+                <div class="text-center text-md-start">
+                    <h1 class="display-4 fw-bold mb-2">{{ cv.full_name }}</h1>
+                    <p class="lead fst-italic text-secondary mb-3">{{ cv.profession }}</p>
+                    
+                    <div class="mb-3">
+                        {% if cv.email %}
+                            <div class="mb-2"><i class="bi bi-envelope-fill text-primary me-2"></i> {{ cv.email }}</div>
+                        {% endif %}
+                        {% if cv.phone %}
+                            <div class="mb-2"><i class="bi bi-telephone-fill text-primary me-2"></i> {{ cv.phone }}</div>
+                        {% endif %}
+                        {% if cv.location %}
+                            <div class="mb-2"><i class="bi bi-geo-alt-fill text-primary me-2"></i> {{ cv.location }}</div>
+                        {% endif %}
+                        {% if cv.country %}
+                            <div class="mb-2"><i class="bi bi-globe2 text-primary me-2"></i> {{ cv.country }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="social-links">
+                        {% if cv.linkedin_url %}
+                            <a href="{{ cv.linkedin_url }}" target="_blank" class="me-3 text-secondary">
+                                <i class="bi bi-linkedin"></i> LinkedIn
+                            </a>
+                        {% endif %}
+                        {% if cv.github_url %}
+                            <a href="{{ cv.github_url }}" target="_blank" class="me-3 text-secondary">
+                                <i class="bi bi-github"></i> GitHub
+                            </a>
+                        {% endif %}
+                        {% if cv.twitter_url %}
+                            <a href="{{ cv.twitter_url }}" target="_blank" class="text-secondary">
+                                <i class="bi bi-twitter-x"></i> Twitter
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Columna derecha: foto -->
+            <div class="col-md-4">
+                <div class="d-flex justify-content-md-end justify-content-center">
+                    <div class="profile-img-wrapper">
+                        {% if cv.profile_picture %}
+                            <img src="{{ cv.profile_picture.url }}" 
+                                 alt="{{ cv.full_name }}" 
+                                 class="img-fluid rounded-3 shadow profile-img">
+                        {% else %}
+                            <img src="{% static 'img/default-avatar.png' %}" 
+                                 alt="{{ cv.full_name }}" 
+                                 class="img-fluid rounded-3 shadow profile-img">
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ========================================== -->
+<!-- SECCIÓN PRINCIPAL - CONTENIDO DEL CV        -->
+<!-- ========================================== -->
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+            
+            <!-- Card principal del CV -->
+            <div class="card">
+                <div class="card-body">
+                    
+                    <!-- Contenido exportable (PDF/HTML) -->
+                    <div id="cv-export-content">
+                        
+                        <!-- PERFIL PROFESIONAL -->
+                        {% if cv.bio %}
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-person-circle me-2"></i>
+                                    Perfil Profesional
+                                </h5>
+                                <p class="card-text">{{ cv.bio|linebreaksbr }}</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- EXPERIENCIA LABORAL -->
+                        {% if cv.experiences.exists %}
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-briefcase me-2"></i>
+                                    Experiencia Laboral
+                                </h5>
+                                
+                                {% for exp in cv.experiences.all %}
+                                <div class="mb-4 pb-3 border-bottom">
+                                    <h6 class="fw-bold mb-1">{{ exp.job_title }}</h6>
+                                    <p class="text-primary mb-1">{{ exp.company_name }}</p>
+                                    <p class="text-muted small mb-2">
+                                        {{ exp.start_date|date:"M Y" }} – 
+                                        {% if exp.end_date %}{{ exp.end_date|date:"M Y" }}{% else %}Presente{% endif %}
+                                    </p>
+                                    <p class="mb-0">{{ exp.description|linebreaksbr }}</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- EDUCACIÓN -->
+                        {% if cv.educations.exists %}
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-mortarboard me-2"></i>
+                                    Educación
+                                </h5>
+                                
+                                {% for edu in cv.educations.all %}
+                                <div class="mb-4 pb-3 border-bottom">
+                                    <h6 class="fw-bold mb-1">{{ edu.degree }} en {{ edu.field_of_study }}</h6>
+                                    <p class="text-primary mb-1">{{ edu.institution_name }}</p>
+                                    <p class="text-muted small mb-2">
+                                        {{ edu.start_date|date:"M Y" }} – 
+                                        {% if edu.end_date %}{{ edu.end_date|date:"M Y" }}{% else %}Presente{% endif %}
+                                    </p>
+                                    {% if edu.description %}
+                                        <p class="mb-0">{{ edu.description|linebreaksbr }}</p>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- HABILIDADES -->
+                        {% if cv.skills_list.exists %}
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-star me-2"></i>
+                                    Habilidades
+                                </h5>
+                                
+                                <div>
+                                    {% for skill in cv.skills_list.all %}
+                                    <span class="badge bg-light text-dark me-2 mb-2 p-2" 
+                                          style="border: 1px solid #dee2e6;"
+                                          title="Nivel: {{ skill.get_proficiency_level_display }}">
+                                        {{ skill.skill_name }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- IDIOMAS -->
+                        {% if cv.languages.exists %}
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-translate me-2"></i>
+                                    Idiomas
+                                </h5>
+                                
+                                <div class="row">
+                                    {% for lang in cv.languages.all %}
+                                    <div class="col-md-6">
+                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+                                            <span class="fw-semibold">{{ lang.language_name }}</span>
+                                            <span class="badge bg-secondary">{{ lang.get_proficiency_level_display }}</span>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- CERTIFICACIONES -->
+                        {% if cv.certifications.exists %}
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <i class="bi bi-patch-check me-2"></i>
+                                    Certificaciones
+                                </h5>
+                                
+                                {% for cert in cv.certifications.all %}
+                                <div class="mb-4 pb-3 border-bottom">
+                                    <h6 class="fw-bold mb-1">{{ cert.certification_name }}</h6>
+                                    <p class="text-primary mb-1">{{ cert.issuing_organization }}</p>
+                                    <p class="text-muted small mb-2">
+                                        Emitida: {{ cert.issue_date|date:"M Y" }}
+                                        {% if cert.expiration_date %} – Expira: {{ cert.expiration_date|date:"M Y" }}{% endif %}
+                                    </p>
+                                    
+                                    {% if cert.credential_id %}
+                                        <span class="badge bg-light text-dark me-2">ID: {{ cert.credential_id }}</span>
+                                    {% endif %}
+                                    
+                                    {% if cert.credential_url %}
+                                        <a href="{{ cert.credential_url }}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
+                                            Ver credencial
+                                        </a>
+                                    {% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- MENSAJE CUANDO NO HAY DATOS -->
+                        {% if not cv.experiences.exists and not cv.educations.exists and not cv.skills_list.exists and not cv.languages.exists and not cv.certifications.exists and not cv.bio %}
+                        <div class="alert alert-info text-center">
+                            No hay información adicional disponible. Completa tu CV desde el perfil.
+                        </div>
+                        {% endif %}
+                        
+                    </div>  <!-- Fin #cv-export-content -->
+                    
+                </div>  <!-- Fin .card-body -->
+            </div>  <!-- Fin .card -->
+            
+        </div>  <!-- Fin .col-lg-12 -->
+    </div>  <!-- Fin .row -->
+</section>
+
+
+{# ============================================ #}
+{# LIBRERÍAS Y SCRIPTS                          #}
+{# ============================================ #}
+
+<!-- Librería html2pdf -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+    function exportToPDF() {
+        const element = document.getElementById('cv-export-content');
+        const opt = {
+            margin: [0.4, 0.4, 0.4, 0.4],
+            filename: '{{ cv.full_name|slugify }}_cv.pdf',
+            image: { type: 'jpeg', quality: 0.95 },
+            html2canvas: { scale: 1.5, letterRendering: true, useCORS: true },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['css', 'legacy'] }
+        };
+        
+        element.classList.add('pdf-export');
+        const btn = event.target;
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generando PDF...';
+        btn.disabled = true;
+        
+        html2pdf().set(opt).from(element).save()
+            .then(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                element.classList.remove('pdf-export');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al generar PDF');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                element.classList.remove('pdf-export');
+            });
+    }
+    
+    function exportToHTML() {
+        const element = document.getElementById('cv-export-content');
+        const cvContent = element.innerHTML;
+        const styles = [];
+        document.querySelectorAll('style').forEach(style => styles.push(style.innerHTML));
+        
+        const bootstrapCSS = '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">';
+        const bootstrapIcons = '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">';
+        
+        const fullHTML = `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CV - {{ cv.full_name }}</title>
+    ${bootstrapCSS}
+    ${bootstrapIcons}
+    <style>
+        body { background-color: #eef2f5; font-family: 'Times New Roman', Times, serif; padding: 30px; }
+        .cv-container { max-width: 1000px; margin: 0 auto; }
+        .card { border: none; box-shadow: 0 0 10px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card-title {
+            font-size: 1.2rem; font-weight: 600; color: #2c3e50;
+            border-bottom: 2px solid #f0f0f0; padding-bottom: 0.75rem; margin-bottom: 1.5rem;
+        }
+        .badge.bg-light {
+            background-color: #f8f9fa !important; border: 1px solid #dee2e6;
+            padding: 8px 22px; border-radius: 4px;
+        }
+        .profile-img-wrapper { width: 170px; }
+        .profile-img {
+            width: 100%; height: auto; object-fit: cover;
+            aspect-ratio: 170/227; border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .email-friendly { background-color: white; padding: 30px; border-radius: 8px; }
+    </style>
+    ${styles.map(s => `<style>${s}</style>`).join('\n')}
+</head>
+<body>
+    <div class="cv-container"><div class="email-friendly">${cvContent}</div></div>
+</body>
+</html>`;
+        
+        const blob = new Blob([fullHTML], { type: 'text/html' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '{{ cv.full_name|slugify }}_cv.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        alert('✅ HTML generado correctamente.');
+    }
+</script>
+
+{% endblock %}

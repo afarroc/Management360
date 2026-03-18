@@ -1,0 +1,58 @@
+{% load crispy_forms_tags %}
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h4>
+            <i class="bi bi-{{ icon|default:'pencil-square' }} me-2"></i>
+            {{ title }}
+        </h4>
+    </div>
+    <div class="card-body">
+        {{ formset.management_form }}
+        
+        <div class="formsets-container">
+            {% for form in formset %}
+            <div class="formset-row mb-3 p-3 border rounded position-relative">
+                {% if formset.can_delete and form.instance.pk %}
+                <div class="form-check form-switch position-absolute top-0 end-0 mt-2 me-2">
+                    {{ form.DELETE }}
+                    <label class="form-check-label text-danger" for="{{ form.DELETE.id_for_label }}">
+                        <i class="bi bi-trash"></i> Eliminar
+                    </label>
+                </div>
+                {% endif %}
+                {{ form|crispy }}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Template oculto para nuevas filas (usando empty_form) -->
+        {% with empty_form=formset.empty_form %}
+        <div class="formset-row-template d-none" id="{{ formset.prefix }}-template">
+            <div class="formset-row mb-3 p-3 border rounded position-relative">
+                {% if formset.can_delete %}
+                <div class="form-check form-switch position-absolute top-0 end-0 mt-2 me-2">
+                    <input type="checkbox" name="{{ formset.prefix }}-__prefix__-DELETE" id="id_{{ formset.prefix }}-__prefix__-DELETE">
+                    <label class="form-check-label text-danger" for="id_{{ formset.prefix }}-__prefix__-DELETE">
+                        <i class="bi bi-trash"></i> Eliminar
+                    </label>
+                </div>
+                {% endif %}
+                {% for field in empty_form.visible_fields %}
+                    {% if field.name != 'DELETE' %}
+                        {{ field|as_crispy_field }}
+                    {% endif %}
+                {% endfor %}
+                {% for hidden in empty_form.hidden_fields %}
+                    {{ hidden }}
+                {% endfor %}
+            </div>
+        </div>
+        {% endwith %}
+        
+        <button type="button" class="btn btn-outline-primary btn-sm mt-2 add-formset-row" 
+                data-prefix="{{ formset.prefix }}">
+            <i class="bi bi-plus-circle me-1"></i>Añadir {{ add_text|default:title }}
+        </button>
+    </div>
+</div>

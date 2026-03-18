@@ -1,0 +1,478 @@
+<div class="tab-pane fade" id="projects">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="card-title mb-0">
+            <i class="bi bi-kanban me-2 text-primary"></i>
+            Proyectos Activos
+        </h5>
+        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">
+            <i class="bi bi-folder-check me-1"></i>
+            {{ active_projects|length|default:0 }} proyecto{{ active_projects|length|pluralize:"s" }}
+        </span>
+    </div>
+
+    <!-- Projects Grid -->
+    <div class="projects-container">
+        {% for project in active_projects %}
+        <div class="project-card card border-0 shadow-sm mb-3">
+            <div class="card-body p-4">
+                <!-- Project Header -->
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="project-info">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <div class="project-icon 
+                                {% if project.status_color == 'success' %}bg-success
+                                {% elif project.status_color == 'warning' %}bg-warning
+                                {% elif project.status_color == 'danger' %}bg-danger
+                                {% elif project.status_color == 'info' %}bg-info
+                                {% else %}bg-primary{% endif %} bg-opacity-10 p-2 rounded-3">
+                                <i class="bi 
+                                    {% if project.status_color == 'success' %}bi-check-circle
+                                    {% elif project.status_color == 'warning' %}bi-exclamation-circle
+                                    {% elif project.status_color == 'danger' %}bi-x-circle
+                                    {% elif project.status_color == 'info' %}bi-info-circle
+                                    {% else %}bi-folder{% endif %} 
+                                    {% if project.status_color == 'success' %}text-success
+                                    {% elif project.status_color == 'warning' %}text-warning
+                                    {% elif project.status_color == 'danger' %}text-danger
+                                    {% elif project.status_color == 'info' %}text-info
+                                    {% else %}text-primary{% endif %}"></i>
+                            </div>
+                            <h6 class="project-title mb-0">{{ project.name }}</h6>
+                        </div>
+                        <p class="project-description text-muted small mb-2">{{ project.description }}</p>
+                    </div>
+                    <span class="status-badge badge 
+                        {% if project.status_color == 'success' %}bg-success
+                        {% elif project.status_color == 'warning' %}bg-warning
+                        {% elif project.status_color == 'danger' %}bg-danger
+                        {% elif project.status_color == 'info' %}bg-info
+                        {% else %}bg-secondary{% endif %} bg-opacity-10 
+                        {% if project.status_color == 'success' %}text-success
+                        {% elif project.status_color == 'warning' %}text-warning
+                        {% elif project.status_color == 'danger' %}text-danger
+                        {% elif project.status_color == 'info' %}text-info
+                        {% else %}text-secondary{% endif %} px-3 py-2">
+                        <i class="bi 
+                            {% if project.status_color == 'success' %}bi-check-circle-fill
+                            {% elif project.status_color == 'warning' %}bi-exclamation-circle-fill
+                            {% elif project.status_color == 'danger' %}bi-x-circle-fill
+                            {% elif project.status_color == 'info' %}bi-info-circle-fill
+                            {% else %}bi-circle-fill{% endif %} me-1"></i>
+                        {{ project.status|default:"Activo" }}
+                    </span>
+                </div>
+
+                <!-- Project Details -->
+                <div class="project-details d-flex flex-wrap gap-3 mb-3">
+                    <div class="detail-item">
+                        <small class="text-muted d-block">
+                            <i class="bi bi-person-badge me-1"></i>Rol
+                        </small>
+                        <span class="fw-medium">{{ project.role|default:"No especificado" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <small class="text-muted d-block">
+                            <i class="bi bi-calendar3 me-1"></i>Inicio
+                        </small>
+                        <span class="fw-medium">{{ project.start_date|date:"d/m/Y"|default:"No especificado" }}</span>
+                    </div>
+                    {% if project.end_date %}
+                    <div class="detail-item">
+                        <small class="text-muted d-block">
+                            <i class="bi bi-calendar-check me-1"></i>Fin
+                        </small>
+                        <span class="fw-medium">{{ project.end_date|date:"d/m/Y" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Progress Bar -->
+                {% if project.progress %}
+                <div class="progress-section">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="small text-muted">
+                            <i class="bi bi-bar-chart-steps me-1"></i>Progreso
+                        </span>
+                        <span class="progress-percentage fw-bold 
+                            {% if project.status_color == 'success' %}text-success
+                            {% elif project.status_color == 'warning' %}text-warning
+                            {% elif project.status_color == 'danger' %}text-danger
+                            {% elif project.status_color == 'info' %}text-info
+                            {% else %}text-primary{% endif %}">
+                            {{ project.progress }}%
+                        </span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar 
+                            {% if project.status_color == 'success' %}bg-success
+                            {% elif project.status_color == 'warning' %}bg-warning
+                            {% elif project.status_color == 'danger' %}bg-danger
+                            {% elif project.status_color == 'info' %}bg-info
+                            {% else %}bg-primary{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ project.progress }}%;" 
+                             aria-valuenow="{{ project.progress }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Project Actions -->
+                <div class="project-actions d-flex justify-content-end gap-2 mt-3 pt-2 border-top">
+                    {% if project.detail_url %}
+                    <a href="{{ project.detail_url }}" class="btn btn-sm 
+                        {% if project.status_color == 'success' %}btn-outline-success
+                        {% elif project.status_color == 'warning' %}btn-outline-warning
+                        {% elif project.status_color == 'danger' %}btn-outline-danger
+                        {% elif project.status_color == 'info' %}btn-outline-info
+                        {% else %}btn-outline-primary{% endif %}">
+                        <i class="bi bi-eye me-1"></i>Ver detalles
+                    </a>
+                    {% endif %}
+                    
+                    {% if project.edit_url %}
+                    <a href="{{ project.edit_url }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-pencil me-1"></i>Editar
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-projects text-center py-5">
+            <div class="empty-icon mb-4">
+                <i class="bi bi-folder-x display-1 text-muted"></i>
+            </div>
+            <h6 class="text-muted mb-3">No hay proyectos activos</h6>
+            <p class="text-muted small mb-4">Los proyectos que te sean asignados aparecerán aquí.</p>
+            <a href="{% url 'projects' %}" class="btn btn-primary">
+                <i class="bi bi-search me-2"></i>Explorar proyectos
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- View All Link -->
+    {% if active_projects|length > 0 %}
+    <div class="text-center mt-4">
+        <a href="{% url 'projects' %}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-arrow-right-circle me-1"></i>
+            Ver todos los proyectos
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+/* Project Cards */
+.project-card {
+    transition: all 0.3s ease;
+    border-radius: 12px !important;
+    overflow: hidden;
+    border-left: 4px solid transparent;
+    background: white;
+}
+
+.project-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+}
+
+/* Project Card Colors - usando clases condicionales */
+.project-card[data-status="success"] { border-left-color: #198754; }
+.project-card[data-status="warning"] { border-left-color: #ffc107; }
+.project-card[data-status="danger"] { border-left-color: #dc3545; }
+.project-card[data-status="info"] { border-left-color: #0dcaf0; }
+.project-card[data-status="primary"] { border-left-color: #0d6efd; }
+
+.project-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.project-card:hover .project-icon {
+    transform: scale(1.1);
+}
+
+.project-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.project-description {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Status Badge */
+.status-badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.status-badge:hover {
+    transform: scale(1.05);
+}
+
+/* Project Details */
+.detail-item {
+    min-width: 120px;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.detail-item:hover {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.detail-item small {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 0.25rem;
+}
+
+.detail-item span {
+    font-size: 0.9rem;
+}
+
+/* Progress Section */
+.progress-section {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.progress-section:hover {
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.progress {
+    background-color: rgba(0,0,0,0.05);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        rgba(255,255,255,0.1) 25%,
+        rgba(255,255,255,0.2) 50%,
+        rgba(255,255,255,0.1) 75%
+    );
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.progress-percentage {
+    font-size: 0.9rem;
+}
+
+/* Project Meta */
+.project-meta {
+    border-top-color: rgba(0,0,0,0.05) !important;
+}
+
+/* Empty State */
+.empty-projects {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    border: 2px dashed rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.empty-projects:hover {
+    border-color: #0d6efd;
+    transform: translateY(-2px);
+}
+
+.empty-projects .empty-icon i {
+    transition: all 0.3s ease;
+}
+
+.empty-projects:hover .empty-icon i {
+    transform: scale(1.1);
+    color: #0d6efd !important;
+}
+
+/* Animations */
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.project-card {
+    animation: slideInUp 0.4s ease forwards;
+    opacity: 0;
+}
+
+.project-card:nth-child(1) { animation-delay: 0.1s; }
+.project-card:nth-child(2) { animation-delay: 0.2s; }
+.project-card:nth-child(3) { animation-delay: 0.3s; }
+.project-card:nth-child(4) { animation-delay: 0.4s; }
+.project-card:nth-child(5) { animation-delay: 0.5s; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .project-card .card-body {
+        padding: 1rem !important;
+    }
+    
+    .project-icon {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .project-title {
+        font-size: 1rem;
+    }
+    
+    .project-description {
+        font-size: 0.85rem;
+    }
+    
+    .detail-item {
+        min-width: 100px;
+        padding: 0.35rem 0.5rem;
+    }
+    
+    .detail-item span {
+        font-size: 0.8rem;
+    }
+    
+    .progress-section {
+        padding: 0.75rem;
+    }
+}
+
+/* Hover Effects */
+.project-card:hover .project-title {
+    color: #0d6efd;
+}
+
+.project-card:hover .detail-item {
+    background: white;
+}
+
+/* Custom Scrollbar */
+.projects-container {
+    max-height: 600px;
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.projects-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.projects-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.projects-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.projects-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set data-status attribute based on project status color
+    document.querySelectorAll('.project-card').forEach(card => {
+        const statusBadge = card.querySelector('.status-badge');
+        if (statusBadge) {
+            if (statusBadge.classList.contains('bg-success')) {
+                card.setAttribute('data-status', 'success');
+            } else if (statusBadge.classList.contains('bg-warning')) {
+                card.setAttribute('data-status', 'warning');
+            } else if (statusBadge.classList.contains('bg-danger')) {
+                card.setAttribute('data-status', 'danger');
+            } else if (statusBadge.classList.contains('bg-info')) {
+                card.setAttribute('data-status', 'info');
+            } else {
+                card.setAttribute('data-status', 'primary');
+            }
+        }
+    });
+
+    // Intersection Observer for animations
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.animationPlayState = 'running';
+            }
+        });
+    }, { threshold: 0.2 });
+
+    document.querySelectorAll('.project-card').forEach(card => {
+        observer.observe(card);
+    });
+
+    // Progress bar animation when in view
+    const progressObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const progressBar = entry.target.querySelector('.progress-bar');
+                if (progressBar) {
+                    const width = progressBar.style.width;
+                    progressBar.style.width = '0';
+                    setTimeout(() => {
+                        progressBar.style.width = width;
+                    }, 100);
+                }
+            }
+        });
+    }, { threshold: 0.5 });
+
+    document.querySelectorAll('.project-card').forEach(card => {
+        progressObserver.observe(card);
+    });
+});
+</script>

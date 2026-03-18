@@ -1,0 +1,167 @@
+{% extends 'layouts/base.html' %}
+{% load static custom_filters %}
+
+{% block title %}Mis Documentos{% endblock %}
+
+{% block content %}
+<div class="pagetitle">
+    <h1>Mis Documentos</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'cv:cv_detail' %}">Perfil</a></li>
+            <li class="breadcrumb-item active">Documentos</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <!-- Header con acciones -->
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <h5 class="card-title mb-0">Archivos Subidos</h5>
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'cv:document_upload' %}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-file-earmark"></i> Documento
+                            </a>
+                            <a href="{% url 'cv:image_upload' %}" class="btn btn-success btn-sm">
+                                <i class="bi bi-image"></i> Imagen
+                            </a>
+                            <a href="{% url 'cv:upload_db' %}" class="btn btn-info btn-sm">
+                                <i class="bi bi-database"></i> Base Datos
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Documents Section -->
+                    {% if documents %}
+                    <h6 class="mt-4">Documentos</h6>
+                    <div class="row">
+                        {% for doc in documents %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-file-earmark-text fs-4 me-2 text-primary"></i>
+                                        <h6 class="card-title mb-0 text-truncate" title="{% with doc.upload.name|split:'/' as parts %}{{ parts|last }}{% endwith %}">
+                                            {% with doc.upload.name|split:'/' as parts %}{{ parts|last }}{% endwith %}
+                                        </h6>
+                                    </div>
+                                    
+                                    <p class="card-text small text-muted mb-3">
+                                        <i class="bi bi-clock"></i> {{ doc.uploaded_at|date:"d/m/Y H:i" }}
+                                    </p>
+                                    
+                                    <div class="btn-group btn-group-sm w-100" role="group">
+                                        <a href="{{ doc.upload.url }}" target="_blank" 
+                                           class="btn btn-outline-primary">
+                                            <i class="bi bi-eye"></i> Ver
+                                        </a>
+                                        <a href="{% url 'cv:delete_file' 'document' doc.id %}" 
+                                           class="btn btn-outline-danger"
+                                           onclick="return confirm('¿Eliminar este documento?')">
+                                            <i class="bi bi-trash"></i> Eliminar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Images Section -->
+                    {% if images %}
+                    <h6 class="mt-4">Imágenes</h6>
+                    <div class="row">
+                        {% for img in images %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-image fs-4 me-2 text-success"></i>
+                                        <h6 class="card-title mb-0 text-truncate" title="{% with img.upload.name|split:'/' as parts %}{{ parts|last }}{% endwith %}">
+                                            {% with img.upload.name|split:'/' as parts %}{{ parts|last }}{% endwith %}
+                                        </h6>
+                                    </div>
+                                    
+                                    <p class="card-text small text-muted mb-3">
+                                        <i class="bi bi-clock"></i> {{ img.uploaded_at|date:"d/m/Y H:i" }}
+                                    </p>
+                                    
+                                    <div class="btn-group btn-group-sm w-100" role="group">
+                                        <a href="{{ img.upload.url }}" target="_blank" 
+                                           class="btn btn-outline-primary">
+                                            <i class="bi bi-eye"></i> Ver
+                                        </a>
+                                        <a href="{% url 'cv:delete_file' 'image' img.id %}" 
+                                           class="btn btn-outline-danger"
+                                           onclick="return confirm('¿Eliminar esta imagen?')">
+                                            <i class="bi bi-trash"></i> Eliminar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Databases Section -->
+                    {% if databases %}
+                    <h6 class="mt-4">Bases de Datos</h6>
+                    <div class="row">
+                        {% for db in databases %}
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 shadow-sm">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-database fs-4 me-2 text-info"></i>
+                                        <h6 class="card-title mb-0 text-truncate" title="{% with db.upload.name|split:'/' as parts %}{{ parts|last }}{% endwith %}">
+                                            {% with db.upload.name|split:'/' as parts %}{{ parts|last }}{% endwith %}
+                                        </h6>
+                                    </div>
+                                    
+                                    <p class="card-text small text-muted mb-3">
+                                        <i class="bi bi-clock"></i> {{ db.uploaded_at|date:"d/m/Y H:i" }}
+                                    </p>
+                                    
+                                    <div class="btn-group btn-group-sm w-100" role="group">
+                                        <a href="{{ db.upload.url }}" target="_blank" 
+                                           class="btn btn-outline-primary">
+                                            <i class="bi bi-download"></i> Descargar
+                                        </a>
+                                        <a href="{% url 'cv:delete_file' 'database' db.id %}" 
+                                           class="btn btn-outline-danger"
+                                           onclick="return confirm('¿Eliminar esta base de datos?')">
+                                            <i class="bi bi-trash"></i> Eliminar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- No files message -->
+                    {% if not documents and not images and not databases %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-folder-x display-1 text-muted"></i>
+                        <h5 class="mt-3">No hay archivos subidos</h5>
+                        <p class="text-muted">Comienza subiendo tu primer archivo.</p>
+                        <div class="btn-group mt-2">
+                            <a href="{% url 'cv:document_upload' %}" class="btn btn-primary">
+                                <i class="bi bi-file-earmark"></i> Subir Documento
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

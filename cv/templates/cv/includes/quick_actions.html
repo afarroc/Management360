@@ -1,0 +1,156 @@
+{% load static %}
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title">Acciones Rápidas</h5>
+    </div>
+    <div class="card-body">
+        <div class="d-grid gap-2">
+            <!-- Edición completa (existente) -->
+            <a href="{% url 'cv:cv_edit' %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-pencil-square"></i> Edición Completa
+            </a>
+            
+            <!-- Nuevo menú desplegable de edición por secciones -->
+            <div class="btn-group w-100">
+                <button type="button" class="btn btn-outline-info btn-sm dropdown-toggle" 
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-layout-text-window"></i> Editar por Secciones
+                </button>
+                <ul class="dropdown-menu w-100">
+                    <li>
+                        <a class="dropdown-item" href="{% url 'cv:edit_personal' %}">
+                            <i class="bi bi-person me-2 text-primary"></i>Información Personal
+                            <span class="badge bg-primary bg-opacity-10 text-primary float-end">1/5</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'cv:edit_experience' %}">
+                            <i class="bi bi-briefcase me-2 text-success"></i>Experiencia Laboral
+                            <span class="badge bg-success bg-opacity-10 text-success float-end">2/5</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'cv:edit_education' %}">
+                            <i class="bi bi-mortarboard me-2 text-info"></i>Educación
+                            <span class="badge bg-info bg-opacity-10 text-info float-end">3/5</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'cv:edit_skills' %}">
+                            <i class="bi bi-star me-2 text-warning"></i>Habilidades
+                            <span class="badge bg-warning bg-opacity-10 text-warning float-end">4/5</span>
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item text-muted" href="{% url 'cv:cv_detail' %}">
+                            <i class="bi bi-eye me-2"></i>Ver Perfil
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary float-end">5/5</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Gestión de documentos (existente) -->
+            <a href="{% url 'cv:docsview' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-folder"></i> Documentos
+            </a>
+            <a href="{% url 'cv:traditional_profile' user_id=request.user.id %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-file-text"></i> Ver CV tradicional
+            </a>
+            <!-- Botón de exportar (existente) -->
+            <button class="btn btn-outline-success btn-sm" onclick="exportProfile()">
+                <i class="bi bi-download"></i> Exportar CV
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Script para manejar el dropdown (opcional, Bootstrap lo maneja automáticamente) -->
+<script>
+function exportProfile() {
+    // Funcionalidad de exportación
+    alert('Funcionalidad de exportación próximamente disponible');
+}
+
+// Opcional: Marcar la sección activa basada en la URL actual
+document.addEventListener('DOMContentLoaded', function() {
+    const currentUrl = window.location.pathname;
+    const dropdownItems = document.querySelectorAll('.dropdown-item');
+    
+    dropdownItems.forEach(item => {
+        if (item.getAttribute('href') === currentUrl) {
+            item.classList.add('active');
+        }
+    });
+});
+</script>
+
+<style>
+/* Estilos adicionales para el dropdown */
+.btn-group.w-100 {
+    margin-bottom: 0.25rem;
+}
+
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    padding: 0.5rem 0;
+}
+
+.dropdown-item {
+    padding: 0.6rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white !important;
+}
+
+.dropdown-item:hover i,
+.dropdown-item:hover .badge {
+    color: white !important;
+    background-color: rgba(255,255,255,0.2) !important;
+}
+
+.dropdown-item.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.dropdown-divider {
+    margin: 0.25rem 0;
+}
+
+/* Badges en el dropdown */
+.dropdown-item .badge {
+    font-size: 0.65rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .dropdown-menu {
+        width: 100%;
+        position: relative !important;
+        transform: none !important;
+        margin-top: 0.5rem;
+    }
+    
+    .btn-group.w-100 {
+        display: block;
+    }
+    
+    .btn-group.w-100 .btn {
+        width: 100%;
+        text-align: left;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+</style>

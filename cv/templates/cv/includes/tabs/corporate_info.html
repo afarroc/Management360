@@ -1,0 +1,318 @@
+<div class="tab-pane fade show active" id="corporate-info">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="card-title mb-0">Información Corporativa</h5>
+        <a href="{% url 'cv:cv_edit' %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-pencil-square me-1"></i>Editar
+        </a>
+    </div>
+
+    <!-- Tarjeta de Información Corporativa -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light py-3">
+            <h6 class="mb-0 fw-bold text-primary">
+                <i class="bi bi-building me-2"></i>Datos de la Empresa
+            </h6>
+        </div>
+        <div class="card-body pt-4">  <!-- Añadido pt-4 para separar del header -->
+            <div class="row g-4">
+                <!-- ID Empleado -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="d-flex align-items-start">
+                        <div class="info-icon bg-primary bg-opacity-10 p-2 rounded me-3">
+                            <i class="bi bi-person-badge text-primary"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block">ID Empleado</small>
+                            <strong class="fs-6">{{ cv.employee_id|default:"No asignado" }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Departamento -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="d-flex align-items-start">
+                        <div class="info-icon bg-info bg-opacity-10 p-2 rounded me-3">
+                            <i class="bi bi-diagram-3 text-info"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block">Departamento</small>
+                            <strong class="fs-6">{{ cv.department|default:"No especificado" }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cargo Corporativo -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="d-flex align-items-start">
+                        <div class="info-icon bg-success bg-opacity-10 p-2 rounded me-3">
+                            <i class="bi bi-briefcase text-success"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block">Cargo Corporativo</small>
+                            <strong class="fs-6">{{ cv.corporate_position|default:"No especificado" }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Supervisor -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="d-flex align-items-start">
+                        <div class="info-icon bg-warning bg-opacity-10 p-2 rounded me-3">
+                            <i class="bi bi-person-up text-warning"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block">Supervisor</small>
+                            <strong class="fs-6">
+                                {% if cv.manager %}
+                                    {{ cv.manager.get_full_name|default:cv.manager.username }}
+                                {% else %}
+                                    No asignado
+                                {% endif %}
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fecha de Contratación -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="d-flex align-items-start">
+                        <div class="info-icon bg-danger bg-opacity-10 p-2 rounded me-3">
+                            <i class="bi bi-calendar-check text-danger"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block">Fecha de Contratación</small>
+                            <strong class="fs-6">
+                                {% if cv.hire_date %}
+                                    {{ cv.hire_date|date:"d/m/Y" }}
+                                    <span class="badge bg-light text-dark ms-2">{{ cv.hire_date|timesince }}</span>
+                                {% else %}
+                                    No especificada
+                                {% endif %}
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ubicación de Oficina -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="d-flex align-items-start">
+                        <div class="info-icon bg-secondary bg-opacity-10 p-2 rounded me-3">
+                            <i class="bi bi-geo-alt text-secondary"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block">Ubicación de Oficina</small>
+                            <strong class="fs-6">{{ cv.office_location|default:"No especificada" }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empresa -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="d-flex align-items-start">
+                        <div class="info-icon bg-purple bg-opacity-10 p-2 rounded me-3">
+                            <i class="bi bi-building text-purple"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block">Empresa</small>
+                            <strong class="fs-6">{{ cv.company|default:"No especificada" }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjeta de Información de Contacto -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light py-3">
+            <h6 class="mb-0 fw-bold text-success">
+                <i class="bi bi-envelope me-2"></i>Información de Contacto
+            </h6>
+        </div>
+        <div class="card-body pt-4">  <!-- Añadido pt-4 para separar del header -->
+            <div class="row g-4">
+                <!-- Email Corporativo -->
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center p-3 bg-light rounded-3">
+                        <div class="contact-icon bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="bi bi-envelope-fill text-primary fs-5"></i>
+                        </div>
+                        <div class="overflow-hidden">
+                            <small class="text-muted d-block">Email Corporativo</small>
+                            <strong class="text-truncate d-block">{{ cv.email|default:cv.user.email|default:"No especificado" }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Teléfono -->
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center p-3 bg-light rounded-3">
+                        <div class="contact-icon bg-success bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="bi bi-telephone-fill text-success fs-5"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block">Teléfono</small>
+                            <strong>{{ cv.phone|default:"No especificado" }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dirección -->
+                <div class="col-12">
+                    <div class="d-flex align-items-center p-3 bg-light rounded-3">
+                        <div class="contact-icon bg-warning bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="bi bi-house-door-fill text-warning fs-5"></i>
+                        </div>
+                        <div class="overflow-hidden">
+                            <small class="text-muted d-block">Dirección</small>
+                            <strong class="text-truncate d-block">{{ cv.address|default:"No especificada" }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- País y Ubicación -->
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center p-3 bg-light rounded-3">
+                        <div class="contact-icon bg-info bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="bi bi-globe text-info fs-5"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block">País</small>
+                            <strong>{{ cv.country|default:"No especificado" }}</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center p-3 bg-light rounded-3">
+                        <div class="contact-icon bg-secondary bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="bi bi-pin-map-fill text-secondary fs-5"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted d-block">Ubicación</small>
+                            <strong>{{ cv.location|default:"No especificada" }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen Rápido con más espaciado -->
+    <div class="mt-4">  <!-- Añadido mt-4 para separar de las tarjetas anteriores -->
+        <div class="row g-3">
+            <div class="col-md-3 col-6">
+                <div class="card border-0 bg-primary bg-opacity-10 text-center py-3">
+                    <div class="card-body p-2">
+                        <h3 class="mb-1 fw-bold text-primary">{{ cv.experiences.count }}</h3>
+                        <small class="text-muted">Experiencias</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 bg-success bg-opacity-10 text-center py-3">
+                    <div class="card-body p-2">
+                        <h3 class="mb-1 fw-bold text-success">{{ cv.educations.count }}</h3>
+                        <small class="text-muted">Educaciones</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 bg-info bg-opacity-10 text-center py-3">
+                    <div class="card-body p-2">
+                        <h3 class="mb-1 fw-bold text-info">{{ cv.skills_list.count }}</h3>
+                        <small class="text-muted">Habilidades</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="card border-0 bg-warning bg-opacity-10 text-center py-3">
+                    <div class="card-body p-2">
+                        <h3 class="mb-1 fw-bold text-warning">{{ cv.languages.count }}</h3>
+                        <small class="text-muted">Idiomas</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .info-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+    
+    .info-icon:hover {
+        transform: scale(1.1);
+    }
+    
+    .contact-icon {
+        width: 50px;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+    }
+    
+    .contact-icon:hover {
+        transform: scale(1.1);
+    }
+    
+    .bg-purple {
+        background-color: #6f42c1 !important;
+    }
+    
+    .bg-opacity-10 {
+        --bs-bg-opacity: 0.1;
+    }
+    
+    .text-purple {
+        color: #6f42c1 !important;
+    }
+    
+    .card {
+        transition: all 0.3s ease;
+        border-radius: 10px !important;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+    }
+    
+    .bg-light {
+        transition: all 0.3s ease;
+    }
+    
+    .bg-light:hover {
+        background-color: #fff !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    /* Asegurar espaciado en todas las cards */
+    .card-body {
+        padding: 1.5rem !important;  /* Aumentado el padding general */
+    }
+    
+    /* Ajustes para móviles */
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .contact-icon {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .contact-icon i {
+            font-size: 1rem !important;
+        }
+    }
+</style>

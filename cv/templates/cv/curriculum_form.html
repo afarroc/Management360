@@ -1,29 +1,147 @@
 {% extends 'layouts/base.html' %}
 {% load static crispy_forms_tags %}
 
+{% block title %}Editar Currículum Completo{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'cv/css/edit_section.css' %}">
+<link rel="stylesheet" href="{% static 'cv/css/curriculum_form.css' %}">
+{% endblock %}
+
 {% block content %}
-<div class="container mt-5">
+<div class="pagetitle">
+    <h1>Editar Currículum Completo</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'cv:cv_detail' %}">Mi Perfil</a></li>
+            <li class="breadcrumb-item active">Editar Completo</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
     <div class="row">
-        <div class="col-md-12">
-            <h2>Editar Currículum</h2>
-            <form method="post" enctype="multipart/form-data" class="mt-4">
+        <div class="col-lg-12">
+            <!-- Barra de progreso de secciones -->
+            <div class="card mb-4">
+                <div class="card-body py-3">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap">
+                        <h5 class="card-title mb-0">Secciones del Currículum</h5>
+                        <div>
+                            <span class="badge bg-primary" id="sectionCounter">7 secciones</span>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 100%" 
+                             id="sectionProgress" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mensaje informativo -->
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Información:</strong> Los campos marcados con <span class="text-danger">*</span> son obligatorios. 
+                Los campos sin marcador son opcionales. Puedes editar solo los campos que necesites.
+            </div>
+
+            <!-- Error Summary (se muestra solo si hay errores del servidor) -->
+            {% if form.errors or experience_formset.errors or education_formset.errors or skill_formset.errors or language_formset.errors or certification_formset.errors %}
+            <div class="error-summary" id="errorSummary">
+                <h6><i class="bi bi-exclamation-triangle-fill me-2"></i>Errores encontrados:</h6>
+                <ul>
+                    {% if form.errors %}
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <li>
+                                    <a href="#id_{{ field }}" class="error-link" data-field="{{ field }}">
+                                        <strong>
+                                            {% if field == 'full_name' %}Nombre Completo
+                                            {% elif field == 'profession' %}Profesión
+                                            {% elif field == 'bio' %}Biografía
+                                            {% elif field == 'email' %}Email
+                                            {% elif field == 'phone' %}Teléfono
+                                            {% elif field == 'location' %}Ubicación
+                                            {% elif field == 'country' %}País
+                                            {% elif field == 'address' %}Dirección
+                                            {% elif field == 'employee_id' %}ID Empleado
+                                            {% elif field == 'department' %}Departamento
+                                            {% elif field == 'corporate_position' %}Cargo Corporativo
+                                            {% elif field == 'company' %}Empresa
+                                            {% elif field == 'job_title' %}Puesto
+                                            {% elif field == 'role' %}Rol
+                                            {% elif field == 'linkedin_url' %}LinkedIn
+                                            {% elif field == 'github_url' %}GitHub
+                                            {% elif field == 'twitter_url' %}Twitter
+                                            {% elif field == 'facebook_url' %}Facebook
+                                            {% elif field == 'instagram_url' %}Instagram
+                                            {% else %}{{ field }}{% endif %}:
+                                        </strong> {{ error }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        {% endfor %}
+                    {% endif %}
+                    {% if experience_formset and experience_formset.errors %}
+                        {% for form in experience_formset %}
+                            {% if form.errors %}
+                                <li>Error en experiencia laboral (elemento {{ forloop.counter }})</li>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    {% if education_formset and education_formset.errors %}
+                        {% for form in education_formset %}
+                            {% if form.errors %}
+                                <li>Error en educación (elemento {{ forloop.counter }})</li>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                    {% if skill_formset and skill_formset.errors %}
+                        {% for form in skill_formset %}
+                            {% if form.errors %}
+                                <li>Error en habilidades (elemento {{ forloop.counter }})</li>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data" id="curriculum-form" class="cv-form" novalidate>
                 {% csrf_token %}
                 
                 <!-- Información Personal -->
-                <div class="card mb-4">
+                <div class="card mb-4" id="section-personal">
                     <div class="card-header">
-                        <h4>Información Personal</h4>
+                        <h4><i class="bi bi-person me-2"></i>Información Personal</h4>
                     </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                {{ form.full_name|as_crispy_field }}
-                                {{ form.bio|as_crispy_field }}
+                                <div class="required-field mb-3" id="field-full_name">
+                                    {{ form.full_name|as_crispy_field }}
+                                    <div class="field-counter" id="counter-full_name"></div>
+                                </div>
+                                <div class="required-field mb-3" id="field-profession">
+                                    {{ form.profession|as_crispy_field }}
+                                </div>
+                                <div class="required-field mb-3" id="field-bio">
+                                    {{ form.bio|as_crispy_field }}
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="{{ form.profile_picture.id_for_label }}" class="form-label">Foto de Perfil</label>
+                                <div class="optional-field mb-3" id="field-profile_picture">
+                                    <label for="{{ form.profile_picture.id_for_label }}" class="form-label fw-semibold">
+                                        Foto de Perfil <small class="text-muted">(opcional)</small>
+                                    </label>
                                     {{ form.profile_picture }}
+                                    {% if form.profile_picture.value %}
+                                    <div class="mt-2">
+                                        <img src="{{ form.profile_picture.value.url }}" alt="Preview" class="img-thumbnail" style="max-height: 100px;">
+                                    </div>
+                                    {% endif %}
+                                    <small class="text-muted">Formatos: JPG, PNG. Máx 2MB</small>
                                 </div>
                             </div>
                         </div>
@@ -31,211 +149,366 @@
                 </div>
 
                 <!-- Información Corporativa -->
-                <div class="card mb-4">
+                <div class="card mb-4" id="section-corporate">
                     <div class="card-header">
-                        <h4>Información Corporativa</h4>
+                        <h4><i class="bi bi-building me-2"></i>Información Corporativa</h4>
                     </div>
                     <div class="card-body">
+                        <div class="alert alert-light border">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Todos los campos de esta sección son <strong>opcionales</strong>
+                        </div>
                         <div class="row">
                             <div class="col-md-6">
-                                {{ form.employee_id|as_crispy_field }}
-                                {{ form.department|as_crispy_field }}
-                                {{ form.corporate_position|as_crispy_field }}
+                                <div class="optional-field mb-3">{{ form.employee_id|as_crispy_field }}</div>
+                                <div class="optional-field mb-3">{{ form.department|as_crispy_field }}</div>
+                                <div class="optional-field mb-3">{{ form.corporate_position|as_crispy_field }}</div>
                             </div>
                             <div class="col-md-6">
-                                {{ form.manager|as_crispy_field }}
-                                {{ form.hire_date|as_crispy_field }}
-                                {{ form.office_location|as_crispy_field }}
+                                <div class="optional-field mb-3">{{ form.manager|as_crispy_field }}</div>
+                                <div class="optional-field mb-3">{{ form.hire_date|as_crispy_field }}</div>
+                                <div class="optional-field mb-3">{{ form.office_location|as_crispy_field }}</div>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6">
-                                {{ form.company|as_crispy_field }}
-                                {{ form.job_title|as_crispy_field }}
+                                <div class="optional-field mb-3">{{ form.company|as_crispy_field }}</div>
+                                <div class="optional-field mb-3">{{ form.job_title|as_crispy_field }}</div>
                             </div>
                             <div class="col-md-6">
-                                {{ form.role|as_crispy_field }}
+                                <div class="optional-field mb-3">{{ form.role|as_crispy_field }}</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Información de Contacto -->
-                <div class="card mb-4">
+                <div class="card mb-4" id="section-contact">
                     <div class="card-header">
-                        <h4>Información de Contacto</h4>
+                        <h4><i class="bi bi-envelope me-2"></i>Información de Contacto</h4>
                     </div>
                     <div class="card-body">
+                        <div class="alert alert-light border">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <span class="text-danger">*</span> Email es obligatorio (se usa para notificaciones)
+                        </div>
                         <div class="row">
                             <div class="col-md-6">
-                                {{ form.email|as_crispy_field }}
-                                {{ form.phone|as_crispy_field }}
+                                <div class="required-field mb-3" id="field-email">
+                                    {{ form.email|as_crispy_field }}
+                                </div>
+                                <div class="optional-field mb-3">{{ form.phone|as_crispy_field }}</div>
                             </div>
                             <div class="col-md-6">
-                                {{ form.location|as_crispy_field }}
-                                {{ form.country|as_crispy_field }}
-                                {{ form.address|as_crispy_field }}
+                                <div class="optional-field mb-3">{{ form.location|as_crispy_field }}</div>
+                                <div class="optional-field mb-3">{{ form.country|as_crispy_field }}</div>
+                                <div class="optional-field mb-3">{{ form.address|as_crispy_field }}</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Redes Sociales -->
-                <div class="card mb-4">
+                <div class="card mb-4" id="section-social">
                     <div class="card-header">
-                        <h4>Redes Sociales y Perfiles Profesionales</h4>
+                        <h4><i class="bi bi-share me-2"></i>Redes Sociales y Perfiles Profesionales</h4>
                     </div>
                     <div class="card-body">
+                        <div class="alert alert-light border">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Todos los campos son <strong>opcionales</strong>
+                        </div>
                         <div class="row">
                             <div class="col-md-6">
-                                {{ form.linkedin_url|as_crispy_field }}
-                                {{ form.github_url|as_crispy_field }}
+                                <div class="optional-field mb-3">{{ form.linkedin_url|as_crispy_field }}</div>
+                                <div class="optional-field mb-3">{{ form.github_url|as_crispy_field }}</div>
                             </div>
                             <div class="col-md-6">
-                                {{ form.twitter_url|as_crispy_field }}
-                                {{ form.facebook_url|as_crispy_field }}
-                                {{ form.instagram_url|as_crispy_field }}
+                                <div class="optional-field mb-3">{{ form.twitter_url|as_crispy_field }}</div>
+                                <div class="optional-field mb-3">{{ form.facebook_url|as_crispy_field }}</div>
+                                <div class="optional-field mb-3">{{ form.instagram_url|as_crispy_field }}</div>
                             </div>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Experiencia Laboral -->
-                <div class="card mb-4">
+                <div class="card mb-4" id="section-experience">
                     <div class="card-header">
-                        <h4>Experiencia Laboral</h4>
+                        <h4><i class="bi bi-briefcase me-2"></i>Experiencia Laboral</h4>
                     </div>
                     <div class="card-body">
                         {{ experience_formset.management_form }}
-                        {% for form in experience_formset %}
-                            <div class="formset-row mb-3 p-3 border rounded">
+                        <div class="formsets-container" id="experience-formsets">
+                            {% for form in experience_formset %}
+                            <div class="formset-row mb-3" id="experience-{{ forloop.counter0 }}">
+                                {% if experience_formset.can_delete and form.instance.pk %}
+                                <div class="delete-row-btn">
+                                    <label class="text-danger">
+                                        {{ form.DELETE }} <i class="bi bi-trash"></i> Eliminar
+                                    </label>
+                                </div>
+                                {% endif %}
                                 {{ form|crispy }}
+                                <hr class="my-2">
                             </div>
-                        {% endfor %}
+                            {% endfor %}
+                        </div>
+
+                        <!-- Template oculto para nuevas filas -->
+                        {% with empty_form=experience_formset.empty_form %}
+                        <div class="formset-row-template d-none" id="experiences-template">
+                            <div class="formset-row mb-3">
+                                {% if experience_formset.can_delete %}
+                                <div class="delete-row-btn">
+                                    <label class="text-danger">
+                                        <input type="checkbox" name="experiences-__prefix__-DELETE" id="id_experiences-__prefix__-DELETE">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </label>
+                                </div>
+                                {% endif %}
+                                {% for field in empty_form.visible_fields %}
+                                    {% if field.name != 'DELETE' %}
+                                        {{ field|as_crispy_field }}
+                                    {% endif %}
+                                {% endfor %}
+                                <hr class="my-2">
+                            </div>
+                        </div>
+                        {% endwith %}
+
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2 add-formset-row" data-prefix="experiences">
+                            <i class="bi bi-plus-circle me-1"></i>Añadir Experiencia
+                        </button>
                     </div>
                 </div>
                 
                 <!-- Educación -->
-                <div class="card mb-4">
+                <div class="card mb-4" id="section-education">
                     <div class="card-header">
-                        <h4>Educación</h4>
+                        <h4><i class="bi bi-mortarboard me-2"></i>Educación</h4>
                     </div>
                     <div class="card-body">
                         {{ education_formset.management_form }}
-                        {% for form in education_formset %}
-                            <div class="formset-row mb-3 p-3 border rounded">
+                        <div class="formsets-container" id="education-formsets">
+                            {% for form in education_formset %}
+                            <div class="formset-row mb-3" id="education-{{ forloop.counter0 }}">
+                                {% if education_formset.can_delete and form.instance.pk %}
+                                <div class="delete-row-btn">
+                                    <label class="text-danger">
+                                        {{ form.DELETE }} <i class="bi bi-trash"></i> Eliminar
+                                    </label>
+                                </div>
+                                {% endif %}
                                 {{ form|crispy }}
+                                <hr class="my-2">
                             </div>
-                        {% endfor %}
+                            {% endfor %}
+                        </div>
+
+                        {% with empty_form=education_formset.empty_form %}
+                        <div class="formset-row-template d-none" id="education-template">
+                            <div class="formset-row mb-3">
+                                {% if education_formset.can_delete %}
+                                <div class="delete-row-btn">
+                                    <label class="text-danger">
+                                        <input type="checkbox" name="education-__prefix__-DELETE" id="id_education-__prefix__-DELETE">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </label>
+                                </div>
+                                {% endif %}
+                                {% for field in empty_form.visible_fields %}
+                                    {% if field.name != 'DELETE' %}
+                                        {{ field|as_crispy_field }}
+                                    {% endif %}
+                                {% endfor %}
+                                <hr class="my-2">
+                            </div>
+                        </div>
+                        {% endwith %}
+
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2 add-formset-row" data-prefix="education">
+                            <i class="bi bi-plus-circle me-1"></i>Añadir Educación
+                        </button>
                     </div>
                 </div>
                 
                 <!-- Habilidades -->
-                <div class="card mb-4">
+                <div class="card mb-4" id="section-skills">
                     <div class="card-header">
-                        <h4>Habilidades</h4>
+                        <h4><i class="bi bi-star me-2"></i>Habilidades</h4>
                     </div>
                     <div class="card-body">
                         {{ skill_formset.management_form }}
-                        {% for form in skill_formset %}
-                            <div class="formset-row mb-3 p-3 border rounded">
+                        <div class="formsets-container" id="skills-formsets">
+                            {% for form in skill_formset %}
+                            <div class="formset-row mb-3" id="skill-{{ forloop.counter0 }}">
+                                {% if skill_formset.can_delete and form.instance.pk %}
+                                <div class="delete-row-btn">
+                                    <label class="text-danger">
+                                        {{ form.DELETE }} <i class="bi bi-trash"></i> Eliminar
+                                    </label>
+                                </div>
+                                {% endif %}
                                 {{ form|crispy }}
                             </div>
-                        {% endfor %}
+                            {% endfor %}
+                        </div>
+
+                        {% with empty_form=skill_formset.empty_form %}
+                        <div class="formset-row-template d-none" id="skills-template">
+                            <div class="formset-row mb-3">
+                                {% if skill_formset.can_delete %}
+                                <div class="delete-row-btn">
+                                    <label class="text-danger">
+                                        <input type="checkbox" name="skills-__prefix__-DELETE" id="id_skills-__prefix__-DELETE">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </label>
+                                </div>
+                                {% endif %}
+                                {% for field in empty_form.visible_fields %}
+                                    {% if field.name != 'DELETE' %}
+                                        {{ field|as_crispy_field }}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endwith %}
+
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2 add-formset-row" data-prefix="skills">
+                            <i class="bi bi-plus-circle me-1"></i>Añadir Habilidad
+                        </button>
                     </div>
                 </div>
 
                 <!-- Idiomas -->
-                <div class="card mb-4">
+                <div class="card mb-4" id="section-languages">
                     <div class="card-header">
-                        <h4>Idiomas</h4>
+                        <h4><i class="bi bi-translate me-2"></i>Idiomas</h4>
                     </div>
                     <div class="card-body">
                         {{ language_formset.management_form }}
-                        {% for form in language_formset %}
-                            <div class="formset-row mb-3 p-3 border rounded">
+                        <div class="formsets-container" id="languages-formsets">
+                            {% for form in language_formset %}
+                            <div class="formset-row mb-3" id="language-{{ forloop.counter0 }}">
+                                {% if language_formset.can_delete and form.instance.pk %}
+                                <div class="delete-row-btn">
+                                    <label class="text-danger">
+                                        {{ form.DELETE }} <i class="bi bi-trash"></i> Eliminar
+                                    </label>
+                                </div>
+                                {% endif %}
                                 {{ form|crispy }}
                             </div>
-                        {% endfor %}
+                            {% endfor %}
+                        </div>
+
+                        {% with empty_form=language_formset.empty_form %}
+                        <div class="formset-row-template d-none" id="languages-template">
+                            <div class="formset-row mb-3">
+                                {% if language_formset.can_delete %}
+                                <div class="delete-row-btn">
+                                    <label class="text-danger">
+                                        <input type="checkbox" name="languages-__prefix__-DELETE" id="id_languages-__prefix__-DELETE">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </label>
+                                </div>
+                                {% endif %}
+                                {% for field in empty_form.visible_fields %}
+                                    {% if field.name != 'DELETE' %}
+                                        {{ field|as_crispy_field }}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endwith %}
+
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2 add-formset-row" data-prefix="languages">
+                            <i class="bi bi-plus-circle me-1"></i>Añadir Idioma
+                        </button>
                     </div>
                 </div>
 
                 <!-- Certificaciones -->
-                <div class="card mb-4">
+                <div class="card mb-4" id="section-certifications">
                     <div class="card-header">
-                        <h4>Certificaciones</h4>
+                        <h4><i class="bi bi-patch-check me-2"></i>Certificaciones</h4>
                     </div>
                     <div class="card-body">
                         {{ certification_formset.management_form }}
-                        {% for form in certification_formset %}
-                            <div class="formset-row mb-3 p-3 border rounded">
+                        <div class="formsets-container" id="certifications-formsets">
+                            {% for form in certification_formset %}
+                            <div class="formset-row mb-3" id="certification-{{ forloop.counter0 }}">
+                                {% if certification_formset.can_delete and form.instance.pk %}
+                                <div class="delete-row-btn">
+                                    <label class="text-danger">
+                                        {{ form.DELETE }} <i class="bi bi-trash"></i> Eliminar
+                                    </label>
+                                </div>
+                                {% endif %}
                                 {{ form|crispy }}
                             </div>
-                        {% endfor %}
+                            {% endfor %}
+                        </div>
+
+                        {% with empty_form=certification_formset.empty_form %}
+                        <div class="formset-row-template d-none" id="certifications-template">
+                            <div class="formset-row mb-3">
+                                {% if certification_formset.can_delete %}
+                                <div class="delete-row-btn">
+                                    <label class="text-danger">
+                                        <input type="checkbox" name="certifications-__prefix__-DELETE" id="id_certifications-__prefix__-DELETE">
+                                        <i class="bi bi-trash"></i> Eliminar
+                                    </label>
+                                </div>
+                                {% endif %}
+                                {% for field in empty_form.visible_fields %}
+                                    {% if field.name != 'DELETE' %}
+                                        {{ field|as_crispy_field }}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endwith %}
+
+                        <button type="button" class="btn btn-outline-primary btn-sm mt-2 add-formset-row" data-prefix="certifications">
+                            <i class="bi bi-plus-circle me-1"></i>Añadir Certificación
+                        </button>
                     </div>
                 </div>
                 
-                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-                <a href="{% url 'cv:cv_detail' %}" class="btn btn-secondary">Cancelar</a>
+                <!-- Botones de acción -->
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <a href="{% url 'cv:cv_detail' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Cancelar
+                    </a>
+                    <div>
+                        <a href="{% url 'cv:cv_detail' %}" class="btn btn-outline-info me-2">
+                            <i class="bi bi-eye me-1"></i>Ver Perfil
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="bi bi-check-circle me-1"></i>Guardar Cambios
+                        </button>
+                    </div>
+                </div>
             </form>
+
+            <!-- Leyenda de campos -->
+            <div class="card mt-4 bg-light">
+                <div class="card-body py-2">
+                    <div class="d-flex align-items-center flex-wrap gap-3">
+                        <span><span class="text-danger">*</span> Campo obligatorio</span>
+                        <span><span class="text-muted">(opcional)</span> Campo opcional</span>
+                        <span><i class="bi bi-trash text-danger"></i> Marcar para eliminar</span>
+                        <span><i class="bi bi-plus-circle text-primary"></i> Añadir nuevo elemento</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+</section>
+{% endblock %}
 
-<!-- JavaScript para formsets dinámicos -->
-<script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
-<script src="{% static 'js/jquery.formset.js' %}"></script>
-<script>
-    $(function() {
-        // Configurar formset de experiencia
-        $('.experience-formset').formset({
-            prefix: '{{ experience_formset.prefix }}',
-            formCssClass: 'dynamic-formset',
-            deleteCssClass: 'delete-row',
-            deleteText: 'Eliminar',
-            addText: 'Añadir experiencia',
-            addCssClass: 'add-row btn btn-outline-primary btn-sm'
-        });
-
-        // Configurar formset de educación
-        $('.education-formset').formset({
-            prefix: '{{ education_formset.prefix }}',
-            formCssClass: 'dynamic-formset',
-            deleteCssClass: 'delete-row',
-            deleteText: 'Eliminar',
-            addText: 'Añadir educación',
-            addCssClass: 'add-row btn btn-outline-primary btn-sm'
-        });
-
-        // Configurar formset de habilidades
-        $('.skill-formset').formset({
-            prefix: '{{ skill_formset.prefix }}',
-            formCssClass: 'dynamic-formset',
-            deleteCssClass: 'delete-row',
-            deleteText: 'Eliminar',
-            addText: 'Añadir habilidad',
-            addCssClass: 'add-row btn btn-outline-primary btn-sm'
-        });
-
-        // Configurar formset de idiomas
-        $('.language-formset').formset({
-            prefix: '{{ language_formset.prefix }}',
-            formCssClass: 'dynamic-formset',
-            deleteCssClass: 'delete-row',
-            deleteText: 'Eliminar',
-            addText: 'Añadir idioma',
-            addCssClass: 'add-row btn btn-outline-primary btn-sm'
-        });
-
-        // Configurar formset de certificaciones
-        $('.certification-formset').formset({
-            prefix: '{{ certification_formset.prefix }}',
-            formCssClass: 'dynamic-formset',
-            deleteCssClass: 'delete-row',
-            deleteText: 'Eliminar',
-            addText: 'Añadir certificación',
-            addCssClass: 'add-row btn btn-outline-primary btn-sm'
-        });
-    });
-</script>
+{% block extra_js %}
+<script src="{% static 'cv/js/edit_section.js' %}"></script>
 {% endblock %}

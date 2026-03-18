@@ -1,0 +1,263 @@
+{% load static %}
+
+<!-- Corporate Info Card -->
+<div class="col-xl-4">
+    <!-- Profile Card -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body profile-card py-4 d-flex flex-column align-items-center">
+            <!-- Profile Image -->
+            <div class="profile-image-wrapper mb-3">
+                {% if cv.profile_picture and cv.profile_picture.url %}
+                    <img src="{{ cv.profile_picture.url }}" alt="Profile" class="rounded-circle profile-image" width="120" height="120">
+                {% else %}
+                    <img src="{% static 'img/default-avatar.png' %}" alt="Profile" class="rounded-circle profile-image" width="120" height="120">
+                {% endif %}
+            </div>
+            
+            <!-- Name and Position -->
+            <h2 class="fw-bold mb-1">{{ cv.full_name|default:"Nombre no especificado" }}</h2>
+            <h3 class="text-muted fs-6 mb-2">{{ cv.corporate_position|default:cv.job_title|default:"Posición no especificada" }}</h3>
+            
+            <!-- Role Badge -->
+            <div class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 mb-3">
+                <i class="bi bi-person-badge me-1"></i>{{ cv.get_role_display|default:"Rol no asignado" }}
+            </div>
+
+            <!-- Manager Info -->
+            {% if cv.manager %}
+            <div class="manager-info bg-light p-2 rounded-3 w-100 text-center mb-3">
+                <i class="bi bi-person-up text-secondary me-1"></i>
+                <small class="text-muted">Reporta a: <strong>{{ cv.manager.get_full_name|default:cv.manager.username }}</strong></small>
+            </div>
+            {% endif %}
+
+            <!-- Social Links -->
+            {% include 'cv/includes/social_links.html' %}
+        </div>
+    </div>
+
+    <!-- Corporate Metrics Card -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-light py-3">
+            <h5 class="card-title mb-0 fs-6 fw-bold">
+                <i class="bi bi-graph-up me-2 text-primary"></i>Métricas Corporativas
+            </h5>
+        </div>
+        <div class="card-body pt-4">
+            <div class="metrics-grid">
+                <!-- Fila 1 -->
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <div class="metric-card bg-primary bg-opacity-10 p-3 rounded-3 text-center">
+                            <div class="metric-value fs-2 fw-bold text-primary">{{ metrics.tasks_completed|default:0 }}</div>
+                            <div class="metric-label small text-muted text-uppercase">Tareas Completadas</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="metric-card bg-success bg-opacity-10 p-3 rounded-3 text-center">
+                            <div class="metric-value fs-2 fw-bold text-success">{{ metrics.projects_active|default:0 }}</div>
+                            <div class="metric-label small text-muted text-uppercase">Proyectos Activos</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Fila 2 -->
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="metric-card bg-info bg-opacity-10 p-3 rounded-3 text-center">
+                            <div class="metric-value fs-2 fw-bold text-info">{{ metrics.events_attended|default:0 }}</div>
+                            <div class="metric-label small text-muted text-uppercase">Eventos Asistidos</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="metric-card bg-warning bg-opacity-10 p-3 rounded-3 text-center">
+                            <div class="metric-value fs-2 fw-bold text-warning">{{ certifications_count|default:0 }}</div>
+                            <div class="metric-label small text-muted text-uppercase">Certificaciones</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if not corporate_data_available %}
+            <div class="alert alert-info mt-4 mb-0 py-2 small d-flex align-items-center">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                <span>Conecta con el módulo de eventos para ver métricas en tiempo real.</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Actions (DESDE ARCHIVO SEPARADO) -->
+    {% include 'cv/includes/quick_actions.html' %}
+
+</div>
+
+<style>
+    /* Profile Card */
+    .profile-card {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .profile-image-wrapper {
+        position: relative;
+    }
+    
+    .profile-image-wrapper::after {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: -10px;
+        right: -10px;
+        bottom: -10px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(13,110,253,0.2) 0%, rgba(102,126,234,0.2) 100%);
+        z-index: -1;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: scale(0.95);
+            opacity: 0.5;
+        }
+        50% {
+            transform: scale(1.05);
+            opacity: 0.8;
+        }
+        100% {
+            transform: scale(0.95);
+            opacity: 0.5;
+        }
+    }
+    
+    .profile-image {
+        border: 3px solid #fff;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        transition: transform 0.3s ease;
+    }
+    
+    .profile-image:hover {
+        transform: scale(1.05);
+    }
+    
+    /* Manager Info */
+    .manager-info {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-left: 3px solid #0d6efd;
+    }
+    
+    /* Metric Cards */
+    .metric-card {
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-3px);
+        border-color: rgba(13, 110, 253, 0.2);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .metric-value {
+        line-height: 1.2;
+        margin-bottom: 0.25rem;
+    }
+    
+    .metric-label {
+        font-size: 0.7rem;
+        letter-spacing: 0.3px;
+        font-weight: 600;
+    }
+    
+    /* Quick Action Buttons (estos estilos ahora se aplican al include) */
+    .btn-outline-primary,
+    .btn-outline-secondary,
+    .btn-outline-success {
+        border-width: 2px;
+        padding: 0.75rem 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-outline-primary:hover {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+        transform: translateX(5px);
+    }
+    
+    .btn-outline-secondary:hover {
+        background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        transform: translateX(5px);
+    }
+    
+    .btn-outline-success:hover {
+        background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+        transform: translateX(5px);
+    }
+    
+    .btn-outline-primary:hover i,
+    .btn-outline-secondary:hover i,
+    .btn-outline-success:hover i {
+        color: white !important;
+    }
+    
+    /* Card hover effect */
+    .card {
+        transition: all 0.3s ease;
+        border-radius: 12px !important;
+        overflow: hidden;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* Card Header */
+    .card-header {
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    /* Card Body padding */
+    .card-body {
+        padding: 1.5rem !important;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1rem !important;
+        }
+        
+        .metric-value {
+            font-size: 1.5rem !important;
+        }
+        
+        .metric-label {
+            font-size: 0.65rem;
+        }
+        
+        .btn-outline-primary,
+        .btn-outline-secondary,
+        .btn-outline-success {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+        }
+    }
+    
+    /* Dark mode support (opcional) */
+    @media (prefers-color-scheme: dark) {
+        .bg-light {
+            background-color: #2d2d2d !important;
+            color: #fff !important;
+        }
+        
+        .manager-info {
+            background: linear-gradient(135deg, #2d2d2d 0%, #3d3d3d 100%);
+            color: #fff;
+        }
+        
+        .text-muted {
+            color: #adb5bd !important;
+        }
+    }
+</style>

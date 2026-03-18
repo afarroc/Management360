@@ -1,0 +1,28 @@
+{% load crispy_forms_tags %}
+
+{% if required_fields %}
+<div class="required-section mb-4">
+    <h6 class="text-danger mb-3">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>Información Requerida
+    </h6>
+    {{ form|crispy }}
+</div>
+{% else %}
+    {{ form|crispy }}
+{% endif %}
+
+{% if form.profile_picture %}
+<div class="mt-3" id="profile-preview">
+    {% if form.profile_picture.value %}
+    <div class="card bg-light">
+        <div class="card-body">
+            <h6 class="card-title">Vista previa de la foto</h6>
+            <img src="{{ form.profile_picture.value.url }}" 
+                 alt="Preview" 
+                 class="img-thumbnail" 
+                 style="max-height: 150px;">
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}

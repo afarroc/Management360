@@ -1,0 +1,344 @@
+{% load static %}
+
+{% if cv.linkedin_url or cv.github_url or cv.twitter_url or cv.facebook_url or cv.instagram_url %}
+<div class="social-links-container mt-3">
+    <h6 class="text-muted small text-uppercase mb-2 d-flex align-items-center">
+        <i class="bi bi-share me-1"></i>
+        <span>Redes Profesionales</span>
+    </h6>
+    <div class="social-links d-flex flex-wrap gap-2 justify-content-center">
+        {% if cv.linkedin_url %}
+        <a href="{{ cv.linkedin_url }}" 
+           target="_blank" 
+           class="social-link linkedin" 
+           title="LinkedIn"
+           data-bs-toggle="tooltip" 
+           data-bs-placement="top">
+            <i class="bi bi-linkedin"></i>
+        </a>
+        {% endif %}
+        
+        {% if cv.github_url %}
+        <a href="{{ cv.github_url }}" 
+           target="_blank" 
+           class="social-link github" 
+           title="GitHub"
+           data-bs-toggle="tooltip" 
+           data-bs-placement="top">
+            <i class="bi bi-github"></i>
+        </a>
+        {% endif %}
+        
+        {% if cv.twitter_url %}
+        <a href="{{ cv.twitter_url }}" 
+           target="_blank" 
+           class="social-link twitter" 
+           title="Twitter/X"
+           data-bs-toggle="tooltip" 
+           data-bs-placement="top">
+            <i class="bi bi-twitter-x"></i>
+        </a>
+        {% endif %}
+        
+        {% if cv.facebook_url %}
+        <a href="{{ cv.facebook_url }}" 
+           target="_blank" 
+           class="social-link facebook" 
+           title="Facebook"
+           data-bs-toggle="tooltip" 
+           data-bs-placement="top">
+            <i class="bi bi-facebook"></i>
+        </a>
+        {% endif %}
+        
+        {% if cv.instagram_url %}
+        <a href="{{ cv.instagram_url }}" 
+           target="_blank" 
+           class="social-link instagram" 
+           title="Instagram"
+           data-bs-toggle="tooltip" 
+           data-bs-placement="top">
+            <i class="bi bi-instagram"></i>
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="social-links-container mt-3">
+    <h6 class="text-muted small text-uppercase mb-2 d-flex align-items-center">
+        <i class="bi bi-share me-1"></i>
+        <span>Redes Profesionales</span>
+    </h6>
+    <div class="text-center py-3 bg-light rounded-3">
+        <i class="bi bi-plus-circle text-muted d-block mb-2" style="font-size: 1.5rem;"></i>
+        <small class="text-muted d-block mb-2">No hay redes sociales vinculadas</small>
+        <a href="{% url 'cv:cv_edit' %}" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-pencil-square me-1"></i>Añadir redes
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<style>
+/* Social Links Container */
+.social-links-container {
+    width: 100%;
+    padding: 0.5rem 0;
+    border-top: 1px solid rgba(0,0,0,0.05);
+    margin-top: 0.5rem !important;
+}
+
+/* Social Links Grid */
+.social-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Social Link Individual */
+.social-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f8f9fa;
+    color: #6c757d;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Efecto de onda al hacer hover */
+.social-link::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.4s, height 0.4s;
+    z-index: 0;
+}
+
+.social-link:hover::before {
+    width: 100%;
+    height: 100%;
+}
+
+.social-link i {
+    position: relative;
+    z-index: 1;
+    transition: transform 0.3s ease;
+}
+
+.social-link:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+    color: white;
+}
+
+.social-link:hover i {
+    transform: scale(1.1);
+}
+
+/* Colores específicos por plataforma */
+.social-link.linkedin:hover {
+    background: #0077b5;
+    border-color: #0077b5;
+}
+
+.social-link.github:hover {
+    background: #333;
+    border-color: #333;
+}
+
+.social-link.twitter:hover {
+    background: #000;
+    border-color: #000;
+}
+
+.social-link.facebook:hover {
+    background: #1877f2;
+    border-color: #1877f2;
+}
+
+.social-link.instagram:hover {
+    background: linear-gradient(45deg, #f09433, #d62976, #962fbf, #4f5bd5);
+    border-color: transparent;
+}
+
+/* Animación de entrada */
+.social-link {
+    animation: fadeInScale 0.3s ease forwards;
+    opacity: 0;
+    transform: scale(0.9);
+}
+
+@keyframes fadeInScale {
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Aplicar retraso a cada enlace */
+.social-link:nth-child(1) { animation-delay: 0.1s; }
+.social-link:nth-child(2) { animation-delay: 0.2s; }
+.social-link:nth-child(3) { animation-delay: 0.3s; }
+.social-link:nth-child(4) { animation-delay: 0.4s; }
+.social-link:nth-child(5) { animation-delay: 0.5s; }
+
+/* Tooltips personalizados */
+[data-bs-toggle="tooltip"] {
+    cursor: pointer;
+}
+
+/* Versión cuando no hay enlaces */
+.bg-light.rounded-3 {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px dashed rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.bg-light.rounded-3:hover {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+    border-color: #0d6efd;
+}
+
+.bg-light.rounded-3 i {
+    color: #adb5bd;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .social-link {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+    
+    .social-links {
+        gap: 0.4rem;
+    }
+    
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Modo oscuro (si se implementa) */
+@media (prefers-color-scheme: dark) {
+    .social-link {
+        background: #2d2d2d;
+        color: #adb5bd;
+        border-color: #404040;
+    }
+    
+    .bg-light.rounded-3 {
+        background: linear-gradient(135deg, #2d2d2d 0%, #3d3d3d 100%);
+        border-color: #404040;
+    }
+    
+    .bg-light.rounded-3:hover {
+        background: linear-gradient(135deg, #3d3d3d 0%, #4d4d4d 100%);
+    }
+    
+    .text-muted {
+        color: #adb5bd !important;
+    }
+}
+
+/* Efecto de pulso para el botón de añadir */
+@keyframes gentlePulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 5px rgba(13, 110, 253, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+    }
+}
+
+.btn-outline-primary {
+    animation: gentlePulse 2s infinite;
+}
+
+.btn-outline-primary:hover {
+    animation: none;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar tooltips de Bootstrap
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            trigger: 'hover'
+        });
+    });
+    
+    // Efecto de ripple al hacer click (opcional)
+    const socialLinks = document.querySelectorAll('.social-link');
+    socialLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            const ripple = document.createElement('span');
+            ripple.classList.add('ripple');
+            this.appendChild(ripple);
+            
+            const x = e.clientX - e.target.offsetLeft;
+            const y = e.clientY - e.target.offsetTop;
+            
+            ripple.style.left = `${x}px`;
+            ripple.style.top = `${y}px`;
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+});
+
+// Añadir estilos para el efecto ripple (opcional)
+const style = document.createElement('style');
+style.textContent = `
+    .social-link {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .ripple {
+        position: absolute;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+        transform: scale(0);
+        animation: ripple-animation 0.6s ease-out;
+        pointer-events: none;
+        width: 100px;
+        height: 100px;
+        margin-left: -50px;
+        margin-top: -50px;
+    }
+    
+    @keyframes ripple-animation {
+        to {
+            transform: scale(4);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
