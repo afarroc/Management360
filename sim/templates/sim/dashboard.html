@@ -1,0 +1,765 @@
+{% extends "layouts/base.html" %}
+{% load static %}
+
+{% block title %}Sim Dashboard · M360{% endblock %}
+
+{% block extra_head %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  /* ── Variables ───────────────────────────────────────────────── */
+  :root {
+    --bg:           #f4f5f7;
+    --surface:      #ffffff;
+    --surface-2:    #f9fafb;
+    --border:       #e2e5ea;
+    --text:         #1a1d23;
+    --text-muted:   #6b7280;
+    --text-xs:      #9ca3af;
+
+    --inbound:      #2563eb;
+    --inbound-bg:   #eff6ff;
+    --inbound-dim:  #bfdbfe;
+
+    --outbound:     #d97706;
+    --outbound-bg:  #fffbeb;
+    --outbound-dim: #fde68a;
+
+    --digital:      #0d9488;
+    --digital-bg:   #f0fdfa;
+    --digital-dim:  #99f6e4;
+
+    --total:        #4f46e5;
+    --total-bg:     #eef2ff;
+
+    --good:         #16a34a;
+    --warn:         #ea580c;
+
+    --font-mono:    'IBM Plex Mono', monospace;
+    --font-sans:    'IBM Plex Sans', sans-serif;
+    --radius:       8px;
+    --shadow:       0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md:    0 4px 12px rgba(0,0,0,.08);
+  }
+
+  body { font-family: var(--font-sans); background: var(--bg); color: var(--text); }
+
+  /* ── Header ──────────────────────────────────────────────────── */
+  .dash-header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .dash-header h1 {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -.3px;
+    margin: 0;
+    white-space: nowrap;
+  }
+  .dash-header .badge-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--good);
+    background: #dcfce7;
+    border-radius: 99px;
+    padding: 2px 8px;
+  }
+  .dash-header .badge-live span {
+    width: 6px; height: 6px;
+    background: var(--good);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50%      { opacity: .3; }
+  }
+  .dash-controls { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+  .dash-controls select,
+  .dash-controls .btn-period {
+    font-family: var(--font-sans);
+    font-size: 13px;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .dash-controls select:focus { border-color: #6366f1; }
+  .period-group { display: flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .period-group button {
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border: none;
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    border-right: 1px solid var(--border);
+    transition: background .12s, color .12s;
+  }
+  .period-group button:last-child { border-right: none; }
+  .period-group button.active,
+  .period-group button:hover { background: #eef2ff; color: var(--total); }
+
+  /* ── Layout ──────────────────────────────────────────────────── */
+  .dash-body { padding: 24px 28px; max-width: 1440px; }
+
+  /* ── KPI Cards ───────────────────────────────────────────────── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow .15s, transform .15s;
+  }
+  .kpi-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .kpi-card.total::before   { background: var(--total); }
+  .kpi-card.inbound::before { background: var(--inbound); }
+  .kpi-card.outbound::before{ background: var(--outbound); }
+  .kpi-card.digital::before { background: var(--digital); }
+  .kpi-card.warn-card::before { background: var(--warn); }
+
+  .kpi-label {
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .kpi-label .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-total   { background: var(--total); }
+  .dot-inbound { background: var(--inbound); }
+  .dot-out     { background: var(--outbound); }
+  .dot-digital { background: var(--digital); }
+  .dot-warn    { background: var(--warn); }
+
+  .kpi-value {
+    font-family: var(--font-mono);
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: -1px;
+    line-height: 1;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .kpi-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+  .kpi-sub .good { color: var(--good); font-weight: 600; }
+  .kpi-sub .warn { color: var(--warn); font-weight: 600; }
+
+  /* Skeleton loader */
+  .skel {
+    background: linear-gradient(90deg, #e9ecef 25%, #f3f4f6 50%, #e9ecef 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 4px;
+  }
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  .skel-value { height: 34px; width: 80px; margin-bottom: 6px; }
+  .skel-sub   { height: 14px; width: 60px; }
+
+  /* ── Charts row ──────────────────────────────────────────────── */
+  .charts-row {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 900px) {
+    .charts-row { grid-template-columns: 1fr; }
+  }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+  }
+  .chart-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+  .chart-wrap { position: relative; height: 200px; }
+
+  /* ── Canal detail blocks ─────────────────────────────────────── */
+  .canal-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .canal-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    box-shadow: var(--shadow);
+  }
+  .canal-block-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .canal-tag {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+  .canal-tag.inbound  { background: var(--inbound-bg);  color: var(--inbound); }
+  .canal-tag.outbound { background: var(--outbound-bg); color: var(--outbound); }
+  .canal-tag.digital  { background: var(--digital-bg);  color: var(--digital); }
+
+  .metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .metric-row:last-child { border-bottom: none; }
+  .metric-row .mlabel { color: var(--text-muted); }
+  .metric-row .mval {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .metric-row .mval.pct-good { color: var(--good); }
+  .metric-row .mval.pct-warn { color: var(--warn); }
+
+  /* Mini progress bar */
+  .mbar-wrap { width: 60px; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .mbar { height: 100%; border-radius: 3px; transition: width .5s ease; }
+  .mbar.inbound  { background: var(--inbound); }
+  .mbar.outbound { background: var(--outbound); }
+  .mbar.digital  { background: var(--digital); }
+
+  /* ── Runs table ──────────────────────────────────────────────── */
+  .runs-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+  }
+  .runs-card table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .runs-card thead th {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-muted);
+    padding: 0 8px 10px 0;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .runs-card tbody td {
+    padding: 9px 8px 9px 0;
+    border-bottom: 1px solid var(--surface-2);
+    vertical-align: middle;
+  }
+  .runs-card tbody tr:last-child td { border-bottom: none; }
+  .runs-card tbody tr:hover td { background: var(--surface-2); }
+  .runs-card .mono { font-family: var(--font-mono); font-size: 12px; color: var(--text); }
+
+  /* ── Empty / error state ─────────────────────────────────────── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+  .empty-state .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: .4; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── GTR button ──────────────────────────────────────────────── */
+  .btn-gtr {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    padding: 6px 14px;
+    background: #0f172a;
+    color: #38bdf8;
+    border: none;
+    border-radius: var(--radius);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .12s;
+  }
+  .btn-gtr:hover { background: #1e293b; color: #7dd3fc; }
+  .btn-gtr .gtr-dot {
+    width: 6px; height: 6px;
+    background: #22d3ee;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+
+  /* ── Responsiveness ──────────────────────────────────────────── */
+  @media (max-width: 600px) {
+    .dash-header { padding: 12px 16px; }
+    .dash-body   { padding: 16px; }
+    .kpi-grid    { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ═══════════════════════════════════════════════════════════════ Header -->
+<div class="dash-header">
+  <h1>📊 Sim Dashboard</h1>
+  <div class="badge-live"><span></span> Live</div>
+
+  <div class="dash-controls">
+    <select id="accountSelect" onchange="loadDashboard()">
+      <option value="">— Seleccionar cuenta —</option>
+      {% for acc in accounts %}
+        <option value="{{ acc.id }}" data-canal="{{ acc.canal }}">
+          {{ acc.name }}
+        </option>
+      {% endfor %}
+    </select>
+
+    <div class="period-group">
+      <button onclick="setPeriod(7)"  data-d="7">7d</button>
+      <button onclick="setPeriod(30)" data-d="30" class="active">30d</button>
+      <button onclick="setPeriod(90)" data-d="90">90d</button>
+      <button onclick="setPeriod(0)"  data-d="0">All</button>
+    </div>
+
+    <a href="{% url 'sim:gtr_panel' %}" class="btn-gtr">
+      <span class="gtr-dot"></span> GTR Live
+    </a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ Body -->
+<div class="dash-body">
+
+  <!-- Estado vacío inicial -->
+  <div id="emptyState" class="empty-state">
+    <div class="empty-icon">📂</div>
+    <p>Selecciona una cuenta para ver los KPIs</p>
+  </div>
+
+  <!-- Contenedor de datos (oculto hasta cargar) -->
+  <div id="dashContent" style="display:none">
+
+    <!-- ── KPI Cards ─────────────────────────────────────── -->
+    <div class="kpi-grid" id="kpiGrid">
+      <!-- Total -->
+      <div class="kpi-card total">
+        <div class="kpi-label"><span class="dot dot-total"></span> Total Interacciones</div>
+        <div class="kpi-value" id="kTotal">—</div>
+        <div class="kpi-sub" id="kTotalSub">—</div>
+      </div>
+      <!-- Inbound cards (se muestran sólo si canal inbound) -->
+      <div class="kpi-card inbound" id="cardNA">
+        <div class="kpi-label"><span class="dot dot-inbound"></span> Nivel de Atención</div>
+        <div class="kpi-value" id="kNA">—</div>
+        <div class="kpi-sub" id="kNASub">—</div>
+      </div>
+      <div class="kpi-card inbound" id="cardAHT">
+        <div class="kpi-label"><span class="dot dot-inbound"></span> AHT Inbound</div>
+        <div class="kpi-value" id="kAHT">—</div>
+        <div class="kpi-sub" id="kAHTSub">—</div>
+      </div>
+      <div class="kpi-card warn-card" id="cardAban">
+        <div class="kpi-label"><span class="dot dot-warn"></span> Abandono</div>
+        <div class="kpi-value" id="kAban">—</div>
+        <div class="kpi-sub" id="kAbanSub">—</div>
+      </div>
+      <!-- Outbound card -->
+      <div class="kpi-card outbound" id="cardContact">
+        <div class="kpi-label"><span class="dot dot-out"></span> Contactabilidad</div>
+        <div class="kpi-value" id="kContact">—</div>
+        <div class="kpi-sub" id="kContactSub">—</div>
+      </div>
+      <!-- Digital card -->
+      <div class="kpi-card digital" id="cardDigital">
+        <div class="kpi-label"><span class="dot dot-digital"></span> Digital</div>
+        <div class="kpi-value" id="kDigital">—</div>
+        <div class="kpi-sub" id="kDigitalSub">—</div>
+      </div>
+    </div>
+
+    <!-- ── Charts row ─────────────────────────────────────── -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Tendencia Diaria — Interacciones</div>
+        <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Distribución por Canal</div>
+        <div class="chart-wrap"><canvas id="canalChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ── Canal detail blocks ────────────────────────────── -->
+    <div class="canal-row" id="canalBlocks"></div>
+
+    <!-- ── Runs recientes ─────────────────────────────────── -->
+    <div class="runs-card">
+      <div class="chart-title">Runs Recientes</div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Canal</th>
+            <th>Días gen.</th>
+            <th>Interacciones</th>
+            <th>Tiempo</th>
+            <th>Fecha</th>
+          </tr>
+        </thead>
+        <tbody id="runsBody">
+          <tr><td colspan="6" style="color:var(--text-muted);font-size:13px;padding:16px 0;">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /dashContent -->
+</div><!-- /dash-body -->
+
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script>
+  // ── Estado ─────────────────────────────────────────────────────
+  let currentDays   = 30;
+  let trendChartInst = null;
+  let canalChartInst = null;
+
+  // ── Control de período ─────────────────────────────────────────
+  function setPeriod(d) {
+    currentDays = d;
+    document.querySelectorAll('.period-group button').forEach(b => {
+      b.classList.toggle('active', parseInt(b.dataset.d) === d);
+    });
+    loadDashboard();
+  }
+
+  // ── Carga principal ────────────────────────────────────────────
+  function loadDashboard() {
+    const accId = document.getElementById('accountSelect').value;
+    if (!accId) {
+      document.getElementById('emptyState').style.display = 'block';
+      document.getElementById('dashContent').style.display = 'none';
+      return;
+    }
+
+    // Mostrar contenido con skeletons
+    document.getElementById('emptyState').style.display  = 'none';
+    document.getElementById('dashContent').style.display = 'block';
+    showSkeletons();
+
+    fetch(`{% url 'sim:dashboard_api' %}?account_id=${accId}&days=${currentDays}`)
+      .then(r => r.json())
+      .then(data => renderDashboard(data))
+      .catch(err => console.error('Dashboard error:', err));
+  }
+
+  // ── Skeletons ──────────────────────────────────────────────────
+  function showSkeletons() {
+    ['kTotal','kNA','kAHT','kAban','kContact','kDigital'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<div class="skel skel-value"></div>';
+    });
+    ['kTotalSub','kNASub','kAHTSub','kAbanSub','kContactSub','kDigitalSub'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '<div class="skel skel-sub"></div>';
+    });
+  }
+
+  // ── Render ─────────────────────────────────────────────────────
+  function renderDashboard(d) {
+    const fmt = n => n?.toLocaleString('es-PE') ?? '—';
+    const pct = n => n != null ? `${n}%` : '—';
+
+    // Visibilidad de cards por canal
+    const canal = d.canal || 'mixed';
+    const hasInbound  = d.inbound  != null;
+    const hasOutbound = d.outbound != null;
+    const hasDigital  = d.digital  != null;
+
+    toggle('cardNA',      hasInbound);
+    toggle('cardAHT',     hasInbound);
+    toggle('cardAban',    hasInbound);
+    toggle('cardContact', hasOutbound);
+    toggle('cardDigital', hasDigital);
+
+    // ── Total ──
+    setText('kTotal', fmt(d.total));
+    const canalList = Object.entries(d.canales || {})
+      .map(([c, n]) => `${c} ${fmt(n)}`).join(' · ');
+    setText('kTotalSub', canalList || '—');
+
+    // ── Inbound ──
+    if (hasInbound) {
+      const ib = d.inbound;
+      setText('kNA',     pct(ib.na_pct));
+      setText('kNASub',  `${fmt(ib.atendidas)} atendidas`);
+      colorEl('kNA', ib.na_pct >= 80 ? 'good' : 'warn');
+
+      setText('kAHT',    `${ib.aht_min}m`);
+      setText('kAHTSub', `${fmt(ib.aht_s)}s promedio`);
+
+      setText('kAban',     pct(ib.aban_pct));
+      setText('kAbanSub',  `${fmt(ib.abandonadas)} abandonadas`);
+      colorEl('kAban', ib.aban_pct <= 5 ? 'good' : 'warn');
+    }
+
+    // ── Outbound ──
+    if (hasOutbound) {
+      const ob = d.outbound;
+      setText('kContact',    pct(ob.contact_pct));
+      setText('kContactSub', `${fmt(ob.ventas)} ventas · ${pct(ob.conv_pct)} conv.`);
+    }
+
+    // ── Digital ──
+    if (hasDigital) {
+      const dig = d.digital;
+      setText('kDigital',    fmt(dig.total));
+      setText('kDigitalSub', `AHT ${dig.aht_min}m`);
+    }
+
+    // ── Trend chart ──
+    renderTrendChart(d.daily_trend, hasInbound, hasOutbound);
+
+    // ── Canal donut ──
+    renderCanalChart(d.canales);
+
+    // ── Canal detail blocks ──
+    renderCanalBlocks(d);
+
+    // ── Runs ──
+    renderRuns(d.recent_runs);
+  }
+
+  // ── Trend chart ────────────────────────────────────────────────
+  function renderTrendChart(trend, hasIn, hasOut) {
+    if (trendChartInst) trendChartInst.destroy();
+    const labels   = trend.map(r => r.fecha.slice(5));   // MM-DD
+    const totales  = trend.map(r => r.total);
+    const atend    = trend.map(r => r.atendidas);
+    const ventas   = trend.map(r => r.ventas);
+
+    const datasets = [
+      { label: 'Total', data: totales, backgroundColor: 'rgba(99,102,241,.15)',
+        borderColor: '#6366f1', borderWidth: 2, tension: .4, fill: true, pointRadius: 2 },
+    ];
+    if (hasIn)  datasets.push({ label: 'Atendidas', data: atend,
+      borderColor: '#2563eb', borderWidth: 1.5, tension: .4, fill: false, pointRadius: 0 });
+    if (hasOut) datasets.push({ label: 'Ventas', data: ventas,
+      borderColor: '#d97706', borderWidth: 1.5, tension: .4, fill: false, pointRadius: 0 });
+
+    trendChartInst = new Chart(document.getElementById('trendChart'), {
+      type: 'line',
+      data: { labels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { labels: { font: { family: 'IBM Plex Sans', size: 11 }, boxWidth: 12 } } },
+        scales: {
+          x: { grid: { color: '#f1f3f5' }, ticks: { font: { family: 'IBM Plex Mono', size: 10 }, maxRotation: 0 } },
+          y: { grid: { color: '#f1f3f5' }, ticks: { font: { family: 'IBM Plex Mono', size: 10 } } },
+        },
+      },
+    });
+  }
+
+  // ── Canal donut ────────────────────────────────────────────────
+  function renderCanalChart(canales) {
+    if (canalChartInst) canalChartInst.destroy();
+    const COLORS = { inbound: '#2563eb', outbound: '#d97706', chat: '#0d9488',
+                     digital: '#0d9488', mail: '#6366f1' };
+    const entries = Object.entries(canales || {});
+    canalChartInst = new Chart(document.getElementById('canalChart'), {
+      type: 'doughnut',
+      data: {
+        labels: entries.map(([c]) => c),
+        datasets: [{
+          data: entries.map(([,n]) => n),
+          backgroundColor: entries.map(([c]) => COLORS[c] || '#94a3b8'),
+          borderWidth: 0,
+          hoverOffset: 6,
+        }],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: '68%',
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { family: 'IBM Plex Sans', size: 11 }, padding: 12, boxWidth: 10 } },
+        },
+      },
+    });
+  }
+
+  // ── Canal detail blocks ────────────────────────────────────────
+  function renderCanalBlocks(d) {
+    let html = '';
+
+    if (d.inbound) {
+      const ib = d.inbound;
+      html += `
+      <div class="canal-block">
+        <div class="canal-block-title">
+          <span class="canal-tag inbound">Inbound</span> Voz / Banca Telefónica
+        </div>
+        ${metricRow('Total llamadas',      ib.total.toLocaleString('es-PE'))}
+        ${metricRow('Atendidas',           ib.atendidas.toLocaleString('es-PE'),  'inbound', ib.na_pct)}
+        ${metricRow('NA%',                 ib.na_pct + '%',   '', 0, ib.na_pct >= 80 ? 'pct-good' : 'pct-warn')}
+        ${metricRow('Abandono%',           ib.aban_pct + '%', '', 0, ib.aban_pct <= 5 ? 'pct-good' : 'pct-warn')}
+        ${metricRow('AHT',                 ib.aht_min + ' min  (' + ib.aht_s + 's)')}
+      </div>`;
+    }
+
+    if (d.outbound) {
+      const ob = d.outbound;
+      html += `
+      <div class="canal-block">
+        <div class="canal-block-title">
+          <span class="canal-tag outbound">Outbound</span> Discador / Telco
+        </div>
+        ${metricRow('Marcaciones',         ob.total.toLocaleString('es-PE'))}
+        ${metricRow('Contactados',         ob.contactados.toLocaleString('es-PE'), 'outbound', ob.contact_pct)}
+        ${metricRow('Contactabilidad%',    ob.contact_pct + '%', '', 0, ob.contact_pct >= 25 ? 'pct-good' : 'pct-warn')}
+        ${metricRow('Ventas',              ob.ventas.toLocaleString('es-PE'))}
+        ${metricRow('Conversión%',         ob.conv_pct + '%')}
+        ${metricRow('Agendas',             ob.agendas.toLocaleString('es-PE'))}
+      </div>`;
+    }
+
+    if (d.digital) {
+      const dig = d.digital;
+      html += `
+      <div class="canal-block">
+        <div class="canal-block-title">
+          <span class="canal-tag digital">Digital</span> Chat / Mail / App
+        </div>
+        ${metricRow('Total sesiones',      dig.total.toLocaleString('es-PE'))}
+        ${metricRow('AHT',                 dig.aht_min + ' min  (' + dig.aht_s + 's)')}
+      </div>`;
+    }
+
+    document.getElementById('canalBlocks').innerHTML = html;
+  }
+
+  function metricRow(label, val, canal='', pct=0, valClass='') {
+    const bar = canal ? `
+      <div class="mbar-wrap" style="margin-left:8px">
+        <div class="mbar ${canal}" style="width:${Math.min(pct,100)}%"></div>
+      </div>` : '';
+    return `
+      <div class="metric-row">
+        <span class="mlabel">${label}</span>
+        <div style="display:flex;align-items:center">
+          <span class="mval ${valClass}">${val}</span>${bar}
+        </div>
+      </div>`;
+  }
+
+  // ── Runs table ─────────────────────────────────────────────────
+  function renderRuns(runs) {
+    const CANAL_ICON = { inbound: '📞', outbound: '📲', digital: '💬', mixed: '🔀' };
+    if (!runs || runs.length === 0) {
+      document.getElementById('runsBody').innerHTML =
+        '<tr><td colspan="6" style="color:var(--text-muted);font-size:13px;padding:16px 0">Sin runs registrados</td></tr>';
+      return;
+    }
+    document.getElementById('runsBody').innerHTML = runs.map((r, i) => `
+      <tr>
+        <td class="mono">${i + 1}</td>
+        <td>${CANAL_ICON[r.canal] || '—'} ${r.canal}</td>
+        <td class="mono">${r.dias ?? '—'}</td>
+        <td class="mono">${(r.total_interactions || 0).toLocaleString('es-PE')}</td>
+        <td class="mono">${r.duration_s != null ? r.duration_s.toFixed(1) + 's' : '—'}</td>
+        <td style="color:var(--text-muted);font-size:12px">${r.created_at}</td>
+      </tr>`).join('');
+  }
+
+  // ── Helpers ────────────────────────────────────────────────────
+  function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+  function colorEl(id, cls) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('pct-good', 'pct-warn');
+    if (cls) el.classList.add('pct-' + cls);
+  }
+  function toggle(id, show) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = show ? '' : 'none';
+  }
+
+  // ── Auto-select if only one account ───────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    const sel = document.getElementById('accountSelect');
+    if (sel.options.length === 2) {   // 1 real option + placeholder
+      sel.selectedIndex = 1;
+      loadDashboard();
+    }
+  });
+</script>
+{% endblock %}

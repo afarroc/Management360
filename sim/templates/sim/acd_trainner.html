@@ -1,0 +1,665 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block title %}ACD Simulator — Panel Trainer{% endblock %}
+
+{% block extra_head %}
+<style>
+#acd-root{
+  --a-bg:#0b1120;--a-surf:#111827;--a-surf2:#1a2640;--a-border:#1f3050;
+  --a-primary:#3b82f6;--a-primary-l:#60a5fa;
+  --a-success:#10b981;--a-warning:#f59e0b;--a-danger:#ef4444;
+  --a-purple:#a78bfa;--a-teal:#2dd4bf;--a-orange:#fb923c;
+  --a-text:#e2e8f0;--a-text-s:#94a3b8;--a-text-m:#475569;
+  font-family:'Nunito',system-ui,sans-serif;font-size:14px;
+  color:var(--a-text);background:var(--a-bg);min-height:100vh;
+  background-image:radial-gradient(ellipse 60% 40% at 15% 10%,#0c2a4a22,transparent),
+    radial-gradient(ellipse 40% 60% at 85% 85%,#0a1e3322,transparent);
+}
+#acd-root .acd-page{padding:16px 14px 48px}
+
+/* Header */
+#acd-root .acd-header{display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:10px;margin-bottom:16px;
+  padding:12px 18px;background:var(--a-surf);border:1px solid var(--a-border);
+  border-radius:12px}
+#acd-root .acd-title{font-size:18px;font-weight:800;display:flex;align-items:center;gap:10px}
+
+/* Tabs */
+#acd-root .acd-tabs{display:flex;gap:4px;background:var(--a-surf2);
+  border-radius:8px;padding:4px;margin-bottom:14px}
+#acd-root .acd-tab{flex:1;padding:8px 14px;border:none;border-radius:6px;
+  font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;
+  color:var(--a-text-s);background:transparent;transition:all .15s;text-align:center}
+#acd-root .acd-tab.active{background:var(--a-primary);color:#fff}
+
+/* KPI bar */
+#acd-root .kpi-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+#acd-root .kpi-chip{background:var(--a-surf2);border:1px solid var(--a-border);
+  border-radius:10px;padding:10px 14px;text-align:center;min-width:90px}
+#acd-root .kpi-chip .val{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums;
+  color:var(--a-primary-l)}
+#acd-root .kpi-chip .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--a-text-m);margin-top:2px}
+#acd-root .kpi-chip.ok .val{color:var(--a-success)}
+#acd-root .kpi-chip.warn .val{color:var(--a-warning)}
+#acd-root .kpi-chip.danger .val{color:var(--a-danger)}
+
+/* Agent grid */
+#acd-root .agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+#acd-root .agent-card{background:var(--a-surf);border:1px solid var(--a-border);
+  border-radius:10px;padding:12px 14px;position:relative;transition:border-color .15s}
+#acd-root .agent-card::before{content:'';position:absolute;top:0;left:0;width:4px;
+  height:100%;border-radius:4px 0 0 4px}
+#acd-root .agent-card.available::before{background:var(--a-success)}
+#acd-root .agent-card.on_call::before{background:var(--a-primary)}
+#acd-root .agent-card.ringing::before{background:var(--a-teal);animation:pulse .8s infinite}
+#acd-root .agent-card.acw::before{background:var(--a-orange)}
+#acd-root .agent-card.break::before{background:var(--a-warning)}
+#acd-root .agent-card.absent::before, #acd-root .agent-card.offline::before{background:var(--a-text-m)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+#acd-root .agent-name{font-size:13px;font-weight:700;margin-bottom:4px;
+  display:flex;align-items:center;gap:6px}
+#acd-root .agent-status-pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+#acd-root .pill-available {background:#10b98122;color:#10b981}
+#acd-root .pill-on_call  {background:#3b82f622;color:#60a5fa}
+#acd-root .pill-ringing  {background:#2dd4bf22;color:#2dd4bf}
+#acd-root .pill-acw      {background:#fb923c22;color:#fb923c}
+#acd-root .pill-break    {background:#f59e0b22;color:#f59e0b}
+#acd-root .pill-absent, #acd-root .pill-offline{background:#47556922;color:#94a3b8}
+
+#acd-root .agent-meta{font-size:11px;color:var(--a-text-m);margin-bottom:8px}
+#acd-root .agent-stats{display:flex;gap:8px;font-size:11px;flex-wrap:wrap}
+#acd-root .agent-stat{color:var(--a-text-s)}
+#acd-root .agent-stat b{color:var(--a-text)}
+#acd-root .agent-actions{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+
+/* Queue panel */
+#acd-root .queue-panel{background:var(--a-surf);border:1px solid var(--a-border);
+  border-radius:10px;overflow:hidden;margin-bottom:14px}
+#acd-root .queue-header{padding:10px 14px;border-bottom:1px solid var(--a-border);
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--a-text-m)}
+#acd-root .queue-table{width:100%;border-collapse:collapse;font-size:12px}
+#acd-root .queue-table th{padding:6px 10px;text-align:left;color:var(--a-text-m);
+  font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+  border-bottom:1px solid var(--a-border);background:var(--a-surf2)}
+#acd-root .queue-table td{padding:6px 10px;border-bottom:1px solid var(--a-border)}
+#acd-root .queue-table tr:last-child td{border-bottom:none}
+
+/* Buttons */
+#acd-root .btn{display:inline-flex;align-items:center;gap:4px;padding:7px 13px;
+  border-radius:8px;font-family:inherit;font-size:12.5px;font-weight:700;
+  cursor:pointer;border:1px solid var(--a-border);background:var(--a-surf2);
+  color:var(--a-text);transition:all .12s;white-space:nowrap;text-decoration:none}
+#acd-root .btn:hover:not(:disabled){filter:brightness(1.15)}
+#acd-root .btn:disabled{opacity:.35;cursor:default}
+#acd-root .btn-primary{background:var(--a-primary);border-color:var(--a-primary);color:#fff}
+#acd-root .btn-success{background:var(--a-success);border-color:var(--a-success);color:#fff}
+#acd-root .btn-danger {background:var(--a-danger); border-color:var(--a-danger); color:#fff}
+#acd-root .btn-warning{background:var(--a-warning);border-color:var(--a-warning);color:#000}
+#acd-root .btn-ghost  {background:transparent;     border-color:var(--a-border);  color:var(--a-text-s)}
+#acd-root .btn-sm{padding:4px 9px;font-size:11.5px}
+
+/* Modal */
+#acd-root .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);
+  backdrop-filter:blur(3px);z-index:1050;align-items:center;justify-content:center;padding:16px}
+#acd-root .modal.active{display:flex}
+#acd-root .modal-box{background:var(--a-surf);border:1px solid var(--a-border);
+  border-radius:12px;width:100%;max-width:520px;max-height:92vh;overflow:hidden;
+  display:flex;flex-direction:column}
+#acd-root .modal-hdr{padding:14px 18px;border-bottom:1px solid var(--a-border);
+  display:flex;justify-content:space-between;align-items:center}
+#acd-root .modal-hdr h3{margin:0;font-size:14px;font-weight:700}
+#acd-root .modal-body{padding:18px;overflow-y:auto;flex:1}
+#acd-root .modal-ftr{padding:12px 18px;border-top:1px solid var(--a-border);
+  display:flex;justify-content:flex-end;gap:8px}
+#acd-root .f-group{margin-bottom:12px}
+#acd-root .f-label{display:block;font-size:11px;font-weight:700;color:var(--a-text-s);
+  margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+#acd-root .f-input,#acd-root .f-select{width:100%;padding:8px 10px;
+  border:1px solid var(--a-border);border-radius:8px;
+  background:var(--a-surf2);color:var(--a-text);font-family:inherit;font-size:13px;outline:none}
+#acd-root .f-input:focus,#acd-root .f-select:focus{border-color:var(--a-primary)}
+#acd-root .f-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Badge */
+#acd-root .badge{display:inline-flex;padding:2px 8px;border-radius:20px;
+  font-size:10px;font-weight:700}
+#acd-root .badge-real{background:#3b82f622;color:#60a5fa;border:1px solid #3b82f644}
+#acd-root .badge-sim {background:#a78bfa22;color:#a78bfa;border:1px solid #a78bfa44}
+#acd-root .badge-live{background:#10b98133;color:#10b981;border:1px solid #10b98155;animation:pulse 2s infinite}
+
+/* GTR clock display */
+#acd-root .gtr-bar{background:var(--a-surf2);border:1px solid var(--a-border);
+  border-radius:10px;padding:10px 16px;margin-bottom:12px;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+#acd-root .gtr-clock{font-size:32px;font-weight:900;color:var(--a-primary-l);
+  font-variant-numeric:tabular-nums;letter-spacing:2px}
+#acd-root .prog-bar{height:6px;background:var(--a-border);border-radius:3px;flex:1;min-width:120px;overflow:hidden}
+#acd-root .prog-fill{height:100%;background:linear-gradient(90deg,var(--a-primary),var(--a-teal));
+  border-radius:3px;transition:width .5s ease}
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div id="acd-root">
+<div class="acd-page">
+
+  <!-- Header -->
+  <div class="acd-header">
+    <div class="acd-title">
+      <span style="font-size:22px">📞</span>
+      ACD Simulator
+      <span class="badge badge-live" id="acd-status-badge" style="display:none">● ACTIVA</span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="openCreateModal()" id="btn-create">
+        <i class="bi bi-plus-lg"></i> Nueva sesión
+      </button>
+      <button class="btn btn-success" disabled id="btn-start" onclick="startSession()">
+        <i class="bi bi-play-circle-fill"></i> Iniciar
+      </button>
+      <button class="btn btn-warning" disabled id="btn-pause" onclick="pauseResume()">
+        <i class="bi bi-pause-circle"></i> Pausar
+      </button>
+      <button class="btn btn-danger" disabled id="btn-stop" onclick="stopSession()">
+        <i class="bi bi-stop-circle"></i> Detener
+      </button>
+      <a href="{% url 'sim:gtr_panel' %}" class="btn btn-ghost btn-sm">
+        <i class="bi bi-broadcast-pin"></i> GTR
+      </a>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="acd-tabs">
+    <button class="acd-tab active" id="tab-live" onclick="showTab('live')">📡 En vivo</button>
+    <button class="acd-tab" id="tab-sessions" onclick="showTab('sessions')">📋 Sesiones</button>
+  </div>
+
+  <!-- LIVE TAB -->
+  <div id="panel-live">
+
+    <!-- GTR clock -->
+    <div class="gtr-bar" id="gtr-bar" style="display:none">
+      <div>
+        <div style="font-size:10px;color:var(--a-text-m);text-transform:uppercase;letter-spacing:.06em">Hora simulada</div>
+        <div class="gtr-clock" id="gtr-clock">09:00</div>
+      </div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--a-text-m);margin-bottom:4px">
+          <span>09:00</span><span id="prog-pct">0%</span><span>18:00</span>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+      </div>
+      <div style="font-size:12px;color:var(--a-text-s)">
+        <span id="session-name-display">—</span><br>
+        <span id="dialing-mode-display" style="color:var(--a-text-m)">—</span>
+      </div>
+    </div>
+
+    <!-- KPI bar -->
+    <div class="kpi-bar" id="kpi-bar">
+      <div class="kpi-chip"><div class="val" id="kpi-total">—</div><div class="lbl">Interacciones</div></div>
+      <div class="kpi-chip ok"><div class="val" id="kpi-atendidas">—</div><div class="lbl">Atendidas</div></div>
+      <div class="kpi-chip"><div class="val" id="kpi-na">—</div><div class="lbl">NA%</div></div>
+      <div class="kpi-chip"><div class="val" id="kpi-ventas">—</div><div class="lbl">Ventas</div></div>
+      <div class="kpi-chip warn"><div class="val" id="kpi-cola">—</div><div class="lbl">En cola</div></div>
+      <div class="kpi-chip"><div class="val" id="kpi-llamada">—</div><div class="lbl">En llamada</div></div>
+      <div class="kpi-chip ok"><div class="val" id="kpi-dispon">—</div><div class="lbl">Disponibles</div></div>
+      <div class="kpi-chip warn"><div class="val" id="kpi-break">—</div><div class="lbl">Break</div></div>
+    </div>
+
+    <!-- Queue -->
+    <div class="queue-panel" id="queue-panel">
+      <div class="queue-header">
+        <span>📥 Cola de espera</span>
+        <span id="queue-count" style="color:var(--a-text)">0</span>
+      </div>
+      <div style="overflow-x:auto;max-height:160px;overflow-y:auto">
+        <table class="queue-table">
+          <thead><tr><th>Lead</th><th>Canal</th><th>Skill</th><th>Espera</th></tr></thead>
+          <tbody id="queue-tbody">
+            <tr><td colspan="4" style="text-align:center;padding:16px;color:var(--a-text-m)">Sin llamadas en cola</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Agent grid -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+         color:var(--a-text-m);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+      <span>👥 Agentes</span>
+      <button class="btn btn-ghost btn-sm" id="btn-add-slot" disabled onclick="openAddSlotModal()">
+        <i class="bi bi-person-plus"></i> Agregar agente
+      </button>
+    </div>
+    <div class="agent-grid" id="agent-grid">
+      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--a-text-m)">
+        <div style="font-size:32px;opacity:.3;margin-bottom:8px">👥</div>
+        Inicia una sesión ACD para ver los agentes en vivo.
+      </div>
+    </div>
+  </div>
+
+  <!-- SESSIONS TAB -->
+  <div id="panel-sessions" style="display:none">
+    <div style="background:var(--a-surf);border:1px solid var(--a-border);border-radius:10px;overflow:hidden">
+      <div style="padding:10px 14px;border-bottom:1px solid var(--a-border);font-size:11px;
+           font-weight:700;text-transform:uppercase;color:var(--a-text-m)">Mis sesiones ACD</div>
+      <div id="sessions-list">
+        {% for s in sessions %}
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;
+             border-bottom:1px solid var(--a-border);cursor:pointer"
+             onclick="loadSession('{{ s.id }}')">
+          <span style="font-size:18px">{% if s.status == 'active' %}🟢{% elif s.status == 'finished' %}✅{% else %}⚙️{% endif %}</span>
+          <div style="flex:1">
+            <div style="font-weight:700;font-size:13px">{{ s.name }}</div>
+            <div style="font-size:12px;color:var(--a-text-m)">
+              {{ s.account.name }} · {{ s.get_dialing_mode_display }} · {{ s.get_status_display }}
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--a-text-m)">{{ s.started_at|date:"d/m/Y H:i" }}</div>
+        </div>
+        {% empty %}
+        <div style="text-align:center;padding:40px;color:var(--a-text-m)">Sin sesiones previas.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div></div>
+
+<!-- ══ MODAL: Crear sesión ═════════════════════════════════════════════════ -->
+<div id="acd-root">
+<div class="modal" id="modal-create">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3><i class="bi bi-plus-circle" style="color:var(--a-primary)"></i> Nueva sesión ACD</h3>
+      <button onclick="closeModal('modal-create')" style="background:none;border:none;color:var(--a-text-m);font-size:20px;cursor:pointer">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="f-group">
+        <label class="f-label">Nombre *</label>
+        <input type="text" id="c-name" class="f-input" placeholder="Ej: Outbound ENTEL — Turno Mañana">
+      </div>
+      <div class="f-row">
+        <div class="f-group">
+          <label class="f-label">Cuenta simulada *</label>
+          <select id="c-account" class="f-select">
+            <option value="">— seleccionar —</option>
+            {% for acc in accounts %}
+            <option value="{{ acc.id }}">[{{ acc.get_canal_display }}] {{ acc.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="f-group">
+          <label class="f-label">Modo de discado</label>
+          <select id="c-mode" class="f-select">
+            {% for val, label in dialing_modes %}
+            <option value="{{ val }}" {% if val == 'progressive' %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="f-row">
+        <div class="f-group">
+          <label class="f-label">Velocidad clock</label>
+          <select id="c-speed" class="f-select">
+            <option value="5">5×</option>
+            <option value="15" selected>15× (recomendado)</option>
+            <option value="60">60× (demo)</option>
+          </select>
+        </div>
+        <div class="f-group">
+          <label class="f-label">Fecha a simular</label>
+          <input type="date" id="c-date" class="f-input">
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('modal-create')">Cancelar</button>
+      <button class="btn btn-primary" onclick="createSession()">
+        <i class="bi bi-floppy"></i> Crear sesión
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Agregar agente ══════════════════════════════════════════════ -->
+<div class="modal" id="modal-slot">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3><i class="bi bi-person-plus" style="color:var(--a-success)"></i> Agregar agente</h3>
+      <button onclick="closeModal('modal-slot')" style="background:none;border:none;color:var(--a-text-m);font-size:20px;cursor:pointer">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="f-group">
+        <label class="f-label">Tipo de agente</label>
+        <select id="s-type" class="f-select" onchange="onSlotTypeChange(this.value)">
+          <option value="simulated">🤖 Simulado (perfil conductual)</option>
+          <option value="real">👤 Real OJT (usuario del sistema)</option>
+        </select>
+      </div>
+      <div id="s-sim-section">
+        <div class="f-group">
+          <label class="f-label">Perfil conductual</label>
+          <select id="s-profile" class="f-select">
+            <option value="">— sin perfil (defaults) —</option>
+            {% for p in profiles %}
+            <option value="{{ p.id }}">[{{ p.get_tier_display }}] {{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div id="s-real-section" style="display:none">
+        <div class="f-group">
+          <label class="f-label">Usuario OJT</label>
+          <select id="s-user" class="f-select">
+            <option value="">— seleccionar usuario —</option>
+            {% for u in users %}
+            <option value="{{ u.id }}">{{ u.get_full_name|default:u.username }} ({{ u.username }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="f-group">
+          <label class="f-label">Nivel de pantalla</label>
+          <select id="s-level" class="f-select">
+            {% for val, label in agent_levels %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="f-row">
+        <div class="f-group">
+          <label class="f-label">Nombre display (opcional)</label>
+          <input type="text" id="s-name" class="f-input" placeholder="Ej: AGT-001">
+        </div>
+        <div class="f-group">
+          <label class="f-label">Skill asignado</label>
+          <input type="text" id="s-skill" class="f-input" placeholder="PLD, PORTABILIDAD...">
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-ghost" onclick="closeModal('modal-slot')">Cancelar</button>
+      <button class="btn btn-success" onclick="addSlot()">
+        <i class="bi bi-person-plus"></i> Agregar
+      </button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const URLS = {
+  sessionsApi: "{% url 'sim:acd_sessions_api' %}",
+  create:      "{% url 'sim:acd_session_create' %}",
+  state:       id => `/sim/acd/sessions/${id}/state/`,
+  start:       id => `/sim/acd/sessions/${id}/start/`,
+  pause:       id => `/sim/acd/sessions/${id}/pause/`,
+  resume:      id => `/sim/acd/sessions/${id}/resume/`,
+  stop:        id => `/sim/acd/sessions/${id}/stop/`,
+  slotAdd:     id => `/sim/acd/sessions/${id}/slots/add/`,
+  slotRemove:  (sid, slotId) => `/sim/acd/sessions/${sid}/slots/${slotId}/remove/`,
+  slotControl: (sid, slotId) => `/sim/acd/sessions/${sid}/slots/${slotId}/control/`,
+  agentPanel:  slotId => `/sim/acd/agent/${slotId}/`,
+};
+
+function csrf(){ return document.cookie.match(/csrftoken=([^;]+)/)?.[1]??''; }
+async function postJSON(url, body){
+  const r = await fetch(url,{method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},
+    body:JSON.stringify(body)});
+  return r.json();
+}
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') document.querySelectorAll('.modal.active').forEach(m=>m.classList.remove('active'));
+});
+
+let SESSION_ID = null;
+let POLL_TIMER = null;
+let IS_PAUSED  = false;
+
+function showTab(tab){
+  document.getElementById('panel-live').style.display      = tab==='live'     ? '':'none';
+  document.getElementById('panel-sessions').style.display  = tab==='sessions' ? '':'none';
+  document.getElementById('tab-live').classList.toggle('active',     tab==='live');
+  document.getElementById('tab-sessions').classList.toggle('active', tab==='sessions');
+}
+
+function openCreateModal(){
+  document.getElementById('c-date').value = new Date().toISOString().split('T')[0];
+  openModal('modal-create');
+}
+
+async function createSession(){
+  const name    = document.getElementById('c-name').value.trim();
+  const account = document.getElementById('c-account').value;
+  if(!name||!account){ alert('Nombre y cuenta son requeridos.'); return; }
+  const r = await postJSON(URLS.create,{
+    name, account_id: account,
+    dialing_mode: document.getElementById('c-mode').value,
+    clock_speed:  parseInt(document.getElementById('c-speed').value),
+  });
+  if(!r.success){ alert(r.error); return; }
+  closeModal('modal-create');
+  SESSION_ID = r.session.id;
+  document.getElementById('session-name-display').textContent = r.session.name;
+  document.getElementById('dialing-mode-display').textContent = r.session.dialing_label;
+  enableControls('created');
+  notify('success',`Sesión "${r.session.name}" creada. Agrega agentes y luego inicia.`);
+}
+
+async function startSession(){
+  if(!SESSION_ID) return;
+  const sim_date = document.getElementById('c-date').value || new Date().toISOString().split('T')[0];
+  const r = await postJSON(URLS.start(SESSION_ID), {sim_date});
+  if(!r.success){ alert(r.error); return; }
+  document.getElementById('acd-status-badge').style.display='';
+  document.getElementById('gtr-bar').style.display='flex';
+  enableControls('active');
+  startPolling();
+  notify('success','Sesión ACD iniciada.');
+}
+
+async function pauseResume(){
+  if(!SESSION_ID) return;
+  if(IS_PAUSED){
+    const r = await postJSON(URLS.resume(SESSION_ID),{});
+    IS_PAUSED=false;
+    document.getElementById('btn-pause').innerHTML='<i class="bi bi-pause-circle"></i> Pausar';
+    startPolling();
+  } else {
+    await postJSON(URLS.pause(SESSION_ID),{});
+    IS_PAUSED=true;
+    stopPolling();
+    document.getElementById('btn-pause').innerHTML='<i class="bi bi-play-circle"></i> Reanudar';
+  }
+}
+
+async function stopSession(){
+  if(!SESSION_ID||!confirm('¿Detener la sesión ACD?')) return;
+  stopPolling();
+  await postJSON(URLS.stop(SESSION_ID),{});
+  SESSION_ID=null;
+  enableControls('stopped');
+  document.getElementById('acd-status-badge').style.display='none';
+  document.getElementById('gtr-bar').style.display='none';
+  notify('info','Sesión detenida. Interacciones persistidas en BD.');
+}
+
+function startPolling(){
+  if(POLL_TIMER) clearInterval(POLL_TIMER);
+  POLL_TIMER = setInterval(doPoll, 3000);
+}
+function stopPolling(){
+  if(POLL_TIMER){ clearInterval(POLL_TIMER); POLL_TIMER=null; }
+}
+
+async function doPoll(){
+  if(!SESSION_ID||IS_PAUSED) return;
+  try{
+    const r = await fetch(URLS.state(SESSION_ID));
+    const d = await r.json();
+    if(d.success) updateUI(d);
+  } catch(e){ console.error('ACD poll error',e); }
+}
+
+function updateUI(d){
+  // GTR clock
+  const gtr = d.gtr || {};
+  if(gtr.sim_time) document.getElementById('gtr-clock').textContent = gtr.sim_time;
+  if(gtr.sim_progress !== undefined){
+    document.getElementById('prog-fill').style.width = gtr.sim_progress+'%';
+    document.getElementById('prog-pct').textContent = gtr.sim_progress.toFixed(1)+'%';
+  }
+
+  // KPIs
+  const k = d.kpis || {};
+  document.getElementById('kpi-total').textContent    = fmtN(k.total);
+  document.getElementById('kpi-atendidas').textContent= fmtN(k.atendidas);
+  document.getElementById('kpi-na').textContent       = (k.na_pct||0).toFixed(1)+'%';
+  document.getElementById('kpi-ventas').textContent   = fmtN(k.ventas);
+  document.getElementById('kpi-cola').textContent     = fmtN(k.en_cola);
+  document.getElementById('kpi-llamada').textContent  = fmtN(k.en_llamada);
+  document.getElementById('kpi-dispon').textContent   = fmtN(k.disponibles);
+  document.getElementById('kpi-break').textContent    = fmtN(k.en_break);
+
+  // Queue
+  const queue = d.queue || [];
+  document.getElementById('queue-count').textContent = queue.length;
+  const tbody = document.getElementById('queue-tbody');
+  if(queue.length===0){
+    tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:14px;color:var(--a-text-m)">Sin llamadas en cola</td></tr>';
+  } else {
+    tbody.innerHTML = queue.map(ix=>`
+      <tr>
+        <td style="font-family:monospace;font-size:11px">${ix.lead_id||'—'}</td>
+        <td>${ix.canal}</td>
+        <td>${ix.skill||'—'}</td>
+        <td style="color:var(--a-text-m)">${ix.wait_s||0}s</td>
+      </tr>`).join('');
+  }
+
+  // Agent grid
+  const slots = d.slots || [];
+  const grid  = document.getElementById('agent-grid');
+  if(slots.length===0){
+    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--a-text-m)">Sin agentes configurados. Agrega uno.</div>';
+  } else {
+    grid.innerHTML = slots.map(s => renderSlotCard(s)).join('');
+  }
+}
+
+function renderSlotCard(s){
+  const pillCls = `agent-status-pill pill-${s.status}`;
+  const typeBadge = s.agent_type==='real'
+    ? '<span class="badge badge-real">OJT</span>'
+    : '<span class="badge badge-sim">SIM</span>';
+  const link = s.agent_type==='real' && s.user_id
+    ? `<a href="${URLS.agentPanel(s.id)}" target="_blank" class="btn btn-ghost btn-sm"><i class="bi bi-box-arrow-up-right"></i></a>`
+    : '';
+  return `
+  <div class="agent-card ${s.status}" id="slot-${s.id}">
+    <div class="agent-name">
+      ${typeBadge}
+      ${esc(s.name)}
+      <span class="${pillCls}">${esc(s.status_label)}</span>
+    </div>
+    <div class="agent-meta">${esc(s.skill)||'—'} · AHT ${s.aht_min}min</div>
+    <div class="agent-stats">
+      <span class="agent-stat">Atend <b>${s.atendidas}</b></span>
+      <span class="agent-stat">Ventas <b>${s.ventas}</b></span>
+      <span class="agent-stat">Hold <b>${s.hold_count}</b></span>
+    </div>
+    <div class="agent-actions">
+      ${link}
+      <button class="btn btn-warning btn-sm" onclick="slotControl('${s.id}','break')" title="Break">☕</button>
+      <button class="btn btn-ghost btn-sm" onclick="slotControl('${s.id}','available')" title="Disponible">✅</button>
+      <button class="btn btn-danger btn-sm" onclick="slotControl('${s.id}','absent')" title="Ausente">🚫</button>
+    </div>
+  </div>`;
+}
+
+async function slotControl(slotId, status){
+  if(!SESSION_ID) return;
+  await postJSON(URLS.slotControl(SESSION_ID, slotId), {status});
+  doPoll();
+}
+
+function onSlotTypeChange(val){
+  document.getElementById('s-sim-section').style.display  = val==='simulated'?'':'none';
+  document.getElementById('s-real-section').style.display = val==='real'?'':'none';
+}
+
+function openAddSlotModal(){ openModal('modal-slot'); }
+
+async function addSlot(){
+  if(!SESSION_ID) return;
+  const type = document.getElementById('s-type').value;
+  const r = await postJSON(URLS.slotAdd(SESSION_ID),{
+    agent_type:   type,
+    user_id:      type==='real' ? document.getElementById('s-user').value||null : null,
+    profile_id:   type==='simulated' ? document.getElementById('s-profile').value||null : null,
+    display_name: document.getElementById('s-name').value.trim(),
+    skill:        document.getElementById('s-skill').value.trim(),
+    level:        type==='real' ? document.getElementById('s-level').value : 'basic',
+  });
+  if(!r.success){ alert(r.error); return; }
+  closeModal('modal-slot');
+  doPoll();
+}
+
+async function loadSession(id){
+  SESSION_ID = id;
+  showTab('live');
+  const r = await fetch(URLS.state(id));
+  const d = await r.json();
+  if(d.success){
+    updateUI(d);
+    enableControls(d.session.status==='active'?'active':'created');
+    document.getElementById('session-name-display').textContent = d.session.name;
+    document.getElementById('dialing-mode-display').textContent = d.session.dialing_label;
+    if(d.session.status==='active'){
+      document.getElementById('acd-status-badge').style.display='';
+      document.getElementById('gtr-bar').style.display='flex';
+      startPolling();
+    }
+  }
+}
+
+function enableControls(state){
+  const btnStart  = document.getElementById('btn-start');
+  const btnPause  = document.getElementById('btn-pause');
+  const btnStop   = document.getElementById('btn-stop');
+  const btnSlot   = document.getElementById('btn-add-slot');
+  btnStart.disabled  = state !== 'created';
+  btnPause.disabled  = state !== 'active';
+  btnStop.disabled   = state !== 'active';
+  btnSlot.disabled   = !['created','active'].includes(state);
+}
+
+function fmtN(n){ return n==null?'—':new Intl.NumberFormat('es').format(n); }
+function esc(s){ return (s||'').replace(/</g,'&lt;'); }
+
+function notify(type, msg){
+  const colors={success:'#ecfdf5',error:'#fef2f2',info:'#eff6ff'};
+  const borders={success:'#6ee7b7',error:'#fca5a5',info:'#93c5fd'};
+  const el=document.createElement('div');
+  el.style.cssText=`position:fixed;top:70px;right:1rem;z-index:9999;
+    padding:10px 14px;border-radius:8px;font-size:13px;font-weight:700;
+    background:${colors[type]||colors.info};border:1px solid ${borders[type]||borders.info};
+    max-width:300px;box-shadow:0 2px 8px rgba(0,0,0,.15)`;
+  el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300)},4000);
+}
+</script>
+{% endblock %}

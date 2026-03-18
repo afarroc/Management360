@@ -1,0 +1,862 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block title %}GTR — Simulador Intraday{% endblock %}
+
+{% block extra_head %}
+<style>
+#gtr-root{
+  --g-bg:#0f172a;--g-surface:#1e293b;--g-surface2:#263548;--g-border:#334155;
+  --g-primary:#3b82f6;--g-primary-l:#60a5fa;--g-success:#10b981;
+  --g-warning:#f59e0b;--g-danger:#ef4444;--g-text:#f1f5f9;
+  --g-text-s:#94a3b8;--g-text-m:#64748b;
+  --g-radius:8px;--g-radius-lg:12px;
+  font-family:'Nunito',system-ui,sans-serif;font-size:14px;
+  color:var(--g-text);line-height:1.5;
+  background:var(--g-bg);min-height:100vh;
+}
+#gtr-root .gtr-page{padding:16px 14px 40px}
+/* Header */
+#gtr-root .gtr-header{display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:10px;margin-bottom:16px;
+  padding:12px 16px;background:var(--g-surface);border:1px solid var(--g-border);
+  border-radius:var(--g-radius-lg)}
+#gtr-root .gtr-title{font-size:18px;font-weight:800;display:flex;align-items:center;gap:10px}
+#gtr-root .gtr-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 12px;
+  border-radius:20px;font-size:12px;font-weight:700}
+#gtr-root .badge-live{background:#10b98133;color:#10b981;border:1px solid #10b98155;animation:pulse 2s infinite}
+#gtr-root .badge-paused{background:#f59e0b33;color:#f59e0b;border:1px solid #f59e0b55}
+#gtr-root .badge-stopped{background:#64748b33;color:#64748b;border:1px solid #64748b55}
+#gtr-root .badge-config{background:#3b82f633;color:#3b82f6;border:1px solid #3b82f655}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+/* Clock */
+#gtr-root .gtr-clock{text-align:center}
+#gtr-root .clock-time{font-size:36px;font-weight:900;font-variant-numeric:tabular-nums;
+  color:var(--g-primary-l);letter-spacing:2px;line-height:1}
+#gtr-root .clock-speed{font-size:11px;color:var(--g-text-m);margin-top:2px}
+/* Progress bar */
+#gtr-root .gtr-progress-bar{height:6px;background:var(--g-border);border-radius:3px;
+  margin:8px 0;overflow:hidden}
+#gtr-root .gtr-progress-fill{height:100%;background:var(--g-primary);
+  border-radius:3px;transition:width .5s ease}
+/* Layout */
+#gtr-root .gtr-layout{display:grid;grid-template-columns:1fr 1fr 1fr 280px;gap:12px;align-items:start}
+@media(max-width:1200px){#gtr-root .gtr-layout{grid-template-columns:1fr 1fr;}}
+@media(max-width:700px){#gtr-root .gtr-layout{grid-template-columns:1fr}}
+/* KPI cards */
+#gtr-root .kpi-card{background:var(--g-surface);border:1px solid var(--g-border);
+  border-radius:var(--g-radius-lg);padding:14px 16px;position:relative;overflow:hidden}
+#gtr-root .kpi-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;
+  border-radius:4px 0 0 4px}
+#gtr-root .kpi-card.ok::before{background:var(--g-success)}
+#gtr-root .kpi-card.warn::before{background:var(--g-warning)}
+#gtr-root .kpi-card.danger::before{background:var(--g-danger)}
+#gtr-root .kpi-card.neutral::before{background:var(--g-primary)}
+#gtr-root .kpi-label{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--g-text-m);margin-bottom:6px}
+#gtr-root .kpi-value{font-size:28px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.1}
+#gtr-root .kpi-value.ok{color:var(--g-success)}
+#gtr-root .kpi-value.warn{color:var(--g-warning)}
+#gtr-root .kpi-value.danger{color:var(--g-danger)}
+#gtr-root .kpi-value.neutral{color:var(--g-primary-l)}
+#gtr-root .kpi-sub{font-size:12px;color:var(--g-text-s);margin-top:4px}
+#gtr-root .kpi-threshold{font-size:11px;color:var(--g-text-m);margin-top:2px}
+/* Alerts panel */
+#gtr-root .alerts-panel{background:var(--g-surface);border:1px solid var(--g-border);
+  border-radius:var(--g-radius-lg);height:100%;display:flex;flex-direction:column}
+#gtr-root .alerts-header{padding:10px 14px;border-bottom:1px solid var(--g-border);
+  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  color:var(--g-text-m);display:flex;justify-content:space-between;align-items:center}
+#gtr-root .alerts-list{flex:1;overflow-y:auto;max-height:340px;padding:4px 0}
+#gtr-root .alert-item{padding:8px 14px;border-bottom:1px solid var(--g-border);
+  font-size:12.5px;display:flex;gap:8px;align-items:flex-start;animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+#gtr-root .alert-item.danger{background:#ef444411}
+#gtr-root .alert-item.warning{background:#f59e0b11}
+#gtr-root .alert-item.info{background:#3b82f611}
+#gtr-root .alert-ts{font-size:11px;color:var(--g-text-m);white-space:nowrap;margin-top:1px}
+/* Live feed */
+#gtr-root .feed-panel{background:var(--g-surface);border:1px solid var(--g-border);
+  border-radius:var(--g-radius-lg);grid-column:1/-2}
+#gtr-root .feed-header{padding:10px 14px;border-bottom:1px solid var(--g-border);
+  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--g-text-m)}
+#gtr-root .feed-table{width:100%;border-collapse:collapse;font-size:12px}
+#gtr-root .feed-table th{padding:6px 10px;text-align:left;color:var(--g-text-m);
+  font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+  border-bottom:1px solid var(--g-border);background:var(--g-surface2);white-space:nowrap}
+#gtr-root .feed-table td{padding:5px 10px;border-bottom:1px solid var(--g-border);
+  vertical-align:middle;white-space:nowrap}
+#gtr-root .feed-table tr.new-row{animation:rowIn .3s ease}
+@keyframes rowIn{from{background:#3b82f622}to{background:transparent}}
+#gtr-root .status-pill{display:inline-flex;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:700}
+#gtr-root .status-pill.atendida{background:#10b98122;color:#10b981}
+#gtr-root .status-pill.abandonada{background:#ef444422;color:#ef4444}
+#gtr-root .status-pill.venta{background:#8b5cf622;color:#a78bfa}
+#gtr-root .status-pill.no_contacto{background:#64748b22;color:#94a3b8}
+#gtr-root .status-pill.rechazo{background:#f59e0b22;color:#f59e0b}
+#gtr-root .status-pill.agenda{background:#3b82f622;color:#60a5fa}
+/* Controls */
+#gtr-root .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#gtr-root .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;
+  border-radius:var(--g-radius);font-family:inherit;font-size:13px;font-weight:700;
+  cursor:pointer;border:1px solid var(--g-border);background:var(--g-surface2);
+  color:var(--g-text);transition:all .12s;white-space:nowrap}
+#gtr-root .btn:hover:not(:disabled){filter:brightness(1.2)}
+#gtr-root .btn:disabled{opacity:.35;cursor:default}
+#gtr-root .btn-primary{background:var(--g-primary);border-color:var(--g-primary);color:#fff}
+#gtr-root .btn-success{background:var(--g-success);border-color:var(--g-success);color:#fff}
+#gtr-root .btn-danger{background:var(--g-danger);border-color:var(--g-danger);color:#fff}
+#gtr-root .btn-warning{background:var(--g-warning);border-color:var(--g-warning);color:#000}
+#gtr-root .btn-ghost{background:transparent;border-color:var(--g-border);color:var(--g-text-s)}
+#gtr-root .btn-sm{padding:5px 10px;font-size:12px}
+/* ── SIM-6b: control sliders ──────────────────────────────────────────────── */
+#gtr-root .ctrl-row{margin-bottom:8px}
+#gtr-root .ctrl-label{display:flex;justify-content:space-between;align-items:center;
+  font-size:11px;color:var(--g-text-s);margin-bottom:4px}
+#gtr-root .ctrl-val{font-weight:700;color:var(--g-text);font-variant-numeric:tabular-nums}
+#gtr-root .ctrl-slider{
+  width:100%;height:4px;border-radius:2px;outline:none;border:none;
+  background:var(--g-border);appearance:none;-webkit-appearance:none;cursor:pointer;
+}
+#gtr-root .ctrl-slider::-webkit-slider-thumb{
+  appearance:none;-webkit-appearance:none;
+  width:14px;height:14px;border-radius:50%;
+  background:var(--g-primary);border:2px solid var(--g-surface);
+  cursor:pointer;transition:transform .1s;
+}
+#gtr-root .ctrl-slider::-webkit-slider-thumb:hover{transform:scale(1.3)}
+#gtr-root .ctrl-slider:disabled{opacity:.35;cursor:default}
+
+/* Override events-panel to be scrollable when tall */
+#gtr-root .events-panel{overflow-y:auto;max-height:460px}
+/* Config modal */
+#gtr-root .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+  backdrop-filter:blur(3px);z-index:1050;align-items:center;justify-content:center;padding:16px}
+#gtr-root .modal.active{display:flex}
+#gtr-root .modal-box{background:var(--g-surface);border:1px solid var(--g-border);
+  border-radius:var(--g-radius-lg);width:100%;max-width:440px;
+  max-height:90vh;overflow:hidden;display:flex;flex-direction:column}
+#gtr-root .modal-hdr{padding:14px 18px;border-bottom:1px solid var(--g-border);
+  display:flex;justify-content:space-between;align-items:center}
+#gtr-root .modal-hdr h3{margin:0;font-size:14px;font-weight:700}
+#gtr-root .modal-body{padding:18px;overflow-y:auto;flex:1}
+#gtr-root .modal-ftr{padding:12px 18px;border-top:1px solid var(--g-border);
+  display:flex;justify-content:flex-end;gap:8px}
+#gtr-root .f-group{margin-bottom:12px}
+#gtr-root .f-label{display:block;font-size:12px;font-weight:700;color:var(--g-text-s);margin-bottom:5px}
+#gtr-root .f-input,#gtr-root .f-select{width:100%;padding:8px 10px;
+  border:1px solid var(--g-border);border-radius:var(--g-radius);
+  background:var(--g-surface2);color:var(--g-text);font-family:inherit;font-size:13px;outline:none}
+#gtr-root .f-input:focus,#gtr-root .f-select:focus{border-color:var(--g-primary)}
+/* Spinner */
+#gtr-root .dot-pulse{display:inline-flex;gap:4px;align-items:center}
+#gtr-root .dot-pulse span{width:6px;height:6px;border-radius:50%;background:var(--g-success);
+  animation:dotPulse 1.2s infinite}
+#gtr-root .dot-pulse span:nth-child(2){animation-delay:.2s}
+#gtr-root .dot-pulse span:nth-child(3){animation-delay:.4s}
+@keyframes dotPulse{0%,80%,100%{transform:scale(0.8);opacity:.5}40%{transform:scale(1.2);opacity:1}}
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div id="gtr-root">
+<div class="gtr-page">
+
+  <!-- Header -->
+  <div class="gtr-header">
+    <div class="gtr-title">
+      <span style="font-size:22px">📡</span>
+      GTR — Simulador Intraday
+      <span class="gtr-badge badge-config" id="status-badge">Sin sesión</span>
+    </div>
+    <div class="controls" id="main-controls">
+      <button type="button" class="btn btn-primary" onclick="openConfigModal()" id="btn-start">
+        <i class="bi bi-play-circle"></i> Iniciar sesión
+      </button>
+      <button type="button" class="btn btn-warning" disabled onclick="pauseResume()" id="btn-pause">
+        <i class="bi bi-pause-circle"></i> Pausar
+      </button>
+      <button type="button" class="btn btn-danger" disabled onclick="stopSession()" id="btn-stop">
+        <i class="bi bi-stop-circle"></i> Detener
+      </button>
+      <a href="{% url 'sim:simulator_list' %}" class="btn btn-ghost btn-sm">
+        <i class="bi bi-arrow-left"></i> Simulador
+      </a>
+    </div>
+  </div>
+
+  <!-- Clock + progress -->
+  <div style="background:var(--g-surface);border:1px solid var(--g-border);
+       border-radius:var(--g-radius-lg);padding:12px 18px;margin-bottom:14px;
+       display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+    <div class="gtr-clock">
+      <div class="clock-time" id="sim-clock">09:00</div>
+      <div class="clock-speed" id="clock-speed-label">—</div>
+    </div>
+    <div style="flex:1;min-width:200px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--g-text-m);margin-bottom:4px">
+        <span>Apertura 09:00</span>
+        <span id="progress-pct">0%</span>
+        <span>Cierre 18:00</span>
+      </div>
+      <div class="gtr-progress-bar">
+        <div class="gtr-progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--g-text-m);text-align:right">
+      <div id="session-account" style="font-weight:700;color:var(--g-text)">—</div>
+      <div id="session-date">—</div>
+      <div id="live-indicator" style="margin-top:4px;display:none">
+        <div class="dot-pulse"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="gtr-layout" id="main-grid">
+
+    <!-- KPI: NA% -->
+    <div class="kpi-card ok" id="kpi-na">
+      <div class="kpi-label">⚡ Nivel de Atención</div>
+      <div class="kpi-value ok" id="val-na">—</div>
+      <div class="kpi-sub" id="sub-na">Atendidas / Entrantes</div>
+      <div class="kpi-threshold" id="thr-na"></div>
+    </div>
+
+    <!-- KPI: SL% -->
+    <div class="kpi-card ok" id="kpi-sl">
+      <div class="kpi-label">🎯 Service Level</div>
+      <div class="kpi-value ok" id="val-sl">—</div>
+      <div class="kpi-sub">Atendidas &lt; umbral tiempo</div>
+      <div class="kpi-threshold" id="thr-sl"></div>
+    </div>
+
+    <!-- KPI: Abandono -->
+    <div class="kpi-card ok" id="kpi-aban">
+      <div class="kpi-label">📞 Abandono</div>
+      <div class="kpi-value ok" id="val-aban">—</div>
+      <div class="kpi-sub" id="sub-aban">Abandonadas / Entrantes</div>
+      <div class="kpi-threshold" id="thr-aban"></div>
+    </div>
+
+    <!-- Alerts panel -->
+    <div class="alerts-panel" style="grid-row: 1 / 4">
+      <div class="alerts-header">
+        <span>🔔 Alertas</span>
+        <button type="button" onclick="clearAlerts()" style="background:none;border:none;color:var(--g-text-m);cursor:pointer;font-size:11px">Limpiar</button>
+      </div>
+      <div class="alerts-list" id="alerts-list">
+        <div style="padding:20px;text-align:center;color:var(--g-text-m);font-size:12px">
+          Sin alertas
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI: Entrantes -->
+    <div class="kpi-card neutral">
+      <div class="kpi-label">📥 Entrantes</div>
+      <div class="kpi-value neutral" id="val-entr">—</div>
+      <div class="kpi-sub" id="sub-entr">Total del día</div>
+    </div>
+
+    <!-- KPI: AHT -->
+    <div class="kpi-card neutral">
+      <div class="kpi-label">⏱ AHT</div>
+      <div class="kpi-value neutral" id="val-aht">—</div>
+      <div class="kpi-sub">Talk + ACW (min)</div>
+    </div>
+
+    <!-- Events (inject) — SIM-6b: panel de control interactivo -->
+    <div class="events-panel" style="grid-row: 1 / 4">
+      <div class="events-title">🎮 Control en tiempo real</div>
+
+      <!-- Flujo de llamadas -->
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+           color:var(--g-text-m);margin:8px 0 6px">Flujo</div>
+
+      <div class="ctrl-row">
+        <label class="ctrl-label">Volumen <span id="lbl-vol" class="ctrl-val">100%</span></label>
+        <input type="range" id="ctrl-vol" class="ctrl-slider" min="10" max="200" value="100" step="5"
+          oninput="onSlider('vol',this.value)"
+          onchange="sendControl('set_vol_pct',{pct:parseInt(this.value)})">
+      </div>
+
+      <div class="ctrl-row">
+        <label class="ctrl-label">AHT <span id="lbl-aht" class="ctrl-val">1.00×</span></label>
+        <input type="range" id="ctrl-aht" class="ctrl-slider" min="30" max="250" value="100" step="5"
+          oninput="onSlider('aht',this.value)"
+          onchange="sendControl('set_aht',{factor:parseInt(this.value)/100})">
+      </div>
+
+      <div class="ctrl-row">
+        <label class="ctrl-label">ACW <span id="lbl-acw" class="ctrl-val">1.00×</span></label>
+        <input type="range" id="ctrl-acw" class="ctrl-slider" min="30" max="250" value="100" step="5"
+          oninput="onSlider('acw',this.value)"
+          onchange="sendControl('set_acw',{factor:parseInt(this.value)/100})">
+      </div>
+
+      <div class="ctrl-row">
+        <label class="ctrl-label">Hold rate <span id="lbl-hold" class="ctrl-val">0%</span></label>
+        <input type="range" id="ctrl-hold" class="ctrl-slider" min="0" max="60" value="0" step="2"
+          oninput="onSlider('hold',this.value)"
+          onchange="sendControl('set_hold_rate',{rate:parseInt(this.value)/100})">
+      </div>
+
+      <!-- Agentes -->
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+           color:var(--g-text-m);margin:10px 0 6px">Agentes</div>
+
+      <div style="display:flex;gap:4px;margin-bottom:6px;align-items:center">
+        <span style="font-size:12px;color:var(--g-text-s);flex:1">En break:
+          <b id="lbl-break" style="color:var(--g-warning)">0</b>
+        </span>
+        <button class="btn btn-warning btn-sm" disabled id="ctrl-break-btn"
+          onclick="sendControl('agent_break',{n:1})" title="Enviar 1 agente a break">
+          <i class="bi bi-cup-hot"></i> Break
+        </button>
+        <button class="btn btn-ghost btn-sm" disabled id="ctrl-return-btn"
+          onclick="sendControl('agent_return',{n:1})" title="Devolver 1 agente">
+          <i class="bi bi-person-check"></i>
+        </button>
+      </div>
+
+      <!-- Skill override (inbound only) -->
+      <div id="ctrl-skill-section" style="display:none;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+             color:var(--g-text-m);margin:10px 0 6px">Skill weight</div>
+        <div style="display:flex;gap:4px;margin-bottom:6px">
+          <select id="ctrl-skill-sel" class="f-select" style="flex:1;font-size:12px;padding:5px 6px;">
+            <option value="">— skill —</option>
+          </select>
+          <input type="number" id="ctrl-skill-w" class="f-input"
+            style="width:60px;padding:5px 6px;font-size:12px;" min="0" max="1" step="0.05" value="0.5">
+          <button class="btn btn-ghost btn-sm" disabled id="ctrl-skill-btn"
+            onclick="applySkillWeight()" title="Aplicar">✓</button>
+        </div>
+      </div>
+
+      <!-- Eventos discretos -->
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+           color:var(--g-text-m);margin:10px 0 6px">Eventos</div>
+
+      <button type="button" class="btn btn-warning btn-sm event-btn" disabled
+              id="evt-spike" onclick="injectEvent('volume_spike',{pct:30})">
+        🔺 Spike +30% (3 ticks)
+      </button>
+      <button type="button" class="btn btn-danger btn-sm event-btn" disabled
+              id="evt-absent" onclick="injectEvent('agent_absent',{n:3})">
+        🚨 3 agentes ausentes
+      </button>
+      <button type="button" class="btn btn-warning btn-sm event-btn" disabled
+              id="evt-sl" onclick="injectEvent('sl_drop',{})">
+        ⚠️ Caída de SL
+      </button>
+      <button type="button" class="btn btn-ghost btn-sm event-btn" disabled
+              id="evt-reset" onclick="injectEvent('reset_kpis',{})">
+        🔄 Reiniciar KPIs
+      </button>
+    </div>
+
+  </div><!-- /gtr-layout -->
+
+  <!-- Live feed -->
+  <div class="feed-panel" style="margin-top:12px">
+    <div class="feed-header">
+      📋 Feed de interacciones en vivo
+      <span id="feed-count" style="color:var(--g-text-m);font-weight:400">—</span>
+    </div>
+    <div style="overflow-x:auto;max-height:220px;overflow-y:auto">
+      <table class="feed-table">
+        <thead>
+          <tr>
+            <th>Hora sim.</th><th>Skill</th><th>Tipificación</th>
+            <th>Duración</th><th>ACW</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="feed-tbody">
+          <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--g-text-m)">
+            Inicia una sesión para ver el feed en vivo.
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /gtr-page -->
+</div><!-- /gtr-root -->
+
+<!-- Config modal -->
+<div id="gtr-root">
+<div class="modal" id="modal-config">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3>⚙️ Configurar sesión GTR</h3>
+      <button onclick="document.getElementById('modal-config').classList.remove('active')"
+              style="background:none;border:none;color:var(--g-text-m);font-size:18px;cursor:pointer">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="f-group">
+        <label class="f-label">Cuenta simulada</label>
+        <select id="cfg-account" class="f-select" onchange="onAccountChange(this)">
+          <option value="">— seleccionar —</option>
+          {% for acc in accounts %}
+          <option value="{{ acc.id }}" data-canal="{{ acc.canal }}">{{ acc.name }} ({{ acc.get_canal_display }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="f-group">
+        <label class="f-label">Velocidad del clock</label>
+        <select id="cfg-speed" class="f-select">
+          {% for cs in clock_speeds %}
+          <option value="{{ cs.value }}" {% if cs.value == 15 %}selected{% endif %}>{{ cs.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="f-group">
+        <label class="f-label">Fecha a simular</label>
+        <input type="date" id="cfg-date" class="f-input">
+      </div>
+      <div style="border-top:1px solid var(--g-border);padding-top:14px;margin-top:14px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;
+             letter-spacing:.06em;color:var(--g-text-m);margin-bottom:10px">Umbrales de alerta</div>
+
+        <!-- Umbrales inbound -->
+        <div id="thr-inbound" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="f-group">
+            <label class="f-label">SL mínimo (%)</label>
+            <input type="number" id="thr-sl-input" class="f-input" value="{{ default_thresholds.sl_min }}" min="0" max="100">
+          </div>
+          <div class="f-group">
+            <label class="f-label">Abandono máximo (%)</label>
+            <input type="number" id="thr-aban-input" class="f-input" value="{{ default_thresholds.abandon_max }}" min="0" max="100">
+          </div>
+        </div>
+
+        <!-- Umbrales outbound -->
+        <div id="thr-outbound" style="display:none;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="f-group">
+            <label class="f-label">Contactabilidad mín. (%)</label>
+            <input type="number" id="thr-contact-input" class="f-input" value="{{ default_thresholds_outbound.contact_min }}" min="0" max="100" step="0.1">
+          </div>
+          <div class="f-group">
+            <label class="f-label">Conversión mín. (%)</label>
+            <input type="number" id="thr-conv-input" class="f-input" value="{{ default_thresholds_outbound.conv_min }}" min="0" max="100" step="0.01">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button type="button" class="btn btn-ghost" onclick="document.getElementById('modal-config').classList.remove('active')">Cancelar</button>
+      <button type="button" class="btn btn-success" onclick="startSession()">
+        <i class="bi bi-play-circle"></i> Iniciar GTR
+      </button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const URLS = {
+  start:        "{% url 'sim:gtr_start' %}",
+  tick:         sid => `/sim/gtr/${sid}/tick/`,
+  pause:        sid => `/sim/gtr/${sid}/pause/`,
+  resume:       sid => `/sim/gtr/${sid}/resume/`,
+  event:        sid => `/sim/gtr/${sid}/event/`,
+  stop:         sid => `/sim/gtr/${sid}/stop/`,
+  interactions: sid => `/sim/gtr/${sid}/interactions/`,
+};
+
+let SESSION_ID    = null;
+let POLL_TIMER    = null;
+let IS_PAUSED     = false;
+let TOTAL_INTER   = 0;
+let SESSION_CANAL = 'inbound';   // 'inbound' | 'outbound' | 'digital'
+let THRESHOLDS    = { sl_min: 80, abandon_max: 8, na_min: 85 };
+
+function csrf(){ return document.querySelector('[name=csrfmiddlewaretoken]')?.value ?? ''; }
+async function postJSON(url, body){
+  const r = await fetch(url, {method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify(body)});
+  return r.json();
+}
+
+// ── Config modal ───────────────────────────────────────────────────────────
+function onAccountChange(sel){
+  const canal = sel.options[sel.selectedIndex]?.dataset.canal || 'inbound';
+  const isOut = canal === 'outbound';
+  document.getElementById('thr-inbound').style.display  = isOut ? 'none'  : 'grid';
+  document.getElementById('thr-outbound').style.display = isOut ? 'grid'  : 'none';
+}
+
+function openConfigModal(){
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('cfg-date').value = today;
+  document.getElementById('modal-config').classList.add('active');
+}
+
+async function startSession(){
+  const account_id  = document.getElementById('cfg-account').value;
+  const clock_speed = parseInt(document.getElementById('cfg-speed').value);
+  const sim_date    = document.getElementById('cfg-date').value;
+  const sel         = document.getElementById('cfg-account');
+  const canal       = sel.options[sel.selectedIndex]?.dataset.canal || 'inbound';
+
+  if(!account_id){ alert('Selecciona una cuenta.'); return; }
+
+  let thresholds;
+  if(canal === 'outbound'){
+    thresholds = {
+      contact_min:    parseFloat(document.getElementById('thr-contact-input').value),
+      conv_min:       parseFloat(document.getElementById('thr-conv-input').value),
+      no_contact_max: 75.0,
+    };
+  } else {
+    thresholds = {
+      sl_min:      parseFloat(document.getElementById('thr-sl-input').value),
+      abandon_max: parseFloat(document.getElementById('thr-aban-input').value),
+      na_min:      85,
+    };
+  }
+  THRESHOLDS = thresholds;
+
+  document.getElementById('modal-config').classList.remove('active');
+
+  const r = await postJSON(URLS.start, { account_id, clock_speed, sim_date, thresholds });
+  if(!r.success){ alert(r.error); return; }
+
+  SESSION_ID    = r.session_id;
+  SESSION_CANAL = r.state?.canal || canal;
+  IS_PAUSED     = false;
+  TOTAL_INTER   = 0;
+  document.getElementById('feed-tbody').innerHTML = '';
+
+  // Relabel KPI cards según canal
+  _relabelKpis(SESSION_CANAL);
+  populateSkillSelect(SESSION_CANAL);
+
+  updateUI(r.state || r);
+  syncControls(r.state || r);
+  enableControls(true);
+  startPolling();
+}
+
+// ── Polling ────────────────────────────────────────────────────────────────
+function startPolling(){
+  if(POLL_TIMER) clearInterval(POLL_TIMER);
+  document.getElementById('live-indicator').style.display = 'block';
+  POLL_TIMER = setInterval(doPoll, 3000);  // every 3 seconds
+}
+
+function stopPolling(){
+  if(POLL_TIMER){ clearInterval(POLL_TIMER); POLL_TIMER = null; }
+  document.getElementById('live-indicator').style.display = 'none';
+}
+
+async function doPoll(){
+  if(!SESSION_ID || IS_PAUSED) return;
+  try {
+    const r = await fetch(URLS.tick(SESSION_ID));
+    const d = await r.json();
+    if(!d.success) return;
+    updateUI(d);
+    appendFeed(d.new_interactions_data || []);
+    appendAlerts(d.new_alerts || []);
+    if(d.status === 'finished') stopPolling();
+  } catch(e){ console.error('poll error', e); }
+}
+
+// ── UI updates ─────────────────────────────────────────────────────────────
+function _relabelKpis(canal){
+  if(canal === 'outbound'){
+    document.querySelector('#kpi-na  .kpi-label').textContent  = '📡 Contactabilidad';
+    document.querySelector('#kpi-sl  .kpi-label').textContent  = '💰 Conversión';
+    document.querySelector('#kpi-aban .kpi-label').textContent = '📵 No Contacto';
+    document.querySelector('.kpi-card.neutral:nth-of-type(1) .kpi-label').textContent = '📞 Marcaciones';
+    document.querySelector('#val-aht').closest('.kpi-card').querySelector('.kpi-label').textContent = '🏆 Ventas';
+    document.querySelector('#sub-na').textContent   = 'Contactos / Marcaciones';
+    document.querySelector('#sub-aban').textContent = 'No contacto / Marcaciones';
+  } else {
+    document.querySelector('#kpi-na  .kpi-label').textContent  = '⚡ Nivel de Atención';
+    document.querySelector('#kpi-sl  .kpi-label').textContent  = '🎯 Service Level';
+    document.querySelector('#kpi-aban .kpi-label').textContent = '📞 Abandono';
+    document.querySelector('#sub-na').textContent   = 'Atendidas / Entrantes';
+    document.querySelector('#sub-aban').textContent = 'Abandonadas / Entrantes';
+  }
+}
+
+function updateUI(d){
+  // Clock
+  document.getElementById('sim-clock').textContent  = d.sim_time || '09:00';
+  document.getElementById('progress-fill').style.width = (d.sim_progress||0) + '%';
+  document.getElementById('progress-pct').textContent  = (d.sim_progress||0).toFixed(1) + '%';
+  document.getElementById('clock-speed-label').textContent = d.clock_speed ? `${d.clock_speed}× acelerado` : '';
+
+  // Status badge
+  const badge = document.getElementById('status-badge');
+  if(d.status === 'running'){
+    badge.className = 'gtr-badge badge-live'; badge.textContent = '● EN VIVO';
+  } else if(d.status === 'paused'){
+    badge.className = 'gtr-badge badge-paused'; badge.textContent = '⏸ PAUSADO';
+  } else if(d.status === 'finished'){
+    badge.className = 'gtr-badge badge-stopped'; badge.textContent = '✓ COMPLETADO';
+  }
+
+  if(!d.kpis) return;
+  const k = d.kpis;
+  const thr = d.thresholds || THRESHOLDS;
+
+  if(SESSION_CANAL === 'outbound'){
+    // ── KPIs outbound ────────────────────────────────────────────────────
+    const contOk = k.contact_pct >= (thr.contact_min || 22);
+    setKpi('na', k.contact_pct.toFixed(1)+'%',
+           contOk ? 'ok' : k.contact_pct < 15 ? 'danger' : 'warn',
+           `${k.atendidas + k.ventas + k.agenda} contactos / ${k.entrantes} marc.`,
+           `Umbral: ≥${thr.contact_min || 22}%`);
+
+    const convOk = k.conv_pct >= (thr.conv_min || 0.5);
+    setKpi('sl', k.conv_pct.toFixed(2)+'%',
+           convOk ? 'ok' : 'warn',
+           `${k.ventas} ventas`,
+           `Umbral: ≥${thr.conv_min || 0.5}%`);
+
+    const ncOk = k.no_contact_pct <= (thr.no_contact_max || 75);
+    setKpi('aban', k.no_contact_pct.toFixed(1)+'%',
+           ncOk ? 'ok' : k.no_contact_pct > 80 ? 'danger' : 'warn',
+           `${k.no_contacto} sin contacto`,
+           `Umbral: ≤${thr.no_contact_max || 75}%`);
+
+    document.getElementById('val-entr').textContent = fmtNum(k.entrantes);
+    document.getElementById('sub-entr').textContent = `+${d.new_interactions||0} este tick`;
+    document.getElementById('val-aht').textContent  = fmtNum(k.ventas) + ' ventas';
+
+  } else {
+    // ── KPIs inbound ─────────────────────────────────────────────────────
+    const naOk = k.na_pct >= (thr.na_min||85);
+    setKpi('na', k.na_pct.toFixed(1)+'%', naOk?'ok':k.na_pct<75?'danger':'warn',
+           `${k.atendidas} atendidas / ${k.entrantes} entrantes`,
+           `Umbral: ≥${thr.na_min||85}%`);
+
+    const slOk = k.sl_pct >= (thr.sl_min||80);
+    setKpi('sl', k.sl_pct.toFixed(1)+'%', slOk?'ok':k.sl_pct<70?'danger':'warn',
+           '', `Umbral: ≥${thr.sl_min||80}%`);
+
+    const abanOk = k.abandon_pct <= (thr.abandon_max||8);
+    setKpi('aban', k.abandon_pct.toFixed(1)+'%', abanOk?'ok':k.abandon_pct>12?'danger':'warn',
+           `${k.abandonadas} abandonadas`,
+           `Umbral: ≤${thr.abandon_max||8}%`);
+
+    document.getElementById('val-entr').textContent = fmtNum(k.entrantes);
+    document.getElementById('sub-entr').textContent = `+${d.new_interactions||0} este tick`;
+    const ahtMin = k.aht_s ? (k.aht_s/60).toFixed(2) : '—';
+    document.getElementById('val-aht').textContent  = ahtMin + (k.aht_s?' min':'');
+  }
+
+  // Feed count
+  TOTAL_INTER += (d.new_interactions||0);
+  document.getElementById('feed-count').textContent = `${fmtNum(TOTAL_INTER)} total`;
+}
+
+function setKpi(id, value, state, sub, threshold){
+  const card = document.getElementById(`kpi-${id}`);
+  const val  = document.getElementById(`val-${id}`);
+  const thr  = document.getElementById(`thr-${id}`);
+  const subEl = document.getElementById(`sub-${id}`);
+
+  card.className = `kpi-card ${state}`;
+  val.className  = `kpi-value ${state}`;
+  val.textContent = value;
+  if(thr) thr.textContent = threshold||'';
+  if(subEl && sub) subEl.textContent = sub;
+}
+
+function appendFeed(rows){
+  if(!rows||!rows.length) return;
+  const tbody = document.getElementById('feed-tbody');
+  // Remove placeholder
+  if(tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
+
+  rows.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.className = 'new-row';
+    const durMin = row.duracion_s ? (row.duracion_s/60).toFixed(1)+'m' : '—';
+    const acwS   = row.acw_s ? row.acw_s+'s' : '—';
+    tr.innerHTML = `
+      <td>${row.hora||'—'}</td>
+      <td style="color:var(--g-text-s)">${row.skill||'—'}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${row.tipificacion||'—'}</td>
+      <td>${durMin}</td>
+      <td>${acwS}</td>
+      <td><span class="status-pill ${row.status||''}">${row.status||'—'}</span></td>`;
+    tbody.insertBefore(tr, tbody.firstChild);
+  });
+
+  // Keep max 100 rows
+  while(tbody.rows.length > 100) tbody.deleteRow(tbody.rows.length-1);
+}
+
+function appendAlerts(alerts){
+  if(!alerts||!alerts.length) return;
+  const list = document.getElementById('alerts-list');
+  const placeholder = list.querySelector('div');
+  if(placeholder) placeholder.remove();
+
+  alerts.forEach(a => {
+    const el = document.createElement('div');
+    el.className = `alert-item ${a.level||'info'}`;
+    el.innerHTML = `
+      <div style="flex:1">${a.msg||''}</div>
+      <div class="alert-ts">${a.sim_ts||a.ts||''}</div>`;
+    list.insertBefore(el, list.firstChild);
+  });
+}
+
+function clearAlerts(){
+  document.getElementById('alerts-list').innerHTML =
+    '<div style="padding:20px;text-align:center;color:var(--g-text-m);font-size:12px">Sin alertas</div>';
+}
+
+// ── Controls ───────────────────────────────────────────────────────────────
+async function pauseResume(){
+  if(!SESSION_ID) return;
+  if(IS_PAUSED){
+    const r = await postJSON(URLS.resume(SESSION_ID), {});
+    IS_PAUSED = false;
+    document.getElementById('btn-pause').innerHTML = '<i class="bi bi-pause-circle"></i> Pausar';
+    startPolling();
+    updateUI(r);
+  } else {
+    const r = await postJSON(URLS.pause(SESSION_ID), {});
+    IS_PAUSED = true;
+    stopPolling();
+    document.getElementById('btn-pause').innerHTML = '<i class="bi bi-play-circle"></i> Reanudar';
+    document.getElementById('status-badge').className = 'gtr-badge badge-paused';
+    document.getElementById('status-badge').textContent = '⏸ PAUSADO';
+  }
+}
+
+async function stopSession(){
+  if(!SESSION_ID) return;
+  if(!confirm('¿Detener la sesión GTR?')) return;
+  stopPolling();
+  await postJSON(URLS.stop(SESSION_ID), {});
+  SESSION_ID = null;
+  IS_PAUSED  = false;
+  enableControls(false);
+  document.getElementById('status-badge').className  = 'gtr-badge badge-config';
+  document.getElementById('status-badge').textContent = 'Sin sesión';
+  document.getElementById('live-indicator').style.display = 'none';
+}
+
+async function injectEvent(type, params){
+  if(!SESSION_ID) return;
+  const r = await postJSON(URLS.event(SESSION_ID), {type, params});
+  if(r.new_alerts?.length) appendAlerts(r.new_alerts);
+}
+
+function enableControls(active){
+  document.getElementById('btn-start').disabled  = active;
+  document.getElementById('btn-pause').disabled  = !active;
+  document.getElementById('btn-stop').disabled   = !active;
+  ['evt-spike','evt-absent','evt-sl','evt-reset',
+   'ctrl-break-btn','ctrl-return-btn','ctrl-skill-btn'].forEach(id => {
+    const el=document.getElementById(id); if(el) el.disabled=!active;
+  });
+  ['ctrl-vol','ctrl-aht','ctrl-acw','ctrl-hold'].forEach(id => {
+    const el=document.getElementById(id); if(el) el.disabled=!active;
+  });
+}
+
+// ── SIM-6b: Control panel ──────────────────────────────────────────────────────
+
+function onSlider(ctrl, val){
+  const v = parseInt(val);
+  if(ctrl==='vol')  document.getElementById('lbl-vol').textContent  = v+'%';
+  if(ctrl==='aht')  document.getElementById('lbl-aht').textContent  = (v/100).toFixed(2)+'×';
+  if(ctrl==='acw')  document.getElementById('lbl-acw').textContent  = (v/100).toFixed(2)+'×';
+  if(ctrl==='hold') document.getElementById('lbl-hold').textContent = v+'%';
+}
+
+async function sendControl(event_type, params){
+  if(!SESSION_ID) return;
+  const r = await postJSON(URLS.event(SESSION_ID), {type: event_type, params});
+  if(r.new_alerts?.length) appendAlerts(r.new_alerts);
+  if(r.controls) syncControls({controls: r.controls});
+}
+
+function applySkillWeight(){
+  const skill = document.getElementById('ctrl-skill-sel').value;
+  const w     = parseFloat(document.getElementById('ctrl-skill-w').value);
+  if(!skill || isNaN(w)) return;
+  sendControl('set_skill_weight', {skill, weight: w});
+}
+
+function syncControls(d){
+  if(!d.controls) return;
+  const c = d.controls;
+  const setSlider = (id, val, fn) => {
+    const el = document.getElementById(id);
+    if(el){ el.value = val; fn(val); }
+  };
+  setSlider('ctrl-vol',  c.vol_pct,        v => onSlider('vol',  v));
+  setSlider('ctrl-aht',  c.aht_factor*100, v => onSlider('aht',  v));
+  setSlider('ctrl-acw',  c.acw_factor*100, v => onSlider('acw',  v));
+  setSlider('ctrl-hold', c.hold_rate*100,  v => onSlider('hold', v));
+  document.getElementById('lbl-break').textContent = c.agents_on_break ?? 0;
+}
+
+function populateSkillSelect(canal){
+  const sel = document.getElementById('ctrl-skill-sel');
+  const sec = document.getElementById('ctrl-skill-section');
+  if(canal !== 'inbound'){ sec.style.display='none'; return; }
+  sec.style.display='';
+  const SKILLS = ['PLD','CONVENIOS','HIPOTECARIO MI VIVIENDA','HIPOTECARIO BANCO',
+                  'CREDICARSA','COMPRA DE CARTERA','MICROFINANZAS','VEHICULAR'];
+  sel.innerHTML = '<option value="">— skill —</option>' +
+    SKILLS.map(s=>`<option value="${s}">${s}</option>`).join('');
+}
+
+function fmtNum(n){ return n==null?'—':new Intl.NumberFormat('es').format(n); }
+
+document.addEventListener('keydown', e => {
+  if(e.key==='Escape') document.querySelectorAll('.modal.active').forEach(m=>m.classList.remove('active'));
+  if(e.key===' ' && SESSION_ID){ e.preventDefault(); pauseResume(); }
+});
+
+// ── Autostart (desde Training Mode) ───────────────────────────────────────
+(async () => {
+  const params   = new URLSearchParams(window.location.search);
+  const autoSid  = params.get('autostart');
+  if(!autoSid) return;
+
+  // Cargar estado de la sesión GTR ya creada por training.py
+  try {
+    const r = await fetch(URLS.tick(autoSid));
+    const d = await r.json();
+    if(!d.success){ console.warn('autostart: session not found', autoSid); return; }
+
+    SESSION_ID    = autoSid;
+    SESSION_CANAL = d.canal || 'inbound';
+    IS_PAUSED     = false;
+    TOTAL_INTER   = 0;
+    THRESHOLDS    = d.thresholds || THRESHOLDS;
+
+    // Mostrar nombre de cuenta en header si está disponible
+    const accountEl = document.getElementById('session-account');
+    if(accountEl) accountEl.textContent = d.account_name || 'Training Mode';
+    const dateEl = document.getElementById('session-date');
+    if(dateEl) dateEl.textContent = params.get('date') || '';
+
+    _relabelKpis(SESSION_CANAL);
+    updateUI(d);
+    enableControls(true);
+    startPolling();
+
+    // Notificación visible
+    const badge = document.getElementById('status-badge');
+    if(badge){ badge.className='gtr-badge badge-live'; badge.textContent='● EN VIVO'; }
+    document.getElementById('live-indicator').style.display = 'block';
+  } catch(e) {
+    console.error('autostart error:', e);
+  }
+})();
+</script>
+{% endblock %}

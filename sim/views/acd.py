@@ -1,0 +1,775 @@
+# sim/views/acd.py
+"""
+SIM-7a — ACD Simulator.
+
+Motor de enrutamiento + endpoints para sesión multi-agente.
+
+Endpoints Trainer:
+  GET  /sim/acd/                              → panel trainer HTML
+  POST /sim/acd/sessions/create/              → crear sesión ACD
+  GET  /sim/acd/sessions/<id>/state/          → estado completo (KPIs + grid agentes)
+  POST /sim/acd/sessions/<id>/start/          → iniciar (crea GTR subyacente)
+  POST /sim/acd/sessions/<id>/pause/          → pausar
+  POST /sim/acd/sessions/<id>/resume/         → reanudar
+  POST /sim/acd/sessions/<id>/stop/           → finalizar
+  POST /sim/acd/sessions/<id>/slots/add/      → agregar slot de agente
+  POST /sim/acd/sessions/<id>/slots/<sid>/remove/ → quitar slot
+  POST /sim/acd/sessions/<id>/slots/<sid>/control/ → forzar estado de un slot
+  GET  /sim/acd/sessions/<id>/interactions/   → feed interacciones paginado
+  GET  /sim/acd/sessions/api/                 → lista sesiones del usuario
+
+Endpoints Agente OJT:
+  GET  /sim/acd/agent/<slot_id>/              → pantalla agente (básico/intermedio/avanzado)
+  GET  /sim/acd/agent/<slot_id>/poll/         → poll: obtener interacción activa + estado
+  POST /sim/acd/agent/<slot_id>/action/       → registrar acción (answer, tipify, hold, etc.)
+"""
+
+import json
+import logging
+import random
+import uuid as _uuid
+from datetime import date, datetime, timedelta
+
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
+from django.views.decorators.http import require_GET, require_POST
+
+from sim.models import (
+    SimAccount, SimAgentProfile,
+    ACDSession, ACDAgentSlot, ACDInteraction, ACDAgentAction,
+)
+from sim import gtr_engine as engine
+
+logger = logging.getLogger(__name__)
+
+
+# ─── Row helpers ──────────────────────────────────────────────────────────────
+
+def _session_row(s: ACDSession) -> dict:
+    return {
+        'id':            str(s.id),
+        'name':          s.name,
+        'account_id':    str(s.account_id),
+        'account_name':  s.account.name,
+        'dialing_mode':  s.dialing_mode,
+        'dialing_label': s.get_dialing_mode_display(),
+        'canal':         s.canal,
+        'clock_speed':   s.clock_speed,
+        'sim_date':      str(s.sim_date) if s.sim_date else None,
+        'status':        s.status,
+        'status_label':  s.get_status_display(),
+        'gtr_session_id':s.gtr_session_id,
+        'slot_count':    s.slot_count,
+        'active_agents': s.active_agents,
+        'started_at':    s.started_at.isoformat(),
+        'finished_at':   s.finished_at.isoformat() if s.finished_at else None,
+    }
+
+
+def _slot_row(slot: ACDAgentSlot) -> dict:
+    s = slot.stats or {}
+    return {
+        'id':          str(slot.id),
+        'slot_number': slot.slot_number,
+        'agent_type':  slot.agent_type,
+        'name':        slot.name,
+        'skill':       slot.skill,
+        'status':      slot.status,
+        'status_label':slot.get_status_display(),
+        'level':       slot.level,
+        'level_label': slot.get_level_display(),
+        'user_id':     slot.user_id,
+        'profile_id':  str(slot.profile_id) if slot.profile_id else None,
+        'profile_tier':slot.profile.tier if slot.profile else None,
+        # KPIs acumulados
+        'atendidas':   s.get('atendidas', 0),
+        'ventas':      s.get('ventas', 0),
+        'no_contacto': s.get('no_contacto', 0),
+        'aht_s':       slot.aht_s,
+        'aht_min':     round(slot.aht_s / 60, 2),
+        'hold_count':  s.get('hold_count', 0),
+        'transfer_count': s.get('transfer_count', 0),
+    }
+
+
+def _interaction_row(ix: ACDInteraction) -> dict:
+    return {
+        'id':            str(ix.id),
+        'canal':         ix.canal,
+        'skill':         ix.skill,
+        'lead_id':       ix.lead_id,
+        'status':        ix.status,
+        'status_label':  ix.get_status_display(),
+        'slot_id':       str(ix.slot_id) if ix.slot_id else None,
+        'slot_name':     ix.slot.name if ix.slot else None,
+        'queued_at':     ix.queued_at.isoformat(),
+        'answered_at':   ix.answered_at.isoformat() if ix.answered_at else None,
+        'ended_at':      ix.ended_at.isoformat() if ix.ended_at else None,
+        'wait_s':        ix.wait_s,
+        'duration_s':    ix.duration_s,
+        'acw_s':         ix.acw_s,
+        'hold_s':        ix.hold_s,
+        'tipificacion':  ix.tipificacion,
+    }
+
+
+# ─── ACD State response ───────────────────────────────────────────────────────
+
+def _acd_state(session: ACDSession, gtr_state: dict = None) -> dict:
+    """Estado completo de la sesión ACD para el panel del trainer."""
+    slots = list(session.slots.select_related('user', 'profile').order_by('slot_number'))
+    interactions = ACDInteraction.objects.filter(
+        session=session
+    ).exclude(status__in=['completed', 'abandoned', 'rejected']).select_related('slot')
+
+    # KPIs globales
+    all_ix = ACDInteraction.objects.filter(session=session)
+    total       = all_ix.count()
+    atendidas   = all_ix.filter(status='completed').count()
+    ventas      = all_ix.filter(tipificacion__icontains='venta').count()
+    en_cola     = all_ix.filter(status='queued').count()
+    en_llamada  = all_ix.filter(status='on_call').count()
+    en_acw      = slots_in_status(slots, 'acw')
+    disponibles = slots_in_status(slots, 'available')
+    en_break    = slots_in_status(slots, 'break')
+    ausentes    = slots_in_status(slots, 'absent')
+
+    return {
+        'session':    _session_row(session),
+        'slots':      [_slot_row(s) for s in slots],
+        'queue':      [_interaction_row(ix) for ix in interactions if ix.status == 'queued'],
+        'kpis': {
+            'total':       total,
+            'atendidas':   atendidas,
+            'na_pct':      round(atendidas / total * 100, 1) if total else 0,
+            'ventas':      ventas,
+            'en_cola':     en_cola,
+            'en_llamada':  en_llamada,
+            'en_acw':      en_acw,
+            'disponibles': disponibles,
+            'en_break':    en_break,
+            'ausentes':    ausentes,
+        },
+        'gtr': gtr_state or {},
+    }
+
+
+def slots_in_status(slots, status):
+    return sum(1 for s in slots if s.status == status)
+
+
+# ─── Routing engine ───────────────────────────────────────────────────────────
+
+def _route_interaction(session: ACDSession, interaction: ACDInteraction) -> ACDAgentSlot | None:
+    """
+    Encuentra el mejor slot disponible para una interacción.
+    Prioriza:
+      1. Mismo skill que la interacción
+      2. Agentes reales OJT primero (para que practiquen)
+      3. Menor carga acumulada
+    """
+    available = list(
+        session.slots.filter(status='available').select_related('user', 'profile')
+    )
+    if not available:
+        return None
+
+    # Filtrar por skill si hay match
+    skill_match = [s for s in available if s.skill == interaction.skill]
+    pool = skill_match if skill_match else available
+
+    # Preferir agentes reales para práctica
+    real_slots = [s for s in pool if s.agent_type == 'real']
+    if real_slots:
+        pool = real_slots
+
+    # Menor carga (atendidas acumuladas)
+    pool.sort(key=lambda s: s.stats.get('atendidas', 0))
+    return pool[0]
+
+
+def _generate_acd_interactions(session: ACDSession, n: int = 5) -> list:
+    """
+    Genera N interacciones sintéticas para encolar en la sesión ACD.
+    Usa la configuración de la cuenta.
+    """
+    from sim.generators.base import weighted_choice, synthetic_lead_id
+
+    try:
+        cfg = session.account.config.get(session.canal, {})
+    except Exception:
+        cfg = {}
+
+    skills_cfg = cfg.get('skills', {'GENERAL': {'weight': 1.0}})
+    skill_weights = {k: v.get('weight', 1.0) for k, v in skills_cfg.items()}
+
+    interactions = []
+    for i in range(n):
+        skill  = weighted_choice(skill_weights)
+        lead   = synthetic_lead_id(session.canal, random.randint(1, 999999))
+        ix = ACDInteraction.objects.create(
+            session      = session,
+            canal        = session.canal,
+            skill        = skill,
+            lead_id      = lead,
+            status       = 'queued',
+            is_simulated = True,
+        )
+        interactions.append(ix)
+    return interactions
+
+
+def _resolve_simulated_slot(slot: ACDAgentSlot, interaction: ACDInteraction):
+    """
+    Resuelve automáticamente una interacción para un agente simulado
+    según su perfil conductual (SimAgentProfile).
+    """
+    profile = slot.profile
+    now = timezone.now()
+
+    # Si no tiene perfil, usa defaults promedio
+    answer_rate   = profile.answer_rate  if profile else 0.93
+    conv_rate     = profile.conv_rate    if profile else 0.008
+    hold_rate     = profile.hold_rate    if profile else 0.05
+    hold_dur_s    = profile.hold_dur_s   if profile else 30
+    aht_factor    = profile.aht_factor   if profile else 1.0
+    acw_factor    = profile.acw_factor   if profile else 1.0
+    corte_rate    = profile.corte_rate   if profile else 0.05
+    transfer_rate = profile.transfer_rate if profile else 0.04
+
+    # Rechaza?
+    if random.random() > answer_rate:
+        interaction.status  = 'rejected'
+        interaction.ended_at = now
+        interaction.save(update_fields=['status', 'ended_at'])
+        slot.status = 'available'
+        slot.save(update_fields=['status'])
+        return
+
+    # Atiende
+    interaction.answered_at = now
+    interaction.status = 'on_call'
+
+    base_tmo = 313 * aht_factor
+    dur_s = max(30, int(random.gauss(base_tmo, base_tmo * 0.15)))
+
+    # Hold
+    hold_s = 0
+    if random.random() < hold_rate:
+        hold_s = max(10, int(random.gauss(hold_dur_s, hold_dur_s * 0.3)))
+
+    acw_base = 18 * acw_factor
+    acw_s = max(5, int(random.gauss(acw_base, acw_base * 0.3)))
+
+    # Corte antes de ACW
+    if random.random() < corte_rate:
+        acw_s = 0
+
+    # Resultado
+    if random.random() < conv_rate:
+        tipif = 'Venta'
+    else:
+        tipif = 'Atendida'
+
+    interaction.duration_s   = dur_s
+    interaction.hold_s       = hold_s
+    interaction.acw_s        = acw_s
+    interaction.tipificacion = tipif
+    interaction.status       = 'completed'
+    interaction.ended_at     = now + timedelta(seconds=dur_s + acw_s)
+    interaction.save()
+
+    # Actualizar stats del slot
+    stats = slot.stats or {}
+    stats['atendidas']  = stats.get('atendidas', 0) + 1
+    stats['tmo_sum_s']  = stats.get('tmo_sum_s', 0) + dur_s
+    stats['tmo_count']  = stats.get('tmo_count', 0) + 1
+    if tipif == 'Venta':
+        stats['ventas'] = stats.get('ventas', 0) + 1
+    if hold_s:
+        stats['hold_count'] = stats.get('hold_count', 0) + 1
+    slot.stats  = stats
+    slot.status = 'available'
+    slot.save(update_fields=['stats', 'status'])
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VIEWS — Trainer
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@login_required
+def acd_panel(request):
+    """Panel HTML del trainer ACD."""
+    sessions  = ACDSession.objects.filter(
+        created_by=request.user
+    ).select_related('account').order_by('-started_at')[:20]
+    accounts  = SimAccount.objects.filter(
+        created_by=request.user, is_active=True
+    ).order_by('name')
+    profiles  = SimAgentProfile.objects.all().order_by('tier', 'canal', 'name')
+
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    users = User.objects.filter(is_active=True).order_by('username')
+
+    return render(request, 'sim/acd_trainer.html', {
+        'sessions':      sessions,
+        'accounts':      accounts,
+        'profiles':      profiles,
+        'users':         users,
+        'dialing_modes': [
+            ('predictive',  '⚡ Predictivo'),
+            ('progressive', '➡️ Progresivo'),
+            ('manual',      '🖐 Manual'),
+        ],
+        'agent_levels': [
+            ('basic',        'Básico — botones'),
+            ('intermediate', 'Intermedio — tipificación'),
+            ('advanced',     'Avanzado — multi-skill'),
+        ],
+    })
+
+
+@login_required
+@require_GET
+def acd_sessions_api(request):
+    sessions = ACDSession.objects.filter(
+        created_by=request.user
+    ).select_related('account').order_by('-started_at')[:50]
+    return JsonResponse({'success': True, 'sessions': [_session_row(s) for s in sessions]})
+
+
+@login_required
+@require_POST
+def acd_session_create(request):
+    try:
+        body = json.loads(request.body)
+        name = (body.get('name') or '').strip()
+        if not name:
+            return JsonResponse({'success': False, 'error': 'El nombre es requerido.'}, status=400)
+
+        account = get_object_or_404(SimAccount, id=body['account_id'], created_by=request.user)
+
+        session = ACDSession.objects.create(
+            name         = name,
+            account      = account,
+            dialing_mode = body.get('dialing_mode', 'progressive'),
+            canal        = account.canal,
+            clock_speed  = int(body.get('clock_speed', 15)),
+            thresholds   = body.get('thresholds', {}),
+            config       = body.get('config', {}),
+            created_by   = request.user,
+        )
+        logger.info("ACDSession created: %s | %s", session.id, session.name)
+        return JsonResponse({'success': True, 'session': _session_row(session)})
+    except Exception as e:
+        logger.error("acd_session_create: %s", e, exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def acd_session_start(request, session_id):
+    """Inicia la sesión: crea la GTR subyacente y pone todos los slots en available."""
+    session = get_object_or_404(ACDSession, id=session_id, created_by=request.user)
+    try:
+        body     = json.loads(request.body)
+        sim_date = date.fromisoformat(body.get('sim_date', str(date.today())))
+
+        # Crear sesión GTR subyacente
+        gtr = engine.create_session(
+            account     = session.account,
+            user        = request.user,
+            clock_speed = session.clock_speed,
+            sim_date    = sim_date,
+            thresholds  = session.thresholds or None,
+        )
+
+        session.gtr_session_id = gtr.session_id
+        session.sim_date       = sim_date
+        session.status         = 'active'
+        session.save(update_fields=['gtr_session_id', 'sim_date', 'status'])
+
+        # Activar todos los slots configurados
+        session.slots.filter(status='offline').update(status='available')
+
+        # Generar primera tanda de interacciones en cola
+        _generate_acd_interactions(session, n=max(3, session.slot_count))
+
+        gtr_state = engine._state_response(gtr, [], [])
+        return JsonResponse({
+            'success':   True,
+            'session':   _session_row(session),
+            'gtr_state': gtr_state,
+        })
+    except Exception as e:
+        logger.error("acd_session_start: %s", e, exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_GET
+def acd_session_state(request, session_id):
+    """Estado completo de la sesión: KPIs + grid agentes + cola."""
+    session = get_object_or_404(ACDSession, id=session_id, created_by=request.user)
+
+    gtr_state = {}
+    if session.gtr_session_id:
+        try:
+            gtr_tick = engine.tick(session.gtr_session_id)
+            gtr_state = gtr_tick
+            # Auto-routing: asignar interacciones en cola a slots disponibles
+            if session.status == 'active':
+                _do_routing(session, gtr_tick)
+        except Exception as e:
+            logger.warning("ACD GTR tick error: %s", e)
+
+    return JsonResponse({'success': True, **_acd_state(session, gtr_state)})
+
+
+def _do_routing(session: ACDSession, gtr_state: dict):
+    """
+    Motor de enrutamiento: asigna interacciones en cola a slots disponibles.
+    Modo predictivo/progresivo: automático.
+    Modo manual: solo outbound, el agente decide.
+    """
+    if session.dialing_mode == 'manual' and session.canal == 'outbound':
+        return  # el agente controla el marcado
+
+    queued = list(ACDInteraction.objects.filter(
+        session=session, status='queued'
+    ).select_related('slot')[:20])
+
+    if not queued:
+        # Generar más interacciones si la cola está vacía
+        available_count = session.slots.filter(status='available').count()
+        if available_count > 0:
+            _generate_acd_interactions(session, n=available_count + 2)
+        return
+
+    for ix in queued:
+        slot = _route_interaction(session, ix)
+        if not slot:
+            break
+
+        ix.slot        = slot
+        ix.assigned_at = timezone.now()
+        ix.status      = 'ringing'
+        ix.save(update_fields=['slot', 'assigned_at', 'status'])
+
+        slot.status = 'ringing'
+        slot.save(update_fields=['status'])
+
+        # Simulated agents: resolve immediately
+        if slot.agent_type == 'simulated':
+            _resolve_simulated_slot(slot, ix)
+
+
+@login_required
+@require_POST
+def acd_session_pause(request, session_id):
+    session = get_object_or_404(ACDSession, id=session_id, created_by=request.user)
+    session.status = 'paused'
+    session.save(update_fields=['status'])
+    if session.gtr_session_id:
+        engine.pause_session(session.gtr_session_id)
+    return JsonResponse({'success': True, 'session': _session_row(session)})
+
+
+@login_required
+@require_POST
+def acd_session_resume(request, session_id):
+    session = get_object_or_404(ACDSession, id=session_id, created_by=request.user)
+    session.status = 'active'
+    session.save(update_fields=['status'])
+    if session.gtr_session_id:
+        engine.resume_session(session.gtr_session_id)
+    return JsonResponse({'success': True, 'session': _session_row(session)})
+
+
+@login_required
+@require_POST
+def acd_session_stop(request, session_id):
+    session = get_object_or_404(ACDSession, id=session_id, created_by=request.user)
+    session.status      = 'finished'
+    session.finished_at = timezone.now()
+    session.save(update_fields=['status', 'finished_at'])
+    if session.gtr_session_id:
+        try:
+            engine.persist_session(session.gtr_session_id)
+        except Exception as e:
+            logger.warning("ACD persist error: %s", e)
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def acd_slot_add(request, session_id):
+    session = get_object_or_404(ACDSession, id=session_id, created_by=request.user)
+    try:
+        body = json.loads(request.body)
+        next_num = (session.slots.order_by('-slot_number').first().slot_number + 1
+                    if session.slots.exists() else 1)
+
+        agent_type = body.get('agent_type', 'simulated')
+        user_id    = body.get('user_id')
+        profile_id = body.get('profile_id')
+
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        slot = ACDAgentSlot.objects.create(
+            session      = session,
+            slot_number  = next_num,
+            agent_type   = agent_type,
+            user         = User.objects.get(id=user_id) if user_id else None,
+            profile      = SimAgentProfile.objects.get(id=profile_id) if profile_id else None,
+            display_name = body.get('display_name', ''),
+            skill        = body.get('skill', ''),
+            level        = body.get('level', 'basic'),
+            status       = 'available' if session.status == 'active' else 'offline',
+            stats        = {},
+        )
+        return JsonResponse({'success': True, 'slot': _slot_row(slot)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def acd_slot_remove(request, session_id, slot_id):
+    session = get_object_or_404(ACDSession, id=session_id, created_by=request.user)
+    slot    = get_object_or_404(ACDAgentSlot, id=slot_id, session=session)
+    # No eliminar si tiene interacciones activas
+    if slot.acd_interactions.filter(status__in=['on_call', 'ringing', 'acw']).exists():
+        return JsonResponse({'success': False, 'error': 'Agente con interacción activa.'}, status=400)
+    slot.delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def acd_slot_control(request, session_id, slot_id):
+    """Trainer fuerza estado de un slot: break, return, absent, available."""
+    session = get_object_or_404(ACDSession, id=session_id, created_by=request.user)
+    slot    = get_object_or_404(ACDAgentSlot, id=slot_id, session=session)
+    try:
+        body   = json.loads(request.body)
+        status = body.get('status')
+        if status not in ['available', 'break', 'absent', 'offline']:
+            return JsonResponse({'success': False, 'error': 'Estado inválido.'}, status=400)
+        slot.status = status
+        slot.save(update_fields=['status'])
+        return JsonResponse({'success': True, 'slot': _slot_row(slot)})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+@require_GET
+def acd_interactions(request, session_id):
+    session = get_object_or_404(ACDSession, id=session_id, created_by=request.user)
+    since   = request.GET.get('since', None)
+    qs = ACDInteraction.objects.filter(session=session).select_related('slot')
+    if since:
+        qs = qs.filter(queued_at__gt=since)
+    qs = qs.order_by('-queued_at')[:100]
+    return JsonResponse({
+        'success':      True,
+        'interactions': [_interaction_row(ix) for ix in qs],
+        'count':        qs.count(),
+    })
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# VIEWS — Agente OJT
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@login_required
+def acd_agent_panel(request, slot_id):
+    """Pantalla del agente OJT."""
+    slot = get_object_or_404(
+        ACDAgentSlot.objects.select_related('session', 'session__account', 'profile'),
+        id=slot_id, user=request.user
+    )
+    tipificaciones = _get_tipificaciones(slot.session)
+    return render(request, 'sim/acd_agent.html', {
+        'slot':           slot,
+        'session':        slot.session,
+        'tipificaciones': tipificaciones,
+        'level':          slot.level,
+    })
+
+
+@login_required
+@require_GET
+def acd_agent_poll(request, slot_id):
+    """
+    Poll del agente (cada 2s):
+    - Estado del slot
+    - Interacción activa (si existe)
+    - Próxima en cola (para preview en pantalla básica)
+    - Reloj GTR
+    """
+    slot = get_object_or_404(ACDAgentSlot, id=slot_id, user=request.user)
+    session = slot.session
+
+    # Interacción activa
+    active_ix = ACDInteraction.objects.filter(
+        slot=slot, status__in=['ringing', 'on_call', 'acw']
+    ).first()
+
+    # Próxima en cola (preview)
+    next_queued = None
+    if not active_ix and slot.status == 'available':
+        next_queued = ACDInteraction.objects.filter(
+            session=session, status='queued'
+        ).first()
+
+    # Reloj GTR
+    gtr_time = '09:00'
+    if session.gtr_session_id:
+        gtr_sess = engine.load_session(session.gtr_session_id)
+        if gtr_sess:
+            h, m = gtr_sess.sim_time()
+            gtr_time = f"{h:02d}:{m:02d}"
+
+    return JsonResponse({
+        'success':       True,
+        'slot':          _slot_row(slot),
+        'active':        _interaction_row(active_ix) if active_ix else None,
+        'next_queued':   _interaction_row(next_queued) if next_queued else None,
+        'gtr_time':      gtr_time,
+        'session_status':session.status,
+    })
+
+
+@login_required
+@require_POST
+def acd_agent_action(request, slot_id):
+    """Registra una acción del agente OJT."""
+    slot = get_object_or_404(ACDAgentSlot, id=slot_id, user=request.user)
+    try:
+        body        = json.loads(request.body)
+        action_type = body.get('action_type', '')
+        params      = body.get('params', {})
+        ix_id       = body.get('interaction_id')
+
+        # Obtener tiempo GTR actual
+        gtr_time = '09:00'
+        if slot.session.gtr_session_id:
+            gtr_sess = engine.load_session(slot.session.gtr_session_id)
+            if gtr_sess:
+                h, m = gtr_sess.sim_time()
+                gtr_time = f"{h:02d}:{m:02d}"
+
+        ix = None
+        if ix_id:
+            ix = get_object_or_404(ACDInteraction, id=ix_id, slot=slot)
+
+        now = timezone.now()
+
+        # ── Procesar acción ───────────────────────────────────────────────────
+        if action_type == 'answer' and ix:
+            ix.answered_at = now
+            ix.status      = 'on_call'
+            ix.save(update_fields=['answered_at', 'status'])
+            slot.status = 'on_call'
+            slot.save(update_fields=['status'])
+
+        elif action_type == 'reject' and ix:
+            ix.status   = 'rejected'
+            ix.ended_at = now
+            ix.save(update_fields=['status', 'ended_at'])
+            slot.status = 'available'
+            slot.save(update_fields=['status'])
+
+        elif action_type == 'hold' and ix:
+            ix.status = 'on_call'   # sigue on_call, hold es visual
+            ix.save(update_fields=['status'])
+
+        elif action_type == 'tipify' and ix:
+            ix.tipificacion     = params.get('tipificacion', '')
+            ix.sub_tipificacion = params.get('sub_tipificacion', '')
+            ix.notes            = params.get('notes', '')
+            ix.save(update_fields=['tipificacion', 'sub_tipificacion', 'notes'])
+
+        elif action_type == 'end_acw' and ix:
+            ix.status   = 'completed'
+            ix.ended_at = now
+            dur_s = int((now - ix.answered_at).total_seconds()) if ix.answered_at else 0
+            ix.duration_s = dur_s
+            ix.save(update_fields=['status', 'ended_at', 'duration_s'])
+            # Actualizar stats del slot
+            stats = slot.stats or {}
+            stats['atendidas'] = stats.get('atendidas', 0) + 1
+            stats['tmo_sum_s'] = stats.get('tmo_sum_s', 0) + dur_s
+            stats['tmo_count'] = stats.get('tmo_count', 0) + 1
+            slot.stats  = stats
+            slot.status = 'available'
+            slot.save(update_fields=['stats', 'status'])
+
+        elif action_type == 'break':
+            slot.status = 'break'
+            slot.save(update_fields=['status'])
+
+        elif action_type == 'return':
+            slot.status = 'available'
+            slot.save(update_fields=['status'])
+
+        elif action_type == 'transfer' and ix:
+            to_slot_id = params.get('to_slot_id')
+            if to_slot_id:
+                try:
+                    to_slot = ACDAgentSlot.objects.get(id=to_slot_id, session=slot.session)
+                    ix.slot = to_slot
+                    ix.save(update_fields=['slot'])
+                    to_slot.status = 'ringing'
+                    to_slot.save(update_fields=['status'])
+                    slot.status = 'available'
+                    stats = slot.stats or {}
+                    stats['transfer_count'] = stats.get('transfer_count', 0) + 1
+                    slot.stats = stats
+                    slot.save(update_fields=['status', 'stats'])
+                except ACDAgentSlot.DoesNotExist:
+                    pass
+
+        # Registrar acción
+        if ix:
+            ACDAgentAction.objects.create(
+                interaction = ix,
+                slot        = slot,
+                action_type = action_type,
+                params      = params,
+                sim_time    = gtr_time,
+            )
+
+        return JsonResponse({
+            'success':     True,
+            'slot':        _slot_row(slot),
+            'interaction': _interaction_row(ix) if ix else None,
+        })
+    except Exception as e:
+        logger.error("acd_agent_action: %s", e, exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+def _get_tipificaciones(session: ACDSession) -> list:
+    """Retorna lista de tipificaciones configuradas en la cuenta."""
+    try:
+        cfg = session.account.config.get(session.canal, {})
+        if session.canal == 'inbound':
+            skills = cfg.get('skills', {})
+            tipifs = set()
+            for skill_data in skills.values():
+                tipifs.update(skill_data.get('tipificaciones', {}).keys())
+            return sorted(tipifs)
+        elif session.canal == 'outbound':
+            return sorted(cfg.get('tipif_contacto', {}).keys())
+    except Exception:
+        pass
+    return ['Atendida', 'Venta', 'No interesado', 'Agenda', 'Corta llamada', 'Transferir']
