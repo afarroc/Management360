@@ -1,27 +1,6 @@
+<!-- SimCity -->
 <li class="nav-item">
-
-    <a class="nav-link collapsed" data-bs-target="#tools-nav" data-bs-toggle="collapse" href="{% url 'data_upload' %}">
-        <i class="bi bi-calendar-event"></i><span>tools</span><i class="bi bi-chevron-down ms-auto"></i>
+    <a class="nav-link collapsed" href="{% url 'simcity:index' %}">
+        <i class="bi bi-buildings"></i><span>SimCity</span>
     </a>
-    <ul id="tools-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-        <li>
-                <a href="{% url 'calculate_agents' %}">
-                    <i class="bi bi-circle"></i><span>Calculate Agents</span>
-                </a>
-        </li>
-        <li>
-            <a href="{% url 'file_tree' %}">
-                <i class="bi bi-circle"></i><span>File Tree</span>
-                
-            </a>
-        </li>
-        <li>
-       <li>
-            <a href="{% url 'data_upload' %}">
-                <i class="bi bi-circle"></i><span>upload data</span>
-            </a>
-        </li>
-        
-        </li>
-    </ul>
-</li><!-- End tools Nav -->
+</li><!-- End SimCity Nav -->
