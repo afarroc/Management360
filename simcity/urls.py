@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/game/<int:game_id>/build/', views.build, name='build'),
     path('api/game/<int:game_id>/reset/', views.reset, name='reset'),
     path('api/game/<int:game_id>/generate_block/', views.generate_block, name='generate_block'),
+    path('api/game/<int:game_id>/generate_zr_block/', views.generate_zr_block, name='generate_zr_block'),  # SC-1
     path('api/game/<int:game_id>/census/', views.census, name='census'),
     path('api/game/<int:game_id>/tasks/', views.task_status, name='task_status'),
     path('api/game/<int:game_id>/delete/', views.delete_game, name='delete_game'),
