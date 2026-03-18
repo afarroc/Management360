@@ -1,14 +1,17 @@
-#panel.urls.py
-# Django Imports
-
+# panel/urls.py
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from . import views
 from .views import RedisTestView
+from bitacora.views import upload_image  # Agregar esta línea
 
 urlpatterns = [
+    # ... tus URLs existentes ...
+    
+    # CKEditor5 upload URL (global para todas las apps)
+    path('ckeditor5/upload/', upload_image, name='ck_editor_5_upload_file'),
     # Admin
     path('admin/', admin.site.urls),
 
@@ -28,9 +31,11 @@ urlpatterns = [
     path('rooms/', include('rooms.urls', namespace='rooms')),
     path('bots/', include('bots.urls', namespace='bots')),
     path('help/', include('help.urls', namespace='help')),
-    path('tools/', include('tools.urls')),
     path('bitacora/', include('bitacora.urls', namespace='bitacora')),
-    
+    path('board/', include('board.urls', namespace='board')),
+    path('analyst/', include('analyst.urls', namespace='analyst')),
+    path('sim/', include('sim.urls', namespace='sim')),    
+    path('simcity/', include('simcity.urls', namespace='simcity')),
     # API Endpoints (alphabetical order)
     path('api/csrf/', views.get_csrf, name='api-csrf'),
     path('api/login/', views.login_view, name='api-login'),
