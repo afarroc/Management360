@@ -1,0 +1,77 @@
+{% load static %}
+
+<!-- ============================================================
+     FILTROS AVANZADOS Y BÚSQUEDA DE TAREAS
+     ============================================================ -->
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="row g-2 g-md-3 align-items-end">
+            <!-- Campo de búsqueda -->
+            <div class="col-12 col-sm-12 col-md-5 col-lg-4">
+                <label for="searchInput" class="form-label small fw-semibold text-muted mb-1 d-block d-sm-none">Search</label>
+                <div class="input-group input-group-sm input-group-md">
+                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control bg-light border-start-0 ps-0" id="searchInput" 
+                           placeholder="Search tasks by title, description...">
+                </div>
+            </div>
+            
+            <!-- Filtro por estado -->
+            <div class="col-6 col-sm-4 col-md-3 col-lg-3">
+                <label for="statusFilter" class="form-label small fw-semibold text-muted mb-1 d-block d-sm-none">Status</label>
+                <select class="form-select form-select-sm" id="statusFilter">
+                    <option value="">All Status</option>
+                    <option value="To Do">📋 To Do</option>
+                    <option value="In Progress">🔄 In Progress</option>
+                    <option value="Completed">✅ Completed</option>
+                    <option value="Blocked">⚠️ Blocked</option>
+                </select>
+            </div>
+            
+            <!-- Filtro por proyecto -->
+            <div class="col-6 col-sm-4 col-md-3 col-lg-3">
+                <label for="projectFilter" class="form-label small fw-semibold text-muted mb-1 d-block d-sm-none">Project</label>
+                <select class="form-select form-select-sm" id="projectFilter">
+                    <option value="">All Projects</option>
+                    {% for project in projects %}
+                    <option value="{{ project.id }}">{{ project.title|truncatechars:20 }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Botón limpiar filtros -->
+            <div class="col-12 col-sm-4 col-md-1 col-lg-2">
+                <label class="form-label d-block d-sm-none">&nbsp;</label>
+                <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="clearFilters">
+                    <i class="bi bi-x-circle me-1"></i> 
+                    <span class="d-inline d-sm-none">Clear Filters</span>
+                    <span class="d-none d-sm-inline">Clear</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Panel de filtros activos (inicialmente oculto) -->
+        <div class="row mt-2 d-none" id="activeFiltersContainer">
+            <div class="col-12">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <span class="small text-muted">Active filters:</span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary d-none" id="activeStatusFilter">
+                        <span id="activeStatusText"></span>
+                        <i class="bi bi-x ms-1 cursor-pointer" onclick="clearFilter('status')"></i>
+                    </span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary d-none" id="activeProjectFilter">
+                        <span id="activeProjectText"></span>
+                        <i class="bi bi-x ms-1 cursor-pointer" onclick="clearFilter('project')"></i>
+                    </span>
+                    <span class="badge bg-primary bg-opacity-10 text-primary d-none" id="activeSearchFilter">
+                        "<span id="activeSearchText"></span>"
+                        <i class="bi bi-x ms-1 cursor-pointer" onclick="clearFilter('search')"></i>
+                    </span>
+                    <button class="btn btn-link btn-sm text-decoration-none p-0 ms-auto" id="clearAllFilters" style="font-size: 0.8rem;">
+                        Clear all
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -2,7 +2,9 @@
 from faker import Faker
 import random
 import string
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from .models import Status, ProjectStatus, TaskStatus  # Añade esta importación
 
 fake_en = Faker()

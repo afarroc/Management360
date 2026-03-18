@@ -1,19 +1,19 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
+
+<!-- ============================================================
+     ESTILOS GLOBALES
+     ============================================================ -->
 <link rel="stylesheet" href="{% static 'assets/css/alerts-styles.css' %}">
+<link rel="stylesheet" href="{% static 'events/css/task-panel.css' %}?v={{ now|date:'U' }}">
+
 {% block content %}
 
-<!-- Mensajes de confirmación y éxito -->
-{% if messages %}
-<div class="alert alert-info" role="alert">
-    {% for message in messages %}
-    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
-    {% endfor %}
-</div>
-{% endif %}
-
+<!-- ============================================================
+     ENCABEZADO DE PÁGINA
+     ============================================================ -->
 <div class="pagetitle">
-    <h1>Dashboard de Tareas</h1>
+    <h1><i class="bi bi-list-check me-2"></i>Dashboard de Tareas</h1>
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
@@ -26,36 +26,36 @@
 <section class="section dashboard">
     <div class="row">
 
-        <!-- Main Content Area -->
+        <!-- ============================================================
+             COLUMNA PRINCIPAL
+             ============================================================ -->
         <div class="col-lg-12">
             
-            <!-- Alertas si existen -->
-            {% if alerts %}
-            <div class="mb-4">
-                {% for alert in alerts %}
-                <div class="alert alert-{{ alert.type }} alert-dismissible fade show" role="alert">
-                    <i class="bi {{ alert.icon }} me-2"></i>
-                    <strong>{{ alert.title }}</strong> - {{ alert.message }}
-                    {% if alert.action_url %}
-                    <a href="{{ alert.action_url }}" class="btn btn-sm btn-outline-{{ alert.type }} ms-2">
-                        {{ alert.action_text }}
-                    </a>
-                    {% endif %}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-                {% endfor %}
-            </div>
+            <!-- ------------------------------------------------------------
+                 MENSAJES DEL SISTEMA (DJANGO MESSAGES)
+                 ------------------------------------------------------------ -->
+            {% if messages %}
+                {% include 'includes/messages_display.html' %}
             {% endif %}
 
-            <!-- Header con acciones -->
+            <!-- ------------------------------------------------------------
+                 ALERTAS INTELIGENTES
+                 ------------------------------------------------------------ -->
+            {% if alerts %}
+                {% include 'tasks/includes/task_alerts.html' %}
+            {% endif %}
+
+            <!-- ------------------------------------------------------------
+                 CABECERA CON ACCIONES PRINCIPALES
+                 ------------------------------------------------------------ -->
             <div class="card mb-4">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                         <h5 class="card-title mb-0">
                             <i class="bi bi-list-check me-2"></i>Tareas
-                            <span class="badge bg-primary ms-2">{{ tasks|length }}</span>
+                            <span class="badge bg-primary ms-2">{{ tasks|length|default:tasks_data|length }}</span>
                         </h5>
-                        <div class="btn-group">
+                        <div class="btn-group" role="group">
                             <a href="{% url 'task_create' %}" class="btn btn-primary">
                                 <i class="bi bi-plus-circle me-1"></i> Nueva Tarea
                             </a>
@@ -67,60 +67,100 @@
                 </div>
             </div>
 
+            <!-- ------------------------------------------------------------
+                 FILTRO DE BÚSQUEDA (CLIENT-SIDE)
+                 ------------------------------------------------------------ -->
+            <div class="card mb-3">
+                <div class="card-body py-3">
+                    <div class="row">
+                        <div class="col-md-6 col-lg-4">
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                                <input type="text" class="form-control" id="taskSearchInput" 
+                                       placeholder="Buscar tareas por título, descripción, estado...">
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-8 text-md-end mt-2 mt-md-0">
+                            <small class="text-muted" id="visibleTaskCount">
+                                Mostrando <span id="visibleCount">{{ tasks_data|length }}</span> de {{ tasks_data|length }} tareas
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-            <!-- Tabla de tareas -->
+            <!-- ------------------------------------------------------------
+                 TABLA DE TAREAS
+                 ------------------------------------------------------------ -->
             {% if tasks_data %}
             <div class="card">
-                <div class="card-body">
-                    <!-- Incluir tabla optimizada -->
+                <div class="card-body p-0">
                     {% include 'tasks/includes/task_table_optimized.html' %}
                 </div>
             </div>
             {% else %}
-            <!-- Estado vacío -->
-            <div class="card">
-                <div class="card-body text-center py-5">
-                    <i class="bi bi-list-check display-1 text-muted mb-3"></i>
-                    <h4 class="text-muted">No hay tareas</h4>
-                    <p class="text-muted mb-4">Crea tu primera tarea para empezar a organizar tu trabajo.</p>
-                    <a href="{% url 'task_create' %}" class="btn btn-primary btn-lg">
-                        <i class="bi bi-plus-circle me-1"></i> Crear Tarea
-                    </a>
-                </div>
-            </div>
+                <!-- Estado vacío -->
+                {% include 'tasks/includes/task_empty_state.html' %}
             {% endif %}
-            
-            <!-- ... (código posterior) ... -->
+
         </div><!-- End Main Content Area -->
 
-    </div>
+    </div><!-- .row -->
 </section>
 
-<!-- Scripts para funcionalidades -->
+<!-- ============================================================
+     SCRIPTS Y CONFIGURACIÓN
+     ============================================================ -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Filtro de búsqueda
-    const searchInput = document.createElement('input');
-    searchInput.type = 'text';
-    searchInput.className = 'form-control';
-    searchInput.placeholder = 'Buscar tareas...';
-    searchInput.style.marginBottom = '10px';
+    // Filtro de búsqueda en tiempo real
+    const searchInput = document.getElementById('taskSearchInput');
+    const visibleCountSpan = document.getElementById('visibleCount');
+    const totalTasks = {{ tasks_data|length|default:0 }};
     
-    const cardBody = document.querySelector('.card .card-body');
-    if (cardBody) {
-        cardBody.parentNode.insertBefore(searchInput, cardBody);
-        
+    if (searchInput) {
         searchInput.addEventListener('keyup', function() {
-            const searchTerm = this.value.toLowerCase();
+            const searchTerm = this.value.toLowerCase().trim();
             const rows = document.querySelectorAll('table tbody tr');
+            let visibleCount = 0;
             
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
+                const isVisible = searchTerm === '' || text.includes(searchTerm);
+                row.style.display = isVisible ? '' : 'none';
+                if (isVisible) visibleCount++;
             });
+            
+            // Actualizar contador
+            if (visibleCountSpan) {
+                visibleCountSpan.textContent = visibleCount;
+                const counterElement = document.getElementById('visibleTaskCount');
+                if (counterElement) {
+                    counterElement.innerHTML = `Mostrando <span id="visibleCount">${visibleCount}</span> de ${totalTasks} tareas`;
+                }
+            }
+            
+            // Mostrar mensaje si no hay resultados
+            const table = document.querySelector('table');
+            const noResultsRow = document.getElementById('noSearchResults');
+            
+            if (visibleCount === 0 && rows.length > 0) {
+                if (!noResultsRow) {
+                    const tbody = document.querySelector('table tbody');
+                    const tr = document.createElement('tr');
+                    tr.id = 'noSearchResults';
+                    tr.innerHTML = '<td colspan="100%" class="text-center py-4"><i class="bi bi-search display-6 text-muted"></i><p class="text-muted mt-2">No se encontraron tareas que coincidan con la búsqueda.</p></td>';
+                    tbody.appendChild(tr);
+                }
+            } else if (noResultsRow) {
+                noResultsRow.remove();
+            }
         });
     }
 });
 </script>
+
+<!-- Scripts adicionales si son necesarios -->
+<script src="{% static 'events/js/task-panel.js' %}?v={{ now|date:'U' }}"></script>
 
 {% endblock %}

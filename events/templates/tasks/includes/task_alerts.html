@@ -1,0 +1,21 @@
+<!-- Alertas contextuales para tareas -->
+<div class="mb-4">
+    {% for alert in alerts %}
+    <div class="alert alert-{{ alert.type }} alert-dismissible fade show" role="alert">
+        <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between">
+            <div class="d-flex align-items-center mb-2 mb-md-0">
+                <i class="bi {{ alert.icon }} me-2 fs-5"></i>
+                <div>
+                    <strong>{{ alert.title }}</strong> - {{ alert.message }}
+                </div>
+            </div>
+            {% if alert.action_url %}
+            <a href="{{ alert.action_url }}" class="btn btn-sm btn-outline-{{ alert.type }} ms-md-2">
+                {{ alert.action_text }} <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+            {% endif %}
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>

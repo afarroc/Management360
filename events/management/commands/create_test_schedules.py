@@ -2,7 +2,9 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from datetime import date, time, timedelta
 from events.models import Task, TaskSchedule, TaskStatus, Status
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class Command(BaseCommand):

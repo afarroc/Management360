@@ -1,1461 +1,587 @@
 {% extends 'layouts/base.html' %}
 {% load static %}
 
-{% block title %}Panel de Control - {{ inbox_item.title }}{% endblock %}
-
 {% block extra_css %}
-<style>
-/* Estilos personalizados para el dashboard root */
-.badge-sm {
-    font-size: 0.7em;
-    padding: 0.2em 0.4em;
-}
-
-.card-dashboard {
-    transition: transform 0.2s ease-in-out;
-}
-
-.card-dashboard:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.table-responsive {
-    border-radius: 0.375rem;
-    overflow: hidden;
-}
-
-.btn-group-sm .btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-}
-
-@media (max-width: 768px) {
-    .btn-group-sm {
-        flex-direction: column;
-        width: 100%;
-    }
-
-    .btn-group-sm .btn {
-        margin-bottom: 0.25rem;
-    }
-
-    .table-responsive {
-        font-size: 0.875rem;
-    }
-}
-
-/* Animaciones para los indicadores de estado */
-@keyframes pulse-success {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
-}
-
-.status-indicator {
-    animation: pulse-success 2s infinite;
-}
-
-/* Mejorar la apariencia de los filtros */
-.form-select-sm {
-    border-radius: 0.25rem;
-}
-
-.input-group-sm .form-select {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-}
-
-.input-group-sm .btn {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-}
-</style>
+<link rel="stylesheet" href="{% static 'events/css/process_inbox_item.css' %}">
 {% endblock %}
 
 {% block content %}
+<!-- Mensajes del sistema -->
+{% if messages %}
+<div class="alert alert-info alert-dismissible fade show" role="alert">
+    {% for message in messages %}
+    <div{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</div>
+    {% endfor %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+<!-- Contenedor principal con las 3 filas -->
 <div class="container-fluid inbox-control-panel" data-inbox-item-id="{{ inbox_item.id|default:0 }}">
-    <!-- Header Section -->
+    
+    <!-- FILA 1: Cabecera (12 columnas) -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="mb-1">
-                        <i class="bi bi-gear-fill text-primary me-3"></i>
-                        Panel de Control del Inbox
+            {% block header %}
+            <div class="row align-items-center">
+                <div class="col-12 col-md-6 mb-2 mb-md-0">
+                    <h1 class="fs-4 fs-md-1 mb-1">
+                        <i class="bi bi-gear-fill text-primary me-2"></i>{{ title }}
                     </h1>
-                    <p class="text-muted mb-0">Gestión integral de elementos del inbox GTD</p>
+                    <p class="text-muted small mb-0">
+                        Gestión integral de elementos del inbox GTD
+                    </p>
                 </div>
-                <div class="d-flex gap-2">
-                    <a href="{% url 'inbox' %}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>
-                        Inbox Principal
-                    </a>
-                    <a href="{% url 'inbox_admin_dashboard' %}" class="btn btn-outline-info">
-                        <i class="bi bi-shield-check me-1"></i>
-                        Admin Panel
-                    </a>
-                    <a href="{% url 'unified_dashboard' %}" class="btn btn-outline-primary">
-                        <i class="bi bi-speedometer2 me-1"></i>
-                        Dashboard
-                    </a>
+                <div class="col-12 col-md-6">
+                    <div class="d-flex flex-wrap gap-2 justify-content-start justify-content-md-end">
+                        <a href="{% url 'inbox' %}" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i>Inbox
+                        </a>
+                        <a href="{% url 'inbox_admin_dashboard' %}" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-shield-check me-1"></i>Admin
+                        </a>
+                        <a href="{% url 'unified_dashboard' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        </a>
+                    </div>
                 </div>
             </div>
+            {% endblock %}
         </div>
     </div>
 
     {% if inbox_item %}
-        <!-- Control Panel Layout -->
-        <div class="row">
-            <!-- Left Panel: Item Information & Status -->
-            <div class="col-lg-4">
-                <!-- Item Information Card -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">
-                                <i class="bi bi-info-circle me-2"></i>
-                                Información del Item
-                            </h5>
-                            <span class="badge bg-light text-dark">
-                                #{{ inbox_item.id }}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="item-header mb-3">
-                            <h4 class="text-dark mb-2">{{ inbox_item.title }}</h4>
-                            {% if inbox_item.description %}
-                                <p class="text-muted mb-3">{{ inbox_item.description }}</p>
-                            {% else %}
-                                <p class="text-muted mb-3"><em>Sin descripción adicional</em></p>
-                            {% endif %}
-                        </div>
-
-                        <div class="item-metadata">
-                            <div class="metadata-item mb-2">
-                                <i class="bi bi-calendar text-primary me-2"></i>
-                                <strong>Creado:</strong> {{ inbox_item.created_at|date:"d/m/Y H:i" }}
-                            </div>
-                            <div class="metadata-item mb-2">
-                                <i class="bi bi-person text-primary me-2"></i>
-                                <strong>Creador:</strong> {{ inbox_item.created_by.get_full_name|default:inbox_item.created_by.username }}
-                            </div>
-                            <div class="metadata-item mb-2">
-                                <i class="bi bi-eye text-primary me-2"></i>
-                                <strong>Vistas:</strong> {{ inbox_item.view_count }}
-                            </div>
-                            <div class="metadata-item mb-2">
-                                <i class="bi bi-clock text-primary me-2"></i>
-                                <strong>Última actividad:</strong> {{ inbox_item.last_activity|date:"d/m/Y H:i" }}
+    <!-- FILA 2: Contenido principal (9 + 3 columnas) -->
+    <div class="row">
+        <!-- Columna izquierda: 9 columnas -->
+        <div class="col-lg-9">
+            <div class="row">
+                <!-- Subcolumna 1: Detalle del item (4 columnas) -->
+                <div class="col-md-4">
+                    <!-- Tarjeta: Información del Item -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-primary text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Información del Item</h5>
+                                <span class="badge bg-light text-dark">#{{ inbox_item.id }}</span>
                             </div>
                         </div>
-
-                        <!-- Status Badges -->
-                        <div class="status-badges mt-3">
-                            <div class="mb-2">
+                        <div class="card-body">
+                            <div class="item-header mb-3">
+                                <h4 class="text-dark mb-2">{{ inbox_item.title }}</h4>
+                                {% if inbox_item.description %}
+                                    <p class="text-muted mb-3">{{ inbox_item.description }}</p>
+                                {% else %}
+                                    <p class="text-muted mb-3"><em>Sin descripción adicional</em></p>
+                                {% endif %}
+                            </div>
+                            <div class="item-metadata">
+                                <div class="metadata-item mb-2">
+                                    <i class="bi bi-calendar text-primary me-2"></i>
+                                    <strong>Creado:</strong> {{ inbox_item.created_at|date:"d/m/Y H:i" }}
+                                </div>
+                                <div class="metadata-item mb-2">
+                                    <i class="bi bi-person text-primary me-2"></i>
+                                    <strong>Creador:</strong> {{ inbox_item.created_by.get_full_name|default:inbox_item.created_by.username }}
+                                </div>
+                                <div class="metadata-item mb-2">
+                                    <i class="bi bi-eye text-primary me-2"></i>
+                                    <strong>Vistas:</strong> {{ inbox_item.view_count }}
+                                </div>
+                                <div class="metadata-item mb-2">
+                                    <i class="bi bi-clock text-primary me-2"></i>
+                                    <strong>Última actividad:</strong> {{ inbox_item.last_activity|date:"d/m/Y H:i" }}
+                                </div>
+                            </div>
+                            <div class="status-badges mt-3">
                                 <span class="badge bg-{% if inbox_item.is_processed %}success{% else %}warning{% endif %} me-2">
                                     <i class="bi bi-{% if inbox_item.is_processed %}check-circle{% else %}clock{% endif %} me-1"></i>
                                     {% if inbox_item.is_processed %}Procesado{% else %}Pendiente{% endif %}
                                 </span>
                                 {% if inbox_item.is_public %}
-                                    <span class="badge bg-info">
-                                        <i class="bi bi-globe me-1"></i>Público
-                                    </span>
+                                    <span class="badge bg-info"><i class="bi bi-globe me-1"></i>Público</span>
                                 {% else %}
-                                    <span class="badge bg-secondary">
-                                        <i class="bi bi-lock me-1"></i>Privado
-                                    </span>
+                                    <span class="badge bg-secondary"><i class="bi bi-lock me-1"></i>Privado</span>
                                 {% endif %}
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Classification Consensus Card -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0">
-                            <i class="bi bi-bar-chart me-2"></i>
-                            Consenso de Clasificación
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="consensus-item mb-3">
-                            <small class="text-muted d-block">Categoría GTD</small>
-                            <span class="badge bg-primary fs-6">
-                                {{ consensus_category|title|default:"Sin consenso" }}
-                            </span>
+                    <!-- Tarjeta: Consenso de Clasificación -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Consenso de Clasificación</h6>
                         </div>
-                        <div class="consensus-item mb-3">
-                            <small class="text-muted d-block">Tipo de Acción</small>
-                            <span class="badge bg-secondary fs-6">
-                                {{ consensus_action|title|default:"Sin consenso" }}
-                            </span>
-                        </div>
-                        <div class="consensus-item">
-                            <small class="text-muted d-block">Votos de Clasificación</small>
-                            <span class="badge bg-light text-dark fs-6">
-                                {{ classifications|length }} usuario(s)
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Stats Card -->
-                <div class="card shadow-sm">
-                    <div class="card-header bg-success text-white">
-                        <h6 class="mb-0">
-                            <i class="bi bi-graph-up me-2"></i>
-                            Estadísticas Rápidas
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="stat-item text-center mb-3">
-                            <div class="stat-value text-success">{{ processed_count }}</div>
-                            <small class="text-muted">Items procesados</small>
-                        </div>
-                        <div class="stat-item text-center">
-                            <div class="stat-value text-warning">{{ unprocessed_count }}</div>
-                            <small class="text-muted">Items pendientes</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Panel: Control Actions -->
-            <div class="col-lg-8">
-                <!-- Action Control Panel -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-dark text-white">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">
-                                <i class="bi bi-gear me-2"></i>
-                                Panel de Control de Acciones
-                            </h5>
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-outline-light" onclick="toggleActionView('grid')">
-                                    <i class="bi bi-grid"></i>
-                                </button>
-                                <button type="button" class="btn btn-outline-light" onclick="toggleActionView('list')">
-                                    <i class="bi bi-list"></i>
-                                </button>
+                        <div class="card-body">
+                            <div class="consensus-item mb-3">
+                                <small class="text-muted d-block">Categoría GTD</small>
+                                <span class="badge bg-primary fs-6">{{ consensus_category|title|default:"Sin consenso" }}</span>
+                            </div>
+                            <div class="consensus-item mb-3">
+                                <small class="text-muted d-block">Tipo de Acción</small>
+                                <span class="badge bg-secondary fs-6">{{ consensus_action|title|default:"Sin consenso" }}</span>
+                            </div>
+                            <div class="consensus-item">
+                                <small class="text-muted d-block">Votos de Clasificación</small>
+                                <span class="badge bg-light text-dark fs-6">{{ classifications|length }} usuario(s)</span>
                             </div>
                         </div>
                     </div>
-                    <div class="card-body">
-                        <!-- GTD Processing Flow Info -->
-                        <div class="alert alert-primary mb-4">
-                            <h6 class="mb-2">
-                                <i class="bi bi-diagram-3 me-2"></i>
-                                Flujo de Procesamiento GTD
-                            </h6>
-                            <p class="mb-0 small">
-                                <strong>Paso actual:</strong> Clarificar y decidir qué hacer con este item del inbox.
-                                Según GTD, cada item debe ser procesado para determinar si es accionable o no.
-                            </p>
+                    <!-- Tarjeta: Estadísticas Rápidas -->
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Estadísticas Rápidas</h6>
                         </div>
+                        <div class="card-body">
+                            <div class="stat-item text-center mb-3">
+                                <div class="stat-value text-success">{{ processed_count }}</div>
+                                <small class="text-muted">Items procesados</small>
+                            </div>
+                            <div class="stat-item text-center">
+                                <div class="stat-value text-warning">{{ unprocessed_count }}</div>
+                                <small class="text-muted">Items pendientes</small>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Tarjeta: Clasificación GTD (AGREGAR DESPUÉS DE ESTADÍSTICAS RÁPIDAS) -->
+                    <div class="card shadow-sm mt-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0"><i class="bi bi-tags me-2"></i>Clasificación GTD</h6>
+                        </div>
+                        <div class="card-body">
+                            <form id="classificationForm" method="post" action="{% url 'classify_inbox_item_ajax' inbox_item.id %}">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Categoría GTD:</label>
+                                    <select name="gtd_category" class="form-select" id="gtdCategory">
+                                        <option value="pendiente" {% if inbox_item.gtd_category == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                                        <option value="accionable" {% if inbox_item.gtd_category == 'accionable' %}selected{% endif %}>Accionable</option>
+                                        <option value="no_accionable" {% if inbox_item.gtd_category == 'no_accionable' %}selected{% endif %}>No Accionable</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Tipo de Acción:</label>
+                                    <select name="action_type" class="form-select" id="actionType">
+                                        <option value="">-- Seleccionar --</option>
+                                        <option value="hacer" {% if inbox_item.action_type == 'hacer' %}selected{% endif %}>Hacer</option>
+                                        <option value="delegar" {% if inbox_item.action_type == 'delegar' %}selected{% endif %}>Delegar</option>
+                                        <option value="posponer" {% if inbox_item.action_type == 'posponer' %}selected{% endif %}>Posponer</option>
+                                        <option value="proyecto" {% if inbox_item.action_type == 'proyecto' %}selected{% endif %}>Convertir en Proyecto</option>
+                                        <option value="eliminar" {% if inbox_item.action_type == 'eliminar' %}selected{% endif %}>Eliminar</option>
+                                        <option value="archivar" {% if inbox_item.action_type == 'archivar' %}selected{% endif %}>Archivar</option>
+                                        <option value="incubar" {% if inbox_item.action_type == 'incubar' %}selected{% endif %}>Incubar</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Prioridad:</label>
+                                    <select name="priority" class="form-select" id="priority">
+                                        <option value="baja" {% if inbox_item.priority == 'baja' %}selected{% endif %}>Baja</option>
+                                        <option value="media" {% if inbox_item.priority == 'media' %}selected{% endif %}>Media</option>
+                                        <option value="alta" {% if inbox_item.priority == 'alta' %}selected{% endif %}>Alta</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Confianza (%):</label>
+                                    <input type="range" class="form-range" name="confidence" min="0" max="100" step="5" 
+                                           value="{% if inbox_item.classification_confidence %}{{ inbox_item.classification_confidence }}{% else %}80{% endif %}" 
+                                           id="confidenceRange">
+                                    <div class="text-center"><span id="confidenceValue">80</span>%</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Notas de clasificación:</label>
+                                    <textarea name="notes" class="form-control" rows="2" id="classificationNotes">{{ inbox_item.classification_notes|default:'' }}</textarea>
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-warning" id="saveClassificationBtn">
+                                        <i class="bi bi-save me-2"></i>Guardar Clasificación
+                                    </button>
+                                    <button type="button" class="btn btn-outline-warning" id="reclassifyBtn" data-bs-toggle="modal" data-bs-target="#reclassifyHistoryModal">
+                                        <i class="bi bi-clock-history me-2"></i>Ver Historial de Clasificaciones
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
 
-                        <!-- GTD Processing Actions -->
-                        <div class="processing-section">
-                            <h5 class="mb-4">
-                                <i class="bi bi-diagram-3 me-2"></i>
-                                Procesamiento GTD - ¿Qué hacer con este item?
-                            </h5>
-
+                <!-- Subcolumna 2: Acciones principales (8 columnas) -->
+                <div class="col-md-8">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-dark text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Panel de Control de Acciones</h5>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-light" id="gridViewBtn"><i class="bi bi-grid"></i></button>
+                                    <button type="button" class="btn btn-outline-light" id="listViewBtn"><i class="bi bi-list"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
                             <form method="post" id="processForm">
                                 {% csrf_token %}
-
-                                <!-- GTD Decision Flow -->
-                                <div class="gtd-decision-flow mb-4">
-                                    <div class="alert alert-info">
-                                        <h6 class="mb-2">
-                                            <i class="bi bi-question-circle me-2"></i>
-                                            Paso 2: Aclarar (Clarify)
-                                        </h6>
-                                        <p class="mb-0 small">
-                                            Según la metodología GTD, decide qué acción requiere este item del inbox.
-                                            <strong>¿Es accionable?</strong>
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <!-- Actionable Items Section -->
+                                
+                                <!-- SECCIÓN ACCIONABLE -->
                                 <div class="row mb-4">
                                     <div class="col-12 mb-3">
-                                        <h6 class="text-success mb-3">
-                                            <i class="bi bi-check-circle me-2"></i>
-                                            SÍ es accionable - Elige una opción:
-                                        </h6>
+                                        <h6 class="text-success mb-3"><i class="bi bi-check-circle me-2"></i>SÍ es accionable - Elige una opción:</h6>
                                     </div>
-
-                                    <!-- Nueva Tarea -->
+                                    <!-- Tarjeta: Crear Tarea -->
                                     <div class="col-md-6 mb-3">
-                                        <div class="action-card success-action" data-action="convert_to_task">
+                                        <div class="action-card success-action">
                                             <div class="card-body text-center">
-                                                <div class="action-icon mb-3">
-                                                    <i class="bi bi-plus-circle-fill text-success" style="font-size: 3rem;"></i>
-                                                </div>
+                                                <div class="action-icon mb-3"><i class="bi bi-plus-circle-fill text-success" style="font-size: 3rem;"></i></div>
                                                 <h6 class="card-title">Crear Nueva Tarea</h6>
-                                                <p class="card-text small text-muted mb-3">
-                                                    Crear una tarea completamente nueva basada en este item del inbox
+                                                <p class="card-text small text-muted mb-2">
+                                                    <i class="bi bi-info-circle me-1"></i><span id="taskContextPreview">Tarea independiente</span>
                                                 </p>
-                                                <button type="submit" name="action" value="convert_to_task"
-                                                        class="btn btn-success w-100">
-                                                    <i class="bi bi-plus-circle me-2"></i>
-                                                    Nueva Tarea
-                                                </button>
+                                                <div class="mb-3">
+                                                    <small class="text-muted d-block"><i class="bi bi-folder me-1"></i> Proyecto: <span id="taskProjectPreview">Ninguno</span></small>
+                                                    <small class="text-muted d-block"><i class="bi bi-calendar me-1"></i> Evento: <span id="taskEventPreview">Nuevo</span></small>
+                                                </div>
+                                                <button type="submit" name="action" value="convert_to_task" class="btn btn-success w-100"><i class="bi bi-plus-circle me-2"></i>Crear Tarea</button>
                                             </div>
                                         </div>
                                     </div>
-
-                                    <!-- Tarea Existente -->
+                                    <!-- Tarjeta: Crear Proyecto -->
                                     <div class="col-md-6 mb-3">
-                                        <div class="action-card info-action" data-action="choose_existing_task">
+                                        <div class="action-card primary-action">
                                             <div class="card-body text-center">
-                                                <div class="action-icon mb-3">
-                                                    <i class="bi bi-link-45deg text-info" style="font-size: 3rem;"></i>
-                                                </div>
-                                                <h6 class="card-title">Vincular a Tarea Existente</h6>
-                                                <p class="card-text small text-muted mb-3">
-                                                    Agregar este item como referencia a una tarea ya existente
-                                                </p>
-                                                <button type="button" class="btn btn-info w-100" onclick="showTaskSelector()" id="linkToExistingTaskBtn">
-                                                    <i class="bi bi-link me-2"></i>
-                                                    Elegir Tarea
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Nuevo Proyecto -->
-                                    <div class="col-md-6 mb-3">
-                                        <div class="action-card primary-action" data-action="convert_to_project">
-                                            <div class="card-body text-center">
-                                                <div class="action-icon mb-3">
-                                                    <i class="bi bi-folder-plus text-primary" style="font-size: 3rem;"></i>
-                                                </div>
+                                                <div class="action-icon mb-3"><i class="bi bi-folder-plus text-primary" style="font-size: 3rem;"></i></div>
                                                 <h6 class="card-title">Crear Nuevo Proyecto</h6>
-                                                <p class="card-text small text-muted mb-3">
-                                                    Convertir en un proyecto que requiere múltiples tareas para completarse
-                                                </p>
-                                                <button type="submit" name="action" value="convert_to_project"
-                                                        class="btn btn-primary w-100">
-                                                    <i class="bi bi-folder-plus me-2"></i>
-                                                    Nuevo Proyecto
-                                                </button>
+                                                <p class="card-text small text-muted mb-2"><i class="bi bi-info-circle me-1"></i>Proyecto completo con gestión integrada</p>
+                                                <div class="mb-3">
+                                                    <small class="text-muted d-block"><i class="bi bi-calendar me-1"></i> Evento: <span id="projectEventPreview">Nuevo</span></small>
+                                                    <small class="text-muted d-block"><i class="bi bi-clock me-1"></i> Incluye tarea inicial</small>
+                                                </div>
+                                                <button type="submit" name="action" value="convert_to_project" class="btn btn-primary w-100"><i class="bi bi-folder-plus me-2"></i>Crear Proyecto</button>
                                             </div>
                                         </div>
                                     </div>
-
-                                    <!-- Proyecto Existente -->
+                                    <!-- Tarjeta: Solo Evento -->
                                     <div class="col-md-6 mb-3">
-                                        <div class="action-card secondary-action" data-action="choose_existing_project">
+                                        <div class="action-card info-action">
                                             <div class="card-body text-center">
-                                                <div class="action-icon mb-3">
-                                                    <i class="bi bi-folder-symlink text-secondary" style="font-size: 3rem;"></i>
+                                                <div class="action-icon mb-3"><i class="bi bi-calendar-plus text-info" style="font-size: 3rem;"></i></div>
+                                                <h6 class="card-title">Crear Solo Evento</h6>
+                                                <p class="card-text small text-muted mb-2"><i class="bi bi-info-circle me-1"></i>Evento sin tareas ni proyectos específicos</p>
+                                                <div class="mb-3">
+                                                    <small class="text-muted d-block"><i class="bi bi-people me-1"></i> Gestión de asistentes</small>
+                                                    <small class="text-muted d-block"><i class="bi bi-tag me-1"></i> Categorización flexible</small>
                                                 </div>
-                                                <h6 class="card-title">Vincular a Proyecto Existente</h6>
-                                                <p class="card-text small text-muted mb-3">
-                                                    Agregar como referencia a un proyecto ya existente en el sistema
-                                                </p>
-                                                <button type="button" class="btn btn-secondary w-100" onclick="showProjectSelector()">
-                                                    <i class="bi bi-folder-symlink me-2"></i>
-                                                    Elegir Proyecto
-                                                </button>
+                                                <button type="submit" name="action" value="convert_to_event" class="btn btn-info w-100"><i class="bi bi-calendar-plus me-2"></i>Crear Evento</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Tarjeta: Proyecto + Tarea Inicial -->
+                                    <div class="col-md-6 mb-3">
+                                        <div class="action-card warning-action">
+                                            <div class="card-body text-center">
+                                                <div class="action-icon mb-3"><i class="bi bi-diagram-3 text-warning" style="font-size: 3rem;"></i></div>
+                                                <h6 class="card-title">Proyecto + Tarea Inicial</h6>
+                                                <p class="card-text small text-muted mb-2"><i class="bi bi-info-circle me-1"></i>Proyecto completo con primera tarea incluida</p>
+                                                <div class="mb-3">
+                                                    <small class="text-muted d-block"><i class="bi bi-calendar me-1"></i> Evento asociado</small>
+                                                    <small class="text-muted d-block"><i class="bi bi-check2-circle me-1"></i> Tarea inicial configurada</small>
+                                                </div>
+                                                <button type="submit" name="action" value="convert_to_task_project" class="btn btn-warning w-100"><i class="bi bi-diagram-3 me-2"></i>Proyecto + Tarea</button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Non-Actionable Items Section -->
+                                <!-- SECCIÓN NO ACCIONABLE -->
                                 <div class="row">
                                     <div class="col-12 mb-3">
-                                        <h6 class="text-warning mb-3">
-                                            <i class="bi bi-x-circle me-2"></i>
-                                            NO es accionable - Elige una opción:
-                                        </h6>
+                                        <h6 class="text-warning mb-3"><i class="bi bi-x-circle me-2"></i>NO es accionable - Elige una opción:</h6>
                                     </div>
-
-                                    <!-- Referencia -->
                                     <div class="col-md-6 mb-3">
-                                        <div class="action-card warning-action" data-action="reference">
+                                        <div class="action-card secondary-action">
                                             <div class="card-body text-center">
-                                                <div class="action-icon mb-3">
-                                                    <i class="bi bi-archive text-warning" style="font-size: 3rem;"></i>
-                                                </div>
+                                                <div class="action-icon mb-3"><i class="bi bi-archive text-secondary" style="font-size: 3rem;"></i></div>
                                                 <h6 class="card-title">Guardar como Referencia</h6>
-                                                <p class="card-text small text-muted mb-3">
-                                                    Guardar como información útil para consultar más tarde
-                                                </p>
-                                                <button type="submit" name="action" value="reference"
-                                                        class="btn btn-warning w-100">
-                                                    <i class="bi bi-archive me-2"></i>
-                                                    Referencia
-                                                </button>
+                                                <p class="card-text small text-muted mb-3">Guardar como información útil para consultar más tarde</p>
+                                                <button type="submit" name="action" value="reference" class="btn btn-secondary w-100"><i class="bi bi-archive me-2"></i>Referencia</button>
                                             </div>
                                         </div>
                                     </div>
-
-                                    <!-- Algún día/Quizás -->
                                     <div class="col-md-6 mb-3">
-                                        <div class="action-card light-action" data-action="someday">
+                                        <div class="action-card light-action">
                                             <div class="card-body text-center">
-                                                <div class="action-icon mb-3">
-                                                    <i class="bi bi-lightbulb text-info" style="font-size: 3rem;"></i>
-                                                </div>
+                                                <div class="action-icon mb-3"><i class="bi bi-lightbulb text-info" style="font-size: 3rem;"></i></div>
                                                 <h6 class="card-title">Algún día / Quizás</h6>
-                                                <p class="card-text small text-muted mb-3">
-                                                    Guardar como idea para el futuro, no requiere acción inmediata
-                                                </p>
-                                                <button type="submit" name="action" value="someday"
-                                                        class="btn btn-info w-100">
-                                                    <i class="bi bi-lightbulb me-2"></i>
-                                                    Algún día
-                                                </button>
+                                                <p class="card-text small text-muted mb-3">Guardar como idea para el futuro, no requiere acción inmediata</p>
+                                                <button type="submit" name="action" value="someday" class="btn btn-info w-100"><i class="bi bi-lightbulb me-2"></i>Algún día</button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-
-                                <!-- Task Selection Modal -->
-                                <div id="taskSelectorModal" class="modal fade" tabindex="-1">
-                                    <div class="modal-dialog modal-lg">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title">
-                                                    <i class="bi bi-list-check me-2"></i>
-                                                    Elegir Tarea Existente
-                                                </h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="mb-3">
-                                                    <label for="taskSearch" class="form-label">Buscar Tareas:</label>
-                                                    <input type="text" class="form-control" id="taskSearch"
-                                                           placeholder="Escribe para buscar tareas...">
-                                                </div>
-                                                <div id="taskList" class="list-group">
-                                                    <!-- Las tareas se cargarán aquí dinámicamente -->
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                    Cancelar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Project Selection Modal -->
-                                <div id="projectSelectorModal" class="modal fade" tabindex="-1">
-                                    <div class="modal-dialog modal-lg">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title">
-                                                    <i class="bi bi-folder me-2"></i>
-                                                    Elegir Proyecto Existente
-                                                </h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="mb-3">
-                                                    <label for="projectSearch" class="form-label">Buscar Proyectos:</label>
-                                                    <input type="text" class="form-control" id="projectSearch"
-                                                           placeholder="Escribe para buscar proyectos...">
-                                                </div>
-                                                <div id="projectList" class="list-group">
-                                                    <!-- Los proyectos se cargarán aquí dinámicamente -->
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                    Cancelar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Selected Task Info -->
-                                <div id="selectedTaskInfo" class="mb-3"></div>
-
-                                <!-- Selected Project Info -->
-                                <div id="selectedProjectInfo" class="mb-3"></div>
                             </form>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    {% else %}
-        <div class="row">
-            <div class="col-12">
-                <div class="alert alert-warning">
-                    <h5>
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        Item no encontrado
-                    </h5>
-                    <p>El item del inbox que intentas procesar no existe o no tienes permisos para accederlo.</p>
-                    <a href="{% url 'inbox' %}" class="btn btn-warning">
-                        <i class="bi bi-arrow-left me-1"></i>
-                        Volver al Inbox
-                    </a>
+
+        <!-- Columna derecha: Herramientas secundarias (3 columnas) -->
+        <div class="col-lg-3">
+            <!-- Tarjeta: Configuración de Creación -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Configuración de Creación</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Proyecto:</label>
+                        <select name="project_option" class="form-select mb-2" id="projectOption">
+                            <option value="none">Sin proyecto</option>
+                            <option value="new">Nuevo proyecto</option>
+                            <option value="existing">Proyecto existente</option>
+                        </select>
+                        <div id="existingProjectSelect" style="display:none;">
+                            <select name="existing_project_id" class="form-select">
+                                <option value="">-- Elegir proyecto --</option>
+                                {% for project in user_projects %}
+                                <option value="{{ project.id }}">{{ project.title }} ({{ project.project_status.status_name }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Evento:</label>
+                        <select name="event_option" class="form-select mb-2" id="eventOption">
+                            <option value="new">Nuevo evento</option>
+                            <option value="existing">Evento existente</option>
+                            <option value="none">Sin evento</option>
+                        </select>
+                        <div id="existingEventSelect" style="display:none;">
+                            <select name="existing_event_id" class="form-select">
+                                <option value="">-- Elegir evento --</option>
+                                {% for event in user_events %}
+                                <option value="{{ event.id }}">{{ event.title }} ({{ event.event_status.status_name }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Asignar a:</label>
+                        <select name="assigned_to" class="form-select">
+                            <option value="{{ request.user.id }}">Yo mismo</option>
+                            {% for user in available_users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted d-block">Responsable</small>
+                    </div>
+                    <!-- Vista previa de creación -->
+                    <div class="alert alert-light border mt-3" id="creationPreview">
+                        <h6 class="mb-2"><i class="bi bi-eye me-2"></i>Vista previa:</h6>
+                        <p class="mb-0 small" id="previewText">Selecciona opciones para ver una vista previa...</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    {% endif %}
-
-    <!-- Modal para Alertas y Mensajes -->
-    <div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="alertModalLabel">
-                        <i class="bi bi-info-circle me-2"></i>Notificación
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <!-- Tarjeta: Vinculación a Objetos Existentes - CORREGIDA -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="bi bi-link-45deg me-2"></i>Vinculación</h6>
                 </div>
-                <div class="modal-body" id="alertModalBody">
-                    <!-- El mensaje se insertará aquí dinámicamente -->
+                <div class="card-body">
+                    <p class="small text-muted">Vincular este item a objetos ya creados:</p>
+                    <div class="d-flex flex-column gap-2">
+                        <!-- CORREGIDO: Agregados atributos data-bs-toggle y data-bs-target -->
+                        <button type="button" class="btn btn-outline-info btn-sm" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#taskSelectorModal">
+                            <i class="bi bi-link me-1"></i>Tarea Existente
+                        </button>
+                        <button type="button" class="btn btn-outline-primary btn-sm" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#projectSelectorModal">
+                            <i class="bi bi-folder-symlink me-1"></i>Proyecto Existente
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#eventSelectorModal">
+                            <i class="bi bi-calendar-event me-1"></i>Evento Existente
+                        </button>
+                    </div>
+                    <div id="selectedTaskInfo" class="mt-3"></div>
+                    <div id="selectedProjectInfo" class="mt-3"></div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
-                </div>
+            </div>
+            <!-- Botón de prueba (opcional - puedes eliminarlo después) -->
+            <div class="mt-3 text-center">
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="testModals()">
+                    <i class="bi bi-bug me-1"></i>Test Modales
+                </button>
             </div>
         </div>
     </div>
 
-<style>
-/* Main Layout */
-.container-fluid {
-    padding: 2rem 1rem;
-}
-
-/* Header Section */
-.card-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.card-header h5 {
-    margin: 0;
-    font-weight: 600;
-}
-
-/* Inbox Item Preview */
-.inbox-item-preview {
-    background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%);
-    border: 1px solid #e3e8ff;
-    border-radius: 12px;
-    padding: 2rem;
-    margin-bottom: 2rem;
-}
-
-.inbox-item-preview h4 {
-    color: #2d3748;
-    font-weight: 600;
-    margin-bottom: 1rem;
-}
-
-.item-metadata {
-    background: rgba(255,255,255,0.8);
-    padding: 1rem;
-    border-radius: 8px;
-    backdrop-filter: blur(10px);
-}
-
-/* Action Cards */
-.action-card {
-    border: none;
-    border-radius: 16px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    height: 100%;
-    min-height: 280px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.action-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-}
-
-.primary-action {
-    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-    color: white;
-}
-
-.danger-action {
-    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
-    color: white;
-}
-
-.warning-action {
-    background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
-    color: white;
-}
-
-.info-action {
-    background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-    color: white;
-}
-
-.secondary-action {
-    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
-    color: white;
-}
-
-.light-action {
-    background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
-    color: white;
-}
-
-.action-card .card-body {
-    padding: 2rem 1.5rem;
-}
-
-.action-icon {
-    margin-bottom: 1rem;
-    opacity: 0.9;
-}
-
-.action-card .card-title {
-    font-weight: 600;
-    margin-bottom: 1rem;
-}
-
-.action-card .btn {
-    border-radius: 25px;
-    padding: 0.75rem 1.5rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.action-card .btn:hover {
-    transform: scale(1.05);
-}
-
-/* GTD Steps */
-.gtd-steps {
-    margin: 1rem 0;
-}
-
-.step {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 1rem;
-}
-
-.step-number {
-    background: #667eea;
-    color: white;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: bold;
-    margin-right: 0.75rem;
-    flex-shrink: 0;
-}
-
-.step strong {
-    color: #2d3748;
-    font-size: 0.9rem;
-}
-
-.step small {
-    font-size: 0.8rem;
-}
-
-/* Stats Cards */
-.stat-item {
-    text-align: center;
-    margin-bottom: 1rem;
-}
-
-.stat-value {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #667eea;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .container-fluid {
-        padding: 1rem 0.5rem;
-    }
-
-    .action-card {
-        min-height: 240px;
-        margin-bottom: 1rem;
-    }
-
-    .inbox-item-preview {
-        padding: 1.5rem;
-    }
-}
-
-/* Loading Animation */
-.action-card.processing {
-    pointer-events: none;
-    opacity: 0.7;
-}
-
-.action-card.processing .btn {
-    position: relative;
-}
-
-.action-card.processing .btn::after {
-    content: '';
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    margin: auto;
-    border: 2px solid transparent;
-    border-top-color: currentColor;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* Success/Error States */
-.action-success {
-    animation: successPulse 0.6s ease-out;
-}
-
-.action-error {
-    animation: errorShake 0.6s ease-out;
-}
-
-@keyframes successPulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
-}
-
-@keyframes errorShake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
-}
-
-/* Accessibility */
-.action-card:focus-within {
-    outline: 2px solid #667eea;
-    outline-offset: 2px;
-}
-
-.btn:focus {
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-/* Control Panel Specific Styles */
-.inbox-control-panel {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    min-height: 100vh;
-}
-
-.action-control-card {
-    border: 2px solid transparent;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    min-height: 120px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.action-control-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    border-color: rgba(102, 126, 234, 0.3);
-}
-
-.action-control-card.actionable-card {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-    border-left: 4px solid #2196f3;
-}
-
-.action-control-card.non-actionable-card {
-    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-    border-left: 4px solid #ff9800;
-}
-
-.action-control-card.management-card {
-    background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
-    border-left: 4px solid #9c27b0;
-}
-
-.selected-info-panel {
-    background: #e8f5e8;
-    border: 2px solid #4caf50;
-    border-radius: 8px;
-    padding: 1rem;
-}
-
-/* Classification and Activity Styles */
-.classification-item, .activity-item {
-    border-left: 3px solid #007bff;
-    padding-left: 1rem;
-    margin-bottom: 1rem;
-}
-
-.classification-item:last-child, .activity-item:last-child {
-    margin-bottom: 0;
-}
-
-.activity-timeline {
-    position: relative;
-}
-
-.activity-timeline::before {
-    content: '';
-    position: absolute;
-    left: 15px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: #e9ecef;
-}
-
-.activity-icon {
-    background: white;
-    border: 2px solid #007bff;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    z-index: 1;
-}
-
-/* Advanced Management Panel */
-#advancedPanel .card-body {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-}
-
-/* Statistics Cards */
-.stat-item {
-    text-align: center;
-    padding: 1rem;
-    background: rgba(255,255,255,0.8);
-    border-radius: 8px;
-    margin-bottom: 1rem;
-}
-
-.stat-value {
-    font-size: 2rem;
-    font-weight: bold;
-    color: #007bff;
-    display: block;
-    margin-bottom: 0.5rem;
-}
-
-/* Metadata Items */
-.metadata-item {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.metadata-item:last-child {
-    border-bottom: none;
-}
-
-/* Consensus Items */
-.consensus-item {
-    background: rgba(255,255,255,0.6);
-    padding: 0.75rem;
-    border-radius: 6px;
-    margin-bottom: 0.5rem;
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-    .inbox-control-panel {
-        background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
-        color: #e2e8f0;
-    }
-
-    .action-control-card.actionable-card {
-        background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
-    }
-
-    .action-control-card.non-actionable-card {
-        background: linear-gradient(135deg, #4a3c1d 0%, #744210 100%);
-    }
-
-    .action-control-card.management-card {
-        background: linear-gradient(135deg, #3c2a4d 0%, #553c9a 100%);
-    }
-
-    .selected-info-panel {
-        background: #2d4a3a;
-        border-color: #4caf50;
-    }
-
-    .metadata-item {
-        border-bottom-color: #4a5568;
-    }
-
-    .consensus-item {
-        background: rgba(45, 55, 72, 0.6);
-    }
-
-    .stat-item {
-        background: rgba(45, 55, 72, 0.8);
-    }
-}
-
-/* Task Selection Modal */
-.modal-content {
-    border-radius: 16px;
-    border: none;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-}
-
-.modal-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 16px 16px 0 0;
-    border: none;
-}
-
-.modal-header .btn-close {
-    filter: invert(1);
-}
-
-.task-item {
-    border: none;
-    border-radius: 12px;
-    margin-bottom: 0.5rem;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.task-item:hover {
-    background-color: #f8f9fa;
-    transform: translateX(5px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.task-item h6 {
-    color: #2d3748;
-    font-weight: 600;
-}
-
-.task-item .badge {
-    font-size: 0.75rem;
-}
-
-#taskSearch, #projectSearch {
-    border-radius: 25px;
-    border: 2px solid #e3e8ff;
-    padding: 0.75rem 1.25rem;
-    transition: all 0.3s ease;
-}
-
-#taskSearch:focus, #projectSearch:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-.list-group-item.selected {
-    background-color: #e3f2fd;
-    border-left: 4px solid #667eea;
-}
-
-.spinner-border {
-    width: 3rem;
-    height: 3rem;
-}
-
-/* Responsive Design for Control Panel */
-@media (max-width: 768px) {
-    .inbox-control-panel {
-        padding: 1rem 0.5rem;
-    }
-
-    .action-control-card {
-        min-height: 100px;
-        margin-bottom: 1rem;
-    }
-
-    .action-control-card .card-body {
-        padding: 1rem 0.75rem;
-    }
-
-    .action-control-card .action-icon {
-        font-size: 1.5rem !important;
-        margin-bottom: 0.5rem;
-    }
-
-    .action-control-card h6 {
-        font-size: 0.9rem;
-    }
-
-    .action-control-card p {
-        font-size: 0.8rem;
-    }
-}
-</style>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-// Funciones para mostrar modales de alerta y confirmación
-function showAlertModal(title, message, type = 'info') {
-    const modal = new bootstrap.Modal(document.getElementById('alertModal'));
-    const modalTitle = document.getElementById('alertModalLabel');
-    const modalBody = document.getElementById('alertModalBody');
-
-    // Configurar icono según el tipo
-    const icons = {
-        'success': 'bi-check-circle-fill text-success',
-        'danger': 'bi-exclamation-triangle-fill text-danger',
-        'warning': 'bi-exclamation-triangle-fill text-warning',
-        'info': 'bi-info-circle-fill text-info'
-    };
-
-    modalTitle.innerHTML = `<i class="bi ${icons[type] || icons['info']} me-2"></i>${title}`;
-    modalBody.innerHTML = `<p class="mb-0">${message}</p>`;
-
-    modal.show();
-}
-
-function showConfirmModal(title, message, type = 'warning', onConfirm, onCancel) {
-    // Crear modal de confirmación dinámicamente
-    const modalHtml = `
-        <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="confirmModalLabel">
-                            <i class="bi bi-question-circle-fill text-${type} me-2"></i>${title}
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p class="mb-0">${message}</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="confirmCancelBtn">Cancelar</button>
-                        <button type="button" class="btn btn-${type}" id="confirmOkBtn">Confirmar</button>
+    <!-- FILA 3: Guía GTD (12 columnas) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-primary mb-0">
+                <h6 class="mb-2"><i class="bi bi-diagram-3 me-2"></i>Flujo de Procesamiento GTD</h6>
+                <p class="mb-0 small"><strong>Paso actual:</strong> Clarificar y decidir qué hacer con este item del inbox. Según GTD, cada item debe ser procesado para determinar si es accionable o no.</p>
+            </div>
+            <div class="alert alert-info mt-3 mb-0">
+                <h6 class="mb-2"><i class="bi bi-question-circle me-2"></i>Paso 2: Aclarar (Clarify)</h6>
+                <p class="mb-0 small">Según la metodología GTD, decide qué acción requiere este item del inbox. <strong>¿Es accionable?</strong></p>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Mensaje cuando el item no existe -->
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-warning">
+                <h5><i class="bi bi-exclamation-triangle me-2"></i>Item no encontrado</h5>
+                <p>El item del inbox que intentas procesar no existe o no tienes permisos para accederlo.</p>
+                <a href="{% url 'inbox' %}" class="btn btn-warning"><i class="bi bi-arrow-left me-1"></i>Volver al Inbox</a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- MODALES (fuera del contenedor principal) -->
+<div class="modal fade" id="taskSelectorModal" tabindex="-1" aria-labelledby="taskSelectorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskSelectorModalLabel"><i class="bi bi-list-check me-2"></i>Elegir Tarea Existente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="taskSearch" class="form-label">Buscar Tareas:</label>
+                    <input type="text" class="form-control" id="taskSearch" placeholder="Escribe para buscar tareas...">
+                </div>
+                <div id="taskList" class="list-group"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="projectSelectorModal" tabindex="-1" aria-labelledby="projectSelectorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="projectSelectorModalLabel"><i class="bi bi-folder me-2"></i>Elegir Proyecto Existente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="projectSearch" class="form-label">Buscar Proyectos:</label>
+                    <input type="text" class="form-control" id="projectSearch" placeholder="Escribe para buscar proyectos...">
+                </div>
+                <div id="projectList" class="list-group"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="linkProjectConfirmBtn"><i class="bi bi-link me-1"></i>Vincular</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="eventSelectorModal" tabindex="-1" aria-labelledby="eventSelectorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="eventSelectorModalLabel"><i class="bi bi-calendar-event me-2"></i>Elegir Evento Existente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="eventSearch" class="form-label">Buscar Eventos:</label>
+                    <input type="text" class="form-control" id="eventSearch" placeholder="Escribe para buscar eventos...">
+                </div>
+                <div id="eventList" class="list-group"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="linkEventConfirmBtn"><i class="bi bi-link me-1"></i>Vincular</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="alertModal" tabindex="-1" aria-labelledby="alertModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="alertModalLabel"><i class="bi bi-info-circle me-2"></i>Notificación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="alertModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Historial de Clasificaciones -->
+<div class="modal fade" id="reclassifyHistoryModal" tabindex="-1" aria-labelledby="reclassifyHistoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title" id="reclassifyHistoryModalLabel">
+                    <i class="bi bi-clock-history me-2"></i>Historial de Clasificaciones
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="classificationHistoryList">
+                    <!-- Se llenará vía JavaScript -->
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-warning" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2">Cargando historial...</p>
                     </div>
                 </div>
             </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
         </div>
-    `;
+    </div>
+</div>
 
-    // Agregar modal al DOM
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-
-    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
-    const confirmBtn = document.getElementById('confirmOkBtn');
-    const cancelBtn = document.getElementById('confirmCancelBtn');
-
-    // Configurar eventos
-    confirmBtn.addEventListener('click', () => {
-        modal.hide();
-        if (onConfirm) onConfirm();
-        // Remover modal del DOM después de ocultarlo
-        setTimeout(() => {
-            document.getElementById('confirmModal').remove();
-        }, 300);
-    });
-
-    cancelBtn.addEventListener('click', () => {
-        modal.hide();
-        if (onCancel) onCancel();
-        // Remover modal del DOM después de ocultarlo
-        setTimeout(() => {
-            document.getElementById('confirmModal').remove();
-        }, 300);
-    });
-
-    // Remover modal si se cierra con la X o haciendo click fuera
-    document.getElementById('confirmModal').addEventListener('hidden.bs.modal', () => {
-        if (onCancel) onCancel();
-        document.getElementById('confirmModal').remove();
-    });
-
-    modal.show();
-}
-</script>
-<script type="text/javascript">
-// Función auxiliar para mostrar mensajes de error (ahora usa modales)
-function showErrorMessage(message) {
-    showAlertModal('Error', message, 'danger');
-}
-
-// Función para mostrar el selector de tareas
-function showTaskSelector() {
-    console.log('[SHOW_TASK_SELECTOR] Iniciando apertura del modal de tareas');
-    const modal = new bootstrap.Modal(document.getElementById('taskSelectorModal'));
-    modal.show();
-    loadAvailableTasks();
-}
-
-// Función para cargar tareas disponibles
-function loadAvailableTasks() {
-    console.log('[LOAD_TASKS] Iniciando carga de tareas disponibles');
-    const taskList = document.getElementById('taskList');
-    if (!taskList) return;
-
-    taskList.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Cargando tareas...</div>';
-
-    // Usar el endpoint correcto de la API
-    fetch('/events/inbox/api/tasks/', {
-        method: 'GET',
-        headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-            'Content-Type': 'application/json'
-        },
-        credentials: 'same-origin'
-    })
-    .then(response => {
-        if (response.status === 404) {
-            // API no existe aún - mostrar datos de ejemplo
-            console.log('[LOAD_TASKS] API no disponible, mostrando datos de ejemplo');
-            const sampleTasks = [
-                { id: 1, title: 'Revisar documentación del proyecto', description: 'Actualizar la documentación técnica', priority: 'alta' },
-                { id: 2, title: 'Implementar nueva funcionalidad', description: 'Desarrollar el módulo de reportes', priority: 'media' },
-                { id: 3, title: 'Corregir bugs menores', description: 'Arreglar issues reportados por usuarios', priority: 'baja' }
-            ];
-
-            taskList.innerHTML = sampleTasks.map(task => `
-                <div class="list-group-item task-item" onclick="selectTask(${task.id}, '${task.title}')">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6 class="mb-1">${task.title}</h6>
-                            <small class="text-muted">${task.description}</small>
-                        </div>
-                        <span class="badge bg-${task.priority === 'alta' ? 'danger' : task.priority === 'media' ? 'warning' : 'secondary'}">${task.priority}</span>
-                    </div>
+<!-- Modal: Reclasificar (confirmación) -->
+<div class="modal fade" id="reclassifyConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="bi bi-arrow-repeat me-2"></i>Confirmar Reclasificación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas reclasificar este item?</p>
+                <div class="alert alert-info">
+                    <strong>Clasificación anterior:</strong><br>
+                    <span id="oldClassificationPreview"></span>
                 </div>
-            `).join('');
-            return;
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data && data.tasks && data.tasks.length > 0) {
-            console.log('[LOAD_TASKS] Datos recibidos:', data);
-            taskList.innerHTML = data.tasks.map(task => `
-                <div class="list-group-item task-item" onclick="selectTask(${task.id}, '${task.title}')">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6 class="mb-1">${task.title}</h6>
-                            <small class="text-muted">${task.description || 'Sin descripción'}</small>
-                        </div>
-                        <span class="badge bg-${task.priority === 'alta' ? 'danger' : task.priority === 'media' ? 'warning' : 'secondary'}">${task.priority}</span>
-                    </div>
+                <div class="alert alert-success">
+                    <strong>Nueva clasificación:</strong><br>
+                    <span id="newClassificationPreview"></span>
                 </div>
-            `).join('');
-        } else if (!data) {
-            // Ya manejado arriba
-        } else {
-            taskList.innerHTML = '<div class="text-center text-muted py-3">No hay tareas disponibles</div>';
-        }
-    })
-    .catch(error => {
-        console.error('[LOAD_TASKS] Error:', error);
-        taskList.innerHTML = '<div class="text-center text-danger">Error al cargar tareas</div>';
-        showErrorMessage('Error al cargar las tareas disponibles');
-    });
-}
-
-// Función para seleccionar una tarea
-function selectTask(taskId, taskTitle) {
-    console.log('[SELECT_TASK] Tarea seleccionada:', taskId, taskTitle);
-    document.getElementById('selectedTaskInfo').innerHTML = `
-        <div class="alert alert-success">
-            <h6 class="mb-1"><i class="bi bi-check-circle me-2"></i>Tarea Seleccionada</h6>
-            <p class="mb-0">${taskTitle}</p>
-            <input type="hidden" name="selected_task_id" value="${taskId}">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-info" id="confirmReclassifyBtn">Confirmar Reclasificación</button>
+            </div>
         </div>
-    `;
-    bootstrap.Modal.getInstance(document.getElementById('taskSelectorModal')).hide();
-}
+    </div>
+</div>
 
-// Función para mostrar el selector de proyectos
-function showProjectSelector() {
-    console.log('[SHOW_PROJECT_SELECTOR] Iniciando apertura del modal de proyectos');
-    const modal = new bootstrap.Modal(document.getElementById('projectSelectorModal'));
-    modal.show();
-    loadAvailableProjects();
-}
+{% endblock %}
 
-// Función para cargar proyectos disponibles
-function loadAvailableProjects() {
-    console.log('[LOAD_PROJECTS] Iniciando carga de proyectos disponibles');
-    const projectList = document.getElementById('projectList');
-    if (!projectList) return;
-
-    projectList.innerHTML = '<div class="text-center"><div class="spinner-border spinner-border-sm" role="status"></div> Cargando proyectos...</div>';
-
-    // Usar el endpoint correcto de la API
-    fetch('/events/inbox/api/projects/', {
-        method: 'GET',
-        headers: {
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-            'Content-Type': 'application/json'
-        },
-        credentials: 'same-origin'
-    })
-    .then(response => {
-        if (response.status === 404) {
-            // API no existe aún - mostrar datos de ejemplo
-            console.log('[LOAD_PROJECTS] API no disponible, mostrando datos de ejemplo');
-            const sampleProjects = [
-                { id: 1, title: 'Sistema de Gestión de Proyectos', description: 'Desarrollo completo del sistema GTD', status: 'En progreso' },
-                { id: 2, title: 'Migración a nueva plataforma', description: 'Actualización tecnológica del sistema', status: 'Planificación' },
-                { id: 3, title: 'Implementación de API REST', description: 'Desarrollo de endpoints para integración', status: 'Pendiente' }
-            ];
-
-            projectList.innerHTML = sampleProjects.map(project => `
-                <div class="list-group-item project-item" onclick="selectProject(${project.id}, '${project.title}')">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6 class="mb-1">${project.title}</h6>
-                            <small class="text-muted">${project.description}</small>
-                        </div>
-                        <span class="badge bg-primary">${project.status}</span>
-                    </div>
-                </div>
-            `).join('');
-            return;
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data && data.projects && data.projects.length > 0) {
-            console.log('[LOAD_PROJECTS] Datos recibidos:', data);
-            projectList.innerHTML = data.projects.map(project => `
-                <div class="list-group-item project-item" onclick="selectProject(${project.id}, '${project.title}')">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <h6 class="mb-1">${project.title}</h6>
-                            <small class="text-muted">${project.description || 'Sin descripción'}</small>
-                        </div>
-                        <span class="badge bg-primary">${project.status}</span>
-                    </div>
-                </div>
-            `).join('');
-        } else if (!data) {
-            // Ya manejado arriba
-        } else {
-            projectList.innerHTML = '<div class="text-center text-muted py-3">No hay proyectos disponibles</div>';
-        }
-    })
-    .catch(error => {
-        console.error('[LOAD_PROJECTS] Error:', error);
-        projectList.innerHTML = '<div class="text-center text-danger">Error al cargar proyectos</div>';
-        showErrorMessage('Error al cargar los proyectos disponibles');
-    });
-}
-
-// Función para seleccionar un proyecto
-function selectProject(projectId, projectTitle) {
-    console.log('[SELECT_PROJECT] Proyecto seleccionado:', projectId, projectTitle);
-    document.getElementById('selectedProjectInfo').innerHTML = `
-        <div class="alert alert-success">
-            <h6 class="mb-1"><i class="bi bi-check-circle me-2"></i>Proyecto Seleccionado</h6>
-            <p class="mb-0">${projectTitle}</p>
-            <input type="hidden" name="selected_project_id" value="${projectId}">
-        </div>
-    `;
-    bootstrap.Modal.getInstance(document.getElementById('projectSelectorModal')).hide();
-}
-
-// Función para mostrar el modal de clasificación
-function showClassificationModal() {
-    console.log('[SHOW_CLASSIFICATION_MODAL] Iniciando apertura del modal de clasificación');
-    const modal = new bootstrap.Modal(document.getElementById('classificationModal'));
-    modal.show();
-}
-
-// Funciones CRUD para Inbox Items
-function viewInboxItem(itemId) {
-    // Abrir panel de administración para ver detalles del item
-    window.open(`/events/inbox/admin/${itemId}/`, '_blank');
-}
-
-function editInboxItem(itemId) {
-    // Por ahora, abrir el panel de administración (se puede mejorar con edición inline)
-    window.open(`/events/inbox/admin/${itemId}/`, '_blank');
-}
-
-function deleteInboxItem(itemId, title) {
-    console.log('=== INICIO deleteInboxItem ===');
-    console.log('itemId:', itemId);
-    console.log('title:', title);
-
-    // Mostrar modal de confirmación personalizado en lugar de confirm()
-    showConfirmModal(
-        `¿Estás seguro de que quieres eliminar el item "${title}"?`,
-        'Esta acción no se puede deshacer.',
-        'danger',
-        () => {
-            console.log('Usuario confirmó eliminación');
-
-            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            console.log('CSRF Token encontrado:', csrfToken ? 'Sí' : 'No');
-
-            const url = `/events/inbox/admin/bulk-action/`;
-            const body = `action=delete&selected_items=${itemId}`;
-
-            console.log('URL:', url);
-            console.log('Body:', body);
-
-            // Usar la API de administración para eliminar
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': csrfToken
-                },
-                body: body
-            })
-            .then(response => {
-                console.log('=== RESPONSE RECIBIDA ===');
-                console.log('Response status:', response.status);
-                console.log('Response statusText:', response.statusText);
-                console.log('Response ok:', response.ok);
-                console.log('Response redirected:', response.redirected);
-                console.log('Response url:', response.url);
-                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-
-                // Verificar si es un redirect
-                if (response.redirected) {
-                    console.log('RESPUESTA ES REDIRECT - URL final:', response.url);
-                }
-
-                // Intentar leer el contenido como texto primero
-                return response.text().then(text => {
-                    console.log('Contenido de respuesta (primeros 500 chars):', text.substring(0, 500));
-
-                    // Verificar si es HTML
-                    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
-                        console.error('ERROR: La respuesta es HTML, no JSON!');
-                        console.log('Contenido HTML completo:', text);
-                        throw new Error('Respuesta HTML en lugar de JSON');
-                    }
-
-                    // Si no es HTML, intentar parsear como JSON
-                    try {
-                        const jsonData = JSON.parse(text);
-                        console.log('JSON parseado exitosamente:', jsonData);
-                        return jsonData;
-                    } catch (jsonError) {
-                        console.error('Error al parsear JSON:', jsonError);
-                        console.log('Texto que falló en JSON:', text);
-                        throw jsonError;
-                    }
-                });
-            })
-            .then(data => {
-                console.log('=== PROCESANDO DATA ===');
-                console.log('Data recibida:', data);
-                console.log('data.success:', data.success);
-                console.log('response.redirected check:', data.response ? data.response.redirected : 'N/A');
-
-                if (data.success) {
-                    console.log('Eliminación exitosa, recargando página');
-                    showAlertModal('Item eliminado exitosamente', 'El item ha sido eliminado correctamente.', 'success');
-                    setTimeout(() => {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    console.log('Error en data.success, mostrando modal');
-                    showAlertModal('Error al eliminar el item', data.error || 'Error desconocido', 'danger');
-                }
-            })
-            .catch(error => {
-                console.error('=== ERROR EN deleteInboxItem ===');
-                console.error('Error completo:', error);
-                console.error('Error message:', error.message);
-                console.error('Error stack:', error.stack);
-                showAlertModal('Error al eliminar el item', error.message, 'danger');
-            });
-        },
-        () => {
-            console.log('Usuario canceló la eliminación');
-        }
-    );
-
-    console.log('=== FIN deleteInboxItem ===');
-}
-
-function refreshInboxItems() {
-    location.reload();
-}
-
-function bulkProcessInboxItems() {
-    // Obtener items seleccionados (si se implementa checkbox)
-    showAlertModal('Función próximamente', 'La función de procesamiento masivo estará disponible próximamente.', 'info');
-}
-
-function bulkDeleteInboxItems() {
-    // Obtener items seleccionados (si se implementa checkbox)
-    showAlertModal('Función próximamente', 'La función de eliminación masiva estará disponible próximamente.', 'info');
-}
-
-// Inicializar funcionalidades cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', function() {
-    // Función para buscar tareas
-    const taskSearch = document.getElementById('taskSearch');
-    if (taskSearch) {
-        taskSearch.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const taskItems = document.querySelectorAll('#taskList .task-item');
-
-            taskItems.forEach(item => {
-                const title = item.querySelector('h6').textContent.toLowerCase();
-                const description = item.querySelector('small').textContent.toLowerCase();
-                if (title.includes(searchTerm) || description.includes(searchTerm)) {
-                    item.style.display = '';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-        });
-    }
-
-    // Función para buscar proyectos
-    const projectSearch = document.getElementById('projectSearch');
-    if (projectSearch) {
-        projectSearch.addEventListener('input', function() {
-            const searchTerm = this.value.toLowerCase();
-            const projectItems = document.querySelectorAll('#projectList .project-item');
-
-            projectItems.forEach(item => {
-                const title = item.querySelector('h6').textContent.toLowerCase();
-                const description = item.querySelector('small').textContent.toLowerCase();
-                if (title.includes(searchTerm) || description.includes(searchTerm)) {
-                    item.style.display = '';
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-        });
-    }
-});
-</script>
+{% block extra_js %}
+<script src="{% static 'events/js/process_inbox_item.js' %}"></script>
 {% endblock %}

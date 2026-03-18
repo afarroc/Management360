@@ -1,53 +1,165 @@
 {% extends 'layouts/base.html' %}
+{% load static %}
+{% load event_extras %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'events/css/components.css' %}">
+{% endblock %}
 
 {% block content %}
+
+<!-- ============================================= -->
+<!-- ENCABEZADO Y MIGAS DE PAN                    -->
+<!-- ============================================= -->
 <div class="pagetitle">
-    <h1>{{title}}</h1>
+    <h1>{{ title }}</h1>
     <nav>
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'event_panel' %}">Events</a></li>
-            <li class="breadcrumb-item active">{{title}}</li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'index' %}"><i class="bi bi-house-door me-1"></i>Home</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{% url 'event_panel' %}">Eventos</a>
+            </li>
+            <li class="breadcrumb-item active">{{ title }}</li>
         </ol>
     </nav>
-</div><!-- End Page Title -->
-<!-- Mensajes de confirmación y éxito -->
-{% if messages %}
-<div id="message-container" class="alert alert-info" role="alert">
-    {% for message in messages %}
-    <p{% if message.tags %} class="{{ message.tags }}" {% endif %}>{{ message }}</p>
-        {% endfor %}
 </div>
-{% endif %}
 
+<!-- ============================================= -->
+<!-- MENSAJES DEL SISTEMA                         -->
+<!-- ============================================= -->
+{% include 'events/includes/messages.html' %}
+
+<!-- ============================================= -->
+<!-- CONTENIDO PRINCIPAL                         -->
+<!-- ============================================= -->
 <section class="section dashboard">
     <div class="row">
 
-        <!-- Left side columns -->
+        <!-- ======================================== -->
+        <!-- COLUMNA IZQUIERDA (8) - FORMULARIO      -->
+        <!-- ======================================== -->
         <div class="col-lg-8">
             <div class="row">
                 {% if event %}
-                {% include 'events/includes/event_form.html' %}
+                    {% include 'events/includes/event_form.html' %}
                 {% else %}
-                <p>No event data</p>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>No se encontraron datos del evento.
+                    </div>
                 {% endif %}
             </div>
-        </div><!-- End Left side columns -->
+        </div>
 
-        <!-- Right side columns -->
+        <!-- ======================================== -->
+        <!-- COLUMNA DERECHA (4) - SIDEBAR          -->
+        <!-- ======================================== -->
         <div class="col-lg-4">
+            <div class="row g-3">
 
-            {% if instructions %}
-            {% include 'layouts/includes/information/info_links_card.html' %}
-            {% endif %}
+                <!-- ACORDEÓN DE INFORMACIÓN -->
+                <div class="col-12">
+                    {% include 'layouts/includes/information/info_acordeon.html' %}
+                </div>
 
-            {% include 'layouts/includes/information/info_acordeon.html' %}
+                <!-- ACTIVIDAD RECIENTE DEL EVENTO -->
+                <div class="col-12">
+                    <div class="card activity-card">
+                        <div class="card-body">
+                            <h5 class="card-title d-flex justify-content-between align-items-center">
+                                <span>
+                                    <i class="bi bi-activity me-2"></i>Historial del evento
+                                </span>
+                                <span class="badge bg-primary rounded-pill">
+                                    {{ event.eventstate_set.count }}
+                                </span>
+                            </h5>
+                            
+                            <div class="activity" style="max-height: 400px; overflow-y: auto;">
+                                {% with event_states=event.eventstate_set.all|dictsortreversed:"start_time"|slice:":15" %}
+                                    {% if event_states %}
+                                        {% for state in event_states %}
+                                            <div class="activity-item d-flex align-items-start mb-3 pb-2 border-bottom">
+                                                <div class="flex-shrink-0">
+                                                    <div class="activite-label fw-semibold small">
+                                                        {{ state.start_time|duration:state.end_time }}
+                                                    </div>
+                                                    <small class="text-muted d-block">
+                                                        {{ state.start_time|date:"H:i" }}
+                                                        {% if state.end_time %} - {{ state.end_time|date:"H:i" }}{% endif %}
+                                                    </small>
+                                                </div>
+                                                <i class="bi bi-circle-fill activity-badge mx-3" 
+                                                   style="color: {{ state.status.color|default:'#6c757d' }}; font-size: 0.8rem;"></i>
+                                                <div class="flex-grow-1">
+                                                    <div class="activity-content">
+                                                        <span class="fw-semibold">
+                                                            Estado cambiado a 
+                                                            <span class="badge bg-{{ state.status.status_name|status_color }} bg-opacity-10">
+                                                                {{ state.status.status_name }}
+                                                            </span>
+                                                        </span>
+                                                        <small class="text-muted d-block mt-1">
+                                                            <i class="bi bi-person me-1"></i>{{ event.host.username|default:"Sistema" }}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="text-center py-5">
+                                            <div class="display-6 text-muted mb-3">
+                                                <i class="bi bi-clock-history"></i>
+                                            </div>
+                                            <h6 class="text-muted">Sin cambios registrados</h6>
+                                            <p class="small text-muted mb-0">
+                                                Los cambios de estado aparecerán aquí
+                                            </p>
+                                        </div>
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-        </div><!-- End Right side columns -->
+                <!-- ACCIONES RÁPIDAS (opcional) -->
+                {% if user.is_authenticated %}
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white py-2">
+                            <h5 class="card-title mb-0 text-white">
+                                <i class="bi bi-lightning me-2"></i>Acciones
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-primary">
+                                    <i class="bi bi-eye me-2"></i>Ver detalle
+                                </a>
+                                <a href="{% url 'event_assign' event.id %}" class="btn btn-outline-info">
+                                    <i class="bi bi-link me-2"></i>Asignar recursos
+                                </a>
+                                <a href="{% url 'event_panel' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-arrow-left me-2"></i>Volver al panel
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
 
-    </div>
+            </div><!-- End row sidebar -->
+        </div><!-- End col-lg-4 -->
+
+    </div><!-- End row principal -->
 </section>
 
 {% endblock %}
 
-
+{% block extra_js %}
+<script src="{% static 'events/js/components.js' %}?v={{ now|date:'U' }}"></script>
+{% endblock %}

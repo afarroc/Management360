@@ -1,0 +1,56 @@
+{% load static %}
+
+<!-- ============================================================
+     SELECTOR DE VISTAS Y OPCIONES DE VISUALIZACIÓN
+     ============================================================ -->
+<div class="card mb-3 view-selector-card">
+    <div class="card-body py-2">
+        <div class="d-flex justify-content-between align-items-center">
+            <!-- Botones para cambiar de vista -->
+            <div class="btn-group btn-group-sm" role="group">
+                <button type="button" class="btn btn-outline-primary active" data-view="table">
+                    <i class="bi bi-table me-1"></i> Table
+                </button>
+                <button type="button" class="btn btn-outline-primary" data-view="kanban">
+                    <i class="bi bi-grid-3x3-gap me-1"></i> Kanban
+                </button>
+                <button type="button" class="btn btn-outline-primary" data-view="cards">
+                    <i class="bi bi-card-text me-1"></i> Cards
+                </button>
+            </div>
+
+            <!-- Contador de tareas y menú de opciones -->
+            <div class="d-flex gap-2 align-items-center">
+                <span class="text-muted small" id="taskCount">{{ tasks_data|length }} tasks</span>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-gear"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><h6 class="dropdown-header">View Options</h6></li>
+                        <li>
+                            <a class="dropdown-item" href="#" id="compactViewToggle">
+                                <i class="bi bi-layout-text-sidebar me-2"></i>
+                                <span>Compact View</span>
+                                <i class="bi bi-check2 ms-auto" style="display: none;"></i>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header">Actions</h6></li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'task_export' %}">
+                                <i class="bi bi-download me-2"></i> Export Tasks
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'task_create' %}">
+                                <i class="bi bi-plus-circle me-2"></i> Create Task
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

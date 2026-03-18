@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django import forms
 from django.contrib.auth.models import User
 from django.forms import inlineformset_factory
@@ -24,7 +25,7 @@ class CreateNewEvent(forms.ModelForm):
 
 class AssignAttendeesForm(forms.Form):
     attendees = forms.ModelMultipleChoiceField(
-        queryset=User.objects.all(),
+        queryset=get_user_model().objects.all(),
         widget=forms.CheckboxSelectMultiple,
         required=False
     )

@@ -1,77 +1,107 @@
-<!-- Sales Card -->
-<div class="col-xxl-6 col-md-6 " id="event-card-{{ event_data.event.id }}">
-	<div class="card info-card sales-card">
-		<div class="filter">
-			<a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-			<ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-				<li class="dropdown-header text-start">
-					<h6>More</h6>
-				</li>
-				<li><a class="dropdown-item" href="#">Today</a></li>
-				<li><a class="dropdown-item" href="#">This Month</a></li>
-				<li>
-					{% if request.user.profile.role == 'SU' %}
-					<div class="dropdown-item">
-						{% csrf_token %}
-						<a href="{% url 'event_edit' event_data.event.id %}" class="btn btn-primary">
-							<i class="bi bi-pencil-fill"></i>
-						</a>
-					</div>
-					{% endif %}
-				</li>
-				<li>
-					{% if request.user.profile.role == 'SU' %}
-					<form id="delete-form-{{ event_data.event.id }}" action="{% url 'event_delete' event_data.event.id %}" method="POST"
-						class="dropdown-item d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta tarea?');">
-						{% csrf_token %}
-							<button type="submit" class="btn btn-danger">
-								<i class="bi bi-trash-fill"></i>
-							</button>
-					</form>
-					{% endif %}
-				</li>
-			</ul>
-		</div>
+{% load humanize %}
+{% load event_extras %}
 
-		<div class="card-body">
-			<h5 class="card-title"><a href="{% url 'event_panel_with_id' event_data.event.id %}">{{ event_data.event.title }}</a><span>| Event id: {{event_data.event.id}}</span></h5>
-			<div class="d-flex align-items-center">
-				<div
-					style="color: {{event_data.event.event_status.color}};"
-					class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-					<i class="bi bi-calendar2-event-fill"></i>
-				</div>
-				<div class="ps-3">
-					<h6></h6>
-					<span class="text-muted small pt-2 ps-1">Created</span>
-					<span class="text-success small pt-1 fw-bold">{{ event_data.event.created_at|date:"d-M H:i" }}</span> 
-					<br>
-					<span class="text-muted small pt-2 ps-1">Updated</span>
-					<span class="text-success small pt-1 fw-bold">{{ event_data.event.updated_at|date:"d-M H:i" }}</span> 
-				</div>
-			</div>
-			<p class="card-text mb-1">{{ event_data.event.description }}</p>
-			{% if event_data.event.attendees %}
-			<p class="card-text mb-1"><strong>Asistentes:</strong>
-				{% for attendee in event_data.event.attendees.all %}
-				{{ attendee.username|title }}{% if not forloop.last %},{% else %}.{% endif %}
-				{% endfor %}
-			</p>
-			{% endif %}
-			<form id="form-{{ event_data.event.id }}" action="{% url 'event_status_change' event_data.event.id %}" method="POST"
-				class="mb-1">
-				{% csrf_token %}
-				<div class="mb-1">
-					<select name="new_status_id" class="form-select" aria-label="Default select example">
-						{% for status in event_statuses %}
-							<option value="{{ status.id }}" {% if status.id|stringformat:"s" == event_data.event.event_status.id|stringformat:"s" %}selected{% endif %}>
-							{{ status.status_name }}
-							</option>
-						{% endfor %}
-					</select>
-				</div>
-				<button type="submit" class="btn btn-primary btn-sm">Cambiar Estado</button>
-			</form>
-		</div>
-	</div>
-</div><!-- End Sales Card -->
+<div class="card event-detail-card shadow-sm">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-3">
+        <h5 class="card-title mb-0 text-white fs-5">
+            <i class="bi bi-calendar-event me-2"></i>{{ event.title|default:"Evento sin título" }}
+        </h5>
+        <span class="badge bg-white text-primary rounded-pill px-3 py-2">
+            ID #{{ event.id }}
+        </span>
+    </div>
+    
+    <div class="card-body">
+        <div class="row g-4">
+            <!-- Columna izquierda: Estado, Host, Asignado, Precio -->
+            <div class="col-md-6">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-0">
+                        <span><i class="bi bi-info-circle me-2 text-muted"></i>Estado:</span>
+                        {% if event.event_status %}
+                            <span class="badge bg-{{ event.event_status.status_name|status_color }} px-3 py-2 rounded-pill">
+                                {{ event.event_status.status_name }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary">Sin estado</span>
+                        {% endif %}
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-0">
+                        <span><i class="bi bi-person me-2 text-muted"></i>Host:</span>
+                        <span class="fw-semibold">{{ event.host.get_full_name|default:event.host.username }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-0">
+                        <span><i class="bi bi-person-check me-2 text-muted"></i>Asignado a:</span>
+                        <span class="fw-semibold">{{ event.assigned_to.get_full_name|default:event.assigned_to.username|default:"No asignado" }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-0">
+                        <span><i class="bi bi-currency-dollar me-2 text-muted"></i>Precio entrada:</span>
+                        <span class="fw-semibold">${{ event.ticket_price|floatformat:2|default:"0.00" }}</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Columna derecha: Lugar, Fechas, Asistentes -->
+            <div class="col-md-6">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-0">
+                        <span><i class="bi bi-geo-alt me-2 text-muted"></i>Lugar:</span>
+                        <span class="fw-semibold">{{ event.venue|default:"Por definir" }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-0">
+                        <span><i class="bi bi-calendar-plus me-2 text-muted"></i>Inicio:</span>
+                        <span class="fw-semibold">{{ event.start_time|date:"d/m/Y H:i"|default:"No definida" }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-0">
+                        <span><i class="bi bi-calendar-check me-2 text-muted"></i>Fin:</span>
+                        <span class="fw-semibold">{{ event.end_time|date:"d/m/Y H:i"|default:"No definida" }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0 border-0">
+                        <span><i class="bi bi-people me-2 text-muted"></i>Asistentes:</span>
+                        <span class="fw-semibold">{{ event.attendees.count }}</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Descripción (ocupa todo el ancho) -->
+            {% if event.description %}
+            <div class="col-12">
+                <hr class="my-1">
+                <div class="mt-2">
+                    <h6 class="text-muted mb-2"><i class="bi bi-card-text me-2"></i>Descripción:</h6>
+                    <p class="mb-0">{{ event.description|linebreaksbr }}</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Acciones -->
+            <div class="col-12">
+                <hr class="my-2">
+                <div class="d-flex flex-wrap gap-2 justify-content-end mt-2">
+                    <a href="{% url 'event_edit' event.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil me-1"></i>Editar
+                    </a>
+                    <a href="{% url 'event_assign' event.id %}" class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-link me-1"></i>Asignar
+                    </a>
+                    {% if perms.events.delete_event or user.is_superuser %}
+                    <form method="post" action="{% url 'event_delete' event.id %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                onclick="return confirm('¿Estás seguro de eliminar este evento?\nEsta acción no se puede deshacer.')">
+                            <i class="bi bi-trash me-1"></i>Eliminar
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-footer bg-light text-muted small py-2">
+        <div class="d-flex justify-content-between">
+            <span><i class="bi bi-clock-history me-1"></i>Creado: {{ event.created_at|date:"d/m/Y H:i" }}</span>
+            <span><i class="bi bi-arrow-clockwise me-1"></i>Actualizado: {{ event.updated_at|timesince }}</span>
+        </div>
+    </div>
+</div>

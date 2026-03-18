@@ -1,0 +1,31 @@
+<div class="card h-100 border-success processed-card" data-item-id="{{ item.id }}">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <h6 class="card-title mb-0">{{ item.title }}</h6>
+            <span class="badge bg-success">
+                {% load inbox_tags %}
+                {{ item.processed_to|get_linked_object_type|title|default:"Procesado" }}
+            </span>
+        </div>
+        {% if item.description %}
+        <p class="card-text small text-muted">{{ item.description|truncatechars:80 }}</p>
+        {% endif %}
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <small class="text-muted">
+                <i class="bi bi-clock me-1"></i>{{ item.created_at|date:"d/m/Y H:i" }}
+            </small>
+            {% if item.processed_to %}
+                {% load inbox_tags %}
+                <a href="{{ item.processed_to|get_linked_object_url }}" 
+                   class="btn btn-sm {{ item.processed_to|get_linked_object_button_class }}">
+                    <i class="bi {{ item.processed_to|get_linked_object_icon }} me-1"></i>
+                    Ver {{ item.processed_to|get_linked_object_type|title }}
+                </a>
+            {% else %}
+                <a href="#" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-link me-1"></i>Ver Objeto
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>

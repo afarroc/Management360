@@ -1,9 +1,9 @@
 <!-- tasks/includes/task_kanban_board.html -->
-<div class="row g-3">
+<div class="row g-3" id="kanbanBoard">
     {% regroup tasks_data by task.task_status as status_groups %}
     
     {% for status_group in status_groups %}
-    <div class="col-xl-3 col-lg-4 col-md-6">
+    <div class="col-xl-3 col-lg-4 col-md-6 kanban-column-wrapper" data-status-id="{{ status_group.grouper.id }}" data-status-name="{{ status_group.grouper.status_name }}">
         <div class="card kanban-column h-100">
             <div class="card-header d-flex justify-content-between align-items-center 
                         {% if status_group.grouper.status_name == 'In Progress' %}bg-warning
@@ -17,18 +17,19 @@
                             {% elif status_group.grouper.status_name == 'Completed' %}bi-check-circle
                             {% elif status_group.grouper.status_name == 'Blocked' %}bi-exclamation-triangle
                             {% else %}bi-list-task{% endif %} me-2"></i>
-                        {{ status_group.grouper.status_name }}
+                        <span class="kanban-column-title">{{ status_group.grouper.status_name }}</span>
                     </h6>
-                    <small class="{% if status_group.grouper.status_name in 'Completed,In Progress,Blocked' %}text-white-50{% else %}text-muted{% endif %}">
+                    <small class="kanban-column-count {% if status_group.grouper.status_name in 'Completed,In Progress,Blocked' %}text-white-50{% else %}text-muted{% endif %}">
                         {{ status_group.list|length }} tasks
                     </small>
                 </div>
-                <span class="badge {% if status_group.grouper.status_name in 'Completed,In Progress,Blocked' %}bg-light text-dark{% else %}bg-dark{% endif %}">
+                <span class="badge {% if status_group.grouper.status_name in 'Completed,In Progress,Blocked' %}bg-light text-dark{% else %}bg-dark{% endif %} kanban-count-badge">
                     {{ status_group.list|length }}
                 </span>
             </div>
             <div class="card-body p-2 kanban-column-body" 
-                 data-status="{{ status_group.grouper.id }}"
+                 data-status-id="{{ status_group.grouper.id }}"
+                 data-status-name="{{ status_group.grouper.status_name }}"
                  style="min-height: 400px; max-height: 600px; overflow-y: auto;">
                 
                 {% for data in status_group.list %}
@@ -99,7 +100,7 @@
                     </div>
                 </div>
                 {% empty %}
-                <div class="text-center py-4">
+                <div class="text-center py-4 kanban-empty-state">
                     <i class="bi bi-inbox display-6 text-muted"></i>
                     <p class="text-muted small mt-2">No tasks in this column</p>
                 </div>
@@ -117,3 +118,35 @@
     </div>
     {% endfor %}
 </div>
+
+<!-- Template oculto para crear nuevas columnas dinámicamente -->
+<template id="kanban-column-template">
+    <div class="col-xl-3 col-lg-4 col-md-6 kanban-column-wrapper" data-status-id="" data-status-name="">
+        <div class="card kanban-column h-100">
+            <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                <div>
+                    <h6 class="mb-0">
+                        <i class="bi bi-list-task me-2"></i>
+                        <span class="kanban-column-title"></span>
+                    </h6>
+                    <small class="kanban-column-count text-muted">0 tasks</small>
+                </div>
+                <span class="badge bg-dark kanban-count-badge">0</span>
+            </div>
+            <div class="card-body p-2 kanban-column-body" 
+                 data-status-id=""
+                 data-status-name=""
+                 style="min-height: 400px; max-height: 600px; overflow-y: auto;">
+                <div class="text-center py-4 kanban-empty-state">
+                    <i class="bi bi-inbox display-6 text-muted"></i>
+                    <p class="text-muted small mt-2">No tasks in this column</p>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="#" class="btn btn-sm btn-outline-secondary w-100 add-task-btn">
+                    <i class="bi bi-plus"></i> Add Task
+                </a>
+            </div>
+        </div>
+    </div>
+</template>

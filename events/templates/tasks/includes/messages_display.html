@@ -1,0 +1,14 @@
+<!-- Mensajes de confirmación y éxito - Reutilizable -->
+{% if messages %}
+<div class="alert alert-info alert-dismissible fade show" role="alert">
+    <div class="d-flex align-items-center">
+        <i class="bi bi-info-circle me-2"></i>
+        <div>
+            {% for message in messages %}
+            <p{% if message.tags %} class="mb-0 {{ message.tags }}"{% endif %}>{{ message }}</p>
+            {% endfor %}
+        </div>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
