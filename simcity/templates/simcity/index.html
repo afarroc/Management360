@@ -1005,9 +1005,11 @@ document.getElementById('mobAutoBtn')?.addEventListener('click', () => {
 document.getElementById('mobBlockBtn')?.addEventListener('click', () => document.getElementById('blockModal').classList.add('open'));
 document.getElementById('mobZrBtn')?.addEventListener('click', generarCuadranteZR);
 document.getElementById('mobMoneyBtn')?.addEventListener('click', async () => {
-    const c=prompt('Cantidad:','2000'); if (!c) return;
-    addLog(`💰 +$${c} (pendiente endpoint add_money)`, 'warn');
-});
+    const c = prompt('Cantidad:', '2000'); if (!c) return;
+    const d = await (await apiFetch(`/simcity/api/game/${gameId}/add_money/`,
+        { method: 'POST', body: JSON.stringify({ cantidad: +c }) })).json();
+    document.getElementById('moneyDisplay').textContent = d.money;
+    addLog(`💰 +$${c}`, 'ok');
 document.getElementById('mobMonopolyBtn')?.addEventListener('click', crearTableroMonopoly);
 </script>
 </body>
