@@ -45,18 +45,40 @@ db.sqlite3
 # ================================
 # Migraciones (INCLUIDAS en el repositorio)
 # ================================
-!accounts/migrations/
-!campaigns/migrations/
-!chat/migrations/
-!core/migrations/
-!courses/migrations/
-!cv/migrations/
-!events/migrations/
-!kpis/migrations/
-!memento/migrations/
-!rooms/migrations/
-!tools/migrations/
+# IMPORTANTE: regla general primero, excepciones despues
 */migrations/*
+!accounts/migrations/
+!accounts/migrations/**
+!analyst/migrations/
+!analyst/migrations/**
+!bitacora/migrations/
+!bitacora/migrations/**
+!board/migrations/
+!board/migrations/**
+!bots/migrations/
+!bots/migrations/**
+!campaigns/migrations/
+!campaigns/migrations/**
+!chat/migrations/
+!chat/migrations/**
+!core/migrations/
+!core/migrations/**
+!courses/migrations/
+!courses/migrations/**
+!cv/migrations/
+!cv/migrations/**
+!events/migrations/
+!events/migrations/**
+!help/migrations/
+!help/migrations/**
+!kpis/migrations/
+!kpis/migrations/**
+!memento/migrations/
+!memento/migrations/**
+!rooms/migrations/
+!rooms/migrations/**
+!sim/migrations/
+!sim/migrations/**
 
 # ================================
 # Media/Static files
