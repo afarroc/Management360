@@ -1,0 +1,392 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block title %}ACD — {{ slot.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+#agent-root{
+  --g-bg:#0f172a;--g-surf:#1e293b;--g-surf2:#263548;--g-border:#334155;
+  --g-primary:#3b82f6;--g-primary-l:#60a5fa;
+  --g-success:#10b981;--g-warning:#f59e0b;--g-danger:#ef4444;
+  --g-teal:#2dd4bf;--g-purple:#a78bfa;--g-orange:#fb923c;
+  --g-text:#f1f5f9;--g-text-s:#94a3b8;--g-text-m:#64748b;
+  font-family:'Nunito',system-ui,sans-serif;font-size:14px;
+  color:var(--g-text);background:var(--g-bg);min-height:100vh;
+}
+#agent-root .agent-page{padding:16px 14px 48px;max-width:560px;margin:0 auto}
+
+/* Header */
+#agent-root .agent-header{background:var(--g-surf);border:1px solid var(--g-border);
+  border-radius:12px;padding:12px 16px;margin-bottom:14px;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#agent-root .agent-name-hdr{font-size:16px;font-weight:800}
+#agent-root .status-chip{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+#agent-root .chip-available{background:#10b98133;color:#10b981;border:1px solid #10b98155}
+#agent-root .chip-on_call  {background:#3b82f633;color:#60a5fa;border:1px solid #3b82f655;animation:blink 1.5s infinite}
+#agent-root .chip-ringing  {background:#2dd4bf33;color:#2dd4bf;border:1px solid #2dd4bf55;animation:blink .5s infinite}
+#agent-root .chip-acw      {background:#fb923c33;color:#fb923c;border:1px solid #fb923c55}
+#agent-root .chip-break    {background:#f59e0b33;color:#f59e0b;border:1px solid #f59e0b55}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* GTR clock mini */
+#agent-root .gtr-mini{font-size:28px;font-weight:900;color:var(--g-primary-l);
+  font-variant-numeric:tabular-nums;letter-spacing:2px}
+
+/* Call card */
+#agent-root .call-card{background:var(--g-surf);border:2px solid var(--g-border);
+  border-radius:14px;padding:20px;margin-bottom:14px;text-align:center;
+  transition:border-color .3s}
+#agent-root .call-card.ringing{border-color:var(--g-teal);animation:glow .8s infinite alternate}
+#agent-root .call-card.on_call{border-color:var(--g-primary)}
+#agent-root .call-card.acw    {border-color:var(--g-orange)}
+@keyframes glow{from{box-shadow:0 0 8px #2dd4bf33}to{box-shadow:0 0 20px #2dd4bf66}}
+
+#agent-root .call-icon{font-size:40px;margin-bottom:8px}
+#agent-root .call-lead{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums;
+  color:var(--g-primary-l);margin-bottom:4px}
+#agent-root .call-skill{font-size:14px;color:var(--g-text-s);margin-bottom:6px}
+#agent-root .call-timer{font-size:32px;font-weight:900;font-family:monospace;
+  color:var(--g-success);letter-spacing:3px}
+#agent-root .call-wait{font-size:13px;color:var(--g-text-m)}
+
+/* Buttons */
+#agent-root .btn{display:inline-flex;align-items:center;gap:5px;padding:10px 16px;
+  border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;
+  cursor:pointer;border:1px solid var(--g-border);background:var(--g-surf2);
+  color:var(--g-text);transition:all .12s;white-space:nowrap}
+#agent-root .btn:hover:not(:disabled){filter:brightness(1.15)}
+#agent-root .btn:disabled{opacity:.3;cursor:default}
+#agent-root .btn-green  {background:var(--g-success);border-color:var(--g-success);color:#fff}
+#agent-root .btn-red    {background:var(--g-danger); border-color:var(--g-danger); color:#fff}
+#agent-root .btn-blue   {background:var(--g-primary);border-color:var(--g-primary);color:#fff}
+#agent-root .btn-orange {background:var(--g-orange); border-color:var(--g-orange); color:#fff}
+#agent-root .btn-ghost  {background:transparent;border-color:var(--g-border);color:var(--g-text-s)}
+#agent-root .btn-lg{padding:14px 20px;font-size:15px;border-radius:12px}
+#agent-root .btn-full{width:100%}
+
+/* Action grid */
+#agent-root .action-grid{display:grid;gap:8px;margin-bottom:14px}
+#agent-root .action-grid.cols-2{grid-template-columns:1fr 1fr}
+#agent-root .action-grid.cols-3{grid-template-columns:1fr 1fr 1fr}
+
+/* Tipification (intermediate+) */
+#agent-root .tipif-section{background:var(--g-surf);border:1px solid var(--g-border);
+  border-radius:12px;padding:14px;margin-bottom:14px;display:none}
+#agent-root .tipif-section.visible{display:block}
+#agent-root .f-label{display:block;font-size:11px;font-weight:700;color:var(--g-text-s);
+  margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+#agent-root .f-select,#agent-root .f-textarea{width:100%;padding:8px 10px;
+  border:1px solid var(--g-border);border-radius:8px;
+  background:var(--g-surf2);color:var(--g-text);font-family:inherit;font-size:13px;outline:none;
+  margin-bottom:8px}
+#agent-root .f-textarea:focus,#agent-root .f-select:focus{border-color:var(--g-primary)}
+
+/* ACW timer */
+#agent-root .acw-bar{background:var(--g-surf);border:1px solid var(--g-border);
+  border-radius:12px;padding:14px;text-align:center;display:none}
+#agent-root .acw-bar.visible{display:block}
+#agent-root .acw-countdown{font-size:36px;font-weight:900;color:var(--g-orange);
+  font-variant-numeric:tabular-nums}
+
+/* Stats bar */
+#agent-root .stats-bar{display:flex;gap:10px;background:var(--g-surf2);
+  border:1px solid var(--g-border);border-radius:10px;padding:10px 14px;
+  margin-bottom:14px;flex-wrap:wrap}
+#agent-root .stat-item{text-align:center;min-width:60px}
+#agent-root .stat-val{font-size:20px;font-weight:900;color:var(--g-primary-l);display:block}
+#agent-root .stat-lbl{font-size:10px;color:var(--g-text-m);text-transform:uppercase;letter-spacing:.05em}
+
+/* Idle screen */
+#agent-root .idle-screen{text-align:center;padding:48px 20px;color:var(--g-text-m)}
+#agent-root .idle-screen .idle-icon{font-size:48px;margin-bottom:12px;opacity:.4}
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div id="agent-root">
+<div class="agent-page">
+
+  <!-- Header -->
+  <div class="agent-header">
+    <div>
+      <div class="agent-name-hdr">{{ slot.name }}</div>
+      <div style="font-size:12px;color:var(--g-text-m)">{{ slot.session.name }}</div>
+    </div>
+    <span class="status-chip chip-available" id="agent-status-chip">Disponible</span>
+    <div style="flex:1"></div>
+    <div class="gtr-mini" id="agent-clock">09:00</div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat-item"><span class="stat-val" id="st-atendidas">0</span><div class="stat-lbl">Atendidas</div></div>
+    <div class="stat-item"><span class="stat-val" id="st-ventas">0</span><div class="stat-lbl">Ventas</div></div>
+    <div class="stat-item"><span class="stat-val" id="st-aht">—</span><div class="stat-lbl">AHT</div></div>
+    {% if slot.level != 'basic' %}
+    <div class="stat-item"><span class="stat-val" id="st-hold">0</span><div class="stat-lbl">Holds</div></div>
+    <div class="stat-item"><span class="stat-val" id="st-transfer">0</span><div class="stat-lbl">Transfer</div></div>
+    {% endif %}
+  </div>
+
+  <!-- Call card -->
+  <div class="call-card" id="call-card">
+    <div class="idle-screen" id="idle-screen">
+      <div class="idle-icon">📞</div>
+      <div style="font-weight:700;font-size:15px;margin-bottom:6px">En espera de llamadas</div>
+      <div style="font-size:13px">El sistema te asignará la próxima interacción</div>
+    </div>
+
+    <!-- Ringing state -->
+    <div id="ringing-state" style="display:none">
+      <div class="call-icon">📲</div>
+      <div class="call-lead" id="ringing-lead">—</div>
+      <div class="call-skill" id="ringing-skill">—</div>
+      <div class="call-wait" id="ringing-wait">En espera —s</div>
+      <div class="action-grid cols-2" style="margin-top:16px">
+        <button class="btn btn-green btn-lg" onclick="doAction('answer')">
+          <i class="bi bi-telephone-fill"></i> Atender
+        </button>
+        <button class="btn btn-red btn-lg" onclick="doAction('reject')">
+          <i class="bi bi-telephone-x-fill"></i> Rechazar
+        </button>
+      </div>
+    </div>
+
+    <!-- On call state -->
+    <div id="oncall-state" style="display:none">
+      <div class="call-icon">🎙️</div>
+      <div class="call-lead" id="oncall-lead">—</div>
+      <div class="call-skill" id="oncall-skill">—</div>
+      <div class="call-timer" id="call-timer">00:00</div>
+
+      <!-- Level básico -->
+      <div id="basic-actions" class="action-grid cols-2" style="margin-top:14px">
+        <button class="btn btn-orange btn-full" onclick="doAction('hold')" id="btn-hold">
+          <i class="bi bi-pause-fill"></i> Hold
+        </button>
+        <button class="btn btn-ghost btn-full" onclick="doAction('tipify',{tipificacion:'Venta'})" id="btn-venta">
+          💰 Venta
+        </button>
+        <button class="btn btn-ghost btn-full" onclick="doAction('tipify',{tipificacion:'No interesado'})">
+          👎 No interesado
+        </button>
+        <button class="btn btn-ghost btn-full" onclick="doAction('tipify',{tipificacion:'Agenda'})">
+          📅 Agenda
+        </button>
+        <button class="btn btn-ghost btn-full" onclick="doAction('tipify',{tipificacion:'Transferir'})">
+          🔀 Transferir
+        </button>
+        <button class="btn btn-red btn-full" onclick="endCall()">
+          <i class="bi bi-telephone-x"></i> Colgar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tipification section (intermediate+) -->
+  {% if slot.level != 'basic' %}
+  <div class="tipif-section" id="tipif-section">
+    <div class="f-label">Tipificación</div>
+    <select id="tipif-sel" class="f-select">
+      <option value="">— seleccionar —</option>
+      {% for t in tipificaciones %}
+      <option value="{{ t }}">{{ t }}</option>
+      {% endfor %}
+    </select>
+    <div class="f-label">Observación</div>
+    <textarea id="tipif-notes" class="f-textarea" rows="2" placeholder="Notas opcionales…"></textarea>
+    <button class="btn btn-blue btn-full" onclick="confirmTipify()">
+      <i class="bi bi-check-lg"></i> Guardar tipificación
+    </button>
+  </div>
+  {% endif %}
+
+  <!-- ACW bar -->
+  <div class="acw-bar" id="acw-bar">
+    <div style="font-size:12px;color:var(--g-text-s);margin-bottom:4px">Post-llamada (ACW)</div>
+    <div class="acw-countdown" id="acw-timer">00:18</div>
+    <button class="btn btn-blue btn-full" style="margin-top:12px" onclick="doAction('end_acw')">
+      <i class="bi bi-check-circle"></i> Finalizar ACW — Disponible
+    </button>
+  </div>
+
+  <!-- Break controls -->
+  <div style="display:flex;gap:8px;margin-top:8px">
+    <button class="btn btn-ghost" id="btn-break" onclick="doAction('break')">
+      ☕ Break
+    </button>
+    <button class="btn btn-ghost" id="btn-return" style="display:none" onclick="doAction('return')">
+      ✅ Volver
+    </button>
+  </div>
+
+</div></div>
+
+<script>
+const SLOT_ID = '{{ slot.id }}';
+const LEVEL   = '{{ slot.level }}';
+const URLS = {
+  poll:   `/sim/acd/agent/${SLOT_ID}/poll/`,
+  action: `/sim/acd/agent/${SLOT_ID}/action/`,
+};
+
+function csrf(){ return document.cookie.match(/csrftoken=([^;]+)/)?.[1]??''; }
+async function postJSON(url, body){
+  const r = await fetch(url,{method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},
+    body:JSON.stringify(body)});
+  return r.json();
+}
+
+let CURRENT_IX  = null;   // interacción activa
+let CALL_START  = null;   // timestamp cuando answered
+let CALL_TIMER  = null;   // interval del timer on_call
+let ACW_SECS    = 0;
+let ACW_TIMER   = null;
+
+// ── Poll every 2s ─────────────────────────────────────────────────────────────
+setInterval(doPoll, 2000);
+
+async function doPoll(){
+  try{
+    const r = await fetch(URLS.poll);
+    const d = await r.json();
+    if(!d.success) return;
+    updateClock(d.gtr_time);
+    updateStats(d.slot);
+
+    const ix = d.active;
+    if(ix){
+      CURRENT_IX = ix;
+      if(ix.status === 'ringing') showRinging(ix);
+      else if(ix.status === 'on_call') showOnCall(ix);
+      else if(ix.status === 'acw')    showACW(ix);
+    } else {
+      CURRENT_IX = null;
+      showIdle();
+    }
+    updateStatusChip(d.slot?.status);
+  } catch(e){}
+}
+
+function updateClock(t){
+  document.getElementById('agent-clock').textContent = t||'09:00';
+}
+
+function updateStats(s){
+  if(!s) return;
+  document.getElementById('st-atendidas').textContent = s.atendidas??'—';
+  document.getElementById('st-ventas').textContent    = s.ventas??'—';
+  document.getElementById('st-aht').textContent       = s.aht_min ? s.aht_min+'m' : '—';
+  const stHold = document.getElementById('st-hold');
+  const stTrans = document.getElementById('st-transfer');
+  if(stHold)  stHold.textContent  = s.hold_count??0;
+  if(stTrans) stTrans.textContent = s.transfer_count??0;
+}
+
+function updateStatusChip(status){
+  const el = document.getElementById('agent-status-chip');
+  const labels = {available:'Disponible',on_call:'En llamada',ringing:'Timbrando',
+                  acw:'Post-llamada',break:'Break',absent:'Ausente',offline:'Offline'};
+  el.className = `status-chip chip-${status||'available'}`;
+  el.textContent = labels[status]||status||'—';
+}
+
+function showIdle(){
+  document.getElementById('idle-screen').style.display='';
+  document.getElementById('ringing-state').style.display='none';
+  document.getElementById('oncall-state').style.display='none';
+  document.getElementById('acw-bar').classList.remove('visible');
+  if(LEVEL!=='basic') document.getElementById('tipif-section').classList.remove('visible');
+  document.getElementById('call-card').className='call-card';
+  clearInterval(CALL_TIMER); CALL_TIMER=null; CALL_START=null;
+  clearInterval(ACW_TIMER);  ACW_TIMER=null;
+  document.getElementById('btn-break').style.display='';
+  document.getElementById('btn-return').style.display='none';
+}
+
+function showRinging(ix){
+  document.getElementById('idle-screen').style.display='none';
+  document.getElementById('ringing-state').style.display='';
+  document.getElementById('oncall-state').style.display='none';
+  document.getElementById('call-card').className='call-card ringing';
+  document.getElementById('ringing-lead').textContent = ix.lead_id||'Llamada entrante';
+  document.getElementById('ringing-skill').textContent = ix.skill||ix.canal;
+  document.getElementById('ringing-wait').textContent = `Esperando ${ix.wait_s||0}s`;
+}
+
+function showOnCall(ix){
+  document.getElementById('idle-screen').style.display='none';
+  document.getElementById('ringing-state').style.display='none';
+  document.getElementById('oncall-state').style.display='';
+  document.getElementById('call-card').className='call-card on_call';
+  document.getElementById('oncall-lead').textContent  = ix.lead_id||'—';
+  document.getElementById('oncall-skill').textContent = ix.skill||ix.canal;
+  if(LEVEL!=='basic') document.getElementById('tipif-section').classList.add('visible');
+
+  if(!CALL_TIMER){
+    CALL_START = new Date();
+    CALL_TIMER = setInterval(()=>{
+      const s = Math.floor((new Date()-CALL_START)/1000);
+      const mm = String(Math.floor(s/60)).padStart(2,'0');
+      const ss = String(s%60).padStart(2,'0');
+      document.getElementById('call-timer').textContent = `${mm}:${ss}`;
+    }, 1000);
+  }
+}
+
+function showACW(ix){
+  showIdle();
+  document.getElementById('acw-bar').classList.add('visible');
+  document.getElementById('call-card').className='call-card acw';
+  clearInterval(ACW_TIMER);
+  ACW_SECS = 18;
+  updateACWDisplay();
+  ACW_TIMER = setInterval(()=>{
+    ACW_SECS = Math.max(0, ACW_SECS-1);
+    updateACWDisplay();
+    if(ACW_SECS===0){ clearInterval(ACW_TIMER); doAction('end_acw'); }
+  }, 1000);
+}
+
+function updateACWDisplay(){
+  const mm = String(Math.floor(ACW_SECS/60)).padStart(2,'0');
+  const ss = String(ACW_SECS%60).padStart(2,'0');
+  document.getElementById('acw-timer').textContent = `${mm}:${ss}`;
+}
+
+async function doAction(action_type, extra_params={}){
+  const params = {...extra_params};
+  if(LEVEL!=='basic' && action_type==='tipify'){
+    params.tipificacion = document.getElementById('tipif-sel')?.value||params.tipificacion||'';
+    params.notes        = document.getElementById('tipif-notes')?.value||'';
+  }
+  const body = {
+    action_type,
+    params,
+    interaction_id: CURRENT_IX?.id||null,
+  };
+  const r = await postJSON(URLS.action, body);
+  if(!r.success) console.error('action error:', r.error);
+  // Poll immediately
+  doPoll();
+}
+
+function endCall(){
+  // Tipify then end_acw
+  const tipif = document.getElementById('tipif-sel')?.value || 'Atendida';
+  doAction('tipify', {tipificacion: tipif});
+  setTimeout(()=>doAction('end_acw'), 200);
+}
+
+function confirmTipify(){
+  const tipif = document.getElementById('tipif-sel')?.value;
+  if(!tipif){ alert('Selecciona una tipificación.'); return; }
+  doAction('tipify',{
+    tipificacion: tipif,
+    notes: document.getElementById('tipif-notes')?.value||'',
+  });
+}
+</script>
+{% endblock %}

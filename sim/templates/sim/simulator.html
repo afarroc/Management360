@@ -1,0 +1,647 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block title %}Simulador WFM — Analyst{% endblock %}
+
+{% block extra_head %}
+<style>
+#sim-root{
+  --s-bg:#f4f6f9;--s-surface:#fff;--s-border:#e5e7eb;--s-border-l:#f3f4f6;
+  --s-primary:#2563eb;--s-primary-l:#eff6ff;--s-primary-d:#1d4ed8;
+  --s-success:#059669;--s-success-l:#ecfdf5;--s-success-b:#6ee7b7;
+  --s-warning:#d97706;--s-warning-l:#fffbeb;--s-warning-b:#fcd34d;
+  --s-danger:#dc2626;--s-danger-l:#fef2f2;--s-danger-b:#fca5a5;
+  --s-text:#111827;--s-text-s:#4b5563;--s-text-m:#9ca3af;
+  --s-gray-50:#f9fafb;--s-gray-100:#f3f4f6;
+  --s-radius:8px;--s-radius-sm:6px;--s-radius-lg:12px;
+  --s-shadow:0 1px 3px rgba(0,0,0,.07);
+  font-family:'Nunito',system-ui,sans-serif;font-size:14px;
+  color:var(--s-text);line-height:1.5;
+}
+/* Toolbar */
+#sim-root .sim-toolbar{display:flex;align-items:center;flex-wrap:nowrap;overflow-x:auto;
+  scrollbar-width:none;gap:2px;background:var(--s-surface);border:1px solid var(--s-border);
+  border-bottom:2px solid var(--s-primary);border-radius:var(--s-radius);
+  padding:6px 10px;margin-bottom:14px;box-shadow:var(--s-shadow)}
+#sim-root .sim-toolbar::-webkit-scrollbar{display:none}
+#sim-root .tb-sep{width:1px;height:32px;background:var(--s-border);margin:0 4px;flex-shrink:0}
+#sim-root .tb-btn{display:inline-flex;flex-direction:column;align-items:center;gap:3px;
+  padding:5px 7px;background:transparent;border:1px solid transparent;
+  border-radius:var(--s-radius-sm);cursor:pointer;font-family:inherit;font-size:11px;
+  font-weight:600;color:var(--s-text-s);white-space:nowrap;min-width:44px;
+  transition:all .12s;text-decoration:none}
+#sim-root .tb-btn:hover:not(:disabled){background:var(--s-gray-50);border-color:var(--s-border);transform:translateY(-1px)}
+#sim-root .tb-btn:disabled{opacity:.38;cursor:default}
+#sim-root .tb-pill{display:flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:8px;font-size:14px}
+#sim-root .tb-btn span{font-size:10px;color:var(--s-text-m)}
+#sim-root .tip-blue{background:#dbeafe;color:#1d4ed8}
+#sim-root .tip-green{background:#d1fae5;color:#047857}
+#sim-root .tip-amber{background:#fef3c7;color:#b45309}
+#sim-root .tip-purple{background:#ede9fe;color:#6d28d9}
+#sim-root .tip-red{background:#fee2e2;color:#b91c1c}
+#sim-root .tip-teal{background:#ccfbf1;color:#0f766e}
+/* Layout */
+#sim-root .sim-page{padding:14px 12px 40px}
+#sim-root .sim-layout{display:grid;grid-template-columns:320px 1fr;gap:16px;align-items:start}
+@media(max-width:900px){#sim-root .sim-layout{grid-template-columns:1fr}}
+/* Cards */
+#sim-root .card{background:var(--s-surface);border:1px solid var(--s-border);
+  border-radius:var(--s-radius-lg);margin-bottom:14px;box-shadow:var(--s-shadow)}
+#sim-root .card-header{padding:12px 16px;border-bottom:1px solid var(--s-border);
+  font-size:13px;font-weight:700;background:var(--s-gray-50);
+  border-radius:var(--s-radius-lg) var(--s-radius-lg) 0 0;
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+#sim-root .card-body{padding:14px 16px}
+/* Account cards */
+#sim-root .acc-card{background:var(--s-surface);border:1px solid var(--s-border);
+  border-left:4px solid var(--s-primary);border-radius:var(--s-radius-lg);
+  padding:12px 14px;cursor:pointer;transition:box-shadow .12s;margin-bottom:8px}
+#sim-root .acc-card:hover{box-shadow:0 4px 14px rgba(37,99,235,.12)}
+#sim-root .acc-card.active{border-left-color:var(--s-success);background:var(--s-success-l)}
+#sim-root .acc-card.canal-outbound{border-left-color:var(--s-warning)}
+#sim-root .acc-card.canal-digital{border-left-color:var(--s-purple,#7c3aed)}
+#sim-root .acc-card.canal-mixed{border-left-color:#0891b2}
+#sim-root .acc-title{font-size:14px;font-weight:700;margin-bottom:3px}
+#sim-root .acc-meta{font-size:12px;color:var(--s-text-m)}
+/* KPI grid */
+#sim-root .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+#sim-root .kpi-card{background:var(--s-gray-50);border:1px solid var(--s-border);
+  border-radius:var(--s-radius);padding:10px 12px;text-align:center}
+#sim-root .kpi-val{font-size:20px;font-weight:800;color:var(--s-primary);line-height:1.2}
+#sim-root .kpi-lbl{font-size:11px;color:var(--s-text-m);margin-top:2px}
+/* Forms */
+#sim-root .f-group{margin-bottom:12px}
+#sim-root .f-label{display:block;font-size:12.5px;font-weight:700;margin-bottom:5px}
+#sim-root .f-label.req::after{content:' *';color:var(--s-danger)}
+#sim-root .f-input,#sim-root .f-select{width:100%;padding:8px 10px;
+  border:1px solid var(--s-gray-100+var(--s-border,#d1d5db));border-color:#d1d5db;
+  border-radius:var(--s-radius-sm);font-family:inherit;font-size:13px;
+  background:var(--s-surface);outline:none;transition:border-color .12s}
+#sim-root .f-input:focus,#sim-root .f-select:focus{border-color:var(--s-primary);
+  box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+#sim-root .f-hint{font-size:11.5px;color:var(--s-text-m);margin-top:4px}
+/* Buttons */
+#sim-root .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 16px;
+  border-radius:var(--s-radius-sm);font-family:inherit;font-size:13px;font-weight:600;
+  cursor:pointer;border:1px solid var(--s-border);background:var(--s-surface);
+  color:var(--s-text);transition:background .12s;white-space:nowrap}
+#sim-root .btn:disabled{opacity:.4;cursor:default;pointer-events:none}
+#sim-root .btn-primary{background:var(--s-primary);color:#fff;border-color:var(--s-primary)}
+#sim-root .btn-primary:hover{background:var(--s-primary-d)}
+#sim-root .btn-success{background:var(--s-success);color:#fff;border-color:var(--s-success)}
+#sim-root .btn-danger{background:var(--s-danger-l);color:var(--s-danger);border-color:var(--s-danger-b)}
+#sim-root .btn-ghost{background:var(--s-surface);color:var(--s-text-s);border-color:var(--s-border)}
+#sim-root .btn-ghost:hover{background:var(--s-gray-50)}
+#sim-root .btn-sm{padding:4px 10px;font-size:12px}
+#sim-root .btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+/* Progress / Status badges */
+#sim-root .badge{display:inline-flex;align-items:center;padding:2px 9px;
+  border-radius:20px;font-size:11px;font-weight:700}
+#sim-root .badge-done{background:var(--s-success-l);color:var(--s-success);border:1px solid var(--s-success-b)}
+#sim-root .badge-error{background:var(--s-danger-l);color:var(--s-danger);border:1px solid var(--s-danger-b)}
+#sim-root .badge-running{background:var(--s-warning-l);color:var(--s-warning);border:1px solid var(--s-warning-b)}
+/* Runs table */
+#sim-root .runs-table{width:100%;border-collapse:collapse;font-size:12.5px}
+#sim-root .runs-table th{padding:7px 10px;text-align:left;font-size:11px;font-weight:700;
+  text-transform:uppercase;color:var(--s-text-m);border-bottom:2px solid var(--s-border);
+  background:var(--s-gray-50);white-space:nowrap}
+#sim-root .runs-table td{padding:7px 10px;border-bottom:1px solid var(--s-border-l);vertical-align:middle}
+/* Spinner */
+#sim-root .spinner{width:20px;height:20px;border:3px solid var(--s-gray-100);
+  border-top-color:var(--s-primary);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Notifications */
+#sim-notifs{position:fixed;top:68px;right:1.2rem;z-index:9999;display:flex;flex-direction:column;gap:6px}
+.sim-notif{padding:10px 14px;font-size:13px;border-radius:8px;display:flex;align-items:center;
+  gap:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);max-width:300px;font-weight:600;
+  animation:fadeIn .18s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.sim-notif-ok{background:#ecfdf5;border:1px solid #6ee7b7;color:#059669}
+.sim-notif-err{background:#fef2f2;border:1px solid #fca5a5;color:#dc2626}
+.sim-notif-inf{background:#eff6ff;border:1px solid #93c5fd;color:#2563eb}
+/* Modal */
+#sim-root .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);
+  backdrop-filter:blur(2px);z-index:1050;align-items:center;justify-content:center;padding:16px}
+#sim-root .modal.active{display:flex}
+#sim-root .modal-box{background:var(--s-surface);border:1px solid var(--s-border);
+  border-radius:var(--s-radius-lg);box-shadow:0 20px 40px rgba(0,0,0,.14);
+  width:100%;max-width:480px;max-height:90vh;overflow:hidden;
+  display:flex;flex-direction:column;animation:fadeIn .18s ease}
+#sim-root .modal-hdr{background:var(--s-gray-50);border-bottom:1px solid var(--s-border);
+  padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+#sim-root .modal-hdr h3{margin:0;font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px}
+#sim-root .modal-body{padding:18px;overflow-y:auto;flex:1}
+#sim-root .modal-ftr{padding:12px 18px;border-top:1px solid var(--s-border);
+  background:var(--s-gray-50);display:flex;justify-content:flex-end;gap:8px}
+#sim-root .btn-close{background:none;border:none;border-radius:var(--s-radius-sm);
+  color:var(--s-text-m);font-size:18px;width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+#sim-root .btn-close:hover{background:var(--s-gray-100)}
+/* Preset grid */
+#sim-root .preset-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+#sim-root .preset-btn{background:var(--s-gray-50);border:2px solid var(--s-border);
+  border-radius:var(--s-radius);padding:12px;cursor:pointer;text-align:left;
+  transition:all .12s;font-family:inherit}
+#sim-root .preset-btn:hover{border-color:var(--s-primary);background:var(--s-primary-l)}
+#sim-root .preset-btn.selected{border-color:var(--s-primary);background:var(--s-primary-l)}
+#sim-root .preset-icon{font-size:24px;margin-bottom:6px}
+#sim-root .preset-name{font-size:13px;font-weight:700;color:var(--s-text)}
+#sim-root .preset-desc{font-size:11px;color:var(--s-text-m);margin-top:2px}
+/* Responsive */
+@media(max-width:768px){
+  #sim-root .sim-page{padding:8px 4px 24px}
+  #sim-root .tb-btn span{display:none}
+  #sim-root .tb-pill{width:24px;height:24px;font-size:12px;border-radius:6px}
+  #sim-root .kpi-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div id="sim-root">
+<div class="sim-page">
+
+  <!-- Toolbar -->
+  <div class="sim-toolbar">
+    <button type="button" class="tb-btn" onclick="openCreateModal()">
+      <div class="tb-pill tip-blue"><i class="bi bi-plus-lg"></i></div>
+      <span>Nueva cuenta</span>
+    </button>
+    <button type="button" class="tb-btn" id="tb-gen" disabled onclick="openGenerateModal()">
+      <div class="tb-pill tip-green"><i class="bi bi-play-circle"></i></div>
+      <span>Generar</span>
+    </button>
+    <button type="button" class="tb-btn" id="tb-clear" disabled onclick="confirmClear()">
+      <div class="tb-pill tip-amber"><i class="bi bi-trash3"></i></div>
+      <span>Limpiar</span>
+    </button>
+    <button type="button" class="tb-btn" id="tb-runs" disabled onclick="loadRuns()">
+      <div class="tb-pill tip-purple"><i class="bi bi-clock-history"></i></div>
+      <span>Historial</span>
+    </button>
+    <button type="button" class="tb-btn" id="tb-edit" disabled onclick="openEditor()">
+      <div class="tb-pill tip-purple"><i class="bi bi-sliders"></i></div>
+      <span>Editar</span>
+    </button>
+    <div class="tb-sep"></div>
+    <a href="{% url 'analyst:dataset_list' %}" class="tb-btn">
+      <div class="tb-pill tip-teal"><i class="bi bi-layers"></i></div>
+      <span>Datasets</span>
+    </a>
+    <a href="{% url 'analyst:etl_list' %}" class="tb-btn">
+      <div class="tb-pill tip-purple"><i class="bi bi-arrow-repeat"></i></div>
+      <span>ETL</span>
+    </a>
+  </div>
+
+  <!-- Page title -->
+  <div style="margin-bottom:14px">
+    <h4 style="margin:0;font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px">
+      <span style="background:#dbeafe;color:#1d4ed8;width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">📡</span>
+      Simulador de Interacciones WFM
+    </h4>
+    <p style="margin:4px 0 0 46px;font-size:13px;color:var(--s-text-s)">
+      Genera datos realistas de contact center para análisis, demos y training.
+      Calibrado con datos reales de operaciones bancarias y telco.
+    </p>
+  </div>
+
+  <div class="sim-layout">
+
+    <!-- LEFT: Account list -->
+    <div>
+      <div class="card">
+        <div class="card-header">
+          <span><i class="bi bi-building" style="color:var(--s-primary)"></i> Cuentas simuladas</span>
+          <span style="font-size:12px;color:var(--s-text-m)" id="acc-count">({{ account_count }})</span>
+        </div>
+        <div class="card-body" style="padding:8px">
+
+          {% if accounts %}
+            {% for acc in accounts %}
+            <div class="acc-card canal-{{ acc.canal }}" id="acc-{{ acc.id }}"
+                 onclick="selectAccount('{{ acc.id }}','{{ acc.name|escapejs }}','{{ acc.canal }}')">
+              <div class="acc-title">{{ acc.name }}</div>
+              <div class="acc-meta">
+                {{ acc.get_canal_display }}
+                {% if acc.preset %} · <em>{{ acc.preset }}</em>{% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div id="acc-empty" style="text-align:center;padding:32px 16px">
+              <div style="font-size:36px;opacity:.3;margin-bottom:10px">📡</div>
+              <p style="font-size:13px;color:var(--s-text-m);margin-bottom:12px">Sin cuentas configuradas</p>
+              <button type="button" class="btn btn-primary btn-sm" onclick="openCreateModal()">
+                <i class="bi bi-plus-lg"></i> Crear cuenta
+              </button>
+            </div>
+          {% endif %}
+
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Account detail / empty state -->
+    <div>
+
+      <!-- Empty state -->
+      <div id="detail-empty" class="card">
+        <div class="card-body" style="text-align:center;padding:56px 24px">
+          <div style="font-size:48px;opacity:.25;margin-bottom:14px">📡</div>
+          <p style="font-size:13px;color:var(--s-text-m)">
+            Selecciona una cuenta o crea una nueva<br>para comenzar a simular.
+          </p>
+        </div>
+      </div>
+
+      <!-- Account detail panel -->
+      <div id="detail-panel" style="display:none">
+
+        <!-- KPIs -->
+        <div class="card">
+          <div class="card-header">
+            <span id="detail-title" style="font-size:15px;font-weight:700"></span>
+            <div class="btn-row">
+              <button type="button" class="btn btn-primary btn-sm" onclick="openGenerateModal()">
+                <i class="bi bi-play-circle"></i> Generar
+              </button>
+              <a id="btn-edit-link" href="#" class="btn btn-ghost btn-sm" target="_self">
+                <i class="bi bi-sliders"></i> Editar config
+              </a>
+              <button type="button" class="btn btn-danger btn-sm" onclick="confirmClear()">
+                <i class="bi bi-trash3"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="kpi-grid" id="kpi-grid">
+              <div class="kpi-card"><div class="kpi-val" id="kpi-total">—</div><div class="kpi-lbl">Interacciones</div></div>
+              <div class="kpi-card"><div class="kpi-val" id="kpi-tmo">—</div><div class="kpi-lbl">TMO promedio</div></div>
+              <div class="kpi-card"><div class="kpi-val" id="kpi-abandon">—</div><div class="kpi-lbl">Abandono</div></div>
+              <div class="kpi-card"><div class="kpi-val" id="kpi-ventas">—</div><div class="kpi-lbl">Ventas</div></div>
+              <div class="kpi-card"><div class="kpi-val" id="kpi-atend">—</div><div class="kpi-lbl">Atendidas</div></div>
+              <div class="kpi-card"><div class="kpi-val" id="kpi-nocontact">—</div><div class="kpi-lbl">No contacto</div></div>
+            </div>
+            <!-- Export to analyst -->
+            <div style="padding-top:12px;border-top:1px solid var(--s-border)">
+              <p style="font-size:12px;color:var(--s-text-m);margin:0 0 8px">
+                <i class="bi bi-info-circle"></i>
+                Usa la URL de exportación como fuente en el ETL de Analyst:
+              </p>
+              <code id="export-url" style="font-size:11px;background:var(--s-gray-50);
+                border:1px solid var(--s-border);border-radius:4px;padding:6px 10px;
+                display:block;word-break:break-all;color:var(--s-primary)"></code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Runs history -->
+        <div class="card" id="runs-card" style="display:none">
+          <div class="card-header">
+            <span><i class="bi bi-clock-history" style="color:var(--s-primary)"></i> Historial de generaciones</span>
+          </div>
+          <div style="overflow-x:auto;max-height:260px;overflow-y:auto">
+            <table class="runs-table">
+              <thead>
+                <tr>
+                  <th>Período</th><th>Canales</th><th>Interacciones</th>
+                  <th>Agentes</th><th>Duración</th><th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="runs-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div><!-- /sim-layout -->
+</div><!-- /sim-page -->
+</div><!-- /sim-root -->
+
+<div id="sim-notifs"></div>
+
+<!-- ═══ MODAL: Crear cuenta ═══════════════════════════════════════════════ -->
+<div id="sim-root">
+<div class="modal" id="modal-create">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3><i class="bi bi-plus-circle" style="color:var(--s-primary)"></i> Nueva cuenta simulada</h3>
+      <button class="btn-close" onclick="closeModal('modal-create')">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Step 1: preset -->
+      <div id="step-preset">
+        <p style="font-size:13px;font-weight:700;margin:0 0 10px">Selecciona un preset de calibración:</p>
+        <div class="preset-grid">
+          <button type="button" class="preset-btn" onclick="selectPreset('banking_inbound',this)">
+            <div class="preset-icon">📞</div>
+            <div class="preset-name">Banca Inbound</div>
+            <div class="preset-desc">~1,490 llamadas/día · TMO 5.2min · 22 agentes</div>
+          </button>
+          <button type="button" class="preset-btn" onclick="selectPreset('telco_outbound',this)">
+            <div class="preset-icon">📤</div>
+            <div class="preset-name">Telco Outbound</div>
+            <div class="preset-desc">~131K marcaciones/día · 27.6% contactab.</div>
+          </button>
+          <button type="button" class="preset-btn" onclick="selectPreset('banking_digital',this)">
+            <div class="preset-icon">💬</div>
+            <div class="preset-name">Banca Digital</div>
+            <div class="preset-desc">~203 interacciones/día · BXI + APP</div>
+          </button>
+          <button type="button" class="preset-btn" onclick="selectPreset('mixed_full',this)">
+            <div class="preset-icon">🏢</div>
+            <div class="preset-name">Operación Mixta</div>
+            <div class="preset-desc">Inbound + Outbound + Digital</div>
+          </button>
+        </div>
+        <input type="hidden" id="selected-preset" value="">
+      </div>
+      <!-- Nombre -->
+      <div class="f-group" style="margin-top:14px">
+        <label class="f-label req">Nombre de la cuenta</label>
+        <input type="text" id="acc-name" class="f-input"
+               placeholder="Ej: Banca Telefónica Julio 2026">
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modal-create')">Cancelar</button>
+      <button type="button" class="btn btn-primary" id="btn-create-submit" onclick="submitCreate()">
+        <i class="bi bi-plus-lg"></i> Crear cuenta
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Generar ════════════════════════════════════════════════════ -->
+<div class="modal" id="modal-generate">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <h3><i class="bi bi-play-circle" style="color:var(--s-success)"></i> Generar interacciones históricas</h3>
+      <button class="btn-close" onclick="closeModal('modal-generate')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="f-group">
+        <label class="f-label req">Desde</label>
+        <input type="date" id="gen-from" class="f-input">
+      </div>
+      <div class="f-group">
+        <label class="f-label req">Hasta</label>
+        <input type="date" id="gen-to" class="f-input">
+      </div>
+      <div class="f-group">
+        <label class="f-label">Canales</label>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" class="canal-check" value="inbound" checked
+                   style="accent-color:var(--s-primary)"> Inbound Voz
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" class="canal-check" value="outbound"
+                   style="accent-color:var(--s-primary)"> Outbound
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" class="canal-check" value="digital"
+                   style="accent-color:var(--s-primary)"> Digital
+          </label>
+        </div>
+        <div class="f-hint">Vacío = usa el canal configurado en la cuenta.</div>
+      </div>
+      <div id="gen-warning" style="display:none;background:var(--s-warning-l);
+           border:1px solid var(--s-warning-b);border-radius:var(--s-radius-sm);
+           padding:8px 12px;font-size:12px;color:var(--s-warning);margin-top:8px">
+        <i class="bi bi-exclamation-triangle"></i>
+        El outbound genera ~131K marcaciones/día. Rangos largos pueden tardar varios minutos.
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modal-generate')">Cancelar</button>
+      <button type="button" class="btn btn-success" id="btn-gen-submit" onclick="submitGenerate()">
+        <i class="bi bi-play-circle"></i> Generar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL: Confirmar limpiar ════════════════════════════════════════ -->
+<div class="modal" id="modal-clear">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-hdr">
+      <h3><i class="bi bi-trash3" style="color:var(--s-danger)"></i> Limpiar interacciones</h3>
+      <button class="btn-close" onclick="closeModal('modal-clear')">×</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Eliminar todas las interacciones de <strong id="clear-acc-name"></strong>?</p>
+      <p style="font-size:12px;color:var(--s-text-m);margin:0">La cuenta y su configuración se conservan.</p>
+    </div>
+    <div class="modal-ftr">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modal-clear')">Cancelar</button>
+      <button type="button" class="btn btn-danger" onclick="submitClear()">
+        <i class="bi bi-trash3"></i> Limpiar
+      </button>
+    </div>
+  </div>
+</div>
+</div><!-- /sim-root modals -->
+
+<script>
+const URLS = {
+  api:      "{% url 'sim:simulator_api' %}",
+  create:   "{% url 'sim:account_create' %}",
+  delete:   id => `/sim/accounts/${id}/delete/`,
+  generate: id => `/sim/accounts/${id}/generate/`,
+  clear:    id => `/sim/accounts/${id}/clear/`,
+  runs:     id => `/sim/accounts/${id}/runs/`,
+  kpis:     id => `/sim/accounts/${id}/kpis/`,
+  export:   id => `/sim/accounts/${id}/export/`,
+  edit:     id => `/sim/accounts/${id}/edit/`,
+};
+
+let SEL = { id: null, name: '', canal: '' };
+
+function csrf(){ return document.querySelector('[name=csrfmiddlewaretoken]')?.value ?? ''; }
+async function postJSON(url, body){
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrf()}, body:JSON.stringify(body)});
+  return r.json();
+}
+function openModal(id){ document.getElementById(id).classList.add('active'); }
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+document.addEventListener('keydown', e => { if(e.key==='Escape') document.querySelectorAll('.modal.active').forEach(m=>m.classList.remove('active')); });
+
+function notify(type, msg){
+  const cls={success:'ok',error:'err',info:'inf'}[type]||'inf';
+  const icon={success:'✓',error:'✕',info:'ℹ'}[type]||'ℹ';
+  const el=document.createElement('div');
+  el.className=`sim-notif sim-notif-${cls}`;
+  el.innerHTML=`<span>${icon}</span><span>${msg}</span>`;
+  document.getElementById('sim-notifs').appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},4500);
+}
+
+function fmtNum(n){ return n==null?'—':new Intl.NumberFormat('es').format(n); }
+function fmtPct(n){ return n==null?'—':(n*100).toFixed(1)+'%'; }
+function fmtTmo(s){ if(!s||s===0)return '—'; const m=Math.floor(s/60),sec=s%60; return `${m}:${String(sec).padStart(2,'0')}`; }
+
+// ── Account selection ─────────────────────────────────────────────────────
+async function selectAccount(id, name, canal){
+  SEL = {id, name, canal};
+  document.querySelectorAll('.acc-card').forEach(c=>c.classList.remove('active'));
+  document.getElementById(`acc-${id}`)?.classList.add('active');
+  ['tb-gen','tb-clear','tb-runs','tb-edit'].forEach(id=>document.getElementById(id).disabled=false);
+  document.getElementById('detail-empty').style.display='none';
+  document.getElementById('detail-panel').style.display='block';
+  document.getElementById('detail-title').textContent=name;
+  const editLink=document.getElementById('btn-edit-link');
+  if(editLink) editLink.href=URLS.edit(id);
+  document.getElementById('export-url').textContent = window.location.origin + URLS.export(id) + '?page_size=1000';
+  document.getElementById('runs-card').style.display='none';
+  await refreshKpis();
+}
+
+async function refreshKpis(){
+  if(!SEL.id) return;
+  try{
+    const r = await fetch(URLS.kpis(SEL.id));
+    const d = await r.json();
+    if(!d.success) return;
+    const k = d.kpis;
+    document.getElementById('kpi-total').textContent      = fmtNum(k.total);
+    document.getElementById('kpi-tmo').textContent        = fmtTmo(k.tmo_avg_s);
+    document.getElementById('kpi-abandon').textContent    = fmtPct(k.abandon_rate);
+    document.getElementById('kpi-ventas').textContent     = fmtNum(k.ventas);
+    document.getElementById('kpi-atend').textContent      = fmtNum(k.atendidas);
+    document.getElementById('kpi-nocontact').textContent  = fmtNum(k.no_contacto);
+  } catch(e){ console.error(e); }
+}
+
+// ── Create ────────────────────────────────────────────────────────────────
+function selectPreset(key, el){
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('selected-preset').value=key;
+  // Auto-fill name if empty
+  const names={'banking_inbound':'Banca Inbound','telco_outbound':'Telco Outbound',
+                'banking_digital':'Banca Digital','mixed_full':'Operación Mixta'};
+  const nameInput=document.getElementById('acc-name');
+  if(!nameInput.value) nameInput.value=names[key]||'';
+}
+
+function openCreateModal(){
+  document.getElementById('selected-preset').value='';
+  document.getElementById('acc-name').value='';
+  document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('selected'));
+  openModal('modal-create');
+  setTimeout(()=>document.getElementById('acc-name').focus(),200);
+}
+
+function openEditor(){
+  if(!SEL.id) return;
+  window.location.href=URLS.edit(SEL.id);
+}
+
+async function submitCreate(){
+  const preset = document.getElementById('selected-preset').value;
+  const name   = document.getElementById('acc-name').value.trim();
+  if(!name){ notify('error','El nombre es obligatorio.'); return; }
+  const btn = document.getElementById('btn-create-submit');
+  btn.disabled=true;
+  try{
+    const r = await postJSON(URLS.create, {preset, name});
+    if(!r.success){ notify('error', r.error||'Error.'); return; }
+    closeModal('modal-create');
+    notify('success',`Cuenta "${r.account.name}" creada.`);
+    // Add card to list
+    const empty=document.getElementById('acc-empty');
+    if(empty) empty.remove();
+    const body = document.querySelector('.card-body');
+    const card = document.createElement('div');
+    card.className=`acc-card canal-${r.account.canal}`;
+    card.id=`acc-${r.account.id}`;
+    card.onclick=()=>selectAccount(r.account.id, r.account.name, r.account.canal);
+    card.innerHTML=`<div class="acc-title">${r.account.name}</div>
+      <div class="acc-meta">${r.account.canal_label}${r.account.preset?' · '+r.account.preset:''}</div>`;
+    body.prepend(card);
+    const cnt=document.getElementById('acc-count');
+    if(cnt) cnt.textContent=`(${parseInt(cnt.textContent.replace(/\D/g,''))+1})`;
+    selectAccount(r.account.id, r.account.name, r.account.canal);
+  } catch(e){ notify('error','Error de conexión.'); }
+  finally{ btn.disabled=false; }
+}
+
+// ── Generate ──────────────────────────────────────────────────────────────
+function openGenerateModal(){
+  if(!SEL.id) return;
+  // Default: last 30 days
+  const today = new Date();
+  const from  = new Date(today); from.setDate(from.getDate()-30);
+  const to    = new Date(today); to.setDate(to.getDate()-1);
+  document.getElementById('gen-from').value = from.toISOString().split('T')[0];
+  document.getElementById('gen-to').value   = to.toISOString().split('T')[0];
+  // Warn for outbound
+  document.getElementById('gen-warning').style.display = SEL.canal==='outbound'||SEL.canal==='mixed' ? 'block':'none';
+  openModal('modal-generate');
+}
+
+async function submitGenerate(){
+  const date_from = document.getElementById('gen-from').value;
+  const date_to   = document.getElementById('gen-to').value;
+  if(!date_from||!date_to){ notify('error','Indica el rango de fechas.'); return; }
+  const canales = [...document.querySelectorAll('.canal-check:checked')].map(c=>c.value);
+  const btn = document.getElementById('btn-gen-submit');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span> Generando…';
+  try{
+    const r = await postJSON(URLS.generate(SEL.id), {date_from, date_to, canales: canales.length?canales:null});
+    closeModal('modal-generate');
+    if(!r.success){ notify('error', r.error||'Error en la generación.'); return; }
+    const run=r.run;
+    notify('success',`✓ ${new Intl.NumberFormat('es').format(run.interactions)} interacciones generadas en ${run.duration_s}s`);
+    await refreshKpis();
+  } catch(e){ notify('error','Error de conexión.'); }
+  finally{ btn.disabled=false; btn.innerHTML='<i class="bi bi-play-circle"></i> Generar'; }
+}
+
+// ── Clear ─────────────────────────────────────────────────────────────────
+function confirmClear(){
+  if(!SEL.id) return;
+  document.getElementById('clear-acc-name').textContent=SEL.name;
+  openModal('modal-clear');
+}
+async function submitClear(){
+  const r = await postJSON(URLS.clear(SEL.id),{});
+  if(r.success){
+    closeModal('modal-clear');
+    notify('info',`${new Intl.NumberFormat('es').format(r.deleted)} interacciones eliminadas.`);
+    await refreshKpis();
+  } else notify('error', r.error);
+}
+
+// ── Runs history ──────────────────────────────────────────────────────────
+async function loadRuns(){
+  if(!SEL.id) return;
+  const card=document.getElementById('runs-card');
+  card.style.display='block';
+  card.scrollIntoView({behavior:'smooth',block:'start'});
+  try{
+    const r = await fetch(URLS.runs(SEL.id));
+    const d = await r.json();
+    const tbody=document.getElementById('runs-tbody');
+    if(!d.runs?.length){
+      tbody.innerHTML='<tr><td colspan="6" style="text-align:center;padding:18px;color:var(--s-text-m)">Sin generaciones.</td></tr>';
+      return;
+    }
+    tbody.innerHTML=d.runs.map(run=>`
+      <tr>
+        <td style="white-space:nowrap">${run.date_from} → ${run.date_to}</td>
+        <td>${run.canales.join(', ')}</td>
+        <td style="text-align:right">${fmtNum(run.interactions)}</td>
+        <td style="text-align:right">${run.agents}</td>
+        <td>${run.duration_s}s</td>
+        <td><span class="badge badge-${run.status}">${run.status_label}</span></td>
+      </tr>`).join('');
+  } catch(e){ notify('error','Error cargando historial.'); }
+}
+</script>
+{% endblock %}

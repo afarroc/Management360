@@ -1,0 +1,327 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+#sim-docs-root {
+  --d-bg: #f8fafc;
+  --d-surf: #ffffff;
+  --d-border: #e2e8f0;
+  --d-primary: #3b82f6;
+  --d-primary-d: #1d4ed8;
+  --d-success: #10b981;
+  --d-text: #0f172a;
+  --d-text-s: #475569;
+  --d-text-m: #94a3b8;
+  --d-code-bg: #f1f5f9;
+  --d-code-border: #cbd5e1;
+  --d-nav-w: 220px;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--d-text);
+  background: var(--d-bg);
+  min-height: 100vh;
+}
+
+/* ── Layout ── */
+#sim-docs-root .docs-wrap {
+  display: flex;
+  min-height: calc(100vh - 60px);
+}
+
+/* ── Sidebar ── */
+#sim-docs-root .docs-sidebar {
+  width: var(--d-nav-w);
+  flex-shrink: 0;
+  background: var(--d-surf);
+  border-right: 1px solid var(--d-border);
+  padding: 24px 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+#sim-docs-root .sidebar-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--d-text-m);
+  padding: 0 18px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#sim-docs-root .sidebar-label span {
+  font-size: 16px;
+}
+#sim-docs-root .doc-nav-item {
+  display: block;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--d-text-s);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: all .12s;
+  line-height: 1.4;
+}
+#sim-docs-root .doc-nav-item:hover {
+  background: #f1f5f9;
+  color: var(--d-primary);
+}
+#sim-docs-root .doc-nav-item.active {
+  border-left-color: var(--d-primary);
+  background: #eff6ff;
+  color: var(--d-primary-d);
+}
+#sim-docs-root .nav-sub {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--d-text-m);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  padding: 14px 18px 6px;
+  border-top: 1px solid var(--d-border);
+  margin-top: 8px;
+}
+
+/* ── Main content ── */
+#sim-docs-root .docs-main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 40px 64px;
+  max-width: 880px;
+}
+
+/* ── TOC (table of contents from markdown extension) ── */
+#sim-docs-root .docs-main .toc {
+  background: #f8fafc;
+  border: 1px solid var(--d-border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 28px;
+  font-size: 13px;
+}
+#sim-docs-root .docs-main .toc ul { padding-left: 18px; margin: 4px 0; }
+#sim-docs-root .docs-main .toc a  { color: var(--d-primary); text-decoration: none; }
+#sim-docs-root .docs-main .toc a:hover { text-decoration: underline; }
+
+/* ── Markdown content styles ── */
+#sim-docs-root .docs-main h1 {
+  font-size: 26px; font-weight: 800; margin: 0 0 6px;
+  color: var(--d-text); padding-bottom: 12px;
+  border-bottom: 2px solid var(--d-border);
+}
+#sim-docs-root .docs-main h2 {
+  font-size: 18px; font-weight: 800; margin: 36px 0 12px;
+  color: var(--d-text); padding-bottom: 8px;
+  border-bottom: 1px solid var(--d-border);
+}
+#sim-docs-root .docs-main h3 {
+  font-size: 15px; font-weight: 700; margin: 24px 0 8px;
+  color: var(--d-text);
+}
+#sim-docs-root .docs-main h4 {
+  font-size: 13px; font-weight: 700; margin: 18px 0 6px;
+  color: var(--d-text-s); text-transform: uppercase; letter-spacing: .05em;
+}
+#sim-docs-root .docs-main p {
+  margin: 0 0 12px; line-height: 1.7; color: var(--d-text-s);
+}
+#sim-docs-root .docs-main blockquote {
+  border-left: 3px solid var(--d-primary);
+  margin: 12px 0; padding: 8px 14px;
+  background: #eff6ff; border-radius: 0 6px 6px 0;
+  font-size: 13px; color: var(--d-text-s);
+}
+#sim-docs-root .docs-main blockquote p { margin: 0; }
+
+/* ── Code ── */
+#sim-docs-root .docs-main code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  background: var(--d-code-bg);
+  border: 1px solid var(--d-code-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: #0f172a;
+}
+#sim-docs-root .docs-main pre {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  margin: 12px 0 20px;
+  border: 1px solid #1e293b;
+}
+#sim-docs-root .docs-main pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #cbd5e1;
+  font-size: 12.5px;
+  line-height: 1.8;
+}
+
+/* ── Tables ── */
+#sim-docs-root .docs-main table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 20px;
+  font-size: 13px;
+}
+#sim-docs-root .docs-main th {
+  padding: 8px 12px;
+  text-align: left;
+  background: #f1f5f9;
+  border: 1px solid var(--d-border);
+  font-weight: 700;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--d-text-s);
+}
+#sim-docs-root .docs-main td {
+  padding: 7px 12px;
+  border: 1px solid var(--d-border);
+  vertical-align: top;
+  line-height: 1.5;
+  color: var(--d-text-s);
+}
+#sim-docs-root .docs-main tr:nth-child(even) td { background: #f8fafc; }
+
+/* ── Lists ── */
+#sim-docs-root .docs-main ul,
+#sim-docs-root .docs-main ol {
+  padding-left: 22px;
+  margin: 4px 0 12px;
+  color: var(--d-text-s);
+  line-height: 1.8;
+}
+#sim-docs-root .docs-main li { margin-bottom: 2px; }
+
+/* ── Horizontal rule ── */
+#sim-docs-root .docs-main hr {
+  border: none;
+  border-top: 1px solid var(--d-border);
+  margin: 28px 0;
+}
+
+/* ── Header bar ── */
+#sim-docs-root .docs-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: var(--d-surf);
+  border-bottom: 1px solid var(--d-border);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+#sim-docs-root .docs-topbar .title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--d-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+#sim-docs-root .docs-topbar a {
+  font-size: 12.5px;
+  color: var(--d-primary);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+#sim-docs-root .docs-topbar a:hover { text-decoration: underline; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  #sim-docs-root .docs-sidebar { display: none; }
+  #sim-docs-root .docs-main    { padding: 20px 16px 40px; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="sim-docs-root">
+
+  <!-- Top bar -->
+  <div class="docs-topbar">
+    <div class="title">
+      <span>📋</span>
+      <span>{{ title }}</span>
+    </div>
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+      {% for key, label in docs.items %}
+      <a href="{% url 'sim:docs_view' key %}"
+         {% if key == doc_key %}style="font-weight:800;color:#1d4ed8"{% endif %}>
+        {% if key == 'context' %}🗺{% elif key == 'reference' %}🔧{% else %}📐{% endif %}
+        {{ label }}
+      </a>
+      {% endfor %}
+      <a href="{% url 'sim:simulator_list' %}">
+        <i class="bi bi-arrow-left"></i> Simulador
+      </a>
+    </div>
+  </div>
+
+  <div class="docs-wrap">
+
+    <!-- Sidebar -->
+    <nav class="docs-sidebar">
+      <div class="sidebar-label">
+        <span>📋</span> Documentación
+      </div>
+
+      <a href="{% url 'sim:docs_view' 'context' %}"
+         class="doc-nav-item {% if doc_key == 'context' %}active{% endif %}">
+        🗺 Mapa de Contexto
+        <div style="font-size:11px;color:var(--d-text-m);font-weight:400;margin-top:2px">
+          Archivos, endpoints, firmas
+        </div>
+      </a>
+
+      <a href="{% url 'sim:docs_view' 'reference' %}"
+         class="doc-nav-item {% if doc_key == 'reference' %}active{% endif %}">
+        🔧 Referencia de Desarrollo
+        <div style="font-size:11px;color:var(--d-text-m);font-weight:400;margin-top:2px">
+          Modelos, flujos, JS, CSS, bugs
+        </div>
+      </a>
+
+      <a href="{% url 'sim:docs_view' 'design' %}"
+         class="doc-nav-item {% if doc_key == 'design' %}active{% endif %}">
+        📐 Diseño y Estado
+        <div style="font-size:11px;color:var(--d-text-m);font-weight:400;margin-top:2px">
+          Fases, sprints, roadmap
+        </div>
+      </a>
+
+      <div class="nav-sub">Analyst</div>
+
+      <a href="{% url 'analyst:docs_view' 'context' %}" class="doc-nav-item"
+         target="_blank">
+        🗺 Contexto Analyst ↗
+      </a>
+      <a href="{% url 'analyst:docs_view' 'reference' %}" class="doc-nav-item"
+         target="_blank">
+        🔧 Referencia Analyst ↗
+      </a>
+      <a href="{% url 'analyst:docs_view' 'design' %}" class="doc-nav-item"
+         target="_blank">
+        📐 Diseño Analyst ↗
+      </a>
+    </nav>
+
+    <!-- Content -->
+    <main class="docs-main">
+      {{ content_html|safe }}
+    </main>
+
+  </div>
+</div>
+{% endblock %}

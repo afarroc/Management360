@@ -1,0 +1,1110 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block title %}Editar {{ account.name }} — Sim{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── Root vars (hereda el sistema de simulator.html) ───────────────────── */
+#ed-root{
+  --s-bg:#f4f6f9;--s-surface:#fff;--s-border:#e5e7eb;--s-border-l:#f3f4f6;
+  --s-primary:#2563eb;--s-primary-l:#eff6ff;--s-primary-d:#1d4ed8;
+  --s-success:#059669;--s-success-l:#ecfdf5;--s-success-b:#6ee7b7;
+  --s-warning:#d97706;--s-warning-l:#fffbeb;--s-warning-b:#fcd34d;
+  --s-danger:#dc2626;--s-danger-l:#fef2f2;--s-danger-b:#fca5a5;
+  --s-text:#111827;--s-text-s:#4b5563;--s-text-m:#9ca3af;
+  --s-gray-50:#f9fafb;--s-gray-100:#f3f4f6;
+  --s-radius:8px;--s-radius-sm:6px;--s-radius-lg:12px;
+  --s-shadow:0 1px 3px rgba(0,0,0,.07);
+  font-family:'Nunito',system-ui,sans-serif;font-size:14px;
+  color:var(--s-text);line-height:1.5;
+}
+
+/* ── Layout ────────────────────────────────────────────────────────────── */
+#ed-root .ed-page{padding:14px 16px 60px;max-width:1100px}
+#ed-root .ed-header{
+  display:flex;align-items:center;flex-wrap:wrap;gap:10px;
+  background:var(--s-surface);border:1px solid var(--s-border);
+  border-bottom:2px solid var(--s-primary);border-radius:var(--s-radius);
+  padding:12px 16px;margin-bottom:18px;box-shadow:var(--s-shadow)
+}
+#ed-root .ed-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+#ed-root .canal-pill{
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  padding:2px 8px;border-radius:99px
+}
+.pill-inbound{background:#dbeafe;color:#1d4ed8}
+.pill-outbound{background:#fef3c7;color:#b45309}
+.pill-digital{background:#d1fae5;color:#047857}
+.pill-mixed{background:#ede9fe;color:#6d28d9}
+#ed-root .ed-actions{margin-left:auto;display:flex;gap:8px}
+
+/* ── Tabs ───────────────────────────────────────────────────────────────── */
+#ed-root .ed-tabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:2px solid var(--s-border);padding-bottom:0}
+#ed-root .ed-tab{
+  padding:8px 18px;font-size:13px;font-weight:700;cursor:pointer;
+  border:1px solid transparent;border-bottom:none;border-radius:var(--s-radius-sm) var(--s-radius-sm) 0 0;
+  background:transparent;color:var(--s-text-m);font-family:inherit;
+  transition:all .12s;position:relative;bottom:-2px
+}
+#ed-root .ed-tab:hover{color:var(--s-text);background:var(--s-gray-50)}
+#ed-root .ed-tab.active{
+  background:var(--s-surface);border-color:var(--s-border);
+  border-bottom-color:var(--s-surface);color:var(--s-primary)
+}
+#ed-root .ed-panel{display:none}
+#ed-root .ed-panel.active{display:block}
+
+/* ── Cards ──────────────────────────────────────────────────────────────── */
+#ed-root .card{
+  background:var(--s-surface);border:1px solid var(--s-border);
+  border-radius:var(--s-radius-lg);margin-bottom:16px;box-shadow:var(--s-shadow)
+}
+#ed-root .card-header{
+  padding:10px 16px;border-bottom:1px solid var(--s-border);
+  font-size:13px;font-weight:700;background:var(--s-gray-50);
+  border-radius:var(--s-radius-lg) var(--s-radius-lg) 0 0;
+  display:flex;align-items:center;justify-content:space-between;gap:8px
+}
+#ed-root .card-body{padding:16px}
+
+/* ── Param grid ─────────────────────────────────────────────────────────── */
+#ed-root .param-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px
+}
+#ed-root .f-group{margin:0}
+#ed-root .f-label{
+  display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--s-text-s)
+}
+#ed-root .f-label.req::after{content:' *';color:var(--s-danger)}
+#ed-root .f-input,#ed-root .f-select{
+  width:100%;padding:7px 10px;
+  border:1px solid #d1d5db;border-radius:var(--s-radius-sm);
+  font-family:inherit;font-size:13px;background:var(--s-surface);
+  outline:none;transition:border-color .12s
+}
+#ed-root .f-input:focus,#ed-root .f-select:focus{
+  border-color:var(--s-primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)
+}
+#ed-root .f-hint{font-size:11px;color:var(--s-text-m);margin-top:3px}
+
+/* ── Intraday chart ─────────────────────────────────────────────────────── */
+#ed-root .intraday-wrap{display:grid;grid-template-columns:1fr 220px;gap:20px;align-items:start}
+#ed-root .intraday-bars{display:flex;align-items:flex-end;gap:6px;height:130px;
+  background:var(--s-gray-50);border:1px solid var(--s-border);border-radius:var(--s-radius);padding:10px 12px}
+#ed-root .ibar-col{display:flex;flex-direction:column;align-items:center;gap:4px;flex:1}
+#ed-root .ibar{
+  width:100%;border-radius:3px 3px 0 0;background:var(--s-primary);
+  opacity:.75;transition:height .25s ease;min-height:3px
+}
+#ed-root .ibar-lbl{font-size:10px;font-weight:700;color:var(--s-text-m)}
+#ed-root .intraday-inputs{display:flex;flex-direction:column;gap:7px}
+#ed-root .intraday-row{display:flex;align-items:center;gap:8px}
+#ed-root .intraday-row label{
+  font-size:12px;font-weight:700;color:var(--s-text-s);min-width:36px
+}
+#ed-root .intraday-row input{
+  width:68px;padding:4px 8px;border:1px solid #d1d5db;border-radius:var(--s-radius-sm);
+  font-size:12px;font-family:inherit;text-align:right;outline:none
+}
+#ed-root .intraday-row input:focus{border-color:var(--s-primary)}
+#ed-root .intraday-row .ipct{font-size:11px;color:var(--s-text-m);min-width:14px}
+#ed-root .total-pct{
+  font-size:13px;font-weight:700;padding:6px 10px;border-radius:var(--s-radius-sm);
+  display:inline-flex;align-items:center;gap:5px
+}
+#ed-root .total-ok{background:var(--s-success-l);color:var(--s-success)}
+#ed-root .total-warn{background:var(--s-warning-l);color:var(--s-warning)}
+#ed-root .total-err{background:var(--s-danger-l);color:var(--s-danger)}
+
+/* ── Skills table ───────────────────────────────────────────────────────── */
+#ed-root .skills-tbl{width:100%;border-collapse:collapse;font-size:13px}
+#ed-root .skills-tbl th{
+  padding:7px 10px;text-align:left;font-size:11px;font-weight:700;
+  text-transform:uppercase;color:var(--s-text-m);
+  border-bottom:2px solid var(--s-border);background:var(--s-gray-50);white-space:nowrap
+}
+#ed-root .skills-tbl td{padding:6px 8px;border-bottom:1px solid var(--s-border-l);vertical-align:middle}
+#ed-root .skills-tbl tr:last-child td{border-bottom:none}
+#ed-root .skill-row td{background:var(--s-gray-50)}
+#ed-root .tip-sub-row td{background:var(--s-surface);padding-left:28px}
+#ed-root .tip-sub-row td:first-child{padding-left:32px}
+
+#ed-root .w-input{
+  width:70px;padding:4px 8px;border:1px solid #d1d5db;border-radius:var(--s-radius-sm);
+  font-size:12px;text-align:right;font-family:inherit;outline:none
+}
+#ed-root .w-input:focus{border-color:var(--s-primary);box-shadow:0 0 0 2px rgba(37,99,235,.1)}
+#ed-root .w-bar-cell{width:120px}
+#ed-root .w-bar-wrap{background:var(--s-border);border-radius:2px;height:6px;width:100%;overflow:hidden}
+#ed-root .w-bar{height:100%;border-radius:2px;transition:width .2s}
+.wbar-skill{background:var(--s-primary)}
+.wbar-tip{background:#93c5fd}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+#ed-root .btn{
+  display:inline-flex;align-items:center;gap:5px;padding:7px 14px;
+  border-radius:var(--s-radius-sm);font-family:inherit;font-size:13px;font-weight:600;
+  cursor:pointer;border:1px solid var(--s-border);background:var(--s-surface);
+  color:var(--s-text);transition:background .12s;white-space:nowrap
+}
+#ed-root .btn:disabled{opacity:.4;cursor:default;pointer-events:none}
+#ed-root .btn-primary{background:var(--s-primary);color:#fff;border-color:var(--s-primary)}
+#ed-root .btn-primary:hover{background:var(--s-primary-d)}
+#ed-root .btn-success{background:var(--s-success);color:#fff;border-color:var(--s-success)}
+#ed-root .btn-success:hover{background:#047857}
+#ed-root .btn-ghost{background:var(--s-surface);color:var(--s-text-s);border-color:var(--s-border)}
+#ed-root .btn-ghost:hover{background:var(--s-gray-50)}
+#ed-root .btn-danger-sm{
+  background:none;border:none;color:var(--s-danger);cursor:pointer;padding:2px 4px;
+  border-radius:4px;font-size:14px;opacity:.6;transition:opacity .1s
+}
+#ed-root .btn-danger-sm:hover{opacity:1;background:var(--s-danger-l)}
+#ed-root .btn-sm{padding:4px 10px;font-size:12px}
+#ed-root .btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#ed-root .btn-add{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:12px;font-weight:700;color:var(--s-primary);background:var(--s-primary-l);
+  border:1px dashed #93c5fd;border-radius:var(--s-radius-sm);padding:5px 12px;
+  cursor:pointer;transition:background .12s;font-family:inherit
+}
+#ed-root .btn-add:hover{background:#dbeafe}
+
+/* ── Normalize badge ────────────────────────────────────────────────────── */
+#ed-root .norm-badge{
+  font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px;
+  cursor:pointer;user-select:none;transition:background .12s
+}
+.norm-ok{background:var(--s-success-l);color:var(--s-success)}
+.norm-warn{background:var(--s-warning-l);color:var(--s-warning);border:1px solid var(--s-warning-b)}
+.norm-warn:hover{background:#fcd34d}
+
+/* ── CSV import ─────────────────────────────────────────────────────────── */
+#ed-root .csv-zone{
+  border:2px dashed var(--s-border);border-radius:var(--s-radius);
+  padding:20px;text-align:center;color:var(--s-text-m);font-size:13px;
+  transition:border-color .15s,background .15s;cursor:pointer
+}
+#ed-root .csv-zone:hover,#ed-root .csv-zone.drag{
+  border-color:var(--s-primary);background:var(--s-primary-l)
+}
+#ed-root .csv-preview{
+  margin-top:10px;font-size:12px;background:var(--s-gray-50);
+  border:1px solid var(--s-border);border-radius:var(--s-radius-sm);padding:8px 12px;
+  max-height:120px;overflow-y:auto;font-family:monospace;display:none
+}
+
+/* ── Notifications ──────────────────────────────────────────────────────── */
+#ed-notifs{position:fixed;top:68px;right:1.2rem;z-index:9999;display:flex;flex-direction:column;gap:6px}
+.ed-notif{padding:10px 14px;font-size:13px;border-radius:8px;display:flex;align-items:center;
+  gap:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);max-width:300px;font-weight:600;
+  animation:fadeInN .18s ease}
+@keyframes fadeInN{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.ed-notif-ok{background:#ecfdf5;border:1px solid #6ee7b7;color:#059669}
+.ed-notif-err{background:#fef2f2;border:1px solid #fca5a5;color:#dc2626}
+.ed-notif-inf{background:#eff6ff;border:1px solid #93c5fd;color:#2563eb}
+
+/* ── Spinner ────────────────────────────────────────────────────────────── */
+#ed-root .spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,.4);
+  border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div id="ed-root">
+<div class="ed-page">
+
+  <!-- Header -->
+  <div class="ed-header">
+    <div class="ed-title">
+      <span>⚙️</span>
+      Editar configuración — <em>{{ account.name }}</em>
+      <span class="canal-pill pill-{{ account.canal }}">{{ account.get_canal_display }}</span>
+    </div>
+    <div class="ed-actions">
+      <button type="button" class="btn btn-ghost" onclick="window.history.back()">
+        <i class="bi bi-arrow-left"></i> Volver
+      </button>
+      <button type="button" class="btn btn-success" id="btn-save" onclick="saveConfig()">
+        <i class="bi bi-floppy"></i> Guardar cambios
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabs por canal -->
+  <div class="ed-tabs" id="ed-tabs">
+    {% if account.canal == 'inbound' or account.canal == 'mixed' %}
+    <button class="ed-tab active" data-panel="panel-inbound" onclick="switchTab(this)">
+      📞 Inbound
+    </button>
+    {% endif %}
+    {% if account.canal == 'outbound' or account.canal == 'mixed' %}
+    <button class="ed-tab {% if account.canal == 'outbound' %}active{% endif %}"
+            data-panel="panel-outbound" onclick="switchTab(this)">
+      📤 Outbound
+    </button>
+    {% endif %}
+    {% if account.canal == 'digital' or account.canal == 'mixed' %}
+    <button class="ed-tab {% if account.canal == 'digital' %}active{% endif %}"
+            data-panel="panel-digital" onclick="switchTab(this)">
+      💬 Digital
+    </button>
+    {% endif %}
+  </div>
+
+  <!-- ═════════════════════════════════ PANEL INBOUND ══════════════════════ -->
+  {% if account.canal == 'inbound' or account.canal == 'mixed' %}
+  <div id="panel-inbound" class="ed-panel {% if account.canal != 'mixed' %}active{% endif %}
+       {% if account.canal == 'mixed' %}active{% endif %}">
+
+    <!-- Parámetros base -->
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-sliders" style="color:var(--s-primary)"></i> Parámetros base — Inbound</span>
+      </div>
+      <div class="card-body">
+        <div class="param-grid">
+          <div class="f-group">
+            <label class="f-label req">Vol. semanal (llamadas/día)</label>
+            <input type="number" class="f-input" id="ib-weekday_vol" min="1" max="50000">
+            <div class="f-hint">Lunes–Viernes</div>
+          </div>
+          <div class="f-group">
+            <label class="f-label">Vol. fin de semana</label>
+            <input type="number" class="f-input" id="ib-weekend_vol" min="0" max="50000">
+            <div class="f-hint">Sábado–Domingo</div>
+          </div>
+          <div class="f-group">
+            <label class="f-label req">TMO (segundos)</label>
+            <input type="number" class="f-input" id="ib-tmo_s" min="30" max="3600">
+            <div class="f-hint">Talk time promedio</div>
+          </div>
+          <div class="f-group">
+            <label class="f-label">ACW (segundos)</label>
+            <input type="number" class="f-input" id="ib-acw_s" min="0" max="600">
+            <div class="f-hint">After call work</div>
+          </div>
+          <div class="f-group">
+            <label class="f-label req">Agentes</label>
+            <input type="number" class="f-input" id="ib-agents" min="1" max="5000">
+          </div>
+          <div class="f-group">
+            <label class="f-label">Abandono (0–1)</label>
+            <input type="number" class="f-input" id="ib-abandon_rate" min="0" max="1" step="0.001">
+            <div class="f-hint">Ej: 0.039 = 3.9%</div>
+          </div>
+          <div class="f-group">
+            <label class="f-label">SL threshold (seg)</label>
+            <input type="number" class="f-input" id="ib-sl_s" min="5" max="300">
+            <div class="f-hint">Umbral service level</div>
+          </div>
+          <div class="f-group">
+            <label class="f-label req">Hora inicio operación</label>
+            <input type="number" class="f-input" id="ib-schedule_start" min="0" max="23">
+            <div class="f-hint">Hora (0–23)</div>
+          </div>
+          <div class="f-group">
+            <label class="f-label req">Hora fin operación</label>
+            <input type="number" class="f-input" id="ib-schedule_end" min="1" max="24">
+            <div class="f-hint">Hora (1–24)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Curva intradía -->
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-bar-chart-line" style="color:var(--s-primary)"></i> Curva intradía</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="total-pct norm-ok" id="intraday-total">100%</span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="normalizeIntraday()">
+            Normalizar
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <p style="font-size:12px;color:var(--s-text-m);margin:0 0 14px">
+          Ajusta el peso de volumen por hora. Los valores deben sumar 100%.
+          <em>Normalizar</em> distribuye automáticamente.
+        </p>
+        <div class="intraday-wrap">
+          <div class="intraday-bars" id="intraday-bars">
+            <!-- generado por JS -->
+          </div>
+          <div class="intraday-inputs" id="intraday-inputs">
+            <!-- generado por JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Skills y tipificaciones -->
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-diagram-3" style="color:var(--s-primary)"></i> Skills y tipificaciones</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="norm-badge norm-ok" id="skills-total-badge" onclick="normalizeSkills()">
+            Skills: 100%
+          </span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="normalizeSkills()">
+            Normalizar skills
+          </button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table class="skills-tbl" id="skills-tbl">
+          <thead>
+            <tr>
+              <th style="width:36px"></th>
+              <th>Skill / Tipificación</th>
+              <th style="width:80px">Peso</th>
+              <th style="width:130px">Distribución</th>
+              <th style="width:120px">
+                <button type="button" class="btn-add" onclick="addSkill()">
+                  + Skill
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="skills-tbody">
+            <!-- generado por JS -->
+          </tbody>
+        </table>
+
+        <!-- CSV import de tipificaciones -->
+        <div style="padding:16px;border-top:1px solid var(--s-border)">
+          <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--s-text-s)">
+            <i class="bi bi-filetype-csv"></i> Importar tipificaciones desde CSV
+          </div>
+          <div class="csv-zone" id="csv-zone-ib"
+               onclick="document.getElementById('csv-file-ib').click()"
+               ondragover="csvDragOver(event,'ib')" ondrop="csvDrop(event,'ib')"
+               ondragleave="this.classList.remove('drag')">
+            <i class="bi bi-upload" style="font-size:20px;opacity:.4"></i>
+            <p style="margin:4px 0 0">Arrastra un CSV o haz clic para seleccionar</p>
+            <p style="font-size:11px;margin:2px 0 0">Formato: <code>skill,tipificacion,peso</code></p>
+          </div>
+          <input type="file" id="csv-file-ib" accept=".csv" style="display:none"
+                 onchange="csvLoad(event,'ib')">
+          <div class="csv-preview" id="csv-preview-ib"></div>
+          <div id="csv-btn-ib" style="margin-top:8px;display:none">
+            <button type="button" class="btn btn-primary btn-sm" onclick="csvApply('ib')">
+              <i class="bi bi-check-lg"></i> Aplicar importación
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  {% endif %}
+
+  <!-- ═════════════════════════════════ PANEL OUTBOUND ════════════════════ -->
+  {% if account.canal == 'outbound' or account.canal == 'mixed' %}
+  <div id="panel-outbound" class="ed-panel {% if account.canal == 'outbound' %}active{% endif %}">
+
+    <!-- Parámetros base outbound -->
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-sliders" style="color:var(--s-warning)"></i> Parámetros base — Outbound</span>
+      </div>
+      <div class="card-body">
+        <div class="param-grid">
+          <div class="f-group">
+            <label class="f-label req">Marcaciones / día</label>
+            <input type="number" class="f-input" id="ob-daily_marcaciones" min="1">
+          </div>
+          <div class="f-group">
+            <label class="f-label">Contactabilidad (0–1)</label>
+            <input type="number" class="f-input" id="ob-contact_rate" min="0" max="1" step="0.001">
+            <div class="f-hint">Ej: 0.276 = 27.6%</div>
+          </div>
+          <div class="f-group">
+            <label class="f-label">Conversión / venta (0–1)</label>
+            <input type="number" class="f-input" id="ob-conv_rate" min="0" max="1" step="0.0001">
+            <div class="f-hint">Sobre contactados</div>
+          </div>
+          <div class="f-group">
+            <label class="f-label">Tasa agenda (0–1)</label>
+            <input type="number" class="f-input" id="ob-agenda_rate" min="0" max="1" step="0.001">
+          </div>
+          <div class="f-group">
+            <label class="f-label req">Agentes</label>
+            <input type="number" class="f-input" id="ob-agents" min="1" max="10000">
+          </div>
+          <div class="f-group">
+            <label class="f-label">Ausencia (0–1)</label>
+            <input type="number" class="f-input" id="ob-absence_rate" min="0" max="1" step="0.001">
+            <div class="f-hint">Rate semanal</div>
+          </div>
+          <div class="f-group">
+            <label class="f-label">SPH base</label>
+            <input type="number" class="f-input" id="ob-sph_base" min="0" step="0.001">
+            <div class="f-hint">Ventas por hora</div>
+          </div>
+          <div class="f-group">
+            <label class="f-label">ARPU (S/)</label>
+            <input type="number" class="f-input" id="ob-arpu" min="0" step="0.01">
+            <div class="f-hint">Ingreso por venta</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- No contacto -->
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-x-circle" style="color:var(--s-warning)"></i> Distribución no contacto</span>
+        <span class="norm-badge norm-ok" id="nocontact-total-badge" onclick="normalizeWeightGroup('nocontact')">
+          100%
+        </span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table class="skills-tbl" id="nocontact-tbl">
+          <thead>
+            <tr>
+              <th>Motivo</th><th style="width:80px">Peso</th>
+              <th style="width:130px">Distribución</th>
+              <th style="width:90px">
+                <button type="button" class="btn-add btn-sm" onclick="addWeightRow('nocontact')">+ Agregar</button>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="nocontact-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tipificaciones contacto -->
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-list-check" style="color:var(--s-warning)"></i> Tipificaciones de contacto</span>
+        <span class="norm-badge norm-ok" id="tipob-total-badge" onclick="normalizeWeightGroup('tipob')">
+          100%
+        </span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table class="skills-tbl" id="tipob-tbl">
+          <thead>
+            <tr>
+              <th>Tipificación</th><th style="width:80px">Peso</th>
+              <th style="width:130px">Distribución</th>
+              <th style="width:90px">
+                <button type="button" class="btn-add btn-sm" onclick="addWeightRow('tipob')">+ Agregar</button>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="tipob-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+  {% endif %}
+
+  <!-- ═════════════════════════════════ PANEL DIGITAL ═════════════════════ -->
+  {% if account.canal == 'digital' or account.canal == 'mixed' %}
+  <div id="panel-digital" class="ed-panel {% if account.canal == 'digital' %}active{% endif %}">
+
+    <!-- Parámetros digital -->
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-sliders" style="color:var(--s-success)"></i> Parámetros base — Digital</span>
+      </div>
+      <div class="card-body">
+        <div class="param-grid">
+          <div class="f-group">
+            <label class="f-label req">Vol. diario (sesiones/día)</label>
+            <input type="number" class="f-input" id="dg-daily_vol" min="1">
+          </div>
+          <div class="f-group">
+            <label class="f-label">Duración sesión (seg)</label>
+            <input type="number" class="f-input" id="dg-duration_s" min="10" max="7200">
+          </div>
+        </div>
+        <!-- Canales -->
+        <div style="margin-top:16px">
+          <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--s-text-s)">
+            Distribución de canales (BXI, APP, etc.)
+          </div>
+          <table class="skills-tbl" id="digch-tbl">
+            <thead>
+              <tr>
+                <th>Canal</th><th style="width:80px">Peso</th>
+                <th style="width:130px">Distribución</th>
+                <th style="width:90px">
+                  <button type="button" class="btn-add btn-sm" onclick="addWeightRow('digch')">+ Agregar</button>
+                </th>
+              </tr>
+            </thead>
+            <tbody id="digch-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tipificaciones digital -->
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-list-check" style="color:var(--s-success)"></i> Tipificaciones digital</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="norm-badge norm-ok" id="tipdig-total-badge" onclick="normalizeWeightGroup('tipdig')">
+            100%
+          </span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="normalizeWeightGroup('tipdig')">
+            Normalizar
+          </button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:0">
+        <table class="skills-tbl" id="tipdig-tbl">
+          <thead>
+            <tr>
+              <th>Tipificación</th><th style="width:80px">Peso</th>
+              <th style="width:130px">Distribución</th>
+              <th style="width:90px">
+                <button type="button" class="btn-add btn-sm" onclick="addWeightRow('tipdig')">+ Agregar</button>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="tipdig-tbody"></tbody>
+        </table>
+        <!-- CSV import digital -->
+        <div style="padding:16px;border-top:1px solid var(--s-border)">
+          <div style="font-size:12px;font-weight:700;margin-bottom:8px;color:var(--s-text-s)">
+            <i class="bi bi-filetype-csv"></i> Importar tipificaciones desde CSV
+          </div>
+          <div class="csv-zone" id="csv-zone-dg"
+               onclick="document.getElementById('csv-file-dg').click()"
+               ondragover="csvDragOver(event,'dg')" ondrop="csvDrop(event,'dg')"
+               ondragleave="this.classList.remove('drag')">
+            <i class="bi bi-upload" style="font-size:20px;opacity:.4"></i>
+            <p style="margin:4px 0 0">Arrastra un CSV o haz clic para seleccionar</p>
+            <p style="font-size:11px;margin:2px 0 0">Formato: <code>tipificacion,peso</code></p>
+          </div>
+          <input type="file" id="csv-file-dg" accept=".csv" style="display:none"
+                 onchange="csvLoad(event,'dg')">
+          <div class="csv-preview" id="csv-preview-dg"></div>
+          <div id="csv-btn-dg" style="margin-top:8px;display:none">
+            <button type="button" class="btn btn-primary btn-sm" onclick="csvApply('dg')">
+              <i class="bi bi-check-lg"></i> Aplicar importación
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  {% endif %}
+
+</div><!-- /ed-page -->
+</div><!-- /ed-root -->
+
+<div id="ed-notifs"></div>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const CANAL = "{{ account.canal }}";
+const SAVE_URL = "{% url 'sim:account_config_save' account.id %}";
+const CSRF = () => document.querySelector('[name=csrfmiddlewaretoken]')?.value ?? '';
+
+// ── State ──────────────────────────────────────────────────────────────────
+let CFG = {{ config_json|safe }};
+let csvParsed = {};   // pending CSV data keyed by zone id
+
+// ── Init ───────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  if (CFG.inbound)  initInbound(CFG.inbound);
+  if (CFG.outbound) initOutbound(CFG.outbound);
+  if (CFG.digital)  initDigital(CFG.digital);
+});
+
+// ═══════════════════════════════════════════════ TABS
+function switchTab(btn) {
+  document.querySelectorAll('.ed-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.ed-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(btn.dataset.panel).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════ INBOUND
+function initInbound(ib) {
+  const fields = ['weekday_vol','weekend_vol','tmo_s','acw_s','agents',
+                  'abandon_rate','sl_s','schedule_start','schedule_end'];
+  fields.forEach(f => {
+    const el = document.getElementById(`ib-${f}`);
+    if (el) el.value = ib[f] ?? '';
+  });
+  renderIntraday(ib.intraday || {});
+  renderSkills(ib.skills || {});
+}
+
+// ─── Intraday ──────────────────────────────────────────────────────────────
+const HOURS = [9,10,11,12,13,14,15,16,17];
+
+function renderIntraday(intraday) {
+  const barsEl   = document.getElementById('intraday-bars');
+  const inputsEl = document.getElementById('intraday-inputs');
+  barsEl.innerHTML = '';
+  inputsEl.innerHTML = '';
+
+  HOURS.forEach(h => {
+    const val = +(intraday[h] || intraday[String(h)] || 0);
+    const pct = +(val * 100).toFixed(2);
+
+    // Bar
+    const col = document.createElement('div');
+    col.className = 'ibar-col';
+    col.innerHTML = `<div class="ibar" id="ibar-${h}" style="height:${Math.max(3, pct * 7)}px"></div>
+                     <span class="ibar-lbl">${h}h</span>`;
+    barsEl.appendChild(col);
+
+    // Input row
+    const row = document.createElement('div');
+    row.className = 'intraday-row';
+    row.innerHTML = `<label>${h}:00</label>
+      <input type="number" id="iinp-${h}" value="${pct}" min="0" max="100" step="0.01"
+             oninput="onIntradayChange()">
+      <span class="ipct">%</span>`;
+    inputsEl.appendChild(row);
+  });
+  updateIntradayTotal();
+}
+
+function onIntradayChange() {
+  HOURS.forEach(h => {
+    const val = parseFloat(document.getElementById(`iinp-${h}`)?.value || 0);
+    const bar = document.getElementById(`ibar-${h}`);
+    if (bar) bar.style.height = Math.max(3, val * 7) + 'px';
+  });
+  updateIntradayTotal();
+}
+
+function updateIntradayTotal() {
+  const total = HOURS.reduce((s, h) => s + parseFloat(document.getElementById(`iinp-${h}`)?.value || 0), 0);
+  const el = document.getElementById('intraday-total');
+  const t  = total.toFixed(1);
+  el.textContent = t + '%';
+  el.className = 'total-pct ' + (Math.abs(total - 100) < 0.5 ? 'total-ok' : Math.abs(total - 100) < 5 ? 'total-warn' : 'total-err');
+}
+
+function normalizeIntraday() {
+  const total = HOURS.reduce((s, h) => s + parseFloat(document.getElementById(`iinp-${h}`)?.value || 0), 0);
+  if (total <= 0) { notify('error','Todos los valores son 0.'); return; }
+  HOURS.forEach(h => {
+    const inp = document.getElementById(`iinp-${h}`);
+    if (inp) inp.value = ((parseFloat(inp.value || 0) / total) * 100).toFixed(2);
+  });
+  onIntradayChange();
+}
+
+function readIntraday() {
+  const r = {};
+  HOURS.forEach(h => {
+    r[h] = parseFloat((parseFloat(document.getElementById(`iinp-${h}`)?.value || 0) / 100).toFixed(4));
+  });
+  return r;
+}
+
+// ─── Skills ────────────────────────────────────────────────────────────────
+// Skills state: array of {name, weight, tipificaciones: [{name, weight}]}
+let SKILLS = [];
+
+function renderSkills(skillsObj) {
+  SKILLS = Object.entries(skillsObj).map(([name, v]) => ({
+    name,
+    weight: v.weight ?? 0,
+    tipificaciones: Object.entries(v.tipificaciones || {}).map(([tn, tw]) => ({ name: tn, weight: tw })),
+  }));
+  rebuildSkillsTable();
+}
+
+function rebuildSkillsTable() {
+  const tbody = document.getElementById('skills-tbody');
+  tbody.innerHTML = '';
+  SKILLS.forEach((skill, si) => {
+    // Skill row
+    const tr = document.createElement('tr');
+    tr.className = 'skill-row';
+    tr.id = `skill-row-${si}`;
+    const barW = Math.min(100, (skill.weight * 100).toFixed(1));
+    tr.innerHTML = `
+      <td>
+        <button type="button" class="btn-danger-sm" onclick="removeSkill(${si})" title="Eliminar skill">
+          <i class="bi bi-x"></i>
+        </button>
+      </td>
+      <td>
+        <input type="text" class="f-input" value="${esc(skill.name)}"
+               style="font-weight:700;width:100%" id="skill-name-${si}"
+               oninput="SKILLS[${si}].name=this.value">
+      </td>
+      <td>
+        <input type="number" class="w-input" value="${(skill.weight * 100).toFixed(2)}"
+               id="skill-w-${si}" min="0" max="100" step="0.01"
+               oninput="onSkillWeightChange(${si})">
+      </td>
+      <td class="w-bar-cell">
+        <div class="w-bar-wrap"><div class="w-bar wbar-skill" id="skill-bar-${si}" style="width:${barW}%"></div></div>
+        <span style="font-size:10px;color:var(--s-text-m)">${barW}%</span>
+      </td>
+      <td>
+        <button type="button" class="btn-add btn-sm" onclick="addTipificacion(${si})">+ Tip</button>
+      </td>`;
+    tbody.appendChild(tr);
+
+    // Tipificacion rows
+    skill.tipificaciones.forEach((tip, ti) => {
+      const tipTr = document.createElement('tr');
+      tipTr.className = 'tip-sub-row';
+      tipTr.id = `tip-row-${si}-${ti}`;
+      const tipBarW = Math.min(100, (tip.weight * 100).toFixed(1));
+      tipTr.innerHTML = `
+        <td>
+          <button type="button" class="btn-danger-sm" onclick="removeTipificacion(${si},${ti})" title="Eliminar">
+            <i class="bi bi-dash"></i>
+          </button>
+        </td>
+        <td>
+          <input type="text" class="f-input" value="${esc(tip.name)}"
+                 style="font-size:12px;width:100%" id="tip-name-${si}-${ti}"
+                 oninput="SKILLS[${si}].tipificaciones[${ti}].name=this.value">
+        </td>
+        <td>
+          <input type="number" class="w-input" value="${(tip.weight * 100).toFixed(2)}"
+                 id="tip-w-${si}-${ti}" min="0" max="100" step="0.01"
+                 oninput="onTipWeightChange(${si},${ti})">
+        </td>
+        <td class="w-bar-cell">
+          <div class="w-bar-wrap"><div class="w-bar wbar-tip" id="tip-bar-${si}-${ti}" style="width:${tipBarW}%"></div></div>
+        </td>
+        <td></td>`;
+      tbody.appendChild(tipTr);
+    });
+  });
+  updateSkillsTotal();
+}
+
+function onSkillWeightChange(si) {
+  const inp = document.getElementById(`skill-w-${si}`);
+  SKILLS[si].weight = parseFloat(inp.value || 0) / 100;
+  const bar = document.getElementById(`skill-bar-${si}`);
+  if (bar) bar.style.width = Math.min(100, parseFloat(inp.value || 0)) + '%';
+  updateSkillsTotal();
+}
+
+function onTipWeightChange(si, ti) {
+  const inp = document.getElementById(`tip-w-${si}-${ti}`);
+  SKILLS[si].tipificaciones[ti].weight = parseFloat(inp.value || 0) / 100;
+  const bar = document.getElementById(`tip-bar-${si}-${ti}`);
+  if (bar) bar.style.width = Math.min(100, parseFloat(inp.value || 0)) + '%';
+}
+
+function updateSkillsTotal() {
+  const total = SKILLS.reduce((s, sk) => s + (sk.weight * 100), 0);
+  const badge = document.getElementById('skills-total-badge');
+  if (!badge) return;
+  const t = total.toFixed(1);
+  badge.textContent = `Skills: ${t}%`;
+  badge.className = 'norm-badge ' + (Math.abs(total - 100) < 0.5 ? 'norm-ok' : 'norm-warn');
+}
+
+function addSkill() {
+  SKILLS.push({ name: 'NUEVO SKILL', weight: 0, tipificaciones: [{ name: 'Consulta general', weight: 1.0 }] });
+  rebuildSkillsTable();
+}
+function removeSkill(si) { SKILLS.splice(si, 1); rebuildSkillsTable(); }
+function addTipificacion(si) {
+  SKILLS[si].tipificaciones.push({ name: 'NUEVA TIPIFICACIÓN', weight: 0 });
+  rebuildSkillsTable();
+}
+function removeTipificacion(si, ti) { SKILLS[si].tipificaciones.splice(ti, 1); rebuildSkillsTable(); }
+
+function normalizeSkills() {
+  const total = SKILLS.reduce((s, sk) => s + sk.weight, 0);
+  if (total <= 0) { notify('error','Todos los pesos de skills son 0.'); return; }
+  SKILLS.forEach(sk => sk.weight = sk.weight / total);
+  rebuildSkillsTable();
+}
+
+function readSkills() {
+  const obj = {};
+  SKILLS.forEach(sk => {
+    const tips = {};
+    sk.tipificaciones.forEach(t => { if (t.name.trim()) tips[t.name.trim()] = t.weight; });
+    if (sk.name.trim()) obj[sk.name.trim()] = { weight: sk.weight, tipificaciones: tips };
+  });
+  return obj;
+}
+
+// ═══════════════════════════════════════════════ OUTBOUND
+function initOutbound(ob) {
+  const fields = ['daily_marcaciones','contact_rate','conv_rate','agenda_rate',
+                  'agents','absence_rate','sph_base','arpu'];
+  fields.forEach(f => {
+    const el = document.getElementById(`ob-${f}`);
+    if (el) el.value = ob[f] ?? '';
+  });
+  initWeightGroup('nocontact', ob.no_contact || {});
+  initWeightGroup('tipob',     ob.tipificaciones_contacto || {});
+}
+
+// ═══════════════════════════════════════════════ DIGITAL
+function initDigital(dg) {
+  const el1 = document.getElementById('dg-daily_vol');
+  const el2 = document.getElementById('dg-duration_s');
+  if (el1) el1.value = dg.daily_vol ?? '';
+  if (el2) el2.value = dg.duration_s ?? '';
+  initWeightGroup('digch',  dg.channels || {});
+  initWeightGroup('tipdig', dg.tipificaciones || {});
+}
+
+// ═══════════════════════════════════════════════ GENERIC WEIGHT GROUP
+// Used for: nocontact, tipob, digch, tipdig
+const WG = {};   // stores state for each group: [{name, weight}]
+
+function initWeightGroup(gid, obj) {
+  WG[gid] = Object.entries(obj).map(([name, weight]) => ({ name, weight }));
+  rebuildWeightGroup(gid);
+}
+
+function rebuildWeightGroup(gid) {
+  const tbody = document.getElementById(`${gid}-tbody`);
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  (WG[gid] || []).forEach((row, i) => {
+    const barW = Math.min(100, (row.weight * 100).toFixed(1));
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>
+        <input type="text" class="f-input" value="${esc(row.name)}" style="width:100%"
+               oninput="WG['${gid}'][${i}].name=this.value">
+      </td>
+      <td>
+        <input type="number" class="w-input" value="${(row.weight * 100).toFixed(3)}"
+               id="${gid}-w-${i}" min="0" max="100" step="0.001"
+               oninput="onWGChange('${gid}',${i})">
+      </td>
+      <td class="w-bar-cell">
+        <div class="w-bar-wrap"><div class="w-bar wbar-tip" id="${gid}-bar-${i}" style="width:${barW}%"></div></div>
+      </td>
+      <td>
+        <button type="button" class="btn-danger-sm" onclick="removeWGRow('${gid}',${i})">
+          <i class="bi bi-x"></i>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+  updateWGTotal(gid);
+}
+
+function onWGChange(gid, i) {
+  const inp = document.getElementById(`${gid}-w-${i}`);
+  WG[gid][i].weight = parseFloat(inp.value || 0) / 100;
+  const bar = document.getElementById(`${gid}-bar-${i}`);
+  if (bar) bar.style.width = Math.min(100, parseFloat(inp.value)) + '%';
+  updateWGTotal(gid);
+}
+
+function updateWGTotal(gid) {
+  const total = (WG[gid] || []).reduce((s, r) => s + r.weight * 100, 0);
+  const badge = document.getElementById(`${gid}-total-badge`);
+  if (!badge) return;
+  badge.textContent = total.toFixed(1) + '%';
+  badge.className = 'norm-badge ' + (Math.abs(total - 100) < 0.5 ? 'norm-ok' : 'norm-warn');
+}
+
+function addWeightRow(gid) {
+  WG[gid] = WG[gid] || [];
+  WG[gid].push({ name: 'Nuevo', weight: 0 });
+  rebuildWeightGroup(gid);
+}
+
+function removeWGRow(gid, i) { WG[gid].splice(i, 1); rebuildWeightGroup(gid); }
+
+function normalizeWeightGroup(gid) {
+  const total = (WG[gid] || []).reduce((s, r) => s + r.weight, 0);
+  if (total <= 0) { notify('error','Todos los pesos son 0.'); return; }
+  WG[gid].forEach(r => r.weight = r.weight / total);
+  rebuildWeightGroup(gid);
+}
+
+function readWeightGroup(gid) {
+  const obj = {};
+  (WG[gid] || []).forEach(r => { if (r.name.trim()) obj[r.name.trim()] = r.weight; });
+  return obj;
+}
+
+// ═══════════════════════════════════════════════ CSV IMPORT
+function csvDragOver(e, zoneId) {
+  e.preventDefault();
+  document.getElementById(`csv-zone-${zoneId}`).classList.add('drag');
+}
+function csvDrop(e, zoneId) {
+  e.preventDefault();
+  document.getElementById(`csv-zone-${zoneId}`).classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) parseCSVFile(file, zoneId);
+}
+function csvLoad(e, zoneId) {
+  const file = e.target.files[0];
+  if (file) parseCSVFile(file, zoneId);
+}
+
+function parseCSVFile(file, zoneId) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const lines = ev.target.result.split(/\r?\n/).filter(l => l.trim() && !l.startsWith('#'));
+    const parsed = [];
+    let preview = '';
+    lines.forEach(line => {
+      const parts = line.split(',').map(s => s.trim());
+      if (zoneId === 'ib') {
+        // skill, tipificacion, peso
+        if (parts.length >= 3) {
+          parsed.push({ skill: parts[0], name: parts[1], weight: parseFloat(parts[2]) || 0 });
+          preview += `${parts[0]} → ${parts[1]}: ${parts[2]}\n`;
+        }
+      } else {
+        // tipificacion, peso
+        if (parts.length >= 2) {
+          parsed.push({ name: parts[0], weight: parseFloat(parts[1]) || 0 });
+          preview += `${parts[0]}: ${parts[1]}\n`;
+        }
+      }
+    });
+    csvParsed[zoneId] = parsed;
+    const previewEl = document.getElementById(`csv-preview-${zoneId}`);
+    previewEl.style.display = 'block';
+    previewEl.textContent = `${parsed.length} filas:\n${preview}`;
+    document.getElementById(`csv-btn-${zoneId}`).style.display = 'block';
+    notify('info', `${parsed.length} tipificaciones listas para importar.`);
+  };
+  reader.readAsText(file);
+}
+
+function csvApply(zoneId) {
+  const data = csvParsed[zoneId];
+  if (!data || !data.length) return;
+
+  if (zoneId === 'ib') {
+    // Rebuild skills from CSV
+    const skillMap = {};
+    data.forEach(row => {
+      if (!skillMap[row.skill]) skillMap[row.skill] = { weight: 0, tipificaciones: [] };
+      skillMap[row.skill].tipificaciones.push({ name: row.name, weight: row.weight });
+    });
+    // Inherit skill weights from current SKILLS or distribute evenly
+    const skillNames = Object.keys(skillMap);
+    skillNames.forEach(sn => {
+      const existing = SKILLS.find(s => s.name === sn);
+      skillMap[sn].weight = existing ? existing.weight : 1 / skillNames.length;
+    });
+    SKILLS = skillNames.map(sn => ({
+      name: sn,
+      weight: skillMap[sn].weight,
+      tipificaciones: skillMap[sn].tipificaciones,
+    }));
+    rebuildSkillsTable();
+  } else if (zoneId === 'dg') {
+    WG['tipdig'] = data.map(r => ({ name: r.name, weight: r.weight }));
+    rebuildWeightGroup('tipdig');
+  }
+  notify('success', 'Importación aplicada. Revisa y normaliza los pesos.');
+  document.getElementById(`csv-preview-${zoneId}`).style.display = 'none';
+  document.getElementById(`csv-btn-${zoneId}`).style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════ COLLECT & SAVE
+function collectConfig() {
+  const config = {};
+
+  if (CFG.inbound !== undefined) {
+    config.inbound = {
+      weekday_vol:    parseInt(document.getElementById('ib-weekday_vol')?.value || 0),
+      weekend_vol:    parseInt(document.getElementById('ib-weekend_vol')?.value || 0),
+      tmo_s:          parseInt(document.getElementById('ib-tmo_s')?.value || 0),
+      acw_s:          parseInt(document.getElementById('ib-acw_s')?.value || 0),
+      agents:         parseInt(document.getElementById('ib-agents')?.value || 0),
+      abandon_rate:   parseFloat(document.getElementById('ib-abandon_rate')?.value || 0),
+      sl_s:           parseInt(document.getElementById('ib-sl_s')?.value || 20),
+      schedule_start: parseInt(document.getElementById('ib-schedule_start')?.value || 9),
+      schedule_end:   parseInt(document.getElementById('ib-schedule_end')?.value || 18),
+      intraday:       readIntraday(),
+      skills:         readSkills(),
+    };
+  }
+  if (CFG.outbound !== undefined) {
+    config.outbound = {
+      daily_marcaciones: parseInt(document.getElementById('ob-daily_marcaciones')?.value || 0),
+      contact_rate:   parseFloat(document.getElementById('ob-contact_rate')?.value || 0),
+      conv_rate:      parseFloat(document.getElementById('ob-conv_rate')?.value || 0),
+      agenda_rate:    parseFloat(document.getElementById('ob-agenda_rate')?.value || 0),
+      agents:         parseInt(document.getElementById('ob-agents')?.value || 0),
+      absence_rate:   parseFloat(document.getElementById('ob-absence_rate')?.value || 0),
+      sph_base:       parseFloat(document.getElementById('ob-sph_base')?.value || 0),
+      arpu:           parseFloat(document.getElementById('ob-arpu')?.value || 0),
+      turnos:         CFG.outbound.turnos || ['MANANA','TARDE'],
+      no_contact:               readWeightGroup('nocontact'),
+      tipificaciones_contacto:  readWeightGroup('tipob'),
+      producto:                 CFG.outbound.producto || {},
+    };
+  }
+  if (CFG.digital !== undefined) {
+    config.digital = {
+      daily_vol:  parseInt(document.getElementById('dg-daily_vol')?.value || 0),
+      duration_s: parseInt(document.getElementById('dg-duration_s')?.value || 240),
+      channels:            readWeightGroup('digch'),
+      tipificaciones:      readWeightGroup('tipdig'),
+    };
+  }
+  return config;
+}
+
+async function saveConfig() {
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Guardando…';
+  try {
+    const config = collectConfig();
+    const resp = await fetch(SAVE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF() },
+      body: JSON.stringify({ config }),
+    });
+    const data = await resp.json();
+    if (data.success) {
+      notify('success', '✓ Configuración guardada correctamente.');
+      CFG = config;
+    } else {
+      const errs = (data.errors || [data.error || 'Error desconocido']).join(' · ');
+      notify('error', errs);
+    }
+  } catch(e) {
+    notify('error', 'Error de conexión.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-floppy"></i> Guardar cambios';
+  }
+}
+
+// ═══════════════════════════════════════════════ HELPERS
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function notify(type, msg) {
+  const cls = {success:'ok',error:'err',info:'inf'}[type]||'inf';
+  const icon = {success:'✓',error:'✕',info:'ℹ'}[type]||'ℹ';
+  const el = document.createElement('div');
+  el.className = `ed-notif ed-notif-${cls}`;
+  el.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  document.getElementById('ed-notifs').appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; el.style.transition='opacity .3s'; setTimeout(()=>el.remove(),300); }, 4500);
+}
+</script>
+{% endblock %}

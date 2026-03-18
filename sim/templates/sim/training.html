@@ -1,0 +1,842 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block title %}Training Mode — WFM Simulator{% endblock %}
+
+{% block extra_head %}
+<style>
+#tr-root{
+  --t-bg:#0f172a;--t-surf:#1e293b;--t-surf2:#263548;--t-border:#334155;
+  --t-primary:#3b82f6;--t-primary-l:#60a5fa;
+  --t-success:#10b981;--t-success-l:#d1fae5;
+  --t-warning:#f59e0b;--t-danger:#ef4444;
+  --t-purple:#a78bfa;--t-teal:#2dd4bf;
+  --t-text:#f1f5f9;--t-text-s:#94a3b8;--t-text-m:#64748b;
+  --t-radius:8px;--t-radius-lg:12px;
+  font-family:'Nunito',system-ui,sans-serif;font-size:14px;
+  color:var(--t-text);background:var(--t-bg);min-height:100vh;
+}
+#tr-root .tr-page{padding:16px 14px 48px}
+/* Header */
+#tr-root .tr-header{display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:10px;margin-bottom:18px;
+  padding:12px 18px;background:var(--t-surf);border:1px solid var(--t-border);
+  border-radius:var(--t-radius-lg)}
+#tr-root .tr-title{font-size:19px;font-weight:800;display:flex;align-items:center;gap:10px}
+/* Tabs */
+#tr-root .tr-tabs{display:flex;gap:4px;background:var(--t-surf2);border-radius:var(--t-radius);
+  padding:4px;margin-bottom:16px}
+#tr-root .tr-tab{flex:1;padding:8px 14px;border:none;border-radius:6px;font-family:inherit;
+  font-size:13px;font-weight:700;cursor:pointer;color:var(--t-text-s);background:transparent;
+  transition:all .15s;text-align:center}
+#tr-root .tr-tab.active{background:var(--t-primary);color:#fff}
+/* Cards grid */
+#tr-root .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+/* Scenario card */
+#tr-root .sc-card{background:var(--t-surf);border:1px solid var(--t-border);
+  border-radius:var(--t-radius-lg);padding:16px;cursor:pointer;
+  transition:border-color .15s,box-shadow .15s;position:relative}
+#tr-root .sc-card:hover{border-color:var(--t-primary);box-shadow:0 4px 16px rgba(59,130,246,.15)}
+#tr-root .sc-card.selected{border-color:var(--t-primary);box-shadow:0 0 0 2px var(--t-primary)33}
+#tr-root .sc-name{font-size:15px;font-weight:800;margin-bottom:4px}
+#tr-root .sc-desc{font-size:12.5px;color:var(--t-text-s);margin-bottom:10px;line-height:1.5}
+#tr-root .sc-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+/* Badges */
+#tr-root .badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;
+  border-radius:20px;font-size:11px;font-weight:700}
+#tr-root .badge-inbound {background:#3b82f622;color:#60a5fa;border:1px solid #3b82f644}
+#tr-root .badge-outbound{background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44}
+#tr-root .badge-easy    {background:#10b98122;color:#10b981;border:1px solid #10b98144}
+#tr-root .badge-medium  {background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b44}
+#tr-root .badge-hard    {background:#ef444422;color:#ef4444;border:1px solid #ef444444}
+#tr-root .badge-public  {background:#a78bfa22;color:#a78bfa;border:1px solid #a78bfa44}
+/* Detail panel */
+#tr-root .detail-panel{background:var(--t-surf);border:1px solid var(--t-border);
+  border-radius:var(--t-radius-lg);padding:18px}
+#tr-root .detail-title{font-size:17px;font-weight:800;margin-bottom:6px}
+#tr-root .detail-desc{font-size:13px;color:var(--t-text-s);margin-bottom:14px;line-height:1.6}
+/* Events timeline */
+#tr-root .events-list{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+#tr-root .event-item{display:flex;gap:12px;align-items:flex-start;
+  background:var(--t-surf2);border-radius:var(--t-radius);padding:10px 12px;
+  border-left:3px solid var(--t-border)}
+#tr-root .event-item.spike{border-color:var(--t-warning)}
+#tr-root .event-item.absent{border-color:var(--t-danger)}
+#tr-root .event-item.sl_drop{border-color:var(--t-purple)}
+#tr-root .event-time{font-size:13px;font-weight:700;color:var(--t-primary-l);
+  white-space:nowrap;min-width:52px;font-variant-numeric:tabular-nums}
+#tr-root .event-body{flex:1}
+#tr-root .event-type{font-size:12px;font-weight:700;color:var(--t-text)}
+#tr-root .event-hint{font-size:12px;color:var(--t-text-s);margin-top:2px}
+/* Session history */
+#tr-root .session-row{display:flex;align-items:center;gap:12px;padding:10px 14px;
+  border-bottom:1px solid var(--t-border);cursor:pointer;
+  transition:background .12s}
+#tr-root .session-row:hover{background:var(--t-surf2)}
+#tr-root .session-row:last-child{border-bottom:none}
+#tr-root .score-circle{width:44px;height:44px;border-radius:50%;display:flex;
+  align-items:center;justify-content:center;font-size:14px;font-weight:900;flex-shrink:0}
+#tr-root .score-hi {background:#10b98133;color:#10b981;border:2px solid #10b981}
+#tr-root .score-mid{background:#f59e0b33;color:#f59e0b;border:2px solid #f59e0b}
+#tr-root .score-lo {background:#ef444433;color:#ef4444;border:2px solid #ef4444}
+/* Buttons */
+#tr-root .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;
+  border-radius:var(--t-radius);font-family:inherit;font-size:13px;font-weight:700;
+  cursor:pointer;border:1px solid var(--t-border);background:var(--t-surf2);
+  color:var(--t-text);transition:all .12s;white-space:nowrap;text-decoration:none}
+#tr-root .btn:hover:not(:disabled){filter:brightness(1.15)}
+#tr-root .btn:disabled{opacity:.35;cursor:default}
+#tr-root .btn-primary{background:var(--t-primary);border-color:var(--t-primary);color:#fff}
+#tr-root .btn-success{background:var(--t-success);border-color:var(--t-success);color:#fff}
+#tr-root .btn-danger {background:var(--t-danger); border-color:var(--t-danger); color:#fff}
+#tr-root .btn-ghost  {background:transparent;     border-color:var(--t-border);  color:var(--t-text-s)}
+#tr-root .btn-sm{padding:5px 10px;font-size:12px}
+/* Modal */
+#tr-root .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);
+  backdrop-filter:blur(3px);z-index:1050;align-items:center;justify-content:center;padding:16px}
+#tr-root .modal.active{display:flex}
+#tr-root .modal-box{background:var(--t-surf);border:1px solid var(--t-border);
+  border-radius:var(--t-radius-lg);width:100%;max-width:560px;
+  max-height:92vh;overflow:hidden;display:flex;flex-direction:column}
+#tr-root .modal-hdr{padding:14px 18px;border-bottom:1px solid var(--t-border);
+  display:flex;justify-content:space-between;align-items:center}
+#tr-root .modal-hdr h3{margin:0;font-size:15px;font-weight:700}
+#tr-root .modal-body{padding:18px;overflow-y:auto;flex:1}
+#tr-root .modal-ftr{padding:12px 18px;border-top:1px solid var(--t-border);
+  display:flex;justify-content:flex-end;gap:8px}
+/* Forms */
+#tr-root .f-group{margin-bottom:12px}
+#tr-root .f-label{display:block;font-size:12px;font-weight:700;
+  color:var(--t-text-s);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em}
+#tr-root .f-input,#tr-root .f-select,#tr-root .f-textarea{width:100%;padding:8px 10px;
+  border:1px solid var(--t-border);border-radius:var(--t-radius);
+  background:var(--t-surf2);color:var(--t-text);font-family:inherit;font-size:13px;outline:none}
+#tr-root .f-input:focus,#tr-root .f-select:focus,#tr-root .f-textarea:focus{border-color:var(--t-primary)}
+#tr-root .f-textarea{resize:vertical;min-height:60px}
+#tr-root .f-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* Event builder */
+#tr-root .ev-row{display:grid;grid-template-columns:80px 1fr 1fr 1fr 28px;gap:6px;
+  align-items:center;margin-bottom:6px}
+/* Score display */
+#tr-root .score-bar-wrap{background:var(--t-surf2);border-radius:6px;height:10px;overflow:hidden;margin:6px 0}
+#tr-root .score-bar{height:100%;border-radius:6px;transition:width .5s ease}
+/* Section headers */
+#tr-root .sec-hdr{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--t-text-m);margin:16px 0 8px;
+  padding-bottom:6px;border-bottom:1px solid var(--t-border)}
+/* Active session bar */
+#tr-root .active-session-bar{
+  background:linear-gradient(90deg,#10b98133,#3b82f633);
+  border:1px solid var(--t-success);border-radius:var(--t-radius-lg);
+  padding:10px 16px;margin-bottom:14px;
+  display:none;align-items:center;gap:12px;flex-wrap:wrap}
+/* Notification */
+#tr-notif{position:fixed;top:70px;right:1rem;z-index:9999;display:flex;flex-direction:column;gap:6px}
+.tr-notif-item{padding:10px 14px;border-radius:8px;font-size:13px;font-weight:700;
+  display:flex;align-items:center;gap:8px;box-shadow:0 2px 8px rgba(0,0,0,.2);max-width:320px}
+.tr-notif-ok {background:#ecfdf5;border:1px solid #6ee7b7;color:#059669}
+.tr-notif-err{background:#fef2f2;border:1px solid #fca5a5;color:#dc2626}
+.tr-notif-inf{background:#eff6ff;border:1px solid #93c5fd;color:#2563eb}
+@media(max-width:700px){
+  #tr-root .cards-grid{grid-template-columns:1fr}
+  #tr-root .f-row{grid-template-columns:1fr}
+  #tr-root .ev-row{grid-template-columns:1fr 1fr;grid-template-rows:auto auto}
+}
+@keyframes dotPulse{0%,80%,100%{transform:scale(.8);opacity:.5}40%{transform:scale(1.2);opacity:1}}
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div id="tr-root">
+<div class="tr-page">
+
+  <!-- Header -->
+  <div class="tr-header">
+    <div class="tr-title">
+      <span style="font-size:22px">🎓</span>
+      Training Mode — WFM Simulator
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button type="button" class="btn btn-primary" onclick="openCreateModal()">
+        <i class="bi bi-plus-lg"></i> Nuevo Escenario
+      </button>
+      <a href="{% url 'sim:gtr_panel' %}" class="btn btn-ghost btn-sm">
+        <i class="bi bi-broadcast-pin"></i> GTR Live
+      </a>
+    </div>
+  </div>
+
+  <!-- Active session bar -->
+  <div class="active-session-bar" id="active-bar">
+    <div class="dot-pulse" style="display:inline-flex;gap:4px;">
+      <span style="width:8px;height:8px;border-radius:50%;background:#10b981;animation:dotPulse 1.2s infinite;display:inline-block"></span>
+      <span style="width:8px;height:8px;border-radius:50%;background:#10b981;animation:dotPulse 1.2s .2s infinite;display:inline-block"></span>
+      <span style="width:8px;height:8px;border-radius:50%;background:#10b981;animation:dotPulse 1.2s .4s infinite;display:inline-block"></span>
+    </div>
+    <span style="font-weight:700;color:var(--t-success)">Sesión activa:</span>
+    <span id="active-scenario-name" style="color:var(--t-text)">—</span>
+    <span id="active-gtr-clock" style="font-size:16px;font-weight:900;color:var(--t-primary-l);font-variant-numeric:tabular-nums">09:00</span>
+    <div style="flex:1"></div>
+    <button type="button" class="btn btn-success btn-sm" onclick="openActionModal()">
+      <i class="bi bi-pencil-square"></i> Registrar acción
+    </button>
+    <button type="button" class="btn btn-danger btn-sm" onclick="completeSession()">
+      <i class="bi bi-stop-circle"></i> Finalizar
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tr-tabs">
+    <button class="tr-tab active" id="tab-scenarios" onclick="showTab('scenarios')">
+      📋 Escenarios
+    </button>
+    <button class="tr-tab" id="tab-history" onclick="showTab('history')">
+      📊 Mi Historial
+    </button>
+  </div>
+
+  <!-- SCENARIOS TAB -->
+  <div id="panel-scenarios">
+    <div class="cards-grid" id="scenarios-grid">
+      {% for sc in scenarios %}
+      <div class="sc-card" id="sc-{{ sc.id }}" onclick="selectScenario('{{ sc.id }}')">
+        <div class="sc-name">{{ sc.name }}</div>
+        <div class="sc-desc">{{ sc.description|default:"Sin descripción"|truncatechars:80 }}</div>
+        <div class="sc-meta">
+          <span class="badge badge-{{ sc.canal }}">
+            {% if sc.canal == 'inbound' %}📞{% else %}📡{% endif %}
+            {{ sc.get_canal_display }}
+          </span>
+          <span class="badge badge-{{ sc.difficulty }}">{{ sc.get_difficulty_display }}</span>
+          {% if sc.is_public %}<span class="badge badge-public">🌐 Público</span>{% endif %}
+          <span style="font-size:11px;color:var(--t-text-m);margin-left:auto">
+            {{ sc.event_count }} evento{{ sc.event_count|pluralize }}
+            · {{ sc.session_count }} sesión{{ sc.session_count|pluralize }}
+          </span>
+        </div>
+      </div>
+      {% empty %}
+      <div id="sc-empty" style="grid-column:1/-1;text-align:center;padding:60px 20px;
+           color:var(--t-text-m)">
+        <div style="font-size:40px;margin-bottom:12px;opacity:.4">🎓</div>
+        <div style="font-weight:700;font-size:15px;margin-bottom:6px">Sin escenarios</div>
+        <div style="font-size:13px">Crea el primero para empezar a practicar.</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Detail panel (hidden until scenario selected) -->
+    <div id="sc-detail" style="display:none;margin-top:16px">
+      <div class="detail-panel">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div class="detail-title" id="det-name">—</div>
+            <div class="sc-meta" id="det-badges" style="margin-bottom:8px"></div>
+            <div class="detail-desc" id="det-desc">—</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" class="btn btn-ghost btn-sm" id="btn-edit-sc" onclick="openEditModal()">
+              <i class="bi bi-pencil"></i> Editar
+            </button>
+            <button type="button" class="btn btn-danger btn-sm" id="btn-del-sc" onclick="deleteScenario()">
+              <i class="bi bi-trash3"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="sec-hdr">⚙️ Configuración</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px">
+          <div><span style="color:var(--t-text-m)">Velocidad:</span> <b id="det-speed">—</b>×</div>
+          <div><span style="color:var(--t-text-m)">Cuenta:</span> <b id="det-account">—</b></div>
+        </div>
+
+        <div class="sec-hdr">📅 Eventos programados</div>
+        <div class="events-list" id="det-events">
+          <div style="color:var(--t-text-m);font-size:13px">Sin eventos configurados.</div>
+        </div>
+
+        <div class="sec-hdr">✅ Acciones esperadas</div>
+        <div id="det-expected" style="font-size:13px;color:var(--t-text-s);line-height:1.7">
+          Sin acciones configuradas.
+        </div>
+
+        <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap">
+          <button type="button" class="btn btn-success" onclick="openStartModal()">
+            <i class="bi bi-play-circle-fill"></i> Iniciar sesión de training
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div id="panel-history" style="display:none">
+    <div style="background:var(--t-surf);border:1px solid var(--t-border);border-radius:var(--t-radius-lg);overflow:hidden">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--t-border);font-size:12px;
+           font-weight:700;color:var(--t-text-m);text-transform:uppercase;letter-spacing:.05em">
+        Mis sesiones de training
+      </div>
+      <div id="history-list">
+        {% for ts in my_sessions %}
+        <div class="session-row" onclick="showSessionDetail('{{ ts.id }}')">
+          <div class="score-circle {% if ts.score >= 80 %}score-hi{% elif ts.score >= 50 %}score-mid{% else %}score-lo{% endif %}">
+            {{ ts.score }}
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px">{{ ts.scenario.name }}</div>
+            <div style="font-size:12px;color:var(--t-text-m)">
+              {{ ts.scenario.get_canal_display }} ·
+              {{ ts.started_at|date:"d/m/Y H:i" }} ·
+              {{ ts.get_status_display }}
+            </div>
+          </div>
+          <div style="text-align:right;font-size:12px;color:var(--t-text-m);white-space:nowrap">
+            {{ ts.actions_log|length }} acción{{ ts.actions_log|length|pluralize }}
+          </div>
+        </div>
+        {% empty %}
+        <div style="text-align:center;padding:48px 20px;color:var(--t-text-m)">
+          <div style="font-size:32px;opacity:.4;margin-bottom:10px">📊</div>
+          Sin sesiones completadas. Inicia un escenario.
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+</div><!-- /tr-page -->
+</div><!-- /tr-root -->
+
+<div id="tr-notif"></div>
+
+<!-- ══ MODAL: Crear / Editar Escenario ═══════════════════════════════════════ -->
+<div id="tr-root">
+<div class="modal" id="modal-scenario">
+  <div class="modal-box" style="max-width:640px">
+    <div class="modal-hdr">
+      <h3 id="modal-sc-title"><i class="bi bi-plus-circle" style="color:var(--t-primary)"></i> Nuevo Escenario</h3>
+      <button onclick="closeModal('modal-scenario')" style="background:none;border:none;color:var(--t-text-m);font-size:20px;cursor:pointer">×</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="f-row">
+        <div class="f-group" style="grid-column:1/-1">
+          <label class="f-label">Nombre *</label>
+          <input type="text" id="sc-name" class="f-input" placeholder="Ej: Crisis de SL — Hora pico banca">
+        </div>
+        <div class="f-group">
+          <label class="f-label">Canal</label>
+          <select id="sc-canal" class="f-select">
+            {% for val, label in canal_choices %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="f-group">
+          <label class="f-label">Dificultad</label>
+          <select id="sc-diff" class="f-select">
+            {% for val, label in difficulty_choices %}
+            <option value="{{ val }}" {% if val == 'medium' %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="f-group">
+        <label class="f-label">Descripción</label>
+        <textarea id="sc-desc" class="f-textarea" placeholder="Explica qué practican los analistas con este escenario…"></textarea>
+      </div>
+
+      <div class="f-row">
+        <div class="f-group">
+          <label class="f-label">Cuenta simulada</label>
+          <select id="sc-account" class="f-select">
+            <option value="">— Genérico (sin cuenta fija) —</option>
+            {% for acc in accounts %}
+            <option value="{{ acc.id }}">[{{ acc.get_canal_display }}] {{ acc.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="f-group">
+          <label class="f-label">Velocidad del clock</label>
+          <select id="sc-speed" class="f-select">
+            {% for cs in clock_speeds %}
+            <option value="{{ cs.value }}" {% if cs.value == 15 %}selected{% endif %}>{{ cs.label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Eventos programados -->
+      <div class="sec-hdr" style="margin-top:8px">📅 Eventos programados</div>
+      <div id="sc-events-list"></div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="addEventRow()" style="margin-top:6px">
+        <i class="bi bi-plus-lg"></i> Agregar evento
+      </button>
+
+      <!-- Acciones esperadas -->
+      <div class="sec-hdr">✅ Acciones esperadas del analista</div>
+      <div id="sc-actions-list"></div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="addActionRow()" style="margin-top:6px">
+        <i class="bi bi-plus-lg"></i> Agregar acción esperada
+      </button>
+
+      <div class="f-group" style="margin-top:14px">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+          <input type="checkbox" id="sc-public" style="accent-color:var(--t-primary);width:15px;height:15px">
+          Hacer público (visible por todos los usuarios)
+        </label>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modal-scenario')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="saveScenario()">
+        <i class="bi bi-floppy"></i> Guardar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Iniciar Sesión ════════════════════════════════════════════════ -->
+<div class="modal" id="modal-start">
+  <div class="modal-box" style="max-width:420px">
+    <div class="modal-hdr">
+      <h3><i class="bi bi-play-circle" style="color:var(--t-success)"></i> Iniciar Training</h3>
+      <button onclick="closeModal('modal-start')" style="background:none;border:none;color:var(--t-text-m);font-size:20px;cursor:pointer">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="start-scenario-info" style="background:var(--t-surf2);border-radius:var(--t-radius);padding:12px;margin-bottom:14px;font-size:13px"></div>
+      <div class="f-group">
+        <label class="f-label">Fecha a simular</label>
+        <input type="date" id="start-date" class="f-input">
+      </div>
+      <div style="font-size:12.5px;color:var(--t-text-s);margin-top:8px;line-height:1.6">
+        Al iniciar, se abrirá el panel GTR en una nueva pestaña.<br>
+        Registra tus acciones aquí durante la simulación.
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modal-start')">Cancelar</button>
+      <button type="button" class="btn btn-success" onclick="startSession()">
+        <i class="bi bi-play-circle-fill"></i> Iniciar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Registrar Acción ══════════════════════════════════════════════ -->
+<div class="modal" id="modal-action">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-hdr">
+      <h3><i class="bi bi-pencil-square" style="color:var(--t-teal)"></i> Registrar Acción</h3>
+      <button onclick="closeModal('modal-action')" style="background:none;border:none;color:var(--t-text-m);font-size:20px;cursor:pointer">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="f-group">
+        <label class="f-label">¿Qué acción tomaste?</label>
+        <textarea id="action-text" class="f-textarea" rows="3"
+          placeholder="Ej: Solicité 3 agentes adicionales al supervisor / Cambié la distribución de skills…"></textarea>
+      </div>
+      <div class="f-group">
+        <label class="f-label">¿Fue en respuesta a algún evento del escenario?</label>
+        <select id="action-event-ref" class="f-select">
+          <option value="">— Acción proactiva / sin evento asociado —</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('modal-action')">Cancelar</button>
+      <button type="button" class="btn btn-primary" onclick="logAction()">
+        <i class="bi bi-check-lg"></i> Registrar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Resultado de sesión ═══════════════════════════════════════════ -->
+<div class="modal" id="modal-result">
+  <div class="modal-box" style="max-width:480px">
+    <div class="modal-hdr">
+      <h3>🏆 Resultado de la sesión</h3>
+      <button onclick="closeModal('modal-result')" style="background:none;border:none;color:var(--t-text-m);font-size:20px;cursor:pointer">×</button>
+    </div>
+    <div class="modal-body" id="result-body"></div>
+    <div class="modal-ftr">
+      <button type="button" class="btn btn-primary" onclick="closeModal('modal-result');showTab('history')">
+        Ver historial
+      </button>
+    </div>
+  </div>
+</div>
+</div><!-- /tr-root modals -->
+
+<script>
+const URLS = {
+  scenarioList:   "{% url 'sim:scenario_list_api' %}",
+  scenarioCreate: "{% url 'sim:scenario_create' %}",
+  scenarioUpdate: id => `/sim/training/scenarios/${id}/update/`,
+  scenarioDelete: id => `/sim/training/scenarios/${id}/delete/`,
+  sessionStart:   id => `/sim/training/scenarios/${id}/start/`,
+  sessionList:    "{% url 'sim:session_list_api' %}",
+  sessionComplete:id => `/sim/training/sessions/${id}/complete/`,
+  sessionAction:  id => `/sim/training/sessions/${id}/action/`,
+  gtrPanel:       "{% url 'sim:gtr_panel' %}",
+};
+
+function csrf(){ return document.querySelector('[name=csrfmiddlewaretoken]')?.value ?? ''; }
+async function postJSON(url, body){
+  const r = await fetch(url, {method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},
+    body:JSON.stringify(body)});
+  return r.json();
+}
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') document.querySelectorAll('.modal.active').forEach(m=>m.classList.remove('active'));
+});
+
+function notify(type, msg){
+  const cls={success:'ok',error:'err',info:'inf'}[type]??'inf';
+  const el = document.createElement('div');
+  el.className = `tr-notif-item tr-notif-${cls}`;
+  el.innerHTML = `<span>${msg}</span>`;
+  document.getElementById('tr-notif').appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},4500);
+}
+
+// ── State ────────────────────────────────────────────────────────────────────
+let SELECTED_SCENARIO = null;  // full scenario object
+let ACTIVE_SESSION_ID = null;  // TrainingSession id
+let ACTIVE_GTR_SID    = null;  // GTR Redis session id
+let POLL_TIMER        = null;
+let EDIT_MODE         = false;
+
+// ── Tabs ─────────────────────────────────────────────────────────────────────
+function showTab(tab){
+  document.getElementById('panel-scenarios').style.display = tab==='scenarios' ? '' : 'none';
+  document.getElementById('panel-history').style.display   = tab==='history'   ? '' : 'none';
+  document.getElementById('tab-scenarios').classList.toggle('active', tab==='scenarios');
+  document.getElementById('tab-history').classList.toggle('active',   tab==='history');
+}
+
+// ── Scenario selection ────────────────────────────────────────────────────────
+function selectScenario(id){
+  document.querySelectorAll('.sc-card').forEach(c => c.classList.toggle('selected', c.id===`sc-${id}`));
+  // Find scenario from page — fetch from API for freshness
+  fetch(URLS.scenarioList).then(r=>r.json()).then(d=>{
+    const sc = d.scenarios?.find(s=>s.id===id);
+    if(!sc) return;
+    SELECTED_SCENARIO = sc;
+    renderDetail(sc);
+    document.getElementById('sc-detail').style.display = '';
+  });
+}
+
+function renderDetail(sc){
+  document.getElementById('det-name').textContent = sc.name;
+  document.getElementById('det-desc').textContent = sc.description || 'Sin descripción.';
+  document.getElementById('det-speed').textContent = sc.clock_speed;
+  document.getElementById('det-account').textContent = sc.account_name || 'Genérico';
+
+  const badges = document.getElementById('det-badges');
+  badges.innerHTML =
+    `<span class="badge badge-${sc.canal}">${sc.canal==='inbound'?'📞':'📡'} ${sc.canal_label}</span>
+     <span class="badge badge-${sc.difficulty}">${sc.difficulty_label}</span>
+     ${sc.is_public?'<span class="badge badge-public">🌐 Público</span>':''}`;
+
+  // Events
+  const evEl = document.getElementById('det-events');
+  if(!sc.events?.length){
+    evEl.innerHTML = '<div style="color:var(--t-text-m);font-size:13px">Sin eventos configurados.</div>';
+  } else {
+    evEl.innerHTML = sc.events.map((ev,i) => {
+      const h = Math.floor(ev.at_sim_min/60)+9;
+      const m = ev.at_sim_min%60;
+      const icons = {volume_spike:'🔺',agent_absent:'🚨',sl_drop:'⚠️',reset_kpis:'🔄'};
+      const cls   = {volume_spike:'spike',agent_absent:'absent',sl_drop:'sl_drop'}[ev.type]||'';
+      return `<div class="event-item ${cls}">
+        <div class="event-time">${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}</div>
+        <div class="event-body">
+          <div class="event-type">${icons[ev.type]||'•'} ${ev.type.replace('_',' ')}</div>
+          <div class="event-hint">${ev.hint||''}</div>
+        </div>
+        ${ev.auto?'<span style="font-size:10px;color:var(--t-success)">AUTO</span>':''}
+      </div>`;
+    }).join('');
+  }
+
+  // Expected actions
+  const expEl = document.getElementById('det-expected');
+  if(!sc.expected_actions?.length){
+    expEl.textContent = 'Sin acciones configuradas.';
+  } else {
+    expEl.innerHTML = sc.expected_actions.map((a,i) =>
+      `<div style="margin-bottom:6px;padding:8px 12px;background:var(--t-surf2);border-radius:6px;">
+        <span style="color:var(--t-success);font-weight:700;">✓</span>
+        Dentro de <b>${a.within_min} min</b> del evento ${a.after_event_idx+1}:
+        ${a.description}
+      </div>`
+    ).join('');
+  }
+
+  // Show/hide edit/delete if owned
+  document.getElementById('btn-edit-sc').style.display = sc.is_mine ? '' : 'none';
+  document.getElementById('btn-del-sc').style.display  = sc.is_mine ? '' : 'none';
+}
+
+// ── Create / Edit ─────────────────────────────────────────────────────────────
+function openCreateModal(){
+  EDIT_MODE = false;
+  document.getElementById('modal-sc-title').innerHTML = '<i class="bi bi-plus-circle" style="color:var(--t-primary)"></i> Nuevo Escenario';
+  document.getElementById('sc-name').value        = '';
+  document.getElementById('sc-desc').value        = '';
+  document.getElementById('sc-canal').value       = 'inbound';
+  document.getElementById('sc-diff').value        = 'medium';
+  document.getElementById('sc-account').value     = '';
+  document.getElementById('sc-speed').value       = '15';
+  document.getElementById('sc-public').checked    = false;
+  document.getElementById('sc-events-list').innerHTML  = '';
+  document.getElementById('sc-actions-list').innerHTML = '';
+  openModal('modal-scenario');
+}
+
+function openEditModal(){
+  if(!SELECTED_SCENARIO) return;
+  EDIT_MODE = true;
+  const sc = SELECTED_SCENARIO;
+  document.getElementById('modal-sc-title').innerHTML = '<i class="bi bi-pencil" style="color:var(--t-primary)"></i> Editar Escenario';
+  document.getElementById('sc-name').value        = sc.name;
+  document.getElementById('sc-desc').value        = sc.description || '';
+  document.getElementById('sc-canal').value       = sc.canal;
+  document.getElementById('sc-diff').value        = sc.difficulty;
+  document.getElementById('sc-account').value     = sc.account_id || '';
+  document.getElementById('sc-speed').value       = String(sc.clock_speed);
+  document.getElementById('sc-public').checked    = sc.is_public;
+
+  // Rebuild event rows
+  const evList = document.getElementById('sc-events-list');
+  evList.innerHTML = '';
+  (sc.events||[]).forEach(ev => addEventRow(ev));
+
+  // Rebuild action rows
+  const acList = document.getElementById('sc-actions-list');
+  acList.innerHTML = '';
+  (sc.expected_actions||[]).forEach(a => addActionRow(a));
+
+  openModal('modal-scenario');
+}
+
+function addEventRow(ev={}){
+  const row = document.createElement('div');
+  row.className = 'ev-row';
+  row.style.cssText = 'display:grid;grid-template-columns:70px 1fr 100px auto 28px;gap:6px;align-items:center;margin-bottom:6px';
+  row.innerHTML = `
+    <input type="number" class="f-input ev-min" value="${ev.at_sim_min||30}" min="0" max="540" placeholder="min">
+    <input type="text" class="f-input ev-hint" value="${ev.hint||''}" placeholder="Descripción / hint para el analista">
+    <select class="f-select ev-type">
+      <option value="volume_spike"  ${ev.type==='volume_spike'?'selected':''}>🔺 Pico vol.</option>
+      <option value="agent_absent"  ${ev.type==='agent_absent'?'selected':''}>🚨 Ausencia</option>
+      <option value="sl_drop"       ${ev.type==='sl_drop'?'selected':''}>⚠️ Caída SL</option>
+      <option value="reset_kpis"    ${ev.type==='reset_kpis'?'selected':''}>🔄 Reset</option>
+    </select>
+    <label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer">
+      <input type="checkbox" class="ev-auto" ${ev.auto!==false?'checked':''} style="accent-color:var(--t-primary)"> Auto
+    </label>
+    <button type="button" style="background:none;border:none;color:var(--t-danger);cursor:pointer;font-size:16px;padding:0" onclick="this.closest('.ev-row').remove()">×</button>`;
+  document.getElementById('sc-events-list').appendChild(row);
+}
+
+function addActionRow(a={}){
+  const row = document.createElement('div');
+  row.style.cssText = 'display:grid;grid-template-columns:70px 70px 1fr 28px;gap:6px;align-items:center;margin-bottom:6px';
+  row.innerHTML = `
+    <input type="number" class="f-input ac-ev-ref" value="${a.after_event_idx??0}" min="0" placeholder="Ev. #">
+    <input type="number" class="f-input ac-within" value="${a.within_min||10}" min="1" placeholder="min">
+    <input type="text" class="f-input ac-desc" value="${a.description||''}" placeholder="Descripción de la acción esperada">
+    <button type="button" style="background:none;border:none;color:var(--t-danger);cursor:pointer;font-size:16px;padding:0" onclick="this.closest('div').remove()">×</button>`;
+  document.getElementById('sc-actions-list').appendChild(row);
+}
+
+function _collectEvents(){
+  return [...document.querySelectorAll('#sc-events-list .ev-row')].map(r=>({
+    at_sim_min: parseInt(r.querySelector('.ev-min').value)||0,
+    type:       r.querySelector('.ev-type').value,
+    hint:       r.querySelector('.ev-hint').value.trim(),
+    auto:       r.querySelector('.ev-auto').checked,
+    params:     r.querySelector('.ev-type').value==='volume_spike'?{pct:30}:
+                r.querySelector('.ev-type').value==='agent_absent'?{n:3}:{},
+  }));
+}
+
+function _collectActions(){
+  return [...document.querySelectorAll('#sc-actions-list > div')].map(r=>({
+    after_event_idx: parseInt(r.querySelector('.ac-ev-ref').value)||0,
+    within_min:      parseInt(r.querySelector('.ac-within').value)||10,
+    description:     r.querySelector('.ac-desc').value.trim(),
+  })).filter(a=>a.description);
+}
+
+async function saveScenario(){
+  const name = document.getElementById('sc-name').value.trim();
+  if(!name){ notify('error','El nombre es requerido.'); return; }
+
+  const payload = {
+    name,
+    description:      document.getElementById('sc-desc').value.trim(),
+    canal:            document.getElementById('sc-canal').value,
+    difficulty:       document.getElementById('sc-diff').value,
+    account_id:       document.getElementById('sc-account').value || null,
+    clock_speed:      parseInt(document.getElementById('sc-speed').value),
+    is_public:        document.getElementById('sc-public').checked,
+    events:           _collectEvents(),
+    expected_actions: _collectActions(),
+    thresholds:       {},
+  };
+
+  const url = EDIT_MODE ? URLS.scenarioUpdate(SELECTED_SCENARIO.id) : URLS.scenarioCreate;
+  const r   = await postJSON(url, payload);
+  if(!r.success){ notify('error', r.error); return; }
+
+  closeModal('modal-scenario');
+  notify('success', EDIT_MODE ? 'Escenario actualizado.' : 'Escenario creado.');
+  setTimeout(()=>location.reload(), 800);
+}
+
+async function deleteScenario(){
+  if(!SELECTED_SCENARIO || !confirm(`¿Eliminar "${SELECTED_SCENARIO.name}"?`)) return;
+  const r = await postJSON(URLS.scenarioDelete(SELECTED_SCENARIO.id), {});
+  if(r.success){ notify('success','Escenario eliminado.'); setTimeout(()=>location.reload(),700); }
+  else notify('error', r.error);
+}
+
+// ── Session flow ─────────────────────────────────────────────────────────────
+function openStartModal(){
+  if(!SELECTED_SCENARIO) return;
+  const info = document.getElementById('start-scenario-info');
+  info.innerHTML = `
+    <b>${SELECTED_SCENARIO.name}</b><br>
+    <span style="color:var(--t-text-s)">${SELECTED_SCENARIO.canal_label} · ${SELECTED_SCENARIO.difficulty_label} · ${SELECTED_SCENARIO.event_count} evento(s)</span>`;
+  document.getElementById('start-date').value = new Date().toISOString().split('T')[0];
+  openModal('modal-start');
+}
+
+async function startSession(){
+  if(!SELECTED_SCENARIO) return;
+  const sim_date = document.getElementById('start-date').value;
+  closeModal('modal-start');
+
+  const r = await postJSON(URLS.sessionStart(SELECTED_SCENARIO.id), { sim_date });
+  if(!r.success){ notify('error', r.error); return; }
+
+  ACTIVE_SESSION_ID = r.session.id;
+  ACTIVE_GTR_SID    = r.gtr_session_id;
+
+  // Update active bar
+  document.getElementById('active-scenario-name').textContent = SELECTED_SCENARIO.name;
+  document.getElementById('active-bar').style.display = 'flex';
+
+  // Populate event refs in action modal
+  const evSel = document.getElementById('action-event-ref');
+  evSel.innerHTML = '<option value="">— Acción proactiva —</option>' +
+    (SELECTED_SCENARIO.events||[]).map((ev,i)=>`<option value="${i}">Evento ${i+1}: ${ev.hint||ev.type}</option>`).join('');
+
+  // Start polling GTR clock
+  startClockPoll();
+
+  // Open GTR panel in new tab
+  window.open(URLS.gtrPanel + `?autostart=${ACTIVE_GTR_SID}`, '_blank');
+
+  notify('success', 'Sesión iniciada. El panel GTR se abrió en una nueva pestaña.');
+}
+
+function startClockPoll(){
+  if(POLL_TIMER) clearInterval(POLL_TIMER);
+  POLL_TIMER = setInterval(async ()=>{
+    if(!ACTIVE_GTR_SID) return;
+    try{
+      const r = await fetch(`/sim/gtr/${ACTIVE_GTR_SID}/state/`);
+      const d = await r.json();
+      if(d.success){
+        document.getElementById('active-gtr-clock').textContent = d.sim_time || '09:00';
+        if(d.status === 'finished'){ clearInterval(POLL_TIMER); }
+      }
+    }catch(e){}
+  }, 5000);
+}
+
+function openActionModal(){ openModal('modal-action'); document.getElementById('action-text').value=''; }
+
+async function logAction(){
+  const text = document.getElementById('action-text').value.trim();
+  if(!text){ notify('error','Escribe la acción.'); return; }
+  if(!ACTIVE_SESSION_ID){ notify('error','Sin sesión activa.'); return; }
+
+  const evRef = document.getElementById('action-event-ref').value;
+  const r = await postJSON(URLS.sessionAction(ACTIVE_SESSION_ID), {
+    action:    text,
+    sim_time:  document.getElementById('active-gtr-clock').textContent,
+    event_ref: evRef !== '' ? parseInt(evRef) : null,
+  });
+  if(r.success){
+    closeModal('modal-action');
+    notify('success', `Acción ${r.total_actions} registrada.`);
+  } else {
+    notify('error', r.error);
+  }
+}
+
+async function completeSession(){
+  if(!ACTIVE_SESSION_ID || !confirm('¿Finalizar la sesión de training?')) return;
+  if(POLL_TIMER){ clearInterval(POLL_TIMER); POLL_TIMER=null; }
+
+  const r = await postJSON(URLS.sessionComplete(ACTIVE_SESSION_ID), {
+    gtr_session_id: ACTIVE_GTR_SID,
+    alerts_count:   0,  // cliente puede actualizar si tiene el valor
+    events_responded: 0,
+  });
+
+  if(!r.success){ notify('error', r.error); return; }
+
+  document.getElementById('active-bar').style.display = 'none';
+  ACTIVE_SESSION_ID = null;
+  ACTIVE_GTR_SID    = null;
+
+  // Show result modal
+  renderResult(r.session);
+  openModal('modal-result');
+}
+
+function renderResult(sess){
+  const s = sess.score;
+  const cls = s>=80 ? '#10b981' : s>=50 ? '#f59e0b' : '#ef4444';
+  const d = sess.score_detail || {};
+  document.getElementById('result-body').innerHTML = `
+    <div style="text-align:center;padding:16px 0 20px">
+      <div style="font-size:56px;font-weight:900;color:${cls}">${s}</div>
+      <div style="font-size:16px;font-weight:700;margin-top:4px">
+        ${s>=80?'🏆 Excelente':s>=60?'👍 Bien':s>=40?'📈 Mejorable':'💪 Sigue practicando'}
+      </div>
+      <div class="score-bar-wrap" style="max-width:240px;margin:12px auto 0">
+        <div class="score-bar" style="width:${s}%;background:${cls}"></div>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--t-text-s);border-top:1px solid var(--t-border);padding-top:14px">
+      ${Object.entries(d).filter(([k])=>k!=='total').map(([k,v])=>`
+        <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--t-border)33">
+          <span>${k.replace(/_/g,' ')}</span>
+          <span style="font-weight:700;color:${v>0?'var(--t-success)':v<0?'var(--t-danger)':'var(--t-text-m)'}">${v>0?'+':''}${v}</span>
+        </div>`).join('')}
+    </div>
+    <div style="font-size:13px;color:var(--t-text-s);margin-top:12px">
+      <b>${sess.actions_log?.length||0}</b> acción(es) registradas ·
+      <b>${sess.events_responded||0}</b> evento(s) respondidos
+    </div>`;
+}
+
+function showSessionDetail(id){
+  // Para una versión futura — por ahora solo muestra la fila
+  notify('info', 'Vista de detalle próximamente.');
+}
+</script>
+{% endblock %}
