@@ -1,36 +1,60 @@
-<!-- Customers Card -->
-<div class="col-xxl-4 col-xl-12">
-    <div class="card info-card customers-card">
-        <div class="filter">
-            <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                <li class="dropdown-header text-start">
-                    <h6>Options</h6>
-                </li>
-                <li><a class="dropdown-item" href="#">--</a></li>
-            </ul>
-        </div>
+{% load widget_tweaks %}
 
-        <div class="card-body">
-            <h5 class="card-title">{{event.title}} <span>| {{title}}</span></h5>
-            <div class="d-flex align-items-center">
-                <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-                    <i class="bi bi-calendar2-plus-fill"></i>
-                </div>
-                <div class="ps-3">
-                    <h6>{{event.id}}</h6>
-                    <span class="text-danger small pt-1 fw-bold">{{ event.created_at|date:"d-M H:i" }}</span>
-                    <span class="text-muted small pt-2 ps-1">created at</span>
-                </div><br>
-
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Información del Evento</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.title.id_for_label }}" class="form-label">Título</label>
+                {{ form.title|add_class:"form-control" }}
+                {{ form.title.errors }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.venue.id_for_label }}" class="form-label">Lugar</label>
+                {{ form.venue|add_class:"form-control" }}
+                {{ form.venue.errors }}
             </div>
         </div>
-        <div class="container">
-          <form method="POST">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit">Save Changes</button>
-        </form>
+        <div class="mb-3">
+            <label for="{{ form.description.id_for_label }}" class="form-label">Descripción</label>
+            {{ form.description|add_class:"form-control"|attr:"rows:3" }}
+            {{ form.description.errors }}
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.event_status.id_for_label }}" class="form-label">Estado</label>
+                {{ form.event_status|add_class:"form-select" }}
+                {{ form.event_status.errors }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.assigned_to.id_for_label }}" class="form-label">Asignado a</label>
+                {{ form.assigned_to|add_class:"form-select" }}
+                {{ form.assigned_to.errors }}
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="{{ form.event_category.id_for_label }}" class="form-label">Categoría</label>
+                {{ form.event_category|add_class:"form-control" }}
+                {{ form.event_category.errors }}
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="{{ form.max_attendees.id_for_label }}" class="form-label">Máx. asistentes</label>
+                {{ form.max_attendees|add_class:"form-control" }}
+                {{ form.max_attendees.errors }}
+            </div>
+            <div class="col-md-3 mb-3">
+                <label for="{{ form.ticket_price.id_for_label }}" class="form-label">Precio</label>
+                {{ form.ticket_price|add_class:"form-control" }}
+                {{ form.ticket_price.errors }}
+            </div>
+        </div>
+        <div class="mb-3">
+            <label for="{{ form.attendees.id_for_label }}" class="form-label">Asistentes</label>
+            {{ form.attendees|add_class:"form-select" }}
+            {{ form.attendees.errors }}
         </div>
     </div>
-</div><!-- End Customers Card -->
+</div>

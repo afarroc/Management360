@@ -1,0 +1,49 @@
+{% load static %}
+
+<!-- ============================================================
+     SIDEBAR STATS - ESTADÍSTICAS RÁPIDAS DE TAREAS
+     ============================================================ -->
+{% if tasks_data %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="card-title mb-0"><i class="bi bi-bar-chart me-2"></i>Quick Stats</h6>
+    </div>
+    <div class="card-body">
+        <!-- Tasa de completado -->
+        <div class="mb-3">
+            <div class="d-flex justify-content-between">
+                <span class="small">Completion Rate</span>
+                <span class="small fw-bold">{% widthratio completed_count tasks_data|length 100 %}%</span>
+            </div>
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar bg-success" 
+                     style="width: {% widthratio completed_count tasks_data|length 100 %}%"></div>
+            </div>
+        </div>
+        
+        <!-- Tasa de actividad (en progreso) -->
+        <div class="mb-3">
+            <div class="d-flex justify-content-between">
+                <span class="small">Active Rate</span>
+                <span class="small fw-bold">{% widthratio in_progress_count tasks_data|length 100 %}%</span>
+            </div>
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar bg-warning" 
+                     style="width: {% widthratio in_progress_count tasks_data|length 100 %}%"></div>
+            </div>
+        </div>
+        
+        <!-- Tasa de pendientes (To Do) -->
+        <div class="mb-3">
+            <div class="d-flex justify-content-between">
+                <span class="small">Pending Rate</span>
+                <span class="small fw-bold">{% widthratio pending_count tasks_data|length 100 %}%</span>
+            </div>
+            <div class="progress" style="height: 6px;">
+                <div class="progress-bar bg-secondary" 
+                     style="width: {% widthratio pending_count tasks_data|length 100 %}%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}

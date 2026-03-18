@@ -1,0 +1,28 @@
+<div class="card h-100 border-{{ type|yesno:'warning,success,info' }} item-card" 
+     data-item-id="{{ item.id }}" data-item-type="{{ type }}">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <h6 class="card-title mb-0">{{ item.title }}</h6>
+            {% if type != 'pendiente' %}
+            <span class="badge bg-{{ type|yesno:'success,info' }}">
+                {{ item.action_type|default:"Sin definir" }}
+            </span>
+            {% endif %}
+        </div>
+        {% if item.description %}
+        <p class="card-text small text-muted">{{ item.description|truncatechars:100 }}</p>
+        {% endif %}
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <small class="text-muted">
+                <i class="bi bi-clock me-1"></i>{{ item.created_at|date:"d/m/Y H:i" }}
+            </small>
+            <div class="btn-group btn-group-sm">
+                <a href="{% url 'process_inbox_item' item.id %}" 
+                   class="btn btn-outline-{{ type|yesno:'primary,success,info' }} btn-sm">
+                    <i class="bi bi-gear me-1"></i>
+                    {% if type == 'pendiente' %}Categorizar{% else %}Procesar{% endif %}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

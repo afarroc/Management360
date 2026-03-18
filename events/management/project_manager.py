@@ -70,18 +70,21 @@ class ProjectManager:
                 active_projects.append(project_data)
 
         return projects, active_projects
-
-    def create_project(self, title, description=None, project_status=None, assigned_to=None, ticket_price=0.07):
+    # project_manager.py - Actualizar la función create_project
+   
+    def create_project(self, title, description=None, project_status=None, 
+                       assigned_to=None, ticket_price=0.07, event=None, 
+                       attendees=None, **kwargs):
         """
         Crear un nuevo proyecto usando el ProjectManager con procedimientos correctos
+        Versión mejorada que acepta parámetros para integración completa
         """
         from ..models import Project, ProjectStatus, ProjectState, Event, Status
         from django.utils import timezone
-        from django.db import transaction, IntegrityError
         import logging
-
+    
         logger = logging.getLogger(__name__)
-
+    
         # Obtener el estado por defecto si no se especifica
         if project_status is None:
             try:
@@ -91,27 +94,40 @@ class ProjectManager:
                 project_status = ProjectStatus.objects.first()
                 if not project_status:
                     raise ValueError("No hay estados de proyecto disponibles")
-
+    
         # Usar el usuario del manager si no se especifica assigned_to
         if assigned_to is None:
             assigned_to = self.user
-
+    
+        # Preparar datos del proyecto
+        project_data = {
+            'title': title,
+            'description': description or '',
+            'project_status': project_status,
+            'host': self.user,  # El host es siempre el usuario del manager
+            'assigned_to': assigned_to,
+            'ticket_price': ticket_price,
+            'event': event,  # Puede ser None
+        }
+    
+        # Agregar cualquier parámetro adicional desde kwargs
+        for key, value in kwargs.items():
+            if hasattr(Project, key) and key not in project_data:
+                project_data[key] = value
+    
         # Crear el proyecto
-        project = Project.objects.create(
-            title=title,
-            description=description or '',
-            project_status=project_status,
-            host=self.user,  # El host es siempre el usuario del manager
-            assigned_to=assigned_to,
-            ticket_price=ticket_price
-        )
-
+        project = Project.objects.create(**project_data)
+    
         # Crear el estado inicial del proyecto
         ProjectState.objects.create(
             project=project,
             status=project_status,
             start_time=timezone.now()
         )
-
+    
+        # Agregar asistentes si se proporcionan
+        if attendees:
+            project.attendees.set(attendees)
+    
         logger.info(f"Project '{title}' created successfully by ProjectManager for user {self.user.username}")
         return project

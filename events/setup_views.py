@@ -1,7 +1,10 @@
 from django.views import View
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User, Group
+from django.contrib.auth import get_user_model
+
+from django.contrib.auth.models import Group
+User = get_user_model(), Group
 from django.contrib import messages
 from django.urls import reverse
 from django.core.exceptions import ValidationError
@@ -97,95 +100,68 @@ class SetupView(View):
         logger.info(f"Request method: {request.method}")
         logger.info(f"Request user: {request.user}")
         logger.info(f"Request user authenticated: {request.user.is_authenticated}")
-
-        # Check for superuser creation request - multiple detection methods for robustness
-        create_su_triggered = (
-            'create_su' in request.POST or
-            'create_su_btn' in request.POST or
-            request.POST.get('create_su') == 'Create Superuser' or
-            request.POST.get('create_su_btn') == 'Create Superuser'
-        )
-
-        logger.info(f"create_su_triggered: {create_su_triggered}")
-        logger.info(f"'create_group' in request.POST: {'create_group' in request.POST}")
-        logger.info(f"'create_random_users' in request.POST: {'create_random_users' in request.POST}")
-        logger.info(f"'create_profile' in request.POST: {'create_profile' in request.POST}")
-        logger.info(f"'login_su' in request.POST: {'login_su' in request.POST}")
-        logger.info(f"'create_another_su' in request.POST: {'create_another_su' in request.POST}")
-        logger.info(f"'create_initial_statuses' in request.POST: {'create_initial_statuses' in request.POST}")
-
-        # Check if any action was triggered
-        any_action_triggered = (
-            create_su_triggered or
-            'create_group' in request.POST or
-            'create_random_users' in request.POST or
-            'create_profile' in request.POST or
-            'login_su' in request.POST or
-            'create_another_su' in request.POST or
-            'create_initial_statuses' in request.POST
-        )
-        logger.info(f"any_action_triggered: {any_action_triggered}")
-
-        if not any_action_triggered:
-            logger.warning("NO ACTION WAS TRIGGERED! This might be why the form is not advancing.")
-            logger.info("Available POST keys: " + str(list(request.POST.keys())))
-            logger.info("=== DEBUG POST REQUEST END (NO ACTION) ===")
-            return redirect(reverse('setup'))
-
-        logger.info("=== DEBUG POST REQUEST END (ACTION FOUND) ===")
-
+    
+        # SIMPLIFICAR: Detección directa de acciones
+        # Verificar si 'create_su' está en POST (sin valor específico, solo existencia)
+        create_su_triggered = 'create_su' in request.POST
+        
+        logger.info(f"'create_su' in request.POST: {'create_su' in request.POST}")
+        logger.info(f"'create_su' value: {request.POST.get('create_su', 'NOT FOUND')}")
+        
+        # Log de todas las claves para debug
+        for key, value in request.POST.items():
+            logger.info(f"POST[{key}] = {value}")
+    
         if create_su_triggered:
+            logger.info("SUPERUSER CREATION TRIGGERED - Processing...")
             try:
                 if not User.objects.filter(username='su').exists():
                     username = 'su'
                     first_name = 'Superusuario'
-                    last_name = ''  # Empty last name for PostgreSQL compatibility
+                    last_name = ''  # Compatible con PostgreSQL
                     email = f'{username}@{DOMAIN_BASE}'
                     password = generate_random_password()
-
-                    from django.db import connection
-                    from django.contrib.auth.hashers import make_password
-
-                    hashed_password = make_password(password)
-                    sql_params = [username, first_name, last_name, email, hashed_password, True, True, True]
-
-                    with connection.cursor() as cursor:
-                        cursor.execute("""
-                            INSERT INTO auth_user (
-                                username, first_name, last_name, email, password,
-                                is_staff, is_active, is_superuser,
-                                date_joined, last_login
-                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())
-                        """, sql_params)
-
-                    superuser = User.objects.get(username='su')
-                    messages.success(request, f'Superusuario creado: su, contraseña: {password}')
-
-                    user = authenticate(username='su', password=password)
+                    
+                    logger.info(f"Creating superuser with: username={username}, email={email}")
+                    
+                    # Usar el método nativo de Django - más seguro y simple
+                    superuser = User.objects.create_superuser(
+                        username=username,
+                        email=email,
+                        password=password,
+                        first_name=first_name,
+                        last_name=last_name
+                    )
+                    
+                    logger.info(f"Superuser created successfully: {username}")
+                    messages.success(request, f'Superusuario creado: {username}, contraseña: {password}')
+                    
+                    # Autenticar y loguear automáticamente
+                    user = authenticate(username=username, password=password)
                     if user is not None:
                         login(request, user)
                         request.session['first_session'] = True
+                        logger.info(f"Superuser authenticated and logged in: {user}")
                         return redirect(reverse('setup') + '?step=2')
                     else:
+                        logger.error("Failed to authenticate newly created superuser")
                         messages.error(request, 'Error al autenticar el superusuario creado.')
                 else:
+                    logger.info("Superuser already exists, redirecting to login")
                     messages.info(request, 'El superusuario ya existe. Por favor, inicie sesión.')
                     return redirect(reverse('setup') + '?step=login')
-
+                    
             except Exception as e:
-                error_message = f'Error al crear superusuario: {str(e)}. Las migraciones pueden no haberse ejecutado aún.'
-
-                try:
-                    messages.error(request, error_message)
-                except Exception:
-                    pass
-
-                try:
-                    return redirect(reverse('setup'))
-                except Exception:
-                    from django.http import HttpResponse
-                    return HttpResponse("Error occurred. Please refresh the page.", status=500)
-
+                logger.error(f"Error creating superuser: {str(e)}", exc_info=True)
+                error_message = f'Error al crear superusuario: {str(e)}'
+                
+                # Verificar si es error de tabla
+                if "doesn't exist" in str(e) or "no such table" in str(e):
+                    error_message += '. Las migraciones pueden no haberse ejecutado aún.'
+                
+                messages.error(request, error_message)
+                return redirect(reverse('setup'))
+    
         elif 'login_su' in request.POST:
             username = request.POST['username']
             password = request.POST['password']
@@ -195,8 +171,7 @@ class SetupView(View):
                 return redirect(reverse('setup') + '?step=2')
             else:
                 messages.error(request, 'Credenciales incorrectas.')
-
-
+    
         elif 'create_profile' in request.POST:
             try:
                 su = User.objects.get(username='su')
@@ -209,26 +184,26 @@ class SetupView(View):
                         'role': request.POST.get('role', 'US'),
                     }
                 )
-
+    
                 if not created:
                     profile.full_name = request.POST.get('full_name', '')
                     profile.profession = request.POST.get('profession', '')
                     profile.role = request.POST.get('role', 'US')
-
+    
                 # Handle profile picture if provided
                 if 'profile_picture' in request.FILES:
                     profile.profile_picture = request.FILES['profile_picture']
-
+    
                 profile.save()
                 messages.success(request, 'Profile created successfully!')
                 return redirect(reverse('setup') + '?step=3')
-
+    
             except User.DoesNotExist:
                 messages.error(request, 'Superuser does not exist. Please create one first.')
             except Exception as e:
                 messages.error(request, f'Error creating profile: {str(e)}. Las tablas pueden no existir aún.')
             return redirect(reverse('setup') + '?step=2')
-
+    
         elif 'create_random_users' in request.POST:
             try:
                 domain = request.POST['domain']
@@ -236,21 +211,21 @@ class SetupView(View):
                 group_name = request.POST.get('new_group_name')  # Nombre del nuevo grupo (si se proporciona)
                 group_id = request.POST.get('group_id')  # Grupo seleccionado para asignar usuarios
                 user_data = []
-
+    
                 if group_name:
                     group, created = Group.objects.get_or_create(name=group_name)
                 elif group_id:
                     group = Group.objects.get(id=group_id)
                 else:
                     group = None
-
+    
                 for _ in range(num_users):
                     username = generate_random_username()
                     first_name = generate_random_name('spanish', format='first_last').split()[0]
                     last_name = generate_random_name('spanish', format='first_last').split()[1]
                     email = f'{username}@{domain}'
                     password = generate_random_password()
-
+    
                     if not User.objects.filter(username=username).exists():
                         user = User.objects.create_user(username, email, password)
                         user.first_name = first_name
@@ -263,11 +238,11 @@ class SetupView(View):
                             'email': email,
                             'password': password,
                         })
-
+    
                         # Asignar el usuario al grupo si se seleccionó uno
                         if group:
                             user.groups.add(group)
-
+    
                 messages.success(request, 'Usuarios creados con éxito.')
                 completed_steps = ['1', '2', '3']
                 all_groups = Group.objects.all()
@@ -283,7 +258,7 @@ class SetupView(View):
             except Exception as e:
                 messages.error(request, f'Error al crear usuarios: {str(e)}. Las tablas pueden no existir aún.')
                 return redirect(reverse('setup'))
-
+    
         elif 'create_group' in request.POST:
             try:
                 # Logging inicial del proceso
@@ -292,14 +267,14 @@ class SetupView(View):
                 logger = logging.getLogger(__name__)
                 logger.info(f"Iniciando creación de grupo: {group_name}")
                 logger.info(f"Usuarios a asignar: {usernames}")
-
+    
                 # Crear o obtener grupo existente
                 group, created = Group.objects.get_or_create(name=group_name)
                 if created:
                     logger.info(f"Grupo '{group_name}' creado exitosamente")
                 else:
                     logger.info(f"Grupo '{group_name}' ya existía, se utilizará el existente")
-
+    
                 # Asignar usuarios al grupo
                 assigned_users = []
                 for username in usernames:
@@ -312,27 +287,27 @@ class SetupView(View):
                         logger.warning(f"Usuario '{username}' no encontrado, se omite de la asignación")
                     except Exception as user_error:
                         logger.error(f"Error al asignar usuario '{username}' al grupo '{group_name}': {str(user_error)}")
-
+    
                 # Logging de resumen
                 logger.info(f"Proceso completado. Grupo '{group_name}' creado y {len(assigned_users)}/{len(usernames)} usuarios asignados")
                 logger.info(f"Usuarios asignados exitosamente: {assigned_users}")
-
+    
                 messages.success(request, f'Grupo {group_name} creado y usuarios asignados.')
                 completed_steps = ['1', '2', '3', '4']
                 logger.info(f"DEBUG: About to redirect to step 5. completed_steps: {completed_steps}")
                 logger.info("=== DEBUG POST REQUEST END (SUCCESS) ===")
                 return redirect(reverse('setup') + '?step=5')
-
+    
             except Exception as e:
                 # Logging de error detallado
                 logger = logging.getLogger(__name__)
                 logger.error(f"Error al crear grupo '{group_name}': {str(e)}")
                 logger.error(f"Detalles del error: {type(e).__name__}")
                 logger.error(f"Usuarios que se intentaban asignar: {usernames}")
-
+    
                 messages.error(request, f'Error al crear grupo: {str(e)}. Las tablas pueden no existir aún.')
                 return redirect(reverse('setup'))
-
+    
         elif 'create_another_su' in request.POST:
             try:
                 su_username = request.POST['su_username']
@@ -346,7 +321,7 @@ class SetupView(View):
                     messages.error(request, 'El nombre de usuario ya existe.')
             except Exception as e:
                 messages.error(request, f'Error al crear superusuario: {str(e)}. Las tablas pueden no existir aún.')
-
+    
         elif 'create_initial_statuses' in request.POST:
             created_statuses = create_initial_statuses()
             if created_statuses:
@@ -356,6 +331,8 @@ class SetupView(View):
             else:
                 messages.info(request, 'All initial statuses already exist.')
             return redirect(reverse('setup') + '?step=4')
-
-        # Fallback: if no specific action was handled, redirect back to setup
+    
+        # Si llegamos aquí sin haber manejado ninguna acción, redirigir de vuelta
+        logger.warning("No se manejó ninguna acción POST específica")
         return redirect(reverse('setup'))
+        

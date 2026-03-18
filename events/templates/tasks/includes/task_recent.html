@@ -1,22 +1,24 @@
-{% if tasks %}
-<!-- Recent Sales -->
+{% load static %}
+
+<!-- ============================================================
+     ACTIVIDAD RECIENTE - TAREAS ACTUALIZADAS
+     ============================================================ -->
+{% if recent_tasks %}
 <div class="col-12">
     <div class="card recent-sales overflow-auto">
-
         <div class="filter">
             <a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                 <li class="dropdown-header text-start">
                     <h6>Filter</h6>
                 </li>
-
-                <li><a class="dropdown-item" href="#">--</a></li>
-                <li><a class="dropdown-item" href="#">--</a></li>
-                <li><a class="dropdown-item" href="#">--</a></li>
+                <li><a class="dropdown-item" href="#">Today</a></li>
+                <li><a class="dropdown-item" href="#">This Week</a></li>
+                <li><a class="dropdown-item" href="#">This Month</a></li>
             </ul>
         </div>
         <div class="card-body pb-0">
-            <h5 class="card-title">Recent Tasks <span>| -- </span></h5>
+            <h5 class="card-title">Recent Tasks <span>| Last 10</span></h5>
 
             <table class="table table-borderless datatable">
                 <thead>
@@ -29,20 +31,27 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for task in tasks %}
+                    {% for task in recent_tasks %}
                     <tr>
-                        <th scope="row"><a href="{% url 'tasks_with_id' task.id %}">{{task.id}}</a></th>
-                        <td><a href="{% url 'tasks_with_id' task.id %}" class="text-primary">{{task.title}}</a></td>
-                        <td>{{task.assigned_to.get_full_name|title}}</td>
+                        <th scope="row"><a href="{% url 'task_panel_with_id' task.id %}">{{ task.id }}</a></th>
+                        <td><a href="{% url 'task_panel_with_id' task.id %}" class="text-primary">{{ task.title|truncatechars:30 }}</a></td>
+                        <td>{{ task.assigned_to.get_full_name|default:task.assigned_to.username|title }}</td>
                         <td>{{ task.updated_at|date:"d-M H:i" }}</td>
-                        <td><span class="badge bg-success">{{task.task_status.status_name}}</span></td>
+                        <td>
+                            <span class="badge 
+                                {% if task.task_status.status_name == 'Completed' %}bg-success
+                                {% elif task.task_status.status_name == 'In Progress' %}bg-warning
+                                {% elif task.task_status.status_name == 'Blocked' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ task.task_status.status_name }}
+                            </span>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
 
         </div>
-
     </div>
-</div><!-- End Recent Sales -->
+</div><!-- End Recent Tasks -->
 {% endif %}

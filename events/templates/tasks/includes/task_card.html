@@ -1,94 +1,300 @@
 <!-- Sales Card -->
-<div class="col-xxl-6 col-md-6 " id="task-card-{{ task_data.task.id }}">
-	<div class="card info-card sales-card">
-		<div class="filter">
-			<a class="icon" href="#" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></a>
-			<ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-				<li class="dropdown-header text-start">
-					<h6>More</h6>
-				</li>
-				<li><a class="dropdown-item" href="#">Today</a></li>
-				<li><a class="dropdown-item" href="#">This Month</a></li>
-				<li>
-					{% if request.user.profile.role == 'SU' %}
-					<div class="dropdown-item">
-						{% csrf_token %}
-						<a href="{% url 'task_edit' task_data.task.id %}" class="btn btn-primary">
-							<i class="bi bi-pencil-fill"></i>
-						</a>
-					</div>
-					{% endif %}
-				</li>
-				<li>
-					{% if request.user.profile.role == 'SU' %}
-					<form id="delete-form-{{ task_data.task.id }}" action="{% url 'task_delete' task_data.task.id %}" method="POST"
-						class="dropdown-item d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta tarea?');">
-						{% csrf_token %}
-							<button type="submit" class="btn btn-danger">
-								<i class="bi bi-trash-fill"></i>
-							</button>
-					</form>
-					{% endif %}
-				</li>
-			</ul>
-		</div>
+<div class="col-xxl-6 col-md-6" id="task-card-{{ task_data.task.id }}">
+    <div class="card info-card sales-card">
+        <div class="filter">
+            <a class="icon" href="#" data-bs-toggle="dropdown">
+                <i class="bi bi-three-dots"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                <li class="dropdown-header text-start">
+                    <h6>Acciones de Tarea</h6>
+                </li>
+                
+                <!-- Ver Detalle -->
+                <li>
+                    <a class="dropdown-item" href="{% url 'task_panel_with_id' task_data.task.id %}">
+                        <i class="bi bi-eye-fill me-2"></i>Ver Detalle
+                    </a>
+                </li>
+                
+                <li><hr class="dropdown-divider"></li>
+                
+                <!-- Gestión de Tarea -->
+                <li>
+                    <a class="dropdown-item" href="{% url 'task_edit' task_data.task.id %}">
+                        <i class="bi bi-pencil-square me-2"></i>Editar Tarea
+                    </a>
+                </li>
+                
+                <li>
+                    <a class="dropdown-item" href="{% url 'task_dependencies' task_data.task.id %}">
+                        <i class="bi bi-diagram-3 me-2"></i>Dependencias
+                    </a>
+                </li>
+                
+                <li>
+                    <a class="dropdown-item" href="{% url 'task_dependency_graph' task_data.task.id %}">
+                        <i class="bi bi-graph-up me-2"></i>Grafo de Dependencias
+                    </a>
+                </li>
+                
+                <li><hr class="dropdown-divider"></li>
+                
+                <!-- Programación -->
+                <li>
+                    <h6 class="dropdown-header">Programación</h6>
+                </li>
+                
+                <li>
+                    <a class="dropdown-item" href="{% url 'create_task_schedule' %}?task_id={{ task_data.task.id }}">
+                        <i class="bi bi-calendar-plus me-2"></i>Crear Programación
+                    </a>
+                </li>
+                
+                <li>
+                    <a class="dropdown-item" href="{% url 'planning_task' %}?task_id={{ task_data.task.id }}">
+                        <i class="bi bi-calendar-check me-2"></i>Planificar
+                    </a>
+                </li>
+                
+                <li><hr class="dropdown-divider"></li>
+                
+                <!-- Estado -->
+                <li>
+                    <h6 class="dropdown-header">Cambiar Estado</h6>
+                </li>
+                
+                {% for status in task_statuses|slice:":5" %}
+                <li>
+                    <form id="status-quick-{{ task_data.task.id }}-{{ status.id }}" 
+                          action="{% url 'change_task_status' task_data.task.id %}" 
+                          method="POST"
+                          class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="new_status_id" value="{{ status.id }}">
+                        <button type="submit" class="dropdown-item" 
+                                style="color: {{ status.color }};">
+                            <i class="bi bi-circle-fill me-2" style="color: {{ status.color }};"></i>
+                            {{ status.status_name }}
+                        </button>
+                    </form>
+                </li>
+                {% endfor %}
+                
+                {% if task_statuses.count > 5 %}
+                <li>
+                    <a class="dropdown-item text-muted" href="{% url 'task_panel_with_id' task_data.task.id %}#status">
+                        <i class="bi bi-three-dots me-2"></i>Más estados...
+                    </a>
+                </li>
+                {% endif %}
+                
+                <li><hr class="dropdown-divider"></li>
+                
+                <!-- Matriz Eisenhower -->
+                <li>
+                    <h6 class="dropdown-header">Matriz Eisenhower</h6>
+                </li>
+                
+                <li>
+                    <a class="dropdown-item" href="{% url 'move_task_eisenhower' task_data.task.id 'urgent-important' %}">
+                        <i class="bi bi-arrow-up-right-circle me-2 text-danger"></i>Urgente e Importante
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{% url 'move_task_eisenhower' task_data.task.id 'not-urgent-important' %}">
+                        <i class="bi bi-arrow-right-circle me-2 text-warning"></i>No Urgente pero Importante
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{% url 'move_task_eisenhower' task_data.task.id 'urgent-not-important' %}">
+                        <i class="bi bi-arrow-up-circle me-2 text-info"></i>Urgente pero No Importante
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item" href="{% url 'move_task_eisenhower' task_data.task.id 'not-urgent-not-important' %}">
+                        <i class="bi bi-arrow-down-circle me-2 text-secondary"></i>No Urgente ni Importante
+                    </a>
+                </li>
+                
+                <li><hr class="dropdown-divider"></li>
+                
+                <!-- Recordatorios -->
+                <li>
+                    <a class="dropdown-item" href="{% url 'create_reminder' %}?task={{ task_data.task.id }}">
+                        <i class="bi bi-bell-fill me-2"></i>Crear Recordatorio
+                    </a>
+                </li>
+                
+                <li><hr class="dropdown-divider"></li>
+                
+                <!-- Acciones de Administrador -->
+                {% if request.user.profile.role == 'SU' %}
+                <li>
+                    <h6 class="dropdown-header text-danger">Administración</h6>
+                </li>
+                
+                <li>
+                    <a class="dropdown-item" href="{% url 'task_activate' task_data.task.id %}">
+                        <i class="bi bi-toggle-on me-2"></i>Activar/Desactivar
+                    </a>
+                </li>
+                
+                <li>
+                    <form id="delete-form-{{ task_data.task.id }}" 
+                          action="{% url 'task_delete' task_data.task.id %}" 
+                          method="POST"
+                          onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta tarea?\n\nEsta acción no se puede deshacer.');">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item text-danger">
+                            <i class="bi bi-trash-fill me-2"></i>Eliminar Tarea
+                        </button>
+                    </form>
+                </li>
+                {% endif %}
+                
+                <li><hr class="dropdown-divider"></li>
+                
+                <!-- Exportar/Compartir -->
+                <li>
+                    <a class="dropdown-item" href="#" onclick="copyTaskLink({{ task_data.task.id }})">
+                        <i class="bi bi-link-45deg me-2"></i>Copiar Enlace
+                    </a>
+                </li>
+                
+                <li>
+                    <a class="dropdown-item" href="{% url 'tasks' %}?export=single&id={{ task_data.task.id }}">
+                        <i class="bi bi-download me-2"></i>Exportar Tarea
+                    </a>
+                </li>
+            </ul>
+        </div>
 
-		<div class="card-body">
-			<h5 class="card-title"><a href="{% url 'task_panel_with_id' task_data.task.id %}">{{ task_data.task.title }}</a> <span>| Task id: {{task_data.task.id}}</span></h5>
+        <div class="card-body">
+            <h5 class="card-title">
+                <a href="{% url 'task_panel_with_id' task_data.task.id %}">{{ task_data.task.title }}</a> 
+                {% if task_data.task.important %}
+                <span class="badge bg-danger ms-2" title="Alta Prioridad">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </span>
+                {% endif %}
+                <span class="text-muted small ms-2">#{{ task_data.task.id }}</span>
+            </h5>
 
-			<div class="d-flex align-items-center">
-				<div
-					style="color: {{task_data.task.task_status.color}};"
-					class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-					<i class="bi bi-calendar-fill"></i>
-				</div>
+            <div class="d-flex align-items-center">
+                <div style="color: {{ task_data.task.task_status.color }};" 
+                     class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                    <i class="bi bi-calendar-fill"></i>
+                </div>
 
-				<div class="ps-3">
-					<h6><span><i class="bi bi-coin"></i></span> {{ task_data.task.ticket_price}}</h6>
-					<span class="text-muted small pt-2 ps-1">Created</span>
-					<span class="text-success small pt-1 fw-bold">{{ task_data.task.created_at|date:"d-M H:i" }}</span> 
-					<br>
-					<span class="text-muted small pt-2 ps-1">Updated</span>
-					<span class="text-success small pt-1 fw-bold">{{ task_data.task.updated_at|date:"d-M H:i" }}</span> 
-				</div>
-			</div>
+                <div class="ps-3">
+                    <h6>
+                        <span><i class="bi bi-coin"></i></span> {{ task_data.task.ticket_price }}
+                    </h6>
+                    <span class="text-muted small pt-2 ps-1">Creado</span>
+                    <span class="text-success small pt-1 fw-bold">{{ task_data.task.created_at|date:"d-M H:i" }}</span> 
+                    <br>
+                    <span class="text-muted small pt-2 ps-1">Actualizado</span>
+                    <span class="text-success small pt-1 fw-bold">{{ task_data.task.updated_at|date:"d-M H:i" }}</span> 
+                </div>
+            </div>
 
-			<div class="card-text">
-				<p class="card-text mb-1">{{ task_data.task.description }}</p>
-			</div>
+            <div class="card-text mt-2">
+                <p class="card-text mb-1">{{ task_data.task.description|linebreaksbr|truncatechars:150 }}</p>
+                {% if task_data.task.description|length > 150 %}
+                <a href="{% url 'task_panel_with_id' task_data.task.id %}" class="small">Ver más</a>
+                {% endif %}
+            </div>
 
-			{% if task_data.task.attendes %}
-			<p class="card-text mb-1"><strong>Asistentes:</strong>
-				{% for attendee in task_data.task.attendees.all %}
-				{{ attendee.username|title }}{% if not forloop.last %},{% else %}.{% endif %}
-				{% endfor %}
-			</p>
-			{% endif %}
+            {% if task_data.task.attendees.all %}
+            <p class="card-text mb-1">
+                <strong>Asistentes:</strong>
+                {% for attendee in task_data.task.attendees.all|slice:":3" %}
+                    {{ attendee.username|title }}{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+                {% if task_data.task.attendees.all.count > 3 %}
+                <span class="text-muted small">y {{ task_data.task.attendees.all.count|add:"-3" }} más</span>
+                {% endif %}
+            </p>
+            {% endif %}
 
-			{% if task_data.task.event_id %}
+            {% if task_data.task.event_id %}
+            <div class="mt-2">
+                <span class="badge bg-light text-dark">
+                    <i class="bi bi-calendar-event me-1"></i>
+                    <a href="{% url 'event_panel_with_id' task_data.task.event_id %}" class="text-decoration-none">
+                        {{ task_data.task.event.title|truncatechars:30 }}
+                    </a>
+                </span>
+            </div>
+            {% endif %}
 
-			<div>
-				<p class="card-textt"><a href="{% url 'event_panel_with_id' task_data.task.event_id %}">{{ task_data.task.event.title }}</a> <span>| Event id: {{task_data.task.event.id}}</span></p>
-			</div>
-	
-			{% endif %}
-			<form id="form-{{ task_data.task.id }}" action="{% url 'change_task_status' task_data.task.id %}" method="POST"
-				class="mb-1">
-				{% csrf_token %}
-				<div class="mb-1">
-					<select name="new_status_id" class="form-select" aria-label="Default select example">
-						{% for status in task_statuses %}
-							<option value="{{ status.id }}" {% if status.id|stringformat:"s" == task_data.task.task_status.id|stringformat:"s" %}selected{% endif %}>
-							{{ status.status_name }}
-							</option>
-						{% endfor %}
-					</select>
-				</div>
-				<button type="submit" class="btn btn-primary btn-sm">Cambiar Estado</button>
-			</form>
+            {% if task_data.task.project_id %}
+            <div class="mt-1">
+                <span class="badge bg-light text-dark">
+                    <i class="bi bi-diagram-3 me-1"></i>
+                    <a href="{% url 'project_panel_with_id' task_data.task.project_id %}" class="text-decoration-none">
+                        {{ task_data.task.project.title|truncatechars:30 }}
+                    </a>
+                </span>
+            </div>
+            {% endif %}
 
-		</div>
+            <!-- Tags -->
+            {% if task_data.task.tags.all %}
+            <div class="mt-2">
+                {% for tag in task_data.task.tags.all|slice:":3" %}
+                <span class="badge rounded-pill bg-secondary bg-opacity-10 text-dark me-1">
+                    <i class="bi bi-tag me-1"></i>{{ tag.name }}
+                </span>
+                {% endfor %}
+                {% if task_data.task.tags.count > 3 %}
+                <span class="badge rounded-pill bg-secondary">+{{ task_data.task.tags.count|add:"-3" }}</span>
+                {% endif %}
+            </div>
+            {% endif %}
 
-	</div>
-</div><!-- End Sales Card -->
+            <!-- Quick Status Change -->
+            <form id="form-{{ task_data.task.id }}" 
+                  action="{% url 'change_task_status' task_data.task.id %}" 
+                  method="POST"
+                  class="mt-3">
+                {% csrf_token %}
+                <div class="input-group input-group-sm">
+                    <select name="new_status_id" class="form-select" aria-label="Cambiar estado">
+                        {% for status in task_statuses|slice:":5" %}
+                        <option value="{{ status.id }}" 
+                                {% if status.id|stringformat:"s" == task_data.task.task_status.id|stringformat:"s" %}selected{% endif %}>
+                            {{ status.status_name }}
+                        </option>
+                        {% endfor %}
+                        {% if task_statuses.count > 5 %}
+                        <option value="" disabled>── Más estados ──</option>
+                        {% for status in task_statuses|slice:"5:" %}
+                        <option value="{{ status.id }}" 
+                                {% if status.id|stringformat:"s" == task_data.task.task_status.id|stringformat:"s" %}selected{% endif %}>
+                            {{ status.status_name }}
+                        </option>
+                        {% endfor %}
+                        {% endif %}
+                    </select>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
+<script>
+function copyTaskLink(taskId) {
+    const url = window.location.origin + "{% url 'task_panel_with_id' 0 %}".replace('0', taskId);
+    navigator.clipboard.writeText(url).then(function() {
+        alert('Enlace copiado al portapapeles');
+    }, function() {
+        alert('No se pudo copiar el enlace');
+    });
+}
+</script>
+<!-- End Sales Card -->

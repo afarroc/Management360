@@ -4,7 +4,9 @@ Comando de Django para probar la simulación de click
 """
 from django.core.management.base import BaseCommand
 from django.test import Client, override_settings
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.contrib.messages import get_messages
 from events.models import Task, InboxItem, TaskStatus, Status
 

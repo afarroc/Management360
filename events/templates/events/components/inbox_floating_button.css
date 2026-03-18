@@ -2,16 +2,27 @@
    INBOX GTD - ESTILOS DEL COMPONENTE FLOTANTE GLOBAL
    ======================================================= */
 
-/* Contenedor Principal */
-.inbox-floating-container {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    z-index: 1050;
-    font-family: 'Poppins', sans-serif;
+/* MOBILE FIRST APPROACH - FIXES FOR KEYBOARD */
+html, body {
+    height: 100%;
+    overflow-x: hidden;
+    position: relative;
 }
 
-/* Botón Principal Flotante */
+/* Contenedor Principal - POSICIÓN FIJA CON VALORES EXPLÍCITOS */
+.inbox-floating-container {
+    position: fixed;
+    bottom: 20px !important;
+    right: 20px !important;
+    z-index: 9999 !important;
+    font-family: 'Poppins', sans-serif;
+    /* Prevenir cualquier transformación que cause desplazamiento */
+    transform: none !important;
+    will-change: transform;
+    -webkit-transform: translateZ(0);
+}
+
+/* Botón Principal - TAMAÑO FIJO PARA MÓVIL */
 .inbox-floating-button {
     position: relative;
     width: 60px;
@@ -26,368 +37,266 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: none;
     overflow: hidden;
+    /* CRÍTICO: Prevenir zoom y comportamientos indeseados en iOS */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    /* Fijar posición para evitar saltos */
+    position: fixed !important;
+    right: 20px !important;
+    bottom: 20px !important;
+    z-index: 10000 !important;
 }
 
-.inbox-floating-button:hover {
-    transform: translateY(-5px) scale(1.1);
-    box-shadow: 0 15px 35px rgba(102, 126, 234, 0.6);
-}
-
-.inbox-floating-button:active {
-    transform: translateY(-2px) scale(1.05);
-}
-
-/* Contenido del Botón */
-.inbox-button-content {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-}
-
-.inbox-icon-main {
-    font-size: 1.5rem;
-    color: white;
-    margin-bottom: 2px;
-    transition: all 0.3s ease;
-}
-
-.inbox-floating-button:hover .inbox-icon-main {
-    transform: rotate(180deg) scale(1.1);
-}
-
-/* Badge de Notificación */
-.inbox-badge {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    background: #ff4757;
-    color: white;
-    font-size: 0.7rem;
-    font-weight: bold;
-    min-width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid white;
-    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4);
-    transition: all 0.3s ease;
-}
-
-.inbox-badge:empty {
-    display: none;
-}
-
-.inbox-badge.pulse {
-    animation: badgePulse 2s infinite;
-}
-
-/* Efecto de Pulso */
-.inbox-pulse-ring {
-    position: absolute;
-    border: 2px solid rgba(102, 126, 234, 0.6);
-    border-radius: 50%;
-    width: 100%;
-    height: 100%;
-    animation: pulseRing 2s infinite;
-    opacity: 0;
-}
-
-@keyframes pulseRing {
-    0% {
-        transform: scale(1);
-        opacity: 1;
-    }
-    100% {
-        transform: scale(1.5);
-        opacity: 0;
-    }
-}
-
-@keyframes badgePulse {
-    0% {
-        transform: scale(1);
-        box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4);
-    }
-    50% {
-        transform: scale(1.1);
-        box-shadow: 0 4px 15px rgba(255, 71, 87, 0.6);
-    }
-    100% {
-        transform: scale(1);
-        box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4);
-    }
-}
-
-/* Panel Expandido */
-.inbox-floating-panel {
-    position: absolute;
-    bottom: 80px;
-    right: 0;
-    width: 320px;
+/* PANEL - SOLUCIÓN AGGRESIVA PARA MÓVIL */
+.inbox-panel {
+    position: fixed !important;
+    width: 90vw !important;
+    max-width: 400px;
+    max-height: 70vh !important;
     background: white;
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
     border: 1px solid rgba(0, 0, 0, 0.1);
     opacity: 0;
     visibility: hidden;
-    transform: translateY(20px) scale(0.9);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateY(100%) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
     backdrop-filter: blur(10px);
+    /* CRÍTICO: Fijar posición y prevenir scroll */
+    top: auto !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: 20px !important;
+    transform: translateX(-50%) translateY(100%) !important;
+    z-index: 9998 !important;
+    /* Forzar rendering en GPU */
+    -webkit-transform: translate3d(-50%, 100%, 0);
+    transform: translate3d(-50%, 100%, 0);
+    will-change: transform;
+    /* Prevenir cualquier overflow */
+    overflow: hidden !important;
 }
 
-.inbox-floating-panel.show {
+.inbox-panel.show {
     opacity: 1;
     visibility: visible;
-    transform: translateY(0) scale(1);
+    transform: translateX(-50%) translateY(0) !important;
+    -webkit-transform: translate3d(-50%, 0, 0) !important;
+    transform: translate3d(-50%, 0, 0) !important;
 }
 
-/* Header del Panel */
-.inbox-panel-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 1rem 1.25rem;
-    border-radius: 16px 16px 0 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+/* CUANDO EL TECLADO ESTÁ VISIBLE - POSICIÓN ABSOLUTA ARRIBA */
+.inbox-panel.keyboard-visible {
+    top: 10px !important;
+    bottom: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    max-height: 80vh !important;
+    position: fixed !important;
 }
 
-.inbox-panel-title {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-}
-
-.inbox-panel-subtitle {
-    opacity: 0.9;
-    font-size: 0.75rem;
-    margin-top: 0.25rem;
-}
-
-/* Body del Panel */
+/* CUERPO DEL PANEL - SCROLL INTERNO CONTROLADO */
 .inbox-panel-body {
-    padding: 1.25rem;
+    padding: 20px;
+    max-height: calc(70vh - 40px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Prevenir scroll del body cuando estamos dentro del panel */
+    overscroll-behavior: contain;
 }
 
-/* Captura Rápida */
-.inbox-quick-capture .form-control {
-    border-radius: 25px;
-    border: 2px solid #e3e8ff;
-    transition: all 0.3s ease;
+.inbox-panel.keyboard-visible .inbox-panel-body {
+    max-height: calc(80vh - 40px);
 }
 
-.inbox-quick-capture .form-control:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-}
-
-.inbox-quick-capture textarea {
-    border-radius: 12px;
-    resize: none;
-}
-
-/* Estadísticas Rápidas */
-.inbox-quick-stats {
-    background: #f8f9ff;
-    border-radius: 12px;
-    padding: 0.75rem;
-}
-
-.inbox-stat-item {
-    text-align: center;
-}
-
-.inbox-stat-number {
-    font-size: 1.25rem;
-    font-weight: bold;
-    color: #667eea;
-    line-height: 1;
-}
-
-.inbox-stat-label {
-    font-size: 0.7rem;
-    color: #6c757d;
-    margin-top: 0.25rem;
-}
-
-/* Acciones Rápidas */
-.inbox-quick-actions .btn {
-    border-radius: 25px;
-    font-size: 0.85rem;
-    padding: 0.5rem 1rem;
-    transition: all 0.3s ease;
-}
-
-.inbox-quick-actions .btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-/* Notificaciones Toast */
-.toast-container {
-    z-index: 1060;
-}
-
-.toast {
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-}
-
-.toast-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 12px 12px 0 0;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-    .inbox-floating-container {
-        bottom: 20px;
-        right: 20px;
-    }
-
-    .inbox-floating-button {
-        width: 50px;
-        height: 50px;
-    }
-
-    .inbox-icon-main {
-        font-size: 1.25rem;
-    }
-
-    .inbox-floating-panel {
-        width: 280px;
-        right: -20px;
-    }
-
-    .inbox-panel-body {
-        padding: 1rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .inbox-floating-panel {
-        width: calc(100vw - 40px);
-        right: -10px;
-        left: 10px;
-    }
-}
-
-/* Animaciones */
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes slideInRight {
-    from {
-        opacity: 0;
-        transform: translateX(100px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-.inbox-floating-panel {
-    animation: fadeInUp 0.3s ease-out;
-}
-
-/* Estados Especiales */
-.inbox-floating-button.new-items {
-    animation: attentionPulse 2s infinite;
-}
-
-@keyframes attentionPulse {
-    0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-    }
-    50% {
-        transform: scale(1.1);
-        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.7);
-    }
-}
-
-/* Accesibilidad */
-.inbox-floating-button:focus {
-    outline: 2px solid #667eea;
-    outline-offset: 2px;
-}
-
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-    .inbox-floating-panel {
-        background: #2d3748;
-        border-color: #4a5568;
-        color: #e2e8f0;
-    }
-
-    .inbox-quick-stats {
-        background: #1a202c;
-    }
-
-    .inbox-stat-number {
-        color: #90cdf4;
-    }
-
-    .inbox-quick-capture .form-control {
-        background: #2d3748;
-        border-color: #4a5568;
-        color: #e2e8f0;
-    }
-}
-
-/* Loading States */
-.inbox-loading {
+/* FORMULARIO - INPUTS CON TAMAÑO DE FUENTE FIJO */
+.inbox-quick-form {
     position: relative;
-    overflow: hidden;
 }
 
-.inbox-loading::after {
-    content: '';
-    position: absolute;
+.inbox-form-group input,
+.inbox-form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e3e8ff;
+    border-radius: 8px;
+    font-size: 16px !important; /* CRÍTICO: Prevenir zoom en iOS */
+    line-height: 1.4;
+    background: white;
+    /* Deshabilitar todos los comportamientos automáticos de iOS */
+    -webkit-appearance: none;
+    appearance: none;
+    -webkit-user-select: text;
+    user-select: text;
+    /* Prevenir ajuste de tamaño automático */
+    resize: none;
+    /* Forzar rendering consistente */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
+.inbox-form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+/* BOTONES - TAMAÑOS MÍNIMOS PARA TACTO */
+.inbox-btn {
+    padding: 12px 20px !important;
+    min-height: 44px !important; /* Tamaño mínimo para tacto en iOS */
+    font-size: 16px !important; /* Prevenir zoom */
+    touch-action: manipulation;
+}
+
+/* OVERLAY PARA BLOQUEAR EL BODY CUANDO EL PANEL ESTÁ ABIERTO */
+.inbox-overlay {
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(255, 255, 255, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9997;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
 }
 
-.inbox-loading::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border: 2px solid #667eea;
-    border-radius: 50%;
-    border-top-color: transparent;
-    animation: spin 1s linear infinite;
-    z-index: 11;
+.inbox-overlay.active {
+    opacity: 1;
+    visibility: visible;
 }
 
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
+/* =======================================================
+   MEDIA QUERIES ESPECÍFICAS PARA MÓVIL
+   ======================================================= */
+
+/* DISPOSITIVOS MÓVILES - REGLAS ESTRICTAS */
+@media screen and (max-width: 768px) {
+    /* BLOQUEAR SCROLL DEL BODY CUANDO EL PANEL ESTÁ ABIERTO */
+    body.inbox-panel-open {
+        position: fixed !important;
+        width: 100% !important;
+        height: 100% !important;
+        overflow: hidden !important;
+        overscroll-behavior: none !important;
+    }
+
+    /* POSICIÓN ABSOLUTA DEL BOTÓN CUANDO EL TECLADO ESTÁ VISIBLE */
+    .inbox-floating-button.keyboard-visible {
+        display: none !important;
+    }
+
+    /* PANEL CON TECLADO VISIBLE - MÁXIMA PRIORIDAD */
+    .inbox-panel.keyboard-visible {
+        top: 10px !important;
+        bottom: auto !important;
+        max-height: 80vh !important;
+        z-index: 10001 !important; /* Por encima de TODO */
+    }
+
+    /* INPUTS - PREVENIR CUALQUIER COMPORTAMIENTO RARO */
+    .inbox-form-group input:focus,
+    .inbox-form-group textarea:focus {
+        position: relative;
+        z-index: 10002;
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        /* Forzar que se quede en su lugar */
+        transform: none !important;
+        -webkit-transform: none !important;
+    }
+
+    /* ESTILOS PARA SAFARI iOS */
+    @supports (-webkit-touch-callout: none) {
+        .inbox-panel {
+            /* Forzar hardware acceleration */
+            -webkit-transform: translate3d(-50%, 100%, 0);
+            transform: translate3d(-50%, 100%, 0);
+        }
+        
+        .inbox-panel.show {
+            -webkit-transform: translate3d(-50%, 0, 0);
+            transform: translate3d(-50%, 0, 0);
+        }
+        
+        /* Prevenir elastic scrolling */
+        .inbox-panel-body {
+            -webkit-overflow-scrolling: touch;
+            overflow-y: scroll;
+        }
+        
+        /* Deshabilitar pull-to-refresh */
+        body {
+            overscroll-behavior-y: none;
+        }
+    }
+
+    /* ANDROID CHROME */
+    @media screen and (-webkit-min-device-pixel-ratio:0) {
+        .inbox-form-group input,
+        .inbox-form-group textarea {
+            font-size: 16px !important;
+        }
+    }
+}
+
+/* PANTALLAS MUY PEQUEÑAS */
+@media screen and (max-width: 480px) {
+    .inbox-panel {
+        width: 95vw !important;
+        max-width: none;
+        bottom: 10px !important;
+    }
+    
+    .inbox-panel.keyboard-visible {
+        top: 5px !important;
+        max-height: 85vh !important;
+    }
+    
+    .inbox-panel-body {
+        padding: 15px;
+        max-height: calc(85vh - 30px);
+    }
+}
+
+/* ORIENTACIÓN HORIZONTAL */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+    .inbox-panel {
+        max-height: 90vh !important;
+        width: 80vw !important;
+    }
+    
+    .inbox-panel.keyboard-visible {
+        top: 5px !important;
+        max-height: 70vh !important;
+    }
+    
+    .inbox-panel-body {
+        max-height: calc(70vh - 40px);
+    }
+    
+    .inbox-form-group textarea {
+        min-height: 60px;
+        max-height: 80px;
+    }
+}
+
+/* SAFE AREA INSETS PARA IPHONE X+ */
+@supports (padding: max(0px)) {
+    .inbox-floating-container {
+        bottom: max(20px, env(safe-area-inset-bottom)) !important;
+        right: max(20px, env(safe-area-inset-right)) !important;
+    }
+    
+    .inbox-panel {
+        bottom: max(20px, env(safe-area-inset-bottom)) !important;
+    }
+    
+    .inbox-panel.keyboard-visible {
+        top: max(10px, env(safe-area-inset-top)) !important;
     }
 }

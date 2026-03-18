@@ -24,12 +24,12 @@
 <!-- Inbox GTD Floating Container -->
 <div id="inboxFloatingContainer" class="inbox-floating-container">
     <!-- Floating Button -->
-    <div class="inbox-floating-button" id="inboxFloatingButton" role="button" tabindex="0" aria-label="Abrir Inbox GTD (Ctrl+I)">
+    <div class="inbox-floating-button" id="inboxFloatingButton" role="button" tabindex="0" aria-label="Abrir Inbox GTD">
         <div class="inbox-button-content">
-            <i class="bi bi-lightning-charge-fill inbox-icon-main" aria-hidden="true"></i>
-            <span class="inbox-badge" id="inboxBadge" aria-label="Items pendientes en inbox">0</span>
+            <i class="bi bi-lightning-charge-fill inbox-icon-main"></i>
+            <span class="inbox-badge" id="inboxBadge">0</span>
         </div>
-        <div class="inbox-pulse-ring" aria-hidden="true"></div>
+        <div class="inbox-pulse-ring"></div>
     </div>
 
     <!-- Expandable Panel -->
@@ -37,78 +37,76 @@
         <!-- Panel Header -->
         <div class="inbox-panel-header">
             <h3 class="inbox-panel-title" id="inboxPanelTitle">
-                <i class="bi bi-inbox-fill" aria-hidden="true"></i>
+                <i class="bi bi-inbox-fill"></i>
                 Inbox GTD
             </h3>
-            <button class="inbox-panel-close" id="inboxPanelClose" aria-label="Cerrar panel de inbox">
-                <i class="bi bi-x-lg" aria-hidden="true"></i>
+            <button class="inbox-panel-close" id="inboxPanelClose" aria-label="Cerrar">
+                <i class="bi bi-x-lg"></i>
             </button>
         </div>
 
-        <!-- Quick Capture Form -->
-        <form class="inbox-quick-form" id="inboxQuickForm">
-            <div class="inbox-form-group">
-                <label for="inboxQuickTitle">Título *</label>
-                <input
-                    type="text"
-                    id="inboxQuickTitle"
-                    name="title"
-                    placeholder="¿Qué necesitas capturar?"
-                    required
-                    aria-describedby="titleHelp"
-                    autocomplete="off"
-                >
-                <small id="titleHelp" class="form-text text-muted">Describe brevemente lo que quieres recordar o hacer</small>
-            </div>
+        <!-- Panel Body -->
+        <div class="inbox-panel-body">
+            <!-- Quick Capture Form -->
+            <form class="inbox-quick-form" id="inboxQuickForm" autocomplete="off">
+                <div class="inbox-form-group">
+                    <label for="inboxQuickTitle">Título *</label>
+                    <input type="text" id="inboxQuickTitle" name="title" 
+                           placeholder="¿Qué necesitas capturar?" required>
+                </div>
+            
+                <div class="inbox-form-group">
+                    <label for="inboxQuickDescription">Descripción</label>
+                    <textarea id="inboxQuickDescription" name="description" 
+                              placeholder="Detalles..." rows="3"></textarea>
+                </div>
+            
+                <div class="inbox-form-actions">
+                    <button type="submit" class="inbox-btn inbox-btn-primary" id="inboxQuickSubmit">
+                        <i class="bi bi-lightning-charge-fill"></i>
+                        Capturar
+                    </button>
+                    <button type="button" class="inbox-btn inbox-btn-secondary" 
+                            onclick="window.open('/events/inbox/', '_blank')">
+                        <i class="bi bi-box-arrow-up-right"></i>
+                        Ver Todo
+                    </button>
+                </div>
+            </form>
 
-            <div class="inbox-form-group">
-                <label for="inboxQuickDescription">Descripción (opcional)</label>
-                <textarea
-                    id="inboxQuickDescription"
-                    name="description"
-                    placeholder="Agrega más detalles si es necesario..."
-                    rows="3"
-                    aria-describedby="descHelp"
-                ></textarea>
-                <small id="descHelp" class="form-text text-muted">Información adicional para contextualizar el item</small>
+            <!-- Statistics -->
+            <div class="inbox-stats">
+                <div class="inbox-stats-grid">
+                    <div class="inbox-stat-item">
+                        <div class="inbox-stat-number" id="inboxStatTotal">0</div>
+                        <div class="inbox-stat-label">Total</div>
+                    </div>
+                    <div class="inbox-stat-item">
+                        <div class="inbox-stat-number" id="inboxStatUnprocessed">0</div>
+                        <div class="inbox-stat-label">Pendientes</div>
+                    </div>
+                    <div class="inbox-stat-item">
+                        <div class="inbox-stat-number" id="inboxStatProcessed">0</div>
+                        <div class="inbox-stat-label">Procesados</div>
+                    </div>
+                </div>
             </div>
+        </div>
+    </div>
+</div>
 
-            <div class="inbox-form-actions">
-                <button type="submit" class="inbox-btn-primary" id="inboxQuickSubmit">
-                    <i class="bi bi-lightning-charge-fill" aria-hidden="true"></i>
-                    Capturar
-                </button>
-                <button type="button" class="inbox-btn-secondary" onclick="window.open('/events/inbox/', '_blank')">
-                    <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
-                    Ver Inbox
-                </button>
-            </div>
-        </form>
-
-        <!-- Statistics Section -->
-        <div class="inbox-stats">
-            <div class="inbox-stats-grid">
-                <div class="inbox-stat-item">
-                    <div class="inbox-stat-number" id="inboxStatTotal">0</div>
-                    <div class="inbox-stat-label">Total</div>
-                </div>
-                <div class="inbox-stat-item">
-                    <div class="inbox-stat-number" id="inboxStatUnprocessed">0</div>
-                    <div class="inbox-stat-label">Pendientes</div>
-                </div>
-                <div class="inbox-stat-item">
-                    <div class="inbox-stat-number" id="inboxStatProcessed">0</div>
-                    <div class="inbox-stat-label">Procesados</div>
-                </div>
-                <div class="inbox-stat-item">
-                    <div class="inbox-stat-number" id="inboxStatToday">0</div>
-                    <div class="inbox-stat-label">Hoy</div>
-                </div>
-                <div class="inbox-stat-item">
-                    <div class="inbox-stat-number" id="inboxStatRecent">0</div>
-                    <div class="inbox-stat-label">Recientes</div>
-                </div>
-            </div>
+<!-- Overlay se crea dinámicamente en JavaScript -->
+<!-- Toast Notification Container -->
+<div class="toast-container position-fixed top-0 end-0 p-3">
+    <div id="inboxToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong class="me-auto">Inbox GTD</strong>
+            <small>Ahora</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Cerrar"></button>
+        </div>
+        <div class="toast-body" id="inboxToastBody">
+            <!-- Notification message will go here -->
         </div>
     </div>
 </div>
@@ -143,10 +141,87 @@
     outline-offset: 3px;
 }
 
+/* Button styles */
+.inbox-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 40px;
+}
+
+.inbox-btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.inbox-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.inbox-btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.inbox-btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+}
+
+.inbox-btn-outline {
+    background: transparent;
+    border: 1px solid #dee2e6;
+    color: #495057;
+}
+
+.inbox-btn-outline:hover {
+    background: #f8f9fa;
+    border-color: #667eea;
+    color: #667eea;
+}
+
+/* Form actions */
+.inbox-form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.inbox-form-actions .inbox-btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+/* Quick actions */
+.inbox-quick-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+
+.inbox-quick-actions .inbox-btn {
+    flex: 1;
+    min-width: 100px;
+    font-size: 13px;
+    padding: 6px 12px;
+}
+
 /* Loading animation for the submit button */
-.inbox-btn-primary:disabled {
+.inbox-btn:disabled {
     opacity: 0.7;
     cursor: not-allowed;
+    transform: none !important;
 }
 
 /* Enhanced badge animation */
@@ -251,6 +326,22 @@
     .inbox-stats-grid {
         grid-template-columns: repeat(3, 1fr);
     }
+
+    .inbox-form-actions {
+        flex-direction: column;
+    }
+
+    .inbox-form-actions .inbox-btn {
+        width: 100%;
+    }
+
+    .inbox-quick-actions {
+        flex-direction: column;
+    }
+
+    .inbox-quick-actions .inbox-btn {
+        width: 100%;
+    }
 }
 
 @media (max-width: 480px) {
@@ -264,6 +355,23 @@
 
     .inbox-btn-secondary {
         margin-top: 8px;
+    }
+
+    .inbox-btn {
+        min-height: 44px; /* Better touch target for mobile */
+        font-size: 16px; /* Prevent iOS zoom */
+    }
+}
+
+/* Mobile keyboard specific */
+@media (max-width: 768px) {
+    .inbox-panel-body {
+        padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    
+    .inbox-btn {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
     }
 }
 </style>
@@ -297,6 +405,38 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             localStorage.setItem('inboxGTD_shortcut_shown', 'true');
         }, 3000);
+    }
+
+    // Bind button events
+    const refreshBtn = document.getElementById('inboxRefreshBtn');
+    const processBtn = document.getElementById('inboxProcessBtn');
+    const clearBtn = document.getElementById('inboxClearBtn');
+
+    if (refreshBtn && window.inboxGTD) {
+        refreshBtn.addEventListener('click', function() {
+            window.inboxGTD.refreshData();
+            window.inboxGTD.showNotification('Datos actualizados', 'info');
+        });
+    }
+
+    if (processBtn) {
+        processBtn.addEventListener('click', function() {
+            window.open('/events/inbox/process/', '_blank');
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            const titleInput = document.getElementById('inboxQuickTitle');
+            const descInput = document.getElementById('inboxQuickDescription');
+            
+            if (titleInput) titleInput.value = '';
+            if (descInput) descInput.value = '';
+            
+            if (window.inboxGTD) {
+                window.inboxGTD.showNotification('Formulario limpiado', 'info');
+            }
+        });
     }
 });
 </script>

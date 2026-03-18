@@ -1,5 +1,7 @@
 from django.test import TestCase
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.db import transaction
 from ..models import Task, InboxItem, TaskStatus, Status
 from ..management.task_manager import TaskManager

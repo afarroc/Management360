@@ -30,7 +30,7 @@
             <div class="col-12">
                 <nav aria-label="breadcrumb">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
+                        <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
                         <li class="breadcrumb-item active">{{page_title}}</li>
                     </ol>
                 </nav>
@@ -169,20 +169,20 @@
                                 </div>
                             </div>
                         </div>
+
                         {% else %}
-                        <form method="post" enctype="multipart/form-data" id="create-superuser-form">
+                        <!-- FORMULARIO SIMPLIFICADO -->
+                        <form method="post" id="create-superuser-form">
                             {% csrf_token %}
-                            <input type="hidden" name="create_su" value="" id="create-su-hidden">
-                            <button type="submit" name="create_su_btn" id="create-superuser-btn"
-                                    class="btn btn-primary w-100 create-superuser-button"
-                                    data-bs-toggle="tooltip"
-                                    data-bs-placement="top"
-                                    title="Crear el primer usuario administrador del sistema">
+                            <input type="hidden" name="create_su" value="1">
+                            <button type="submit" id="create-superuser-btn"
+                                    class="btn btn-primary w-100 create-superuser-button">
                                 <i class="bi bi-person-plus me-2"></i>
                                 Crear Superusuario
                             </button>
                         </form>
                         {% endif %}
+
                     </div>
                 </div>
             </div>
@@ -1446,10 +1446,9 @@
     background: #a8a8a8;
 }
 </style>
-
 <script>
 // ===========================================
-// OPTIMIZED SETUP JAVASCRIPT
+// OPTIMIZED SETUP JAVASCRIPT - CORREGIDO
 // Using Management360 Project Assets
 // ===========================================
 
@@ -1507,19 +1506,22 @@ document.addEventListener('DOMContentLoaded', function () {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
-    // Enhanced button interactions with loading states
+    // CORREGIDO: Button interactions sin deshabilitar inmediatamente
     const buttons = document.querySelectorAll('button[type="submit"]');
     buttons.forEach(button => {
         const originalText = button.innerHTML;
 
-        button.addEventListener('click', function(e) {
-            // Add loading state
-            button.innerHTML = '<i class="bi bi-arrow-clockwise spinning me-2"></i>Procesando...';
-            button.disabled = true;
-
-            // Store original text for reset
-            button.setAttribute('data-original-text', originalText);
-        });
+        // Solo para formularios que NO son el de superusuario
+        if (!button.closest('#create-superuser-form')) {
+            button.addEventListener('click', function(e) {
+                // Solo cambiar el texto, NO deshabilitar
+                const loadingText = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+                this.innerHTML = loadingText;
+                
+                // Store original text for reset
+                this.setAttribute('data-original-text', originalText);
+            });
+        }
     });
 
     // Reset buttons when page loads (after successful form submission)
@@ -1534,31 +1536,22 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // SPECIFIC TRACKING FOR CREATE SUPERUSER BUTTON
-    const createSuperuserBtn = document.getElementById('create-superuser-btn');
-    if (createSuperuserBtn) {
-        createSuperuserBtn.addEventListener('click', function(e) {
-            // Set hidden input value to indicate button was clicked
-            const hiddenInput = document.getElementById('create-su-hidden');
-            if (hiddenInput) {
-                hiddenInput.value = 'Create Superuser';
-            }
-
-            // Show loading state
-            this.innerHTML = '<i class="bi bi-arrow-clockwise spinning me-2"></i>Creando Superusuario...';
-            this.disabled = true;
+    // ESPECIAL PARA EL BOTÓN DE SUPERUSUARIO
+    const suForm = document.getElementById('create-superuser-form');
+    const suBtn = document.getElementById('create-superuser-btn');
+    
+    if (suForm && suBtn) {
+        console.log("✓ Formulario de superusuario encontrado");
+        
+        suForm.addEventListener('submit', function(e) {
+            console.log("Formulario de superusuario enviándose...");
+            
+            // Solo cambiar texto, NO deshabilitar
+            suBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creando...';
+            
+            // Asegurar que el formulario se envíe
+            return true;
         });
-
-        // Track form submission for this specific button
-        const createSuperuserForm = document.getElementById('create-superuser-form');
-        if (createSuperuserForm) {
-            createSuperuserForm.addEventListener('submit', function(e) {
-                const hiddenInput = document.getElementById('create-su-hidden');
-                if (hiddenInput && !hiddenInput.value) {
-                    hiddenInput.value = 'Create Superuser';
-                }
-            });
-        }
     }
 
     // Enhanced form validation with visual feedback
@@ -2023,7 +2016,7 @@ function showSuperuserDetails() {
 
 // Go to home page function
 function goToHome() {
-    window.location.href = "{% url 'index' %}";
+    window.location.href = "{% url 'home' %}";
 }
 
 // Export functions for potential external use
@@ -2042,4 +2035,27 @@ window.Management360Setup = {
 };
 </script>
 
+<script>
+// DEBUG SIMPLE
+console.log("Setup page loaded");
+document.addEventListener('DOMContentLoaded', function() {
+    const suForm = document.getElementById('create-superuser-form');
+    const suBtn = document.getElementById('create-superuser-btn');
+    
+    if (suForm && suBtn) {
+        console.log("Superuser form and button found");
+        
+        suBtn.addEventListener('click', function() {
+            console.log("Crear Superusuario button clicked!");
+            console.log("Form action:", suForm.action);
+            console.log("Form method:", suForm.method);
+        });
+        
+        suForm.addEventListener('submit', function(e) {
+            console.log("Form is submitting!");
+            console.log("Form data:", new FormData(suForm));
+        });
+    }
+});
+</script>
 {% endblock %}

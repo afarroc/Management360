@@ -1,3 +1,4 @@
+from django.conf import settings
 import os
 from django.db import models
 from django.core.validators import FileExtensionValidator
@@ -65,7 +66,7 @@ class ProjectState(models.Model):
 class ProjectHistory(models.Model):
     project = models.ForeignKey('Project', on_delete=models.CASCADE)
     edited_at = models.DateTimeField(auto_now_add=True)
-    editor = models.ForeignKey(User, on_delete=models.CASCADE)
+    editor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     field_name = models.CharField(max_length=100)
     old_value = models.TextField(null=True, blank=True)
     new_value = models.TextField(null=True, blank=True)
@@ -82,9 +83,9 @@ class Project(models.Model):
     done = models.BooleanField(default=False)
     event = models.ForeignKey('Event', on_delete=models.CASCADE, null=True, blank=True)
     project_status = models.ForeignKey(ProjectStatus, on_delete=models.CASCADE)
-    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_projects')
-    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_projets') 
-    attendees = models.ManyToManyField(User, through='ProjectAttendee', related_name='collaborating_projects',blank=True) 
+    host = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hosted_projects')
+    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='managed_projets') 
+    attendees = models.ManyToManyField(settings.AUTH_USER_MODEL, through='ProjectAttendee', related_name='collaborating_projects',blank=True) 
     ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
 
     # Generic relation for reverse querying from InboxItem
@@ -135,7 +136,7 @@ class Project(models.Model):
 
 # Modelo para registrar los asistentes al Proyecto
 class ProjectAttendee(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
     registration_time = models.DateTimeField(auto_now_add=True)
     has_paid = models.BooleanField(default=False)  # Campo nuevo para el pago
@@ -164,7 +165,7 @@ class TaskState(models.Model):
 class TaskHistory(models.Model):
     task = models.ForeignKey('Task', on_delete=models.CASCADE)
     edited_at = models.DateTimeField(auto_now_add=True)
-    editor = models.ForeignKey(User, on_delete=models.CASCADE)
+    editor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     field_name = models.CharField(max_length=100)
     old_value = models.TextField(null=True, blank=True)
     new_value = models.TextField(null=True, blank=True)
@@ -184,8 +185,8 @@ class Task(models.Model):
     project = models.ForeignKey('Project', on_delete=models.CASCADE, blank=True, null=True)  # Usa comillas si Project está definido más abajo en el mismo archivo
     event = models.ForeignKey('Event', on_delete=models.CASCADE, blank=True, null=True)
     task_status = models.ForeignKey(TaskStatus, on_delete=models.CASCADE)
-    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_tasks')
-    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_tasks')  # Asegúrate de que esta línea esté presente
+    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='managed_tasks')
+    host = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hosted_tasks')  # Asegúrate de que esta línea esté presente
     ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
     tags = models.ManyToManyField('Tag', blank=True)
 
@@ -255,7 +256,7 @@ class TaskProgram(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
-    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_programs')
+    host = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hosted_programs')
     task = models.ForeignKey('Task', on_delete=models.CASCADE)
 
     def clean(self):
@@ -274,7 +275,7 @@ class TaskProgram(models.Model):
 class TaskSchedule(models.Model):
     """Modelo para programaciones recurrentes de tareas"""
     task = models.ForeignKey('Task', on_delete=models.CASCADE)
-    host = models.ForeignKey(User, on_delete=models.CASCADE)
+    host = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     # Configuración de recurrencia
     recurrence_type = models.CharField(max_length=20, choices=[
@@ -462,7 +463,7 @@ class EventState(models.Model):
 class EventHistory(models.Model):
     event = models.ForeignKey('Event', on_delete=models.CASCADE)
     edited_at = models.DateTimeField(auto_now_add=True)
-    editor = models.ForeignKey(User, on_delete=models.CASCADE)
+    editor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     field_name = models.CharField(max_length=100)
     old_value = models.TextField(null=True, blank=True)
     new_value = models.TextField(null=True, blank=True)
@@ -506,12 +507,12 @@ class Event(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     event_status = models.ForeignKey(Status, on_delete=models.CASCADE)
     venue = models.CharField(max_length=200)
-    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_events')
+    host = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='hosted_events')
     event_category = models.CharField(max_length=50)
     max_attendees = models.IntegerField(default=0)
     ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
-    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_events') 
-    attendees = models.ManyToManyField(User, through='EventAttendee', related_name='collaborating_events', blank=True) 
+    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='managed_events') 
+    attendees = models.ManyToManyField(settings.AUTH_USER_MODEL, through='EventAttendee', related_name='collaborating_events', blank=True) 
     tags = models.ManyToManyField(Tag, blank=True)
     links = models.ManyToManyField('self', blank=True, symmetrical=False)
     classification = models.ForeignKey(Classification, on_delete=models.SET_NULL, null=True, blank=True)
@@ -555,7 +556,7 @@ class Event(models.Model):
 
 # Modelo para registrar los asistentes al evento
 class EventAttendee(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
     registration_time = models.DateTimeField(auto_now_add=True)
     has_paid = models.BooleanField(default=False)  # Campo nuevo para el pago
@@ -568,7 +569,7 @@ from django.contrib.auth.models import User
 from decimal import Decimal
 
 class CreditAccount(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
 
     def __str__(self):
@@ -598,7 +599,7 @@ class Room(models.Model):
 
 class Message(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     message = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
@@ -627,7 +628,7 @@ class ProjectTemplate(models.Model):
     category = models.CharField(max_length=100)
     estimated_duration = models.IntegerField(help_text="Duración en días")
     is_public = models.BooleanField(default=False)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -652,7 +653,7 @@ class InboxItem(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     is_processed = models.BooleanField(default=False)
     processed_at = models.DateTimeField(null=True, blank=True)
 
@@ -704,7 +705,7 @@ class InboxItem(models.Model):
     # Sistema de clasificación colaborativa
     is_public = models.BooleanField(default=False, help_text="¿Puede ser visto por otros usuarios?")
     assigned_to = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -712,7 +713,7 @@ class InboxItem(models.Model):
         help_text="Usuario asignado para procesar este item"
     )
     authorized_users = models.ManyToManyField(
-        User,
+        settings.AUTH_USER_MODEL,
         through='InboxItemAuthorization',
         through_fields=('inbox_item', 'user'),
         related_name='authorized_inbox_items',
@@ -722,7 +723,7 @@ class InboxItem(models.Model):
 
     # Campos para consenso de clasificación
     classification_votes = models.ManyToManyField(
-        User,
+        settings.AUTH_USER_MODEL,
         through='InboxItemClassification',
         through_fields=('inbox_item', 'user'),
         related_name='classified_inbox_items',
@@ -866,7 +867,7 @@ class Reminder(models.Model):
     task = models.ForeignKey('Task', null=True, blank=True, on_delete=models.CASCADE)
     project = models.ForeignKey('Project', null=True, blank=True, on_delete=models.CASCADE)
     event = models.ForeignKey('Event', null=True, blank=True, on_delete=models.CASCADE)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     is_sent = models.BooleanField(default=False)
     reminder_type = models.CharField(max_length=20, choices=[
         ('email', 'Email'),
@@ -884,8 +885,8 @@ class Reminder(models.Model):
 # Sistema de autorización para items del inbox
 class InboxItemAuthorization(models.Model):
     inbox_item = models.ForeignKey('InboxItem', on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    granted_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='granted_authorizations')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    granted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='granted_authorizations')
     granted_at = models.DateTimeField(auto_now_add=True)
     permission_level = models.CharField(max_length=20, choices=[
         ('view', 'Solo Vista'),
@@ -903,7 +904,7 @@ class InboxItemAuthorization(models.Model):
 # Sistema de clasificación colaborativa para items del inbox
 class InboxItemClassification(models.Model):
     inbox_item = models.ForeignKey('InboxItem', on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     gtd_category = models.CharField(max_length=20, choices=[
         ('accionable', 'Accionable'),
         ('no_accionable', 'No Accionable'),
@@ -942,7 +943,7 @@ class InboxItemClassification(models.Model):
 # Historial de cambios en items del inbox
 class InboxItemHistory(models.Model):
     inbox_item = models.ForeignKey('InboxItem', on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     action = models.CharField(max_length=50, choices=[
         ('created', 'Creado'),
         ('viewed', 'Visto'),
@@ -1013,7 +1014,7 @@ class GTDClassificationPattern(models.Model):
     usage_count = models.IntegerField(default=0, help_text="Veces que se ha usado este patrón")
 
     # Metadatos
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -1027,7 +1028,7 @@ class GTDClassificationPattern(models.Model):
 # Sistema de aprendizaje automático simple para GTD
 class GTDLearningEntry(models.Model):
     inbox_item = models.ForeignKey('InboxItem', on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     # Lo que el usuario decidió
     user_gtd_category = models.CharField(max_length=20)
@@ -1082,7 +1083,7 @@ class GTDProcessingSettings(models.Model):
     priority_threshold_medium = models.IntegerField(default=50, help_text="Umbral para prioridad media")
 
     # Metadatos
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True, help_text="Configuración activa")
