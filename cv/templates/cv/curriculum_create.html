@@ -1,0 +1,611 @@
+{% extends 'layouts/base.html' %}
+{% load static crispy_forms_tags %}
+
+{% block title %}Crear Perfil Profesional{% endblock %}
+
+{% block content %}
+<style>
+    .cv-form .card {
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: box-shadow 0.3s ease;
+    }
+    .cv-form .card:hover {
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .cv-form .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 10px 10px 0 0;
+        padding: 1rem;
+    }
+    .cv-form .card-header h4 {
+        margin: 0;
+        font-weight: 600;
+    }
+    .cv-form .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: transform 0.2s ease;
+    }
+    .cv-form .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    .cv-form .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        border-radius: 25px;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+        transition: transform 0.2s ease;
+    }
+    .cv-form .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+    }
+    .cv-form .required-section {
+        border-left: 4px solid #dc3545;
+        background: #fff5f5;
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    .cv-form .optional-section {
+        border-left: 4px solid #6c757d;
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    .cv-form .text-danger {
+        color: #dc3545 !important;
+    }
+    .cv-form .asteriskField {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    .cv-form .required {
+        border-left: 3px solid #dc3545;
+        padding-left: 10px;
+    }
+    .cv-form label.required::after {
+        content: " *";
+        color: #dc3545;
+        font-weight: bold;
+    }
+    .welcome-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    .welcome-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+    .welcome-header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin-bottom: 0;
+    }
+    .step-indicator {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 2rem;
+    }
+    .step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+        position: relative;
+    }
+    .step:not(:last-child):before {
+        content: '';
+        position: absolute;
+        top: 25px;
+        right: -50%;
+        width: 100%;
+        height: 2px;
+        background: #e0e0e0;
+        z-index: 1;
+    }
+    .step.active .step-circle {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+    }
+    .step.completed .step-circle {
+        background: #28a745;
+        color: white;
+        border-color: #28a745;
+    }
+    .step-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: white;
+        border: 2px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        z-index: 2;
+        transition: all 0.3s ease;
+    }
+    .step-label {
+        font-size: 0.9rem;
+        color: #6c757d;
+        text-align: center;
+    }
+    .step.active .step-label {
+        color: #667eea;
+        font-weight: 600;
+    }
+    .info-box {
+        background: #e7f3ff;
+        border-left: 4px solid #0d6efd;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+    }
+    .info-box i {
+        color: #0d6efd;
+        margin-right: 0.5rem;
+    }
+</style>
+
+<div class="container mt-4 cv-form">
+    <!-- Welcome Header -->
+    <div class="welcome-header">
+        <h1><i class="bi bi-person-badge me-3"></i>¡Bienvenido a tu Perfil Profesional!</h1>
+        <p>Completa tu información básica para comenzar. Luego podrás añadir experiencia, educación y más detalles.</p>
+    </div>
+
+    <!-- Step Indicator -->
+    <div class="step-indicator mb-5">
+        <div class="step active">
+            <div class="step-circle">1</div>
+            <div class="step-label">Información Básica</div>
+        </div>
+        <div class="step">
+            <div class="step-circle">2</div>
+            <div class="step-label">Experiencia</div>
+        </div>
+        <div class="step">
+            <div class="step-circle">3</div>
+            <div class="step-label">Educación</div>
+        </div>
+        <div class="step">
+            <div class="step-circle">4</div>
+            <div class="step-label">Habilidades</div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <!-- Info Box -->
+            <div class="info-box">
+                <i class="bi bi-info-circle-fill"></i>
+                <strong>Paso 1 de 4:</strong> Completa tu información personal y profesional básica.
+                Los campos marcados con <span class="text-danger">*</span> son obligatorios.
+            </div>
+
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">
+                    {% for error in form.non_field_errors %}
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Personal Information Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4><i class="bi bi-person-circle me-2"></i>Información Personal</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.full_name.id_for_label }}" class="form-label fw-semibold required">
+                                        {{ form.full_name.label }}
+                                    </label>
+                                    {{ form.full_name }}
+                                    {% if form.full_name.errors %}
+                                    <div class="text-danger small mt-1">
+                                        <i class="bi bi-exclamation-circle me-1"></i>{{ form.full_name.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.profession.id_for_label }}" class="form-label fw-semibold required">
+                                        {{ form.profession.label }}
+                                    </label>
+                                    {{ form.profession }}
+                                    {% if form.profession.errors %}
+                                    <div class="text-danger small mt-1">
+                                        <i class="bi bi-exclamation-circle me-1"></i>{{ form.profession.errors.0 }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.bio.id_for_label }}" class="form-label fw-semibold required">
+                                {{ form.bio.label }}
+                            </label>
+                            {{ form.bio }}
+                            <div class="form-text text-muted">
+                                <i class="bi bi-info-circle me-1"></i>Breve descripción sobre ti, tu experiencia y objetivos profesionales.
+                            </div>
+                            {% if form.bio.errors %}
+                            <div class="text-danger small mt-1">
+                                <i class="bi bi-exclamation-circle me-1"></i>{{ form.bio.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.profile_picture.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.profile_picture.label }}
+                            </label>
+                            {{ form.profile_picture }}
+                            <div class="form-text text-muted">
+                                <i class="bi bi-info-circle me-1"></i>Formatos permitidos: JPG, PNG. Tamaño máximo: 2MB
+                            </div>
+                            {% if form.profile_picture.errors %}
+                            <div class="text-danger small mt-1">
+                                <i class="bi bi-exclamation-circle me-1"></i>{{ form.profile_picture.errors.0 }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Corporate Information Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4><i class="bi bi-building me-2"></i>Información Corporativa</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.employee_id.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.employee_id.label }}
+                                    </label>
+                                    {{ form.employee_id }}
+                                    {% if form.employee_id.errors %}
+                                    <div class="text-danger small mt-1">{{ form.employee_id.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.department.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.department.label }}
+                                    </label>
+                                    {{ form.department }}
+                                    {% if form.department.errors %}
+                                    <div class="text-danger small mt-1">{{ form.department.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.corporate_position.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.corporate_position.label }}
+                                    </label>
+                                    {{ form.corporate_position }}
+                                    {% if form.corporate_position.errors %}
+                                    <div class="text-danger small mt-1">{{ form.corporate_position.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.company.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.company.label }}
+                                    </label>
+                                    {{ form.company }}
+                                    {% if form.company.errors %}
+                                    <div class="text-danger small mt-1">{{ form.company.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.job_title.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.job_title.label }}
+                                    </label>
+                                    {{ form.job_title }}
+                                    {% if form.job_title.errors %}
+                                    <div class="text-danger small mt-1">{{ form.job_title.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.hire_date.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.hire_date.label }}
+                                    </label>
+                                    {{ form.hire_date }}
+                                    {% if form.hire_date.errors %}
+                                    <div class="text-danger small mt-1">{{ form.hire_date.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.manager.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.manager.label }}
+                            </label>
+                            {{ form.manager }}
+                            {% if form.manager.errors %}
+                            <div class="text-danger small mt-1">{{ form.manager.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contact Information Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4><i class="bi bi-envelope me-2"></i>Información de Contacto</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.email.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.email.label }}
+                                    </label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                    <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.phone.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.phone.label }}
+                                    </label>
+                                    {{ form.phone }}
+                                    {% if form.phone.errors %}
+                                    <div class="text-danger small mt-1">{{ form.phone.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.location.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.location.label }}
+                                    </label>
+                                    {{ form.location }}
+                                    {% if form.location.errors %}
+                                    <div class="text-danger small mt-1">{{ form.location.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.country.id_for_label }}" class="form-label fw-semibold">
+                                        {{ form.country.label }}
+                                    </label>
+                                    {{ form.country }}
+                                    {% if form.country.errors %}
+                                    <div class="text-danger small mt-1">{{ form.country.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.address.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.address.label }}
+                            </label>
+                            {{ form.address }}
+                            {% if form.address.errors %}
+                            <div class="text-danger small mt-1">{{ form.address.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Social Media Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4><i class="bi bi-share me-2"></i>Redes Sociales y Perfiles Profesionales</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.linkedin_url.id_for_label }}" class="form-label fw-semibold">
+                                        <i class="bi bi-linkedin text-primary me-1"></i>{{ form.linkedin_url.label }}
+                                    </label>
+                                    {{ form.linkedin_url }}
+                                    {% if form.linkedin_url.errors %}
+                                    <div class="text-danger small mt-1">{{ form.linkedin_url.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.github_url.id_for_label }}" class="form-label fw-semibold">
+                                        <i class="bi bi-github text-dark me-1"></i>{{ form.github_url.label }}
+                                    </label>
+                                    {{ form.github_url }}
+                                    {% if form.github_url.errors %}
+                                    <div class="text-danger small mt-1">{{ form.github_url.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.twitter_url.id_for_label }}" class="form-label fw-semibold">
+                                        <i class="bi bi-twitter text-info me-1"></i>{{ form.twitter_url.label }}
+                                    </label>
+                                    {{ form.twitter_url }}
+                                    {% if form.twitter_url.errors %}
+                                    <div class="text-danger small mt-1">{{ form.twitter_url.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.facebook_url.id_for_label }}" class="form-label fw-semibold">
+                                        <i class="bi bi-facebook text-primary me-1"></i>{{ form.facebook_url.label }}
+                                    </label>
+                                    {{ form.facebook_url }}
+                                    {% if form.facebook_url.errors %}
+                                    <div class="text-danger small mt-1">{{ form.facebook_url.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.instagram_url.id_for_label }}" class="form-label fw-semibold">
+                                <i class="bi bi-instagram text-danger me-1"></i>{{ form.instagram_url.label }}
+                            </label>
+                            {{ form.instagram_url }}
+                            {% if form.instagram_url.errors %}
+                            <div class="text-danger small mt-1">{{ form.instagram_url.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Role Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h4><i class="bi bi-person-badge me-2"></i>Rol y Permisos</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="{{ form.role.id_for_label }}" class="form-label fw-semibold">
+                                {{ form.role.label }}
+                            </label>
+                            {{ form.role }}
+                            <div class="form-text text-muted">
+                                <i class="bi bi-info-circle me-1"></i>Selecciona el rol que mejor describa tu posición actual.
+                            </div>
+                            {% if form.role.errors %}
+                            <div class="text-danger small mt-1">{{ form.role.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="d-flex justify-content-between align-items-center mt-4 mb-5">
+                    <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-lg">
+                        <i class="bi bi-arrow-left me-2"></i>Cancelar
+                    </a>
+                    <div>
+                        <button type="reset" class="btn btn-outline-warning btn-lg me-2">
+                            <i class="bi bi-eraser me-2"></i>Limpiar
+                        </button>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle me-2"></i>Crear Perfil
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-center text-muted small mb-4">
+                    <i class="bi bi-shield-lock me-1"></i>
+                    Tus datos están seguros y solo serán visibles según tu configuración de privacidad.
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Auto-resize textarea
+    document.addEventListener('DOMContentLoaded', function() {
+        const textarea = document.querySelector('textarea[name="bio"]');
+        if (textarea) {
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+        }
+
+        // Format phone input
+        const phoneInput = document.querySelector('input[name="phone"]');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 10) {
+                    value = value.slice(0, 10);
+                }
+                e.target.value = value;
+            });
+        }
+
+        // Preview image before upload
+        const profilePicture = document.querySelector('input[name="profile_picture"]');
+        if (profilePicture) {
+            profilePicture.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // Optional: Show image preview
+                        console.log('Image selected:', file.name);
+                    }
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+    });
+
+    // Confirmation before cancel
+    document.querySelector('.btn-outline-secondary').addEventListener('click', function(e) {
+        if (document.querySelector('form').checkValidity()) {
+            if (!confirm('¿Estás seguro de que deseas cancelar? Los datos ingresados se perderán.')) {
+                e.preventDefault();
+            }
+        }
+    });
+
+    // Confirmation before reset
+    document.querySelector('.btn-outline-warning').addEventListener('click', function(e) {
+        if (!confirm('¿Estás seguro de que deseas limpiar todos los campos?')) {
+            e.preventDefault();
+        }
+    });
+</script>
+{% endblock %}

@@ -1,3 +1,4 @@
+from django.conf import settings
 import os
 from decimal import Decimal
 from django.db import models
@@ -29,7 +30,7 @@ class RoleChoices(models.TextChoices):
 class Curriculum(models.Model):
     # User relation
     user = models.OneToOneField(
-        User, 
+        settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
         related_name='cv'
     )
@@ -72,7 +73,7 @@ class Curriculum(models.Model):
     corporate_position = models.CharField(max_length=100, blank=True, verbose_name="Cargo Corporativo")
     employee_id = models.CharField(max_length=50, blank=True, verbose_name="ID Empleado")
     manager = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

@@ -1,0 +1,578 @@
+{% extends 'layouts/base.html' %}
+{% load static crispy_forms_tags %}
+{% load custom_filters %}  <!-- ← AGREGAR ESTA LÍNEA -->
+
+{% block title %}{{ page_title }} - CV{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'cv/css/edit_section.css' %}">
+<style>
+    /* Estilos para errores y feedback */
+    .error-highlight {
+        border-left: 4px solid #dc3545 !important;
+        background-color: #fff5f5 !important;
+        transition: all 0.3s ease;
+    }
+    .error-message {
+        color: #dc3545;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        background-color: #fff5f5;
+        border-radius: 4px;
+        border-left: 3px solid #dc3545;
+        animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .field-error {
+        animation: shake 0.5s ease-in-out;
+    }
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    .focus-highlight {
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.25) !important;
+        transition: box-shadow 0.3s ease;
+    }
+    .error-summary {
+        background-color: #fff5f5;
+        border: 1px solid #dc3545;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .error-summary h6 {
+        color: #dc3545;
+        margin-bottom: 0.5rem;
+    }
+    .error-summary ul {
+        margin-bottom: 0;
+        padding-left: 1.5rem;
+    }
+    .error-summary li {
+        margin-bottom: 0.25rem;
+    }
+    .error-summary a {
+        color: #dc3545;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+    .error-summary a:hover {
+        color: #a71d2a;
+    }
+    .is-invalid {
+        border-color: #dc3545 !important;
+    }
+    .is-valid {
+        border-color: #28a745 !important;
+    }
+    .field-counter {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+    .progress-step {
+        transition: all 0.3s ease;
+    }
+    .progress-step.active {
+        color: #0d6efd;
+        font-weight: bold;
+    }
+    .progress-step.completed {
+        color: #28a745;
+    }
+    .character-counter {
+        position: absolute;
+        right: 10px;
+        bottom: 5px;
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+    .field-wrapper {
+        position: relative;
+    }
+    /* Estilo para sección opcional */
+    .optional-section-alert {
+        background-color: #fff3cd;
+        border: 1px solid #ffc107;
+        color: #856404;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .empty-section-message {
+        background-color: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 2rem;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+    .empty-section-message i {
+        font-size: 3rem;
+        color: #adb5bd;
+        margin-bottom: 1rem;
+    }
+    .empty-section-message h6 {
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+    .empty-section-message p {
+        color: #6c757d;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pagetitle">
+    <h1>{{ page_title }}</h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'cv:cv_detail' %}">Mi Perfil</a></li>
+            <li class="breadcrumb-item active">Editar</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+    <div class="row">
+        <div class="col-lg-12">
+            <!-- Progress Card -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0">Progreso de edición</h5>
+                        <span class="badge bg-primary" id="stepCounter">{{ current_step }}/{{ total_steps }}</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             role="progressbar" 
+                             style="width: {{ progress_percentage }}%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"
+                             aria-valuenow="{{ progress_percentage }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100"
+                             id="stepProgress">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2 small text-muted" id="stepLabels">
+                        <span class="progress-step {% if current_step >= 1 %}completed{% endif %} {% if current_step == 1 %}active{% endif %}">
+                            <i class="bi bi-person"></i> Personal
+                        </span>
+                        <span class="progress-step {% if current_step >= 2 %}completed{% endif %} {% if current_step == 2 %}active{% endif %}">
+                            <i class="bi bi-briefcase"></i> Experiencia
+                        </span>
+                        <span class="progress-step {% if current_step >= 3 %}completed{% endif %} {% if current_step == 3 %}active{% endif %}">
+                            <i class="bi bi-mortarboard"></i> Educación
+                        </span>
+                        <span class="progress-step {% if current_step >= 4 %}completed{% endif %} {% if current_step == 4 %}active{% endif %}">
+                            <i class="bi bi-star"></i> Habilidades
+                        </span>
+                        <span class="progress-step {% if current_step >= 5 %}completed{% endif %} {% if current_step == 5 %}active{% endif %}">
+                            <i class="bi bi-check-circle"></i> Finalizar
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Summary (se muestra solo si hay errores del servidor) -->
+            {% if form and form.errors or formset and formset.errors %}
+            <div class="error-summary" id="errorSummary">
+                <h6><i class="bi bi-exclamation-triangle-fill me-2"></i>Errores encontrados:</h6>
+                <ul>
+                    {% if form and form.errors %}
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <li>
+                                    <a href="#id_{{ field }}" class="error-link" data-field="{{ field }}">
+                                        <strong>{{ form|get_field_label:field }}:</strong> {{ error }}
+                                    </a>
+                                </li>
+                            {% endfor %}
+                        {% endfor %}
+                    {% endif %}
+                    {% if formset and formset.errors %}
+                        {% for form in formset %}
+                            {% if form.errors %}
+                                <li>
+                                    <strong>Elemento {{ forloop.counter }}:</strong>
+                                    <ul>
+                                        {% for field, errors in form.errors.items %}
+                                            {% for error in errors %}
+                                                <li>{{ field }}: {{ error }}</li>
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <!-- Mensaje informativo -->
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Información:</strong> Los campos marcados con <span class="text-danger">*</span> son obligatorios.
+                {% if is_optional_section %}
+                    <br><span class="fw-bold text-warning">⚠️ Esta sección es opcional.</span> Puedes continuar sin agregar ningún elemento.
+                {% endif %}
+                {% if formset and not is_optional_section %}
+                    <br>Puedes añadir múltiples elementos usando el botón "Añadir". Marca "Eliminar" para quitar elementos existentes.
+                {% endif %}
+            </div>
+
+            <!-- Mensaje especial para secciones opcionales sin elementos -->
+            {% if is_optional_section and formset and formset.queryset.count == 0 %}
+            <div class="empty-section-message">
+                <i class="bi bi-inbox"></i>
+                <h6>No hay {{ formset_title|lower }} registradas</h6>
+                <p>Esta sección es completamente opcional. Puedes:</p>
+                <div class="d-flex justify-content-center gap-3">
+                    <button type="button" class="btn btn-outline-primary add-formset-row" data-prefix="{{ formset.prefix }}">
+                        <i class="bi bi-plus-circle me-1"></i>Añadir {{ add_text }}
+                    </button>
+                    <span class="text-muted">o</span>
+                    <a href="{% url 'cv:edit_education' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-right me-1"></i>Continuar sin añadir
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Main Form Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-{{ form_icon|default:'pencil-square' }} me-2"></i>
+                        {{ form_title|default:page_title }}
+                        {% if is_optional_section %}
+                            <span class="badge bg-warning text-dark ms-2">Opcional</span>
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="section-form" class="needs-validation" novalidate>
+                        {% csrf_token %}
+
+                        {% if form %}
+                            <!-- Single Form Section con mejoras -->
+                            <div class="row">
+                                {% for field in form %}
+                                    <div class="col-md-6 mb-3 field-wrapper" id="field-{{ field.name }}">
+                                        <label for="{{ field.id_for_label }}" class="form-label fw-semibold">
+                                            {{ field.label }}
+                                            {% if field.field.required %}
+                                                <span class="text-danger">*</span>
+                                            {% else %}
+                                                <small class="text-muted">(opcional)</small>
+                                            {% endif %}
+                                        </label>
+                                        {{ field }}
+                                        {% if field.help_text %}
+                                            <small class="form-text text-muted">{{ field.help_text }}</small>
+                                        {% endif %}
+                                        {% if field.errors %}
+                                            {% for error in field.errors %}
+                                                <div class="error-message">
+                                                    <i class="bi bi-exclamation-circle me-1"></i>{{ error }}
+                                                </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% if field.name == 'bio' or field.name == 'description' %}
+                                            <div class="character-counter" id="counter-{{ field.name }}">0 caracteres</div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        {% if formset %}
+                            <!-- Formset Section con mejoras -->
+                            {% include 'cv/includes/formset_section.html' with formset=formset title=formset_title icon=formset_icon add_text=add_text %}
+                            
+                            {% if is_optional_section and formset.queryset.count == 0 %}
+                                <div class="alert alert-warning mt-3">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    No hay elementos para mostrar. Usa el botón "Añadir" para crear uno nuevo, o continúa sin añadir nada.
+                                </div>
+                            {% endif %}
+                        {% endif %}
+
+                        <!-- Form Actions -->
+                        {% include 'cv/includes/form_actions.html' with prev_url=prev_url submit_text=submit_text %}
+                    </form>
+                </div>
+            </div>
+
+            <!-- Leyenda de campos -->
+            <div class="card mt-4 bg-light">
+                <div class="card-body py-2">
+                    <div class="d-flex align-items-center flex-wrap gap-3">
+                        <span><span class="text-danger">*</span> Campo obligatorio</span>
+                        <span><span class="text-muted">(opcional)</span> Campo opcional</span>
+                        {% if formset %}
+                            <span><i class="bi bi-trash text-danger"></i> Marcar para eliminar</span>
+                            <span><i class="bi bi-plus-circle text-primary"></i> Añadir nuevo elemento</span>
+                        {% endif %}
+                        {% if is_optional_section %}
+                            <span class="badge bg-warning text-dark">Sección opcional</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'cv/js/edit_section.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar manejadores
+    if (typeof initializeFormsetHandlers === 'function') {
+        initializeFormsetHandlers();
+    }
+    if (typeof initializeDeleteHandlers === 'function') {
+        initializeDeleteHandlers();
+    }
+    
+    // Contadores de caracteres para campos de texto largo
+    const textFields = document.querySelectorAll('textarea[name$="bio"], textarea[name$="description"]');
+    textFields.forEach(field => {
+        const fieldName = field.name;
+        const counter = document.getElementById(`counter-${fieldName}`);
+        
+        if (counter) {
+            // Actualizar contador inicial
+            counter.textContent = `${field.value.length} caracteres`;
+            
+            // Actualizar al escribir
+            field.addEventListener('input', function() {
+                counter.textContent = `${this.value.length} caracteres`;
+                
+                // Feedback visual
+                if (this.value.length > 500) {
+                    counter.style.color = '#dc3545';
+                } else if (this.value.length > 300) {
+                    counter.style.color = '#ffc107';
+                } else {
+                    counter.style.color = '#6c757d';
+                }
+            });
+        }
+    });
+    
+    // Función para enfocar campos con error
+    function focusFirstError() {
+        const errorFields = document.querySelectorAll('.is-invalid, .error-message');
+        if (errorFields.length > 0) {
+            const firstError = errorFields[0];
+            const input = firstError.tagName === 'INPUT' || firstError.tagName === 'SELECT' || firstError.tagName === 'TEXTAREA' 
+                ? firstError 
+                : firstError.previousElementSibling;
+            
+            if (input) {
+                input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                input.classList.add('focus-highlight');
+                input.focus();
+                
+                setTimeout(() => {
+                    input.classList.remove('focus-highlight');
+                }, 3000);
+            }
+        }
+    }
+
+    // Llamar a la función cuando la página carga (si hay errores)
+    focusFirstError();
+
+    // Manejar clics en los enlaces de error
+    document.querySelectorAll('.error-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const fieldName = this.dataset.field;
+            const targetField = document.getElementById(`id_${fieldName}`);
+            
+            if (targetField) {
+                targetField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetField.classList.add('focus-highlight');
+                targetField.focus();
+                
+                setTimeout(() => {
+                    targetField.classList.remove('focus-highlight');
+                }, 3000);
+            }
+        });
+    });
+
+    // Validación en tiempo real
+    document.querySelectorAll('input, select, textarea').forEach(field => {
+        field.addEventListener('input', function() {
+            if (this.value.trim()) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+                
+                // Remover mensaje de error si existe
+                const errorMsg = this.closest('.field-wrapper')?.querySelector('.error-message');
+                if (errorMsg) {
+                    errorMsg.remove();
+                }
+            } else {
+                this.classList.remove('is-valid');
+            }
+        });
+
+        field.addEventListener('blur', function() {
+            if (this.hasAttribute('required') && !this.value.trim()) {
+                this.classList.add('is-invalid');
+                
+                // Añadir mensaje de error si no existe
+                const container = this.closest('.field-wrapper');
+                if (container && !container.querySelector('.error-message')) {
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'error-message';
+                    errorMsg.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>Este campo es obligatorio.';
+                    container.appendChild(errorMsg);
+                }
+            }
+        });
+    });
+
+    // Validación antes de enviar
+    const form = document.getElementById('section-form');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Solo validar campos requeridos del formulario principal
+            // NO validar formsets porque son opcionales
+            const requiredFields = form.querySelectorAll('[required]');
+            let hasErrors = false;
+            let firstInvalid = null;
+            let missingFieldsList = [];
+            
+            // Limpiar mensajes de error anteriores
+            document.querySelectorAll('.error-message').forEach(el => el.remove());
+            
+            requiredFields.forEach(field => {
+                if (!field.value.trim()) {
+                    hasErrors = true;
+                    field.classList.add('is-invalid');
+                    
+                    if (!firstInvalid) {
+                        firstInvalid = field;
+                    }
+                    
+                    // Obtener label del campo
+                    const label = field.closest('.field-wrapper')?.querySelector('label')?.innerText.split('*')[0].trim() || 'Campo';
+                    missingFieldsList.push(label);
+                    
+                    // Añadir mensaje de error
+                    const container = field.closest('.field-wrapper');
+                    if (container) {
+                        const errorMsg = document.createElement('div');
+                        errorMsg.className = 'error-message';
+                        errorMsg.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>Este campo es obligatorio.';
+                        container.appendChild(errorMsg);
+                    }
+                } else {
+                    field.classList.remove('is-invalid');
+                    field.classList.add('is-valid');
+                }
+            });
+            
+            if (hasErrors) {
+                e.preventDefault();
+                
+                // Scroll al primer error
+                if (firstInvalid) {
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstInvalid.classList.add('focus-highlight');
+                    setTimeout(() => {
+                        firstInvalid.classList.remove('focus-highlight');
+                    }, 3000);
+                }
+                
+                // Mostrar alerta de error con lista de campos faltantes
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-danger alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+                alert.style.zIndex = '9999';
+                alert.style.maxWidth = '500px';
+                alert.innerHTML = `
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Campos obligatorios faltantes:</strong>
+                    <ul class="mt-2 mb-0">
+                        ${missingFieldsList.map(field => `<li>${field}</li>`).join('')}
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.body.appendChild(alert);
+                
+                // Animar el botón de submit
+                if (submitBtn) {
+                    submitBtn.classList.add('field-error');
+                    setTimeout(() => {
+                        submitBtn.classList.remove('field-error');
+                    }, 500);
+                }
+                
+                // Auto-cerrar después de 5 segundos
+                setTimeout(() => {
+                    alert.classList.remove('show');
+                    setTimeout(() => alert.remove(), 300);
+                }, 5000);
+            } else {
+                // Mostrar estado de carga
+                if (submitBtn) {
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Guardando...';
+                    submitBtn.disabled = true;
+                }
+            }
+        });
+    }
+
+    // Actualizar pasos de progreso según scroll (opcional)
+    const stepLabels = document.querySelectorAll('.progress-step');
+    const sections = document.querySelectorAll('.card[id^="section-"]');
+    
+    if (sections.length > 0) {
+        window.addEventListener('scroll', function() {
+            let currentStep = 1;
+            sections.forEach((section, index) => {
+                const rect = section.getBoundingClientRect();
+                if (rect.top <= 150) {
+                    currentStep = index + 1;
+                }
+            });
+            
+            stepLabels.forEach((label, index) => {
+                if (index + 1 < currentStep) {
+                    label.classList.add('completed');
+                    label.classList.remove('active');
+                } else if (index + 1 === currentStep) {
+                    label.classList.add('active');
+                    label.classList.remove('completed');
+                } else {
+                    label.classList.remove('active', 'completed');
+                }
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
