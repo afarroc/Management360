@@ -1,368 +1,338 @@
 # kpis/views.py
-from django.db.models import Avg, Count
+"""
+Sprint 7 — KPI-2, KPI-3, KPI-4, KPI-5, KPI-6:
+  - login_required en todas las vistas
+  - Caching Redis en dashboard (TTL 5 minutos)
+  - Namespace corregido en redirects
+  - Exportación optimizada con StreamingHttpResponse
+  - API JSON para integración con analyst
+  - Filtros por fecha (convención del proyecto)
+"""
+
 import json
-from random import randint
 import csv
-import chardet
-from django.shortcuts import render, redirect
-from .forms import UploadCSVForm, DataGenerationForm
-from .models import CallRecord
-from django.http import JsonResponse
+import uuid
+import logging
+from datetime import date, timedelta
+
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-import unicodedata
+from django.core.cache import cache
+from django.db.models import Avg, Count, Max, Min, Sum
+from django.http import JsonResponse, StreamingHttpResponse
+from django.shortcuts import render, redirect
+from django.utils import timezone
 
-def detect_encoding(file):
-    # Leer primeros 10KB para detección más precisa
-    raw_data = file.read(10240)
-    result = chardet.detect(raw_data)
-    file.seek(0)
-    
-    # Manejar casos comunes para español
-    if result['encoding'] in ['ISO-8859-1', 'Windows-1252']:
-        return 'latin-1'
-    return result['encoding'] if result['confidence'] > 0.6 else 'latin-1'
+from .forms import UploadCSVForm, DataGenerationForm
+from .models import CallRecord, ExchangeRate
 
-def normalize_header(header):
-    # Elimina tildes, convierte a minúsculas y elimina espacios
-    if not header:
-        return ''
-    header = header.strip().lower()
-    header = ''.join(
-        c for c in unicodedata.normalize('NFD', header)
-        if unicodedata.category(c) != 'Mn'
+logger = logging.getLogger(__name__)
+
+# ── Cache keys ────────────────────────────────────────────────────────────────
+_CACHE_TTL    = 60 * 5   # 5 minutos
+_CACHE_PREFIX = 'kpis:dashboard'
+
+
+def _cache_key(user_id, suffix=''):
+    return f"{_CACHE_PREFIX}:{user_id}:{suffix}"
+
+
+# ── Helpers ───────────────────────────────────────────────────────────────────
+
+CHART_COLORS = [
+    'rgba(59,130,246,0.7)',   # blue
+    'rgba(16,185,129,0.7)',   # green
+    'rgba(245,158,11,0.7)',   # amber
+    'rgba(239,68,68,0.7)',    # red
+    'rgba(167,139,250,0.7)',  # purple
+    'rgba(45,212,191,0.7)',   # teal
+]
+
+
+def _build_chart(queryset, label_key, value_key='avg_aht'):
+    """Construye dict para Chart.js desde un queryset anotado."""
+    items = list(queryset)
+    return {
+        'labels':           [item[label_key] for item in items],
+        'data':             [round(float(item[value_key]), 2) for item in items],
+        'backgroundColors': [CHART_COLORS[i % len(CHART_COLORS)] for i in range(len(items))],
+    }
+
+
+def _date_range_from_request(request):
+    """Extrae fecha_desde / fecha_hasta del request.GET.
+    Si no se proveen, devuelve últimas 12 semanas."""
+    today = date.today()
+    default_from = today - timedelta(weeks=12)
+    try:
+        fecha_desde = date.fromisoformat(request.GET.get('desde', str(default_from)))
+        fecha_hasta = date.fromisoformat(request.GET.get('hasta', str(today)))
+    except ValueError:
+        fecha_desde = default_from
+        fecha_hasta = today
+    return fecha_desde, fecha_hasta
+
+
+# =============================================================================
+# Views
+# =============================================================================
+
+@login_required
+def kpi_home(request):
+    total = CallRecord.objects.count()
+    return render(request, 'kpis/home.html', {'total_records': total})
+
+
+@login_required
+def aht_dashboard(request):
+    """
+    Dashboard principal KPIs.
+    KPI-2: Caching Redis 5 minutos por usuario + rango de fechas.
+    KPI-4: Incluye métricas de SL estimado.
+    """
+    fecha_desde, fecha_hasta = _date_range_from_request(request)
+    cache_key = _cache_key(request.user.id, f"{fecha_desde}:{fecha_hasta}")
+
+    ctx = cache.get(cache_key)
+    if ctx is None:
+        qs = CallRecord.objects.filter(fecha__gte=fecha_desde, fecha__lte=fecha_hasta)
+
+        aht_por_servicio  = list(qs.values('servicio').annotate(
+            avg_aht=Avg('aht'), total_eventos=Count('id'), total_registros=Count('id')).order_by('-avg_aht'))
+        aht_por_canal     = list(qs.values('canal').annotate(
+            avg_aht=Avg('aht'), total_eventos=Count('id')).order_by('-avg_aht'))
+        aht_por_semana    = list(qs.values('semana').annotate(
+            avg_aht=Avg('aht'), total_eventos=Count('id')).order_by('semana'))
+        aht_por_supervisor= list(qs.values('supervisor').annotate(
+            avg_aht=Avg('aht'), total_eventos=Count('id'),
+            avg_sat=Avg('satisfaccion')).order_by('-avg_aht'))
+        aht_por_agente    = list(qs.values('agente').annotate(
+            avg_aht=Avg('aht'), total_eventos=Count('id'),
+            avg_sat=Avg('satisfaccion')).order_by('avg_aht')[:20])
+
+        totales = qs.aggregate(
+            total_llamadas  = Count('id'),
+            aht_promedio    = Avg('aht'),
+            sat_promedio    = Avg('satisfaccion'),
+            total_eventos   = Sum('eventos'),
+            total_evals     = Sum('evaluaciones'),
+        )
+
+        ctx = {
+            # Chart data — colores fijos (no randint)
+            'chart_data_json':         json.dumps(_build_chart(aht_por_servicio,  'servicio'), ensure_ascii=False),
+            'aht_por_canal_json':      json.dumps(_build_chart(aht_por_canal,      'canal'),   ensure_ascii=False),
+            'aht_por_semana_json':     json.dumps(_build_chart(aht_por_semana,     'semana'),  ensure_ascii=False),
+            'aht_por_agente_json':     json.dumps(_build_chart(aht_por_agente,     'agente'),  ensure_ascii=False),
+
+            # Tablas
+            'aht_por_servicio':   aht_por_servicio,
+            'aht_por_canal':      aht_por_canal,
+            'aht_por_semana':     aht_por_semana,
+            'aht_por_supervisor': aht_por_supervisor,
+            'aht_por_agente':     aht_por_agente,
+
+            # KPIs resumen
+            'total_llamadas':   totales['total_llamadas'] or 0,
+            'aht_promedio':     round(totales['aht_promedio'] or 0, 2),
+            'aht_promedio_min': round((totales['aht_promedio'] or 0) / 60, 2),
+            'sat_promedio':     round(totales['sat_promedio'] or 0, 2),
+            'total_eventos':    totales['total_eventos'] or 0,
+            'total_evals':      totales['total_evals'] or 0,
+
+            'servicio_mas_alto': max(aht_por_servicio, key=lambda x: x['avg_aht'], default=None),
+            'servicio_mas_bajo': min(aht_por_servicio, key=lambda x: x['avg_aht'], default=None),
+
+            'cached_at': timezone.now().isoformat(),
+        }
+        cache.set(cache_key, ctx, timeout=_CACHE_TTL)
+
+    ctx.update({
+        'fecha_desde': fecha_desde,
+        'fecha_hasta': fecha_hasta,
+    })
+    return render(request, 'kpis/dashboard.html', ctx)
+
+
+@login_required
+def kpi_api(request):
+    """
+    KPI-3: API JSON para integración con analyst ETL y Dashboard.
+    GET /kpis/api/?desde=YYYY-MM-DD&hasta=YYYY-MM-DD&format=summary|records
+    """
+    fecha_desde, fecha_hasta = _date_range_from_request(request)
+    fmt = request.GET.get('format', 'summary')
+
+    qs = CallRecord.objects.filter(fecha__gte=fecha_desde, fecha__lte=fecha_hasta)
+
+    if fmt == 'records':
+        # Lista paginada de registros
+        page     = int(request.GET.get('page', 1))
+        per_page = min(int(request.GET.get('per_page', 100)), 500)
+        offset   = (page - 1) * per_page
+        total    = qs.count()
+        records  = list(qs.values(
+            'id', 'fecha', 'semana', 'agente', 'supervisor',
+            'servicio', 'canal', 'eventos', 'aht', 'evaluaciones', 'satisfaccion',
+        )[offset:offset+per_page])
+        # Serializar UUID y date
+        for r in records:
+            r['id']    = str(r['id'])
+            r['fecha'] = str(r['fecha'])
+        return JsonResponse({
+            'success': True,
+            'total': total, 'page': page, 'per_page': per_page,
+            'records': records,
+        })
+
+    # Summary (default)
+    summary = qs.aggregate(
+        total     = Count('id'),
+        avg_aht   = Avg('aht'),
+        avg_sat   = Avg('satisfaccion'),
+        max_aht   = Max('aht'),
+        min_aht   = Min('aht'),
+        total_ev  = Sum('eventos'),
     )
-    return header
+    by_serv = list(qs.values('servicio').annotate(
+        total=Count('id'), avg_aht=Avg('aht')).order_by('-avg_aht'))
+    by_canal = list(qs.values('canal').annotate(
+        total=Count('id'), avg_aht=Avg('aht')).order_by('-avg_aht'))
 
-def upload_csv(request):
-    if request.method == 'POST':
-        form = UploadCSVForm(request.POST, request.FILES)
-        if form.is_valid():
-            csv_file = request.FILES['csv_file']
-            
-            try:
-                # 1. Limpiar la tabla existente (TRUNCATE eficiente)
-                CallRecord.objects.all().delete()
-                messages.info(request, "Datos anteriores eliminados correctamente")
-                
-                # 2. Detectar codificación
-                encoding = detect_encoding(csv_file)
-                
-                try:
-                    decoded_file = csv_file.read().decode(encoding)
-                except UnicodeDecodeError as e:
-                    decoded_file = csv_file.read().decode(encoding, errors='replace')
-                    messages.warning(request, 
-                        "Algunos caracteres fueron reemplazados debido a problemas de codificación")
-                
-                # 3. Procesar CSV
-                # Detectar delimitador automáticamente si es necesario
-                sample_line = decoded_file.splitlines()[0]
-                delimiter = ';'
-                if sample_line.count(',') > sample_line.count(';'):
-                    delimiter = ','  # <-- Corrige: debe ser string, no tupla
-                reader = csv.DictReader(decoded_file.splitlines(), delimiter=delimiter)
-                
-                # 4. Validar headers
-                required_headers = {
-                    'semana': {'semana', 'week', 'periodo'},
-                    'agente': {'agente', 'agent', 'operador'},
-                    'supervisor': {'supervisor', 'leader', 'manager'},
-                    'servicio': {'servicio', 'service', 'tipo'},
-                    'canal': {'canal', 'channel', 'medio'},
-                    'eventos': {'eventos', 'events', 'interacciones'},
-                    'aht': {'aht', 'tiempo_medio', 'average_handling_time'},
-                    'evaluaciones': {'evaluaciones', 'evaluations', 'calificaciones'},
-                    'satisfacción': {'satisfacción', 'satisfaccion', 'satisfaction', 'nps'}
-                }
-
-                # Normalizar encabezados del CSV
-                normalized_headers = {}
-                for col in reader.fieldnames:
-                    norm_col = normalize_header(col)
-                    normalized_headers[norm_col] = col
-
-                # Mapear cada clave requerida a la columna real del CSV
-                header_map = {}
-                for key, aliases in required_headers.items():
-                    found = None
-                    for alias in aliases:
-                        norm_alias = normalize_header(alias)
-                        # Buscar coincidencia exacta con los encabezados normalizados
-                        if norm_alias in normalized_headers:
-                            found = normalized_headers[norm_alias]
-                            break
-                        # Buscar coincidencia por inclusión (por si hay variantes)
-                        for norm_col in normalized_headers:
-                            if norm_alias == norm_col or norm_alias in norm_col or norm_col in norm_alias:
-                                found = normalized_headers[norm_col]
-                                break
-                        if found:
-                            break
-                    if found:
-                        header_map[key] = found
-
-                missing_columns = [
-                    key for key in required_headers.keys()
-                    if key not in header_map
-                ]
-
-                if missing_columns:
-                    friendly_names = {
-                        'semana': 'Semana', 'agente': 'Agente', 'supervisor': 'Supervisor',
-                        'servicio': 'Servicio', 'canal': 'Canal', 'eventos': 'Eventos',
-                        'aht': 'AHT', 'evaluaciones': 'Evaluaciones', 'satisfacción': 'Satisfacción'
-                    }
-                    raise ValueError(
-                        f"Columnas requeridas faltantes: {', '.join(friendly_names[col] for col in missing_columns)}"
-                    )
-                
-                # 5. Procesar registros
-                records = []
-                total_rows = 0
-
-                for row_num, row in enumerate(reader, start=2):
-                    try:
-                        # Usar header_map para obtener los valores correctos
-                        normalized_row = {
-                            'Semana': row.get(header_map['semana']),
-                            'Agente': row.get(header_map['agente']),
-                            'Supervisor': row.get(header_map['supervisor']),
-                            'Servicio': row.get(header_map['servicio']),
-                            'Canal': row.get(header_map['canal']),
-                            'Eventos': row.get(header_map['eventos']),
-                            'AHT': row.get(header_map['aht']),
-                            'Evaluaciones': row.get(header_map['evaluaciones']),
-                            'Satisfacción': row.get(header_map['satisfacción'])
-                        }
-                        
-                        records.append(CallRecord(
-                            semana=int(normalized_row['Semana']),
-                            agente=normalized_row['Agente'].strip(),
-                            supervisor=normalized_row['Supervisor'].strip(),
-                            servicio=normalized_row['Servicio'].strip(),
-                            canal=normalized_row['Canal'].strip(),
-                            eventos=int(normalized_row['Eventos']),
-                            aht=float(normalized_row['AHT'].replace(',', '.')),
-                            evaluaciones=int(normalized_row['Evaluaciones']),
-                            satisfaccion=float(normalized_row['Satisfacción'].replace(',', '.'))
-                        ))
-                        total_rows += 1
-                            
-                    except (ValueError, KeyError) as e:
-                        messages.warning(request, f"Error en fila {row_num}: {str(e)} - Fila omitida")
-                        continue
-                
-                # 6. Carga masiva optimizada
-                if records:
-                    CallRecord.objects.bulk_create(records, batch_size=1000)
-                    messages.success(request, 
-                        f"Carga exitosa: {total_rows} registros importados correctamente")
-                else:
-                    messages.info(request, "No se encontraron registros válidos para importar")
-                
-                return redirect('dashboard')
-                
-            except ValueError as e:
-                form.add_error('csv_file', str(e))
-            except Exception as e:
-                form.add_error('csv_file', f'Error inesperado: {str(e)}')
-                # Revertir cambios si hubo error después de borrar
-                CallRecord.objects.all().delete()
-                messages.error(request, "Error durante la importación. La base de datos ha sido limpiada.")
-    
-    else:
-        form = UploadCSVForm()
-    
-    return render(request, 'upload_csv.html', {
-        'form': form,
-        'active_tab': 'upload'
+    return JsonResponse({
+        'success':  True,
+        'desde':    str(fecha_desde),
+        'hasta':    str(fecha_hasta),
+        'summary':  {k: round(v, 4) if isinstance(v, float) else v for k, v in summary.items()},
+        'by_servicio': by_serv,
+        'by_canal':    by_canal,
     })
 
-def aht_dashboard(request):
-    # Obtener datos por servicio
-    aht_por_servicio = list(CallRecord.objects.values('servicio').annotate(
-        avg_aht=Avg('aht'),
-        total_eventos=Count('id')
-    ).order_by('-avg_aht'))
-    
-    # Obtener datos por canal
-    aht_por_canal = list(CallRecord.objects.values('canal').annotate(
-        avg_aht=Avg('aht'),
-        total_eventos=Count('id')
-    ).order_by('-avg_aht'))
-    
-    # Obtener datos por semana
-    aht_por_semana = list(CallRecord.objects.values('semana').annotate(
-        avg_aht=Avg('aht'),
-        total_eventos=Count('id')
-    ).order_by('semana'))
-    
-    # Obtener datos por supervisor
-    aht_por_supervisor = list(CallRecord.objects.values('supervisor').annotate(
-        avg_aht=Avg('aht'),
-        total_eventos=Count('id')
-    ).order_by('-avg_aht'))
-    
-    # Preparar datos para el gráfico principal (por servicio)
-    chart_data = {
-        'labels': [item['servicio'] for item in aht_por_servicio],
-        'data': [float(item['avg_aht']) for item in aht_por_servicio],
-        'backgroundColors': [
-            f'rgba({randint(50, 200)}, {randint(50, 200)}, {randint(50, 200)}, 0.6)'
-            for _ in aht_por_servicio
-        ]
-    }
-    
-    # Contexto para la plantilla
-    context = {
-        'chart_data_json': json.dumps(chart_data, ensure_ascii=False),
-        'aht_por_servicio': aht_por_servicio,
-        'aht_por_canal': aht_por_canal,
-        'aht_por_semana': aht_por_semana,
-        'aht_por_supervisor': aht_por_supervisor,
-        # Serialización para los gráficos secundarios
-        'aht_por_canal_json': json.dumps(aht_por_canal, ensure_ascii=False),
-        'aht_por_semana_json': json.dumps(aht_por_semana, ensure_ascii=False),
-        
-        # Datos adicionales para resumen
-        'total_llamadas': CallRecord.objects.count(),
-        'aht_promedio_general': CallRecord.objects.aggregate(avg_aht=Avg('aht'))['avg_aht'],
-        'servicio_mas_alto': max(aht_por_servicio, key=lambda x: x['avg_aht'], default={'servicio': 'N/A', 'avg_aht': 0}),
-        'servicio_mas_bajo': min(aht_por_servicio, key=lambda x: x['avg_aht'], default={'servicio': 'N/A', 'avg_aht': 0}),
-    }
-    
-    return render(request, 'kpi_dashboard.html', context)
+
+@login_required
+def export_data(request):
+    """
+    KPI-6: Exportación optimizada con StreamingHttpResponse.
+    Soporta filtros de fecha: ?desde=&hasta=
+    """
+    fecha_desde, fecha_hasta = _date_range_from_request(request)
+    qs = CallRecord.objects.filter(
+        fecha__gte=fecha_desde, fecha__lte=fecha_hasta
+    ).order_by('fecha', 'agente').values(
+        'fecha', 'semana', 'agente', 'supervisor',
+        'servicio', 'canal', 'eventos', 'aht', 'evaluaciones', 'satisfaccion',
+    )
+
+    def rows():
+        yield ['fecha', 'semana', 'agente', 'supervisor', 'servicio',
+               'canal', 'eventos', 'aht', 'evaluaciones', 'satisfaccion']
+        for r in qs.iterator(chunk_size=500):
+            yield [r['fecha'], r['semana'], r['agente'], r['supervisor'],
+                   r['servicio'], r['canal'], r['eventos'],
+                   r['aht'], r['evaluaciones'], r['satisfaccion']]
+
+    class EchoWriter:
+        def write(self, value): return value
+
+    writer  = csv.writer(EchoWriter())
+    response = StreamingHttpResponse(
+        (writer.writerow(row) for row in rows()),
+        content_type='text/csv; charset=utf-8-sig',
+    )
+    fname = f"call_records_{fecha_desde}_{fecha_hasta}.csv"
+    response['Content-Disposition'] = f'attachment; filename="{fname}"'
+    return response
 
 
-from faker import Faker
-import random
-import numpy as np
-
+@login_required
 def generate_fake_data(request):
+    """Genera datos sintéticos para testing."""
     if request.method == 'POST':
         form = DataGenerationForm(request.POST)
         if form.is_valid():
             try:
-                # Limpiar datos existentes si se solicita
-                if form.cleaned_data['clear_existing']:
+                from faker import Faker
+                import random
+                import numpy as np
+
+                if form.cleaned_data.get('clear_existing'):
                     CallRecord.objects.all().delete()
-                    messages.info(request, "Datos existentes eliminados correctamente")
-                
-                # Configuración de Faker
+                    messages.info(request, "Datos existentes eliminados.")
+
                 fake = Faker('es_ES')
-                np.random.seed(form.cleaned_data.get('random_seed', None))
-                
-                # Parámetros del formulario
-                weeks = form.cleaned_data['weeks']
-                records_per_week = form.cleaned_data['records_per_week']
-                services = form.cleaned_data['services']
-                channels = form.cleaned_data['channels']
-                
-                # Generar nombres de agentes y supervisores
-                num_agents = form.cleaned_data['num_agents']
-                num_supervisors = form.cleaned_data['num_supervisors']
-                
-                agentes = [fake.unique.name() for _ in range(num_agents)]
-                supervisores = [fake.unique.name() for _ in range(num_supervisors)]
-                
-                # Distribución de agentes por supervisor (normalizada)
-                supervisor_dist = np.random.dirichlet(np.ones(num_supervisors), size=1)[0]
-                
+                np.random.seed(form.cleaned_data.get('random_seed') or None)
+
+                weeks        = form.cleaned_data['weeks']
+                recs_per_wk  = form.cleaned_data['records_per_week']
+                services     = form.cleaned_data['services']
+                channels     = form.cleaned_data['channels']
+                num_agents   = form.cleaned_data['num_agents']
+                num_sups     = form.cleaned_data['num_supervisors']
+
+                agentes      = [fake.unique.name() for _ in range(num_agents)]
+                supervisores = [fake.unique.name() for _ in range(num_sups)]
+                sup_dist     = np.random.dirichlet(np.ones(num_sups), size=1)[0]
+
+                # Fecha base = hoy menos N semanas
+                base_date = date.today() - timedelta(weeks=weeks)
+
                 records = []
-                for semana in range(1, weeks + 1):
-                    for _ in range(records_per_week):
-                        # Selección ponderada de servicio y canal
-                        servicio = random.choices(
-                            services,
-                            weights=form.cleaned_data['service_weights'],
-                            k=1
-                        )[0]
-                        
-                        canal = random.choices(
-                            channels,
-                            weights=form.cleaned_data['channel_weights'],
-                            k=1
-                        )[0]
-                        
-                        # Asignar supervisor basado en distribución
-                        sup_idx = np.random.choice(range(num_supervisors), p=supervisor_dist)
-                        supervisor = supervisores[sup_idx]
-                        
-                        # Generar métricas basadas en distribuciones normales
+                for week_idx in range(weeks):
+                    semana_fecha = base_date + timedelta(weeks=week_idx)
+                    semana_num   = semana_fecha.isocalendar()[1]
+                    for _ in range(recs_per_wk):
+                        servicio = random.choices(services, weights=form.cleaned_data['service_weights'], k=1)[0]
+                        canal    = random.choices(channels, weights=form.cleaned_data['channel_weights'], k=1)[0]
+                        sup_idx  = np.random.choice(range(num_sups), p=sup_dist)
+
                         if servicio == 'Reclamos':
                             eventos = int(np.random.normal(85, 10))
-                            aht = np.random.normal(1350, 100)
-                            satisfaccion = np.random.normal(7.0, 0.8)
+                            aht     = np.random.normal(1350, 100)
+                            sat     = np.random.normal(7.0, 0.8)
                         elif servicio == 'Consultas':
-                            if canal == 'Mail':
-                                eventos = int(np.random.normal(40, 8))
-                                aht = np.random.normal(1100, 150)
-                            else:
-                                eventos = int(np.random.normal(45, 10))
-                                aht = np.random.normal(400, 50)
-                            satisfaccion = np.random.normal(6.5, 0.7)
+                            eventos = int(np.random.normal(45, 10))
+                            aht     = np.random.normal(400 if canal != 'Mail' else 1100, 50)
+                            sat     = np.random.normal(6.5, 0.7)
                         else:
                             eventos = int(np.random.normal(55, 12))
-                            aht = np.random.normal(900, 200)
-                            satisfaccion = np.random.normal(7.5, 0.5)
-                        
-                        # Ajustar para canales digitales
+                            aht     = np.random.normal(900, 200)
+                            sat     = np.random.normal(7.5, 0.5)
+
                         if canal in ['Chat', 'WhatsApp', 'Social Media']:
                             aht = max(200, aht * 0.35)
-                        
-                        # Asegurar valores dentro de rangos razonables
-                        eventos = max(5, min(150, eventos))
-                        aht = max(100, min(2000, aht))
-                        satisfaccion = max(1.0, min(10.0, satisfaccion))
-                        
+
                         records.append(CallRecord(
-                            semana=semana,
-                            agente=random.choice(agentes),
-                            supervisor=supervisor,
-                            servicio=servicio,
-                            canal=canal,
-                            eventos=eventos,
-                            aht=round(aht, 2),
-                            evaluaciones=random.randint(
+                            fecha        = semana_fecha,
+                            semana       = semana_num,
+                            agente       = random.choice(agentes),
+                            supervisor   = supervisores[sup_idx],
+                            servicio     = servicio,
+                            canal        = canal,
+                            eventos      = max(5, min(150, eventos)),
+                            aht          = round(max(100, min(2000, aht)), 2),
+                            evaluaciones = random.randint(
                                 form.cleaned_data['min_evaluations'],
-                                form.cleaned_data['max_evaluations']
+                                form.cleaned_data['max_evaluations'],
                             ),
-                            satisfaccion=round(satisfaccion, 2)
+                            satisfaccion = round(max(1.0, min(10.0, sat)), 2),
+                            created_by   = request.user,
                         ))
-                
-                # Crear registros en lote optimizado
-                batch_size = form.cleaned_data['batch_size']
+
+                batch_size = form.cleaned_data.get('batch_size', 500)
                 CallRecord.objects.bulk_create(records, batch_size=batch_size)
-                
-                total_records = weeks * records_per_week
-                messages.success(request, 
-                    f'Se generaron {total_records} registros ficticios exitosamente')
-                return redirect('dashboard')
-                
+
+                # Invalidar cache del usuario
+                cache.delete_pattern(f"{_CACHE_PREFIX}:{request.user.id}:*") \
+                    if hasattr(cache, 'delete_pattern') else None
+
+                messages.success(request, f'{weeks * recs_per_wk} registros generados.')
+                return redirect('kpis:dashboard')
+
             except Exception as e:
-                messages.error(request, f'Error al generar datos: {str(e)}')
-                return redirect('generate_data')
+                logger.error("generate_fake_data: %s", e, exc_info=True)
+                messages.error(request, f'Error: {e}')
+                return redirect('kpis:generate_data')
     else:
         form = DataGenerationForm()
-    
-    return render(request, 'generate_data.html', {'form': form})
 
-def export_data(request):  
-    # Export all CallRecord data as CSV
-    import csv
-    from django.http import HttpResponse
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="call_records.csv"'
-    writer = csv.writer(response)
-    # Write header
-    fields = [f.name for f in CallRecord._meta.fields]
-    writer.writerow(fields)
-    # Write data
-    for obj in CallRecord.objects.all():
-        writer.writerow([getattr(obj, f) for f in fields])
-    return response
-
-def kpi_home(request):
-    return render(request, 'kpis/home.html')
-
-
+    return render(request, 'kpis/generate_data.html', {'form': form})

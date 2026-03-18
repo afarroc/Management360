@@ -1,13 +1,13 @@
-# app/urls.py  
-from django.urls import path  
-from . import views  
+# kpis/urls.py
+from django.urls import path
+from . import views
 
-urlpatterns = [  
-    path('', views.kpi_home, name='kpi_home'),
-    # Dashboard de AHT  
-    path('dashboard/', views.aht_dashboard, name='dashboard'),  
-    # Exportar datos para Power BI/Tableau  
-    path('export-data/', views.export_data, name='export_data'),      
-    path('generate-data/', views.generate_fake_data, name='generate_data'),
-    path('upload/', views.upload_csv, name='upload_csv'),    
+app_name = 'kpis'
+
+urlpatterns = [
+    path('',                views.kpi_home,           name='home'),
+    path('dashboard/',      views.aht_dashboard,      name='dashboard'),
+    path('api/',            views.kpi_api,             name='api'),
+    path('export/',         views.export_data,         name='export_data'),
+    path('generate-data/',  views.generate_fake_data,  name='generate_data'),
 ]
