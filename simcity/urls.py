@@ -16,5 +16,6 @@ urlpatterns = [
     path('api/game/<int:game_id>/census/', views.census, name='census'),
     path('api/game/<int:game_id>/tasks/', views.task_status, name='task_status'),
     path('api/game/<int:game_id>/delete/', views.delete_game, name='delete_game'),
+    path('api/game/<int:game_id>/export_analyst/', views.export_to_analyst, name='export_to_analyst'),
     path('api/game/<int:game_id>/add_money/', views.add_money, name='add_money'),
 ]

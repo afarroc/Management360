@@ -187,3 +187,76 @@ def add_money(request, game_id):
         return JsonResponse(data)
     except EngineUnavailableError as e:
         return _engine_error(e)
+
+@login_required
+@require_POST
+def export_to_analyst(request, game_id):
+    import uuid as _uuid
+    import pickle, base64
+    import pandas as pd
+    from analyst.models import StoredDataset
+
+    game = get_object_or_404(Game, pk=game_id, created_by=request.user)
+
+    ZONE_LABELS = {
+        range(64,  207): 'road',
+        range(208, 223): 'wire',
+        range(240, 249): 'residential_empty',
+        range(249, 261): 'residential',
+        range(423, 432): 'commercial_empty',
+        range(432, 444): 'commercial',
+        range(612, 621): 'industrial_empty',
+        range(621, 633): 'industrial',
+        range(745, 760): 'coal_plant',
+    }
+
+    def zone_label(base):
+        for rng, label in ZONE_LABELS.items():
+            if base in rng:
+                return label
+        return 'terrain' if base == 0 else 'other'
+
+    rows = []
+    map_data = game.map_data
+    size = len(map_data)
+
+    for x in range(size):
+        for y in range(size):
+            tile = map_data[x][y]
+            if tile == 0:
+                continue
+            base      = tile & 0x3FF
+            has_power = bool(tile & 0x8000)
+            has_road  = bool(tile & 0x2000)
+            rows.append({
+                'x': x, 'y': y, 'tile': base,
+                'zone_type': zone_label(base),
+                'has_power': has_power,
+                'has_road':  has_road,
+                'money':     game.money,
+                'game_name': game.name,
+                'game_id':   game.id,
+            })
+
+    if not rows:
+        return JsonResponse({'success': False, 'error': 'El mapa está vacío'}, status=400)
+
+    import pandas as pd
+    df = pd.DataFrame(rows)
+    blob = base64.b64encode(pickle.dumps(df)).decode('utf-8')
+    dataset_id = _uuid.uuid4()
+    cache_key  = f'stored_dataset_{dataset_id}'
+
+    from analyst.models import StoredDataset
+    ds = StoredDataset.objects.create(
+        id=dataset_id, name=f'SimCity — {game.name}',
+        description=f'Exportado desde SimCity · partida #{game.id} · {len(rows)} tiles · ${game.money} fondos',
+        cache_key=cache_key, rows=len(df), col_count=len(df.columns),
+        columns=list(df.columns), dtype_map={c: str(df[c].dtype) for c in df.columns},
+        source_file=f'simcity/game/{game.id}', data_blob=blob, created_by=request.user,
+    )
+    return JsonResponse({
+        'success': True, 'dataset_id': str(ds.id),
+        'name': ds.name, 'rows': ds.rows, 'columns': ds.columns,
+        'analyst_url': f'/analyst/datasets/{ds.id}/preview/',
+    })
