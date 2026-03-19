@@ -1,0 +1,1235 @@
+import os
+import logging
+from decimal import Decimal
+from django.db import models
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
+from django.contrib.auth.models import User
+from django.utils import timezone
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
+from django.contrib.contenttypes.models import ContentType
+
+# Configure logger
+logger = logging.getLogger(__name__)
+
+# ============================================================================
+# BASE MODELS - Status and Classification
+# ============================================================================
+
+class Status(models.Model):
+    """Base status model for manageable objects"""
+    status_name = models.CharField(max_length=50)
+    icon = models.CharField(max_length=30, blank=True, null=True)
+    active = models.BooleanField(default=True)
+    color = models.CharField(max_length=30, default="white")
+    
+    def __str__(self):
+        return self.status_name
+
+
+class ProjectStatus(models.Model):
+    """Project-specific status model"""
+    status_name = models.CharField(max_length=50)
+    icon = models.CharField(max_length=30, blank=True, null=True)
+    active = models.BooleanField(default=True)
+    color = models.CharField(max_length=30, default="white")
+    
+    def __str__(self):
+        return self.status_name
+
+
+class TaskStatus(models.Model):
+    """Task-specific status model"""
+    status_name = models.CharField(max_length=50)
+    icon = models.CharField(max_length=30, blank=True, null=True)
+    active = models.BooleanField(default=True)
+    color = models.CharField(max_length=30, default="white")
+    
+    def __str__(self):
+        return self.status_name
+
+
+class Classification(models.Model):
+    """Classification model for categorizing items"""
+    nombre = models.CharField(max_length=200)
+    descripcion = models.TextField()
+
+    def __str__(self):
+        return self.nombre
+
+
+# ============================================================================
+# TAG SYSTEM
+# ============================================================================
+
+class TagCategory(models.Model):
+    """Tag categories supporting multiple methodologies (GTD, Priority, Context, Custom)"""
+    name = models.CharField(max_length=50, help_text="GTD, Priority, Context, Custom")
+    description = models.TextField()
+    color = models.CharField(max_length=7, default="#007bff")
+    icon = models.CharField(max_length=50, blank=True)
+    is_system = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name_plural = "Tag Categories"
+
+
+class Tag(models.Model):
+    """Tag model with categorization"""
+    name = models.CharField(max_length=50)
+    category = models.ForeignKey(TagCategory, on_delete=models.CASCADE)
+    color = models.CharField(max_length=7, default="#6c757d")
+    description = models.TextField(blank=True)
+    is_system = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.category.name}: {self.name}"
+
+    class Meta:
+        unique_together = ['name', 'category']
+
+
+# ============================================================================
+# EVENT MODELS
+# ============================================================================
+
+class EventState(models.Model):
+    """Track state changes for events"""
+    event = models.ForeignKey('Event', on_delete=models.CASCADE)
+    status = models.ForeignKey('Status', on_delete=models.CASCADE)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.start_time = timezone.now()
+        else:
+            self.end_time = timezone.now()
+        super(EventState, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.status.status_name} ({self.start_time} - {self.end_time})"
+
+
+class EventHistory(models.Model):
+    """Track field edits for events"""
+    event = models.ForeignKey('Event', on_delete=models.CASCADE)
+    edited_at = models.DateTimeField(auto_now_add=True)
+    editor = models.ForeignKey(User, on_delete=models.CASCADE)
+    field_name = models.CharField(max_length=100)
+    old_value = models.TextField(null=True, blank=True)
+    new_value = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.event.id} - {self.field_name} - {self.editor.username}"
+
+
+class EventAttendee(models.Model):
+    """Track event attendees"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    event = models.ForeignKey('Event', on_delete=models.CASCADE)
+    registration_time = models.DateTimeField(auto_now_add=True)
+    has_paid = models.BooleanField(default=False)
+    notes = models.TextField(blank=True, null=True)
+
+
+class Event(models.Model):
+    """Main event model"""
+    title = models.CharField(max_length=200)
+    description = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    event_status = models.ForeignKey(Status, on_delete=models.CASCADE)
+    venue = models.CharField(max_length=200)
+    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_events')
+    event_category = models.CharField(max_length=50)
+    max_attendees = models.IntegerField(default=0)
+    ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_events') 
+    attendees = models.ManyToManyField(User, through='EventAttendee', related_name='collaborating_events', blank=True) 
+    tags = models.ManyToManyField(Tag, blank=True)
+    links = models.ManyToManyField('self', blank=True, symmetrical=False)
+    classification = models.ForeignKey(Classification, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def change_status(self, new_status_id):
+        """Change event status and create state record"""
+        try:
+            new_status = Status.objects.get(id=new_status_id)
+            
+            current_state = self.eventstate_set.filter(end_time__isnull=True).last()
+            if current_state:
+                current_state.end_time = timezone.now()
+                current_state.save()
+            
+            EventState.objects.create(event=self, status=new_status)
+            
+            self.event_status = new_status
+            self.updated_at = timezone.now()
+            self.save()
+            
+            logger.info(f"Event {self.id} status changed to {new_status.status_name}")
+        except Exception as e:
+            logger.error(f"Error changing event {self.id} status: {e}")
+            raise
+
+    def record_edit(self, editor, field_name, old_value, new_value):
+        """Record field edits in history"""
+        try:
+            event_history = EventHistory.objects.create(
+                event=self,
+                editor=editor,
+                field_name=field_name,
+                old_value=old_value,
+                new_value=new_value
+            )
+            logger.debug(f"Event edit recorded: {event_history.id}")
+            
+            if field_name == 'event_status' and new_value:
+                new_status = Status.objects.get(status_name=new_value)
+                self.change_status(new_status.id)
+        except Exception as e:
+            logger.error(f"Error recording event edit: {e}")
+            
+    def __str__(self):
+        return self.title
+
+
+# ============================================================================
+# PROJECT MODELS
+# ============================================================================
+
+class ProjectState(models.Model):
+    """Track state changes for projects"""
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    status = models.ForeignKey('ProjectStatus', on_delete=models.CASCADE)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.start_time = timezone.now()
+        else:
+            self.end_time = timezone.now()
+        super(ProjectState, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.status.status_name} ({self.start_time} - {self.end_time})"
+
+
+class ProjectHistory(models.Model):
+    """Track field edits for projects"""
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    edited_at = models.DateTimeField(auto_now_add=True)
+    editor = models.ForeignKey(User, on_delete=models.CASCADE)
+    field_name = models.CharField(max_length=100)
+    old_value = models.TextField(null=True, blank=True)
+    new_value = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.project.id} - {self.field_name} - {self.editor.username}"
+
+
+class ProjectAttendee(models.Model):
+    """Track project attendees"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    project = models.ForeignKey('Project', on_delete=models.CASCADE)
+    registration_time = models.DateTimeField(auto_now_add=True)
+    has_paid = models.BooleanField(default=False)
+    notes = models.TextField(blank=True, null=True)
+
+
+class Project(models.Model):
+    """Main project model"""
+    title = models.CharField(max_length=200)
+    description = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    done = models.BooleanField(default=False)
+    event = models.ForeignKey('Event', on_delete=models.CASCADE, null=True, blank=True)
+    project_status = models.ForeignKey(ProjectStatus, on_delete=models.CASCADE)
+    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_projects')
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_projets') 
+    attendees = models.ManyToManyField(User, through='ProjectAttendee', related_name='collaborating_projects', blank=True) 
+    ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
+
+    processed_inbox_items = GenericRelation(
+        'InboxItem',
+        related_name='processed_projects',
+        content_type_field='processed_to_content_type',
+        object_id_field='processed_to_object_id',
+        blank=True
+    )
+
+    def change_status(self, new_status_id):
+        """Change project status and create state record"""
+        try:
+            new_status = ProjectStatus.objects.get(id=new_status_id)
+            
+            current_state = self.projectstate_set.filter(end_time__isnull=True).last()
+            if current_state:
+                current_state.end_time = timezone.now()
+                current_state.save()
+            
+            ProjectState.objects.create(project=self, status=new_status)
+            
+            self.project_status = new_status
+            self.updated_at = timezone.now()
+            self.save()
+            
+            logger.info(f"Project {self.id} status changed to {new_status.status_name}")
+        except Exception as e:
+            logger.error(f"Error changing project {self.id} status: {e}")
+            raise
+
+    def record_edit(self, editor, field_name, old_value, new_value):
+        """Record field edits in history"""
+        try:
+            project_history = ProjectHistory.objects.create(
+                project=self,
+                editor=editor,
+                field_name=field_name,
+                old_value=old_value,
+                new_value=new_value
+            )
+            logger.debug(f"Project edit recorded: {project_history.id}")
+            
+            if field_name == 'project_status' and new_value:
+                new_status = ProjectStatus.objects.get(status_name=new_value)
+                self.change_status(new_status.id)
+        except Exception as e:
+            logger.error(f"Error recording project edit: {e}")
+   
+    def __str__(self):
+        return f"{self.title} - {self.event}"
+
+
+class ProjectTemplate(models.Model):
+    """Project templates for reuse"""
+    name = models.CharField(max_length=200)
+    description = models.TextField()
+    category = models.CharField(max_length=100)
+    estimated_duration = models.IntegerField(help_text="Duration in days")
+    is_public = models.BooleanField(default=False)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
+class TemplateTask(models.Model):
+    """Tasks within project templates"""
+    template = models.ForeignKey(ProjectTemplate, on_delete=models.CASCADE)
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    order = models.IntegerField()
+    estimated_hours = models.DecimalField(max_digits=6, decimal_places=2)
+    required_skills = models.ManyToManyField(Tag, blank=True)
+
+    def __str__(self):
+        return f"{self.template.name}: {self.title}"
+
+    class Meta:
+        ordering = ['order']
+
+
+# ============================================================================
+# TASK MODELS
+# ============================================================================
+
+class TaskState(models.Model):
+    """Track state changes for tasks"""
+    task = models.ForeignKey('Task', on_delete=models.CASCADE)
+    status = models.ForeignKey('TaskStatus', on_delete=models.CASCADE)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            self.start_time = timezone.now()
+        else:
+            self.end_time = timezone.now()
+        super(TaskState, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.status.status_name} ({self.start_time} - {self.end_time})"
+
+
+class TaskHistory(models.Model):
+    """Track field edits for tasks"""
+    task = models.ForeignKey('Task', on_delete=models.CASCADE)
+    edited_at = models.DateTimeField(auto_now_add=True)
+    editor = models.ForeignKey(User, on_delete=models.CASCADE)
+    field_name = models.CharField(max_length=100)
+    old_value = models.TextField(null=True, blank=True)
+    new_value = models.TextField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.task.id} - {self.field_name} - {self.editor.username}"
+
+
+class TaskDependency(models.Model):
+    """Task dependency relationships"""
+    DEPENDENCY_TYPES = [
+        ('finish_to_start', 'Finish to Start'),
+        ('start_to_start', 'Start to Start'),
+        ('finish_to_finish', 'Finish to Finish'),
+        ('start_to_finish', 'Start to Finish')
+    ]
+    
+    task = models.ForeignKey('Task', on_delete=models.CASCADE, related_name='dependencies')
+    depends_on = models.ForeignKey('Task', on_delete=models.CASCADE, related_name='blocking')
+    dependency_type = models.CharField(max_length=20, choices=DEPENDENCY_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.task.title} depends on {self.depends_on.title}"
+
+    class Meta:
+        unique_together = ['task', 'depends_on']
+
+
+class Task(models.Model):
+    """Main task model"""
+    title = models.CharField(max_length=200)
+    description = models.TextField(null=True, blank=True)
+    important = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    done = models.BooleanField(default=False)
+    project = models.ForeignKey('Project', on_delete=models.CASCADE, blank=True, null=True)
+    event = models.ForeignKey('Event', on_delete=models.CASCADE, blank=True, null=True)
+    task_status = models.ForeignKey(TaskStatus, on_delete=models.CASCADE)
+    assigned_to = models.ForeignKey(User, on_delete=models.CASCADE, related_name='managed_tasks')
+    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_tasks')
+    ticket_price = models.DecimalField(default=0, max_digits=6, decimal_places=2)
+    tags = models.ManyToManyField(Tag, blank=True)
+
+    processed_inbox_items = GenericRelation(
+        'InboxItem',
+        related_name='processed_tasks',
+        content_type_field='processed_to_content_type',
+        object_id_field='processed_to_object_id',
+        blank=True
+    )
+
+    def change_status(self, new_status_id, user=None):
+        """Change task status and create state record"""
+        try:
+            new_status = TaskStatus.objects.get(id=new_status_id)
+            old_status_name = self.task_status.status_name if self.task_status else None
+
+            current_state = self.taskstate_set.filter(end_time__isnull=True).last()
+            if current_state:
+                current_state.end_time = timezone.now()
+                current_state.save()
+
+            TaskState.objects.create(task=self, status=new_status)
+
+            self.task_status = new_status
+            self.updated_at = timezone.now()
+            self.save()
+
+            if user:
+                TaskHistory.objects.create(
+                    task=self,
+                    editor=user,
+                    field_name='task_status',
+                    old_value=old_status_name,
+                    new_value=new_status.status_name
+                )
+            
+            logger.info(f"Task {self.id} status changed to {new_status.status_name}")
+        except Exception as e:
+            logger.error(f"Error changing task {self.id} status: {e}")
+            raise
+
+    def record_edit(self, editor, field_name, old_value, new_value):
+        """Record field edits in history"""
+        try:
+            task_history = TaskHistory.objects.create(
+                task=self,
+                editor=editor,
+                field_name=field_name,
+                old_value=old_value,
+                new_value=new_value
+            )
+            logger.debug(f"Task edit recorded: {task_history.id}")
+            
+            if field_name == 'task_status' and new_value:
+                new_status = TaskStatus.objects.get(status_name=new_value)
+                self.change_status(new_status.id, editor)
+        except Exception as e:
+            logger.error(f"Error recording task edit: {e}")
+
+    def __str__(self):
+        return f"{self.title} - {self.event}"
+
+
+class TaskProgram(models.Model):
+    """Scheduled task instances"""
+    title = models.CharField(max_length=200)
+    created_at = models.DateTimeField(auto_now_add=True)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    host = models.ForeignKey(User, on_delete=models.CASCADE, related_name='hosted_programs')
+    task = models.ForeignKey('Task', on_delete=models.CASCADE)
+
+    def clean(self):
+        if self.start_time >= self.end_time:
+            raise ValidationError('End time must be after start time')
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        verbose_name = "Task Program"
+        verbose_name_plural = "Task Programs"
+
+
+class TaskSchedule(models.Model):
+    """Recurring task scheduling model"""
+    RECURRENCE_TYPES = [
+        ('weekly', 'Weekly'),
+        ('daily', 'Daily'),
+        ('custom', 'Custom')
+    ]
+
+    task = models.ForeignKey('Task', on_delete=models.CASCADE)
+    host = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    recurrence_type = models.CharField(max_length=20, choices=RECURRENCE_TYPES, default='weekly')
+
+    # Week days
+    monday = models.BooleanField(default=False)
+    tuesday = models.BooleanField(default=False)
+    wednesday = models.BooleanField(default=False)
+    thursday = models.BooleanField(default=False)
+    friday = models.BooleanField(default=False)
+    saturday = models.BooleanField(default=False)
+    sunday = models.BooleanField(default=False)
+
+    # Timing
+    start_time = models.TimeField()
+    duration = models.DurationField(default='01:00:00')
+
+    # Validity period
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+
+    # Metadata
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+
+    def get_next_occurrences(self, limit=10):
+        """Generate next occurrences based on schedule"""
+        from datetime import datetime, timedelta
+        occurrences = []
+        current_date = max(self.start_date, timezone.now().date())
+
+        while len(occurrences) < limit:
+            if self.end_date and current_date > self.end_date:
+                break
+
+            if self._should_schedule_on_date(current_date):
+                start_datetime = datetime.combine(current_date, self.start_time)
+                end_datetime = start_datetime + self.duration
+                occurrences.append({
+                    'date': current_date,
+                    'start_time': start_datetime,
+                    'end_time': end_datetime
+                })
+
+            current_date += timedelta(days=1)
+
+        return occurrences
+
+    def _should_schedule_on_date(self, date):
+        """Determine if task should be scheduled on specific date"""
+        if self.recurrence_type == 'daily':
+            return True
+
+        weekday = date.weekday()
+        weekday_map = {
+            0: self.monday,
+            1: self.tuesday,
+            2: self.wednesday,
+            3: self.thursday,
+            4: self.friday,
+            5: self.saturday,
+            6: self.sunday
+        }
+
+        return weekday_map.get(weekday, False)
+
+    def get_selected_days_display(self):
+        """Return readable representation of selected days"""
+        days = []
+        if self.monday: days.append('Mon')
+        if self.tuesday: days.append('Tue')
+        if self.wednesday: days.append('Wed')
+        if self.thursday: days.append('Thu')
+        if self.friday: days.append('Fri')
+        if self.saturday: days.append('Sat')
+        if self.sunday: days.append('Sun')
+
+        return ", ".join(days) if days else "No days selected"
+
+    def generate_occurrences(self, limit=10):
+        """Generate list of future occurrences"""
+        from datetime import datetime, timedelta
+        occurrences = []
+        current_date = max(self.start_date, timezone.now().date())
+
+        while len(occurrences) < limit:
+            if self.end_date and current_date > self.end_date:
+                break
+
+            if self._should_schedule_on_date(current_date):
+                start_datetime = datetime.combine(current_date, self.start_time)
+                end_datetime = start_datetime + self.duration
+                occurrences.append({
+                    'date': current_date,
+                    'start_time': start_datetime,
+                    'end_time': end_datetime
+                })
+
+            current_date += timedelta(days=1)
+
+        return occurrences
+
+    def create_task_programs(self, occurrences=None):
+        """Create TaskProgram instances for specified occurrences"""
+        if occurrences is None:
+            occurrences = self.generate_occurrences()
+
+        created_programs = []
+        for occurrence in occurrences:
+            program, created = TaskProgram.objects.get_or_create(
+                task=self.task,
+                host=self.host,
+                start_time=occurrence['start_time'],
+                defaults={
+                    'title': f"{self.task.title} - {occurrence['start_time'].strftime('%d/%m/%Y %H:%M')}",
+                    'end_time': occurrence['end_time'],
+                }
+            )
+
+            if created:
+                created_programs.append(program)
+
+        return created_programs
+
+    def get_next_occurrence(self):
+        """Get the next future occurrence"""
+        occurrences = self.generate_occurrences(limit=1)
+        return occurrences[0] if occurrences else None
+
+    def is_active_schedule(self):
+        """Check if schedule is currently active"""
+        if not self.is_active:
+            return False
+        if self.end_date and timezone.now().date() > self.end_date:
+            return False
+        return True
+
+    def __str__(self):
+        return f"{self.task.title} - {self.get_recurrence_type_display()} at {self.start_time}"
+
+    class Meta:
+        verbose_name = "Task Schedule"
+        verbose_name_plural = "Task Schedules"
+        ordering = ['start_time']
+
+
+# ============================================================================
+# GTD (GETTING THINGS DONE) MODELS
+# ============================================================================
+
+class InboxItem(models.Model):
+    """GTD Inbox items with collaborative classification"""
+    GTD_CATEGORIES = [
+        ('actionable', 'Actionable'),
+        ('non_actionable', 'Non Actionable'),
+        ('pending', 'Pending Categorization')
+    ]
+    
+    ACTION_TYPES = [
+        ('do', 'Do'),
+        ('delegate', 'Delegate'),
+        ('defer', 'Defer'),
+        ('project', 'Convert to Project'),
+        ('delete', 'Delete'),
+        ('archive', 'Archive for Reference'),
+        ('incubate', 'Incubate (Someday/Maybe)'),
+        ('waiting', 'Waiting For')
+    ]
+    
+    PRIORITY_LEVELS = [
+        ('high', 'High'),
+        ('medium', 'Medium'),
+        ('low', 'Low')
+    ]
+    
+    ENERGY_LEVELS = [
+        ('low', 'Low Energy'),
+        ('medium', 'Medium Energy'),
+        ('high', 'High Energy')
+    ]
+    
+    TIME_PERIODS = [
+        ('morning', 'Morning (6-12)'),
+        ('afternoon', 'Afternoon (12-18)'),
+        ('evening', 'Evening (18-24)'),
+        ('night', 'Night (0-6)')
+    ]
+
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_processed = models.BooleanField(default=False)
+    processed_at = models.DateTimeField(null=True, blank=True)
+
+    # Generic foreign key for processed items
+    processed_to_content_type = models.ForeignKey(ContentType, null=True, blank=True, on_delete=models.SET_NULL)
+    processed_to_object_id = models.PositiveIntegerField(null=True, blank=True)
+    processed_to = GenericForeignKey('processed_to_content_type', 'processed_to_object_id')
+
+    tags = models.ManyToManyField(Tag, blank=True)
+
+    # GTD fields
+    gtd_category = models.CharField(max_length=20, choices=GTD_CATEGORIES, default='pending', 
+                                   help_text="Main GTD categorization")
+    action_type = models.CharField(max_length=20, choices=ACTION_TYPES, blank=True, null=True,
+                                  help_text="Specific action type")
+    priority = models.CharField(max_length=10, choices=PRIORITY_LEVELS, default='medium',
+                               help_text="Item priority")
+    context = models.CharField(max_length=50, blank=True, 
+                              help_text="Context where this can be done (e.g., @home, @work, @phone)")
+    estimated_time = models.IntegerField(blank=True, null=True, 
+                                        help_text="Estimated time in minutes")
+    due_date = models.DateTimeField(blank=True, null=True, 
+                                   help_text="Due date if applicable")
+    energy_required = models.CharField(max_length=20, choices=ENERGY_LEVELS, default='medium',
+                                      help_text="Required mental energy level")
+    notes = models.TextField(blank=True, help_text="Additional processing notes")
+
+    # Collaborative classification
+    is_public = models.BooleanField(default=False, help_text="Can be viewed by other users?")
+    assigned_to = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_inbox_items',
+        help_text="User assigned to process this item"
+    )
+    authorized_users = models.ManyToManyField(
+        User,
+        through='InboxItemAuthorization',
+        through_fields=('inbox_item', 'user'),
+        related_name='authorized_inbox_items',
+        blank=True,
+        help_text="Users authorized to view and classify this item"
+    )
+
+    classification_votes = models.ManyToManyField(
+        User,
+        through='InboxItemClassification',
+        through_fields=('inbox_item', 'user'),
+        related_name='classified_inbox_items',
+        blank=True,
+        help_text="Users who have voted on classification"
+    )
+
+    # Activity tracking
+    last_activity = models.DateTimeField(auto_now=True)
+    view_count = models.PositiveIntegerField(default=0, help_text="Number of times viewed")
+
+    # Additional GTD fields
+    waiting_for = models.TextField(blank=True, help_text="What is being waited for? (e.g., client response)")
+    waiting_for_date = models.DateTimeField(blank=True, null=True, help_text="Expected response date")
+    next_review_date = models.DateTimeField(blank=True, null=True, help_text="Next review date")
+    review_notes = models.TextField(blank=True, help_text="Previous review notes")
+
+    # Analytics
+    created_during = models.CharField(max_length=20, choices=TIME_PERIODS, blank=True,
+                                     help_text="Creation time period for pattern analysis")
+    user_context = models.JSONField(blank=True, null=True, help_text="Custom user context")
+
+    def __str__(self):
+        return f"{self.title} [{self.gtd_category}]"
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def get_classification_consensus(self):
+        """Get classification consensus based on votes"""
+        classifications = self.inboxitemclassification_set.values('gtd_category').annotate(
+            count=models.Count('gtd_category')
+        ).order_by('-count')
+
+        if classifications:
+            return classifications[0]['gtd_category']
+        return self.gtd_category
+
+    def get_action_type_consensus(self):
+        """Get action type consensus based on votes"""
+        action_types = self.inboxitemclassification_set.values('action_type').annotate(
+            count=models.Count('action_type')
+        ).order_by('-count')
+
+        if action_types and action_types[0]['action_type']:
+            return action_types[0]['action_type']
+        return self.action_type
+
+    def increment_views(self):
+        """Increment view counter"""
+        self.view_count += 1
+        self.save(update_fields=['view_count', 'last_activity'])
+
+    @property
+    def is_linked_correctly(self):
+        """Verify if item is correctly linked to processed object"""
+        if not self.is_processed or not self.processed_to:
+            return False
+        
+        try:
+            obj = self.processed_to
+            return hasattr(obj, 'title')
+        except Exception as e:
+            logger.warning(f"Error checking link for inbox item {self.id}: {e}")
+            return False
+    
+    def get_processed_object_info(self):
+        """Get information about the linked object"""
+        if not self.is_processed or not self.processed_to:
+            return None
+        
+        try:
+            obj = self.processed_to
+            return {
+                'type': obj.__class__.__name__,
+                'title': getattr(obj, 'title', 'Untitled'),
+                'id': obj.id,
+                'url': self._get_object_url(obj)
+            }
+        except Exception as e:
+            logger.error(f"Error getting processed object info for inbox item {self.id}: {e}")
+            return None
+    
+    def _get_object_url(self, obj):
+        """Generate URL for linked object based on type"""
+        from django.urls import reverse
+        try:
+            if isinstance(obj, Task):
+                return reverse('tasks_with_id', args=[obj.id])
+            elif isinstance(obj, Project):
+                return reverse('project_detail', args=[obj.id])
+            elif isinstance(obj, Event):
+                return reverse('event_detail', args=[obj.id])
+        except Exception as e:
+            logger.warning(f"Error generating URL for object {obj.id}: {e}")
+        return None
+    
+    def fix_link(self, new_object):
+        """Fix the link to a new object"""
+        try:
+            from django.contrib.contenttypes.models import ContentType
+            
+            self.processed_to_content_type = ContentType.objects.get_for_model(type(new_object))
+            self.processed_to_object_id = new_object.id
+            self.save()
+            logger.info(f"Fixed link for inbox item {self.id} to {new_object.__class__.__name__} {new_object.id}")
+            return True
+        except Exception as e:
+            logger.error(f"Error fixing link for inbox item {self.id}: {e}")
+            return False
+
+    def assign_to_available_user(self):
+        """Automatically assign item to available user based on workload and specialization"""
+        try:
+            from django.contrib.auth.models import User
+            from django.db.models import Count
+
+            available_users = User.objects.filter(
+                is_active=True,
+                profile__isnull=False
+            ).exclude(
+                profile__role__in=['SU']
+            )
+
+            if not available_users.exists():
+                logger.warning("No available users found for assignment")
+                return False
+
+            # Calculate current workload
+            user_workloads = {}
+            for user in available_users:
+                assigned_count = InboxItem.objects.filter(
+                    assigned_to=user,
+                    is_processed=False
+                ).count()
+
+                specialization_bonus = 0
+                if hasattr(user, 'profile') and user.profile:
+                    if 'CX' in str(user.profile.role or ''):
+                        specialization_bonus = -2
+                    elif 'FTE' in str(user.profile.role or ''):
+                        specialization_bonus = -1
+
+                user_workloads[user.id] = {
+                    'user': user,
+                    'workload': assigned_count + specialization_bonus,
+                    'role': getattr(user.profile, 'role', None) if hasattr(user, 'profile') else None
+                }
+
+            sorted_users = sorted(user_workloads.values(), key=lambda x: x['workload'])
+            best_user = sorted_users[0]['user']
+            
+            self.assigned_to = best_user
+            self.save(update_fields=['assigned_to'])
+
+            InboxItemHistory.objects.create(
+                inbox_item=self,
+                user=best_user,
+                action='auto_assigned',
+                new_values={
+                    'assigned_to': best_user.username,
+                    'assignment_method': 'automatic'
+                }
+            )
+            
+            logger.info(f"Inbox item {self.id} automatically assigned to {best_user.username}")
+            return True
+        except Exception as e:
+            logger.error(f"Error in auto-assignment for inbox item {self.id}: {e}")
+            return False
+
+
+class InboxItemAuthorization(models.Model):
+    """Authorization levels for inbox items"""
+    PERMISSION_LEVELS = [
+        ('view', 'View Only'),
+        ('classify', 'View and Classify'),
+        ('edit', 'View, Classify and Edit'),
+        ('admin', 'Full Admin')
+    ]
+
+    inbox_item = models.ForeignKey('InboxItem', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    granted_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='granted_authorizations')
+    granted_at = models.DateTimeField(auto_now_add=True)
+    permission_level = models.CharField(max_length=20, choices=PERMISSION_LEVELS, default='classify')
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.inbox_item.title} ({self.permission_level})"
+
+    class Meta:
+        unique_together = ['inbox_item', 'user']
+
+
+class InboxItemClassification(models.Model):
+    """Collaborative classification votes for inbox items"""
+    GTD_CATEGORIES = [
+        ('actionable', 'Actionable'),
+        ('non_actionable', 'Non Actionable'),
+        ('pending', 'Pending Categorization')
+    ]
+    
+    ACTION_TYPES = [
+        ('do', 'Do'),
+        ('delegate', 'Delegate'),
+        ('defer', 'Defer'),
+        ('project', 'Convert to Project'),
+        ('delete', 'Delete'),
+        ('archive', 'Archive for Reference'),
+        ('incubate', 'Incubate (Someday/Maybe)'),
+        ('waiting', 'Waiting For')
+    ]
+    
+    PRIORITY_LEVELS = [
+        ('high', 'High'),
+        ('medium', 'Medium'),
+        ('low', 'Low')
+    ]
+
+    inbox_item = models.ForeignKey('InboxItem', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    gtd_category = models.CharField(max_length=20, choices=GTD_CATEGORIES)
+    action_type = models.CharField(max_length=20, choices=ACTION_TYPES, blank=True, null=True)
+    priority = models.CharField(max_length=10, choices=PRIORITY_LEVELS, default='medium')
+    confidence = models.IntegerField(default=50, help_text="Confidence level in classification (0-100%)")
+    notes = models.TextField(blank=True, help_text="Notes about classification")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}: {self.inbox_item.title} -> {self.gtd_category}"
+
+    class Meta:
+        unique_together = ['inbox_item', 'user']
+        ordering = ['-updated_at']
+
+
+class InboxItemHistory(models.Model):
+    """History tracking for inbox items"""
+    ACTION_TYPES = [
+        ('created', 'Created'),
+        ('viewed', 'Viewed'),
+        ('classified', 'Classified'),
+        ('edited', 'Edited'),
+        ('processed', 'Processed'),
+        ('shared', 'Shared'),
+        ('authorized', 'Authorization Changed')
+    ]
+
+    inbox_item = models.ForeignKey('InboxItem', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    action = models.CharField(max_length=50, choices=ACTION_TYPES)
+    old_values = models.JSONField(blank=True, null=True, help_text="Previous values")
+    new_values = models.JSONField(blank=True, null=True, help_text="New values")
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(blank=True, null=True)
+    user_agent = models.TextField(blank=True, help_text="Browser/client info")
+
+    def __str__(self):
+        return f"{self.user.username}: {self.action} - {self.inbox_item.title}"
+
+    class Meta:
+        ordering = ['-timestamp']
+
+
+class GTDClassificationPattern(models.Model):
+    """Patterns for automatic GTD classification"""
+    GTD_CATEGORIES = [
+        ('actionable', 'Actionable'),
+        ('non_actionable', 'Non Actionable'),
+        ('pending', 'Pending Categorization')
+    ]
+    
+    ACTION_TYPES = [
+        ('do', 'Do'),
+        ('delegate', 'Delegate'),
+        ('defer', 'Defer'),
+        ('project', 'Convert to Project'),
+        ('delete', 'Delete'),
+        ('archive', 'Archive for Reference'),
+        ('incubate', 'Incubate (Someday/Maybe)'),
+        ('waiting', 'Waiting For')
+    ]
+    
+    PRIORITY_LEVELS = [
+        ('high', 'High'),
+        ('medium', 'Medium'),
+        ('low', 'Low')
+    ]
+    
+    ENERGY_LEVELS = [
+        ('low', 'Low Energy'),
+        ('medium', 'Medium Energy'),
+        ('high', 'High Energy')
+    ]
+    
+    KEYWORD_OPERATORS = [
+        ('AND', 'All keywords'),
+        ('OR', 'Any keyword'),
+        ('NOT', 'None of the keywords')
+    ]
+
+    name = models.CharField(max_length=100, help_text="Descriptive pattern name")
+    description = models.TextField(help_text="Description of when to apply this pattern")
+
+    # Pattern conditions
+    keywords = models.JSONField(help_text="List of keywords that trigger this pattern")
+    keywords_operator = models.CharField(max_length=10, choices=KEYWORD_OPERATORS, default='OR')
+
+    # Classification results
+    gtd_category = models.CharField(max_length=20, choices=GTD_CATEGORIES)
+    action_type = models.CharField(max_length=20, choices=ACTION_TYPES)
+    priority = models.CharField(max_length=10, choices=PRIORITY_LEVELS, default='medium')
+    energy_required = models.CharField(max_length=20, choices=ENERGY_LEVELS, default='medium')
+
+    # Pattern configuration
+    is_active = models.BooleanField(default=True)
+    confidence_score = models.IntegerField(default=70, help_text="Confidence level (0-100%)")
+    usage_count = models.IntegerField(default=0, help_text="Times this pattern has been used")
+
+    # Metadata
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.gtd_category} -> {self.action_type})"
+
+    class Meta:
+        verbose_name = "GTD Classification Pattern"
+        verbose_name_plural = "GTD Classification Patterns"
+
+
+class GTDLearningEntry(models.Model):
+    """Machine learning entries for GTD classification"""
+    inbox_item = models.ForeignKey('InboxItem', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    # User decision
+    user_gtd_category = models.CharField(max_length=20)
+    user_action_type = models.CharField(max_length=20)
+    user_priority = models.CharField(max_length=10)
+
+    # System prediction
+    predicted_gtd_category = models.CharField(max_length=20, blank=True)
+    predicted_action_type = models.CharField(max_length=20, blank=True)
+    predicted_priority = models.CharField(max_length=10, blank=True)
+
+    # Prediction confidence
+    prediction_confidence = models.IntegerField(default=0)
+
+    # Metadata
+    was_correct = models.BooleanField(default=False, help_text="Was the prediction correct?")
+    learned_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Learning: {self.inbox_item.title[:50]}..."
+
+    class Meta:
+        verbose_name = "GTD Learning Entry"
+        verbose_name_plural = "GTD Learning Entries"
+
+
+class GTDProcessingSettings(models.Model):
+    """Settings for automated GTD processing"""
+    
+    # Auto-processing settings
+    auto_email_processing = models.BooleanField(default=True, help_text="Automatic email processing")
+    auto_call_queue = models.BooleanField(default=True, help_text="Automatic call queue")
+    auto_chat_routing = models.BooleanField(default=True, help_text="Automatic chat routing")
+
+    # Performance settings
+    processing_interval = models.IntegerField(default=60, help_text="Processing interval in seconds")
+    max_concurrent_items = models.IntegerField(default=5, help_text="Maximum concurrent items")
+
+    # Type-specific settings
+    email_batch_size = models.IntegerField(default=10, help_text="Email batch size")
+    call_queue_timeout = models.IntegerField(default=30, help_text="Call queue timeout in seconds")
+    chat_response_timeout = models.IntegerField(default=300, help_text="Chat response timeout in seconds")
+
+    # Agent/bot settings
+    enable_bot_cx = models.BooleanField(default=True, help_text="Enable Bot CX")
+    enable_bot_atc = models.BooleanField(default=True, help_text="Enable Bot ATC")
+    enable_human_agents = models.BooleanField(default=True, help_text="Enable human agents")
+
+    # Priority settings
+    auto_priority_assignment = models.BooleanField(default=True, help_text="Automatic priority assignment")
+    priority_threshold_high = models.IntegerField(default=80, help_text="High priority threshold")
+    priority_threshold_medium = models.IntegerField(default=50, help_text="Medium priority threshold")
+
+    # Metadata
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True, help_text="Active configuration")
+
+    def __str__(self):
+        return f"GTD Processing Settings - {self.created_by.username}"
+
+    class Meta:
+        verbose_name = "GTD Processing Settings"
+        verbose_name_plural = "GTD Processing Settings"
+        ordering = ['-updated_at']
+
+    @classmethod
+    def get_active_settings(cls):
+        """Get current active settings"""
+        return cls.objects.filter(is_active=True).first()
+
+    def save(self, *args, **kwargs):
+        # Ensure only one active configuration per user
+        if self.is_active:
+            cls = self.__class__
+            cls.objects.filter(created_by=self.created_by, is_active=True).exclude(pk=self.pk).update(is_active=False)
+        super().save(*args, **kwargs)
+
+
+# ============================================================================
+# UTILITY MODELS
+# ============================================================================
+
+class CreditAccount(models.Model):
+    """User credit account for transactions"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+
+    def __str__(self):
+        return f"{self.user.username} - {self.balance} credits"
+
+    def add_credits(self, amount):
+        """Add credits to account"""
+        if not isinstance(amount, Decimal):
+            amount = Decimal(str(amount))
+        self.balance += amount
+        self.save()
+        logger.info(f"Added {amount} credits to {self.user.username}")
+
+    def subtract_credits(self, amount):
+        """Subtract credits from account"""
+        if not isinstance(amount, Decimal):
+            amount = Decimal(str(amount))
+        if amount > self.balance:
+            raise ValueError("Insufficient credits")
+        self.balance -= amount
+        self.save()
+        logger.info(f"Subtracted {amount} credits from {self.user.username}")
+
+
+class Room(models.Model):
+    """Chat room model"""
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class Message(models.Model):
+    """Chat message model"""
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}: {self.message[:50]}"
+
+
+class Reminder(models.Model):
+    """Reminder model for tasks, projects, and events"""
+    REMINDER_TYPES = [
+        ('email', 'Email'),
+        ('push', 'Push Notification'),
+        ('both', 'Email and Push')
+    ]
+
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    remind_at = models.DateTimeField()
+    task = models.ForeignKey('Task', null=True, blank=True, on_delete=models.CASCADE)
+    project = models.ForeignKey('Project', null=True, blank=True, on_delete=models.CASCADE)
+    event = models.ForeignKey('Event', null=True, blank=True, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_sent = models.BooleanField(default=False)
+    reminder_type = models.CharField(max_length=20, choices=REMINDER_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} - {self.remind_at}"
+
+    class Meta:
+        ordering = ['remind_at']

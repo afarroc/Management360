@@ -1,0 +1,4 @@
+recurrence_type,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_time,duration,start_date,end_date,is_active
+weekly,True,False,False,False,False,False,False,10:00,01:00:00,2024-01-01,,True
+daily,True,True,True,True,True,True,True,07:00,00:30:00,2024-01-01,,True
+weekly,False,False,False,False,False,True,False,09:00,02:00:00,2024-01-01,,True

@@ -1,0 +1,125 @@
+"""
+Utilidades para gestión de perfiles de usuario
+Centraliza toda la lógica relacionada con perfiles y roles
+"""
+
+from cv.forms import CurriculumForm as ProfileForm
+from cv.models import Curriculum as Profile
+from django.core.exceptions import ValidationError
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def create_user_profile(user, bio=None, location=None, linkedin_url=None, 
+                        github_url=None, twitter_url=None, facebook_url=None, 
+                        instagram_url=None, company=None, job_title=None, 
+                        country=None, address=None, phone=None, 
+                        profile_picture=None, **kwargs):
+    """
+    Crea un perfil de usuario de manera consistente.
+    
+    Args:
+        user (User): Instancia de usuario
+        **kwargs: Campos del perfil
+        
+    Returns:
+        Profile: Instancia del perfil creado
+        
+    Raises:
+        ValidationError: Si los datos son inválidos
+    """
+    logger.info(f"Creating profile for user: {user.username}")
+    
+    # Preparar datos del formulario
+    form_data = {
+        'bio': bio or '',
+        'location': location or '',
+        'linkedin_url': linkedin_url or '',
+        'github_url': github_url or '',
+        'twitter_url': twitter_url or '',
+        'facebook_url': facebook_url or '',
+        'instagram_url': instagram_url or '',
+        'company': company or '',
+        'job_title': job_title or '',
+        'country': country or '',
+        'address': address or '',
+        'phone': phone or '',
+    }
+    
+    # Actualizar con kwargs adicionales
+    form_data.update(kwargs)
+    
+    files = {}
+    if profile_picture:
+        files['profile_picture'] = profile_picture
+    
+    form = ProfileForm(data=form_data, files=files)
+    
+    if form.is_valid():
+        profile = form.save(commit=False)
+        profile.user = user
+        profile.save()
+        logger.info(f"Profile created successfully for user {user.username}")
+        return profile
+    else:
+        logger.error(f"Profile creation failed for user {user.username}: {form.errors}")
+        raise ValidationError(form.errors)
+
+
+def get_user_role(user):
+    """
+    Obtiene el rol del usuario de su perfil (cv)
+    
+    Args:
+        user (User): Instancia de usuario
+        
+    Returns:
+        str: Rol del usuario o None si no tiene perfil
+    """
+    if not user.is_authenticated:
+        return None
+    
+    if hasattr(user, 'cv') and hasattr(user.cv, 'role'):
+        return user.cv.role
+    
+    return None
+
+
+def is_superuser_role(user):
+    """
+    Verifica si el usuario tiene rol de superusuario (SU)
+    
+    Args:
+        user (User): Instancia de usuario
+        
+    Returns:
+        bool: True si el rol es SU
+    """
+    role = get_user_role(user)
+    return role == 'SU'
+
+
+def has_dashboard_access(user):
+    """
+    Verifica si el usuario tiene acceso a dashboards
+    
+    Args:
+        user (User): Instancia de usuario
+        
+    Returns:
+        bool: True si puede acceder
+    """
+    if not user.is_authenticated:
+        return False
+    
+    if user.is_superuser or user.is_staff:
+        return True
+    
+    role = get_user_role(user)
+    allowed_roles = ['SU', 'ADMIN', 'GTD_ANALYST', 'SYS_ADMIN', 'USER', 'STAFF']
+    
+    return role in allowed_roles if role else False

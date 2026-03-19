@@ -1,8 +1,7 @@
 # Referencia de Desarrollo — Proyecto Management360
 
 > **Audiencia:** Desarrolladores del proyecto y asistentes de IA (Claude, Copilot, etc.)
-> **Actualizado:** 2026-03-18 | **Apps:** 20 | **Archivos Python+HTML:** ~710
-> **Basado en:** PROJECT_CONTEXT.md, ANALYST_DEV_REFERENCE.md, SIM_DEV_REFERENCE.md, SIMCITY_DEV_REFERENCE.md
+> **Actualizado:** 2026-03-19 | **Apps:** 20 | **Archivos Python+HTML:** ~710
 
 ---
 
@@ -30,38 +29,6 @@
 
 ## 1. Estructura del Proyecto
 
-### Árbol de directorios (nivel 1)
-
-    Management360/
-    ├── manage.py
-    ├── build.sh
-    ├── requirements.txt
-    ├── .env
-    ├── panel/                 # Configuración principal (settings, middleware)
-    ├── docs/                  # Documentación (ver estructura completa en PROJECT_DESIGN.md)
-    ├── scripts/               # Utilidades (app_map.sh, m360_map.sh, setup/, utils/, tests/)
-    ├── services/              # Servicios independientes (media_server.py)
-    │
-    ├── accounts/              # Autenticación, perfiles — AUTH_USER_MODEL
-    ├── analyst/               # Plataforma de datos
-    ├── api/                   # API REST pública
-    ├── bitacora/              # Bitácora personal GTD ← refactorizada 2026-03-18
-    ├── board/                 # Kanban board
-    ├── bots/                  # Automatizaciones
-    ├── campaigns/             # Campañas outbound
-    ├── chat/                  # Chat en tiempo real
-    ├── core/                  # Dashboard, URL-map, utilidades
-    ├── courses/               # Sistema de aprendizaje
-    ├── cv/                    # Currículum dinámico
-    ├── events/                # Gestión de proyectos/tareas (app principal)
-    ├── help/                  # Centro de ayuda
-    ├── kpis/                  # Métricas de contacto (CallRecord)
-    ├── memento/               # Recordatorios
-    ├── passgen/               # Generador de contraseñas
-    ├── rooms/                 # Salas virtuales
-    ├── sim/                   # Simulador WFM — SIM-7a ACD completo
-    └── simcity/               # Simulador urbano Micropolis ← añadida 2026-03-18
-
 ### Resumen de apps
 
 | App | Namespace | Endpoints | Notas |
@@ -85,7 +52,7 @@
 | `passgen` | `passgen` | 2 | Generador de contraseñas |
 | `rooms` | `rooms` | 53 | Salas virtuales, channels |
 | `sim` | `sim` | 48 | Simulador WFM — SIM-1→SIM-7a completo |
-| `simcity` | `simcity` | 12 | Simulador urbano — proxy proot:8001 |
+| `simcity` | `simcity` | **14** | Simulador urbano — proxy proot:8001 |
 
 ### Convenciones de nomenclatura
 
@@ -108,8 +75,6 @@
     # PK pública — TODAS las apps excepto simcity
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
-    # Autoría — campo estándar: created_by
-    # SIEMPRE usar settings.AUTH_USER_MODEL, NUNCA importar User directamente
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -117,20 +82,26 @@
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    # Soft delete (donde aplica)
     is_active = models.BooleanField(default=True)
-
-    # Choices — usar TextChoices (estilo moderno)
-    class EstadoChoices(models.TextChoices):
-        ACTIVO   = 'activo',   'Activo'
-        INACTIVO = 'inactivo', 'Inactivo'
 
 > **Excepciones documentadas:**
 > - `events`: usa `host` para Project/Task/Event — NO cambiar
 > - `rooms`: usa `owner` para Room — NO cambiar
-> - `bitacora`: usa `fecha_creacion`/`fecha_actualizacion` (en español) y `created_by`
+> - `bitacora`: usa `fecha_creacion`/`fecha_actualizacion` (en español)
 > - `simcity.Game`: usa `AutoField` (int) como PK — heredado del engine original
+
+### TextChoices — módulo-level vs clase interna
+
+`bitacora` define `CategoriaChoices` y `MoodChoices` a nivel de módulo, no como
+clases internas de `BitacoraEntry`. Importar siempre directamente:
+
+```python
+# CORRECTO
+from bitacora.models import CategoriaChoices, MoodChoices
+
+# INCORRECTO
+BitacoraEntry.CategoriaChoices  # AttributeError
+```
 
 ### Import correcto de User
 
@@ -142,15 +113,10 @@
     from django.contrib.auth import get_user_model
     User = get_user_model()
 
-    # INCORRECTO — causa error si AUTH_USER_MODEL cambia
+    # INCORRECTO
     from django.contrib.auth.models import User
 
 ### Views
-
-    @login_required
-    def panel_view(request):
-        context = {'items': Item.objects.filter(created_by=request.user, is_active=True)}
-        return render(request, 'app/panel.html', context)
 
     @login_required
     @require_POST
@@ -163,14 +129,10 @@
 
 ### CSRF Token en JavaScript
 
-    // CORRECTO
     function csrf() {
         return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
     }
     fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrf() }, body: ... })
-
-    // INCORRECTO
-    // fetch(url, { headers: { 'X-CSRFToken': CSRF_TOKEN } })  // ReferenceError
 
 ### Respuestas JSON unificadas
 
@@ -194,26 +156,13 @@
 
 ### ⚠️ `timedelta` NO es parte de `django.utils.timezone`
 
-    # INCORRECTO — AttributeError en runtime
-    week_start = today - timezone.timedelta(days=today.weekday())
+    from datetime import timedelta   # CORRECTO
+    # timezone.timedelta            # INCORRECTO — AttributeError
 
-    # CORRECTO
-    from datetime import timedelta
-    week_start = today - timedelta(days=today.weekday())
+### ⚠️ Campos que NO existen
 
-### ⚠️ `start_time` NO EXISTE en `kpis.CallRecord`
-
-    # INCORRECTO
-    CallRecord.objects.filter(start_time__gte=date)
-    # CORRECTO — campo migrado en 0002_refactor_callrecord
-    CallRecord.objects.filter(fecha__gte=date, fecha__lte=date_to)
-
-### ⚠️ `started_at` NO EXISTE en `sim.Interaction`
-
-    # INCORRECTO
-    Interaction.objects.filter(started_at__gte=date)
-    # CORRECTO
-    Interaction.objects.filter(fecha__gte=date).order_by('fecha', 'hora_inicio')
+    # kpis.CallRecord — NO usar start_time → usar fecha
+    # sim.Interaction — NO usar started_at → usar fecha + hora_inicio
 
 ---
 
@@ -228,48 +177,21 @@
 | `chat:presence:` | chat | 5min | `chat:presence:{user_id}` |
 | `kpis:dashboard:` | kpis | 5min | `kpis:dashboard:{user_id}:{desde}:{hasta}` |
 
-`simcity` no usa Redis — el estado del mapa se persiste directamente en MariaDB (JSONField).
+`simcity` no usa Redis — estado del mapa persiste en MariaDB (JSONField).
 
 ---
 
 ## 5. Seguridad
 
-### Permisos
-
     obj = get_object_or_404(MyModel, pk=pk, created_by=request.user)
 
-### @csrf_exempt — PROHIBIDO en vistas con datos de usuario
-
-    # INCORRECTO (corregido en bitacora/views.py y simcity/views.py)
-    @csrf_exempt
-    def mi_vista(request): ...
-
-    # CORRECTO
-    @login_required
-    def mi_vista(request): ...  # CSRF lo maneja el middleware
-
-### Render HTML en modelos — PROHIBIDO
-
-    # INCORRECTO — XSS + responsabilidad única violada
-    class MyModel(models.Model):
-        def render_html(self):
-            return f'<div>{self.user_content}</div>'
-
-    # CORRECTO — en templatetags con escape()
-    @register.simple_tag
-    def render_block(block):
-        return mark_safe(f'<div>{escape(block.get("content",""))}</div>')
+**`@csrf_exempt` — PROHIBIDO** en vistas con datos de usuario. Bugs #12 (bitacora) y SC-2 (simcity) documentan este problema.
 
 ---
 
 ## 6. Modelo User (`accounts`)
 
-### Campos custom de `accounts.User`
-
 ```python
-# accounts/models.py
-from django.contrib.auth.models import AbstractUser
-
 class User(AbstractUser):
     phone      = models.CharField(max_length=20, blank=True, null=True)
     avatar     = models.ImageField(upload_to='avatars/', blank=True, null=True)
@@ -277,91 +199,83 @@ class User(AbstractUser):
     updated_at = models.DateTimeField(auto_now=True)
 ```
 
-Campos heredados de `AbstractUser` disponibles: `username`, `email`, `first_name`,
-`last_name`, `is_staff`, `is_active`, `date_joined`, `last_login`.
-
-### Settings requerido
-
     # panel/settings.py
     AUTH_USER_MODEL = 'accounts.User'
-
-### Acceso correcto en cualquier parte del código
-
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-
-    # En models.py — siempre con settings
-    from django.conf import settings
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, ...)
 
 ---
 
 ## 7. Integración analyst ↔ sim
 
 Ver `ANALYST_DEV_REFERENCE.md` y `SIM_DEV_REFERENCE.md`.
-
-`sim` ahora incluye SIM-7a (ACD multi-agente) — migraciones 0005+0006 aplicadas.
+`sim` incluye SIM-7a (ACD multi-agente) — migraciones 0005+0006 aplicadas.
 
 ---
 
 ## 8. App `simcity` — Arquitectura Híbrida
 
-`simcity` es la única app de M360 que depende de un proceso externo. El engine
-`micropolisengine` (librería C compilada con SWIG) solo está disponible en
-proot Ubuntu y **no puede instalarse en el venv de Termux**.
+`simcity` es la única app de M360 que depende de un proceso externo.
+`micropolisengine` (C/SWIG) solo existe en proot Ubuntu — **nunca importar en Termux**.
 
-### Arranque obligatorio
+### Endpoints (14)
+
+| URL | Método | Descripción |
+|-----|--------|-------------|
+| `/simcity/` | GET | UI del juego |
+| `/simcity/api/games/` | GET | Lista partidas |
+| `/simcity/api/games/new/` | POST | Nueva partida |
+| `/simcity/api/game/<id>/map/` | GET | Mapa + agentes |
+| `/simcity/api/game/<id>/tick/` | POST | Avanzar ticks |
+| `/simcity/api/game/<id>/build/` | POST | Construir tile |
+| `/simcity/api/game/<id>/reset/` | POST | Reiniciar ciudad |
+| `/simcity/api/game/<id>/generate_block/` | POST | Cuadrante Monopoly |
+| `/simcity/api/game/<id>/generate_zr_block/` | POST | Cuadrante ZR 10×10 ✅ SC-1 |
+| `/simcity/api/game/<id>/census/` | GET | Censo |
+| `/simcity/api/game/<id>/tasks/` | GET | Tareas ABM |
+| `/simcity/api/game/<id>/add_money/` | POST | Añadir fondos |
+| `/simcity/api/game/<id>/delete/` | POST | Eliminar partida |
+| `/simcity/api/game/<id>/export_analyst/` | POST | → StoredDataset ✅ SC-6 |
+
+### Arranque
 
 ```bash
-# Terminal 1 — proot Ubuntu (engine)
-ubuntu
-cd /root/micropolis/simcity_web
-source /root/micropolis/venv/bin/activate
-python manage.py runserver 0.0.0.0:8001
+# ~/.zshrc — agregar una vez
+alias engine='ubuntu run "source /root/micropolis/venv/bin/activate && cd /root/micropolis/simcity_web && python manage.py runserver 0.0.0.0:8001"'
+alias m360='cd ~/projects/Management360 && source venv/bin/activate && python manage.py runserver'
 
-# Terminal 2 — Termux (M360)
-cd ~/projects/Management360 && source venv/bin/activate
-python manage.py runserver
+# Alternativa
+bash scripts/start_simcity.sh
 ```
 
-### Flujo de una request
-
-```
-Browser → M360:8000/simcity/api/game/<id>/tick/
-    → simcity/views.py (@login_required, verifica created_by)
-    → simcity/services.py (requests.post → proot:8001/api/game/<engine_id>/tick/)
-    → simcity_web engine procesa Micropolis + ABM
-    → respuesta JSON con map_data actualizado
-    → M360 sincroniza Game en MariaDB
-    → respuesta al browser
-```
-
-### Campo `engine_game_id`
+### Patrón de vista con SC-3
 
 ```python
-# simcity/models.py
-engine_game_id = models.IntegerField(null=True, blank=True)
+from .services import EngineUnavailableError
+
+@login_required
+@require_POST
+def tick(request, game_id):
+    game = get_object_or_404(Game, pk=game_id, created_by=request.user)
+    try:
+        data = engine.engine_tick(game.engine_game_id, body.get('n', 1))
+        game.map_data = data.get('map', game.map_data)
+        game.money = data.get('money', game.money)
+        game.save()
+        return JsonResponse(data)
+    except EngineUnavailableError as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=503)
 ```
 
-Vincula el `Game` de M360 (MariaDB) con el `Game` del SQLite de proot.
-Puede ser `None` si el engine no respondió durante la creación — siempre
-verificar antes de llamar a `services.py`.
+### Integración con analyst (SC-6)
 
-### Manejo de engine offline (SC-3 pendiente)
+`POST /simcity/api/game/<id>/export_analyst/` crea un `StoredDataset` con columnas:
+`x, y, tile, zone_type, has_power, has_road, money, game_name, game_id`
 
-```python
-from requests.exceptions import ConnectionError as EngineOffline
+Responde con `analyst_url` para ir directo al preview.
 
-try:
-    data = engine.engine_tick(game.engine_game_id, n)
-except EngineOffline:
-    return JsonResponse(
-        {'success': False, 'error': 'Engine offline — levantar proot:8001'},
-        status=503
-    )
-```
+### Admin
 
-Ver `SIMCITY_DEV_REFERENCE.md` para documentación completa.
+`GameAdmin` registrado en `/admin/simcity/` con fieldsets para Partida, Engine,
+Estado (colapsable) y Timestamps (readonly).
 
 ---
 
@@ -376,17 +290,7 @@ Ver `SIMCITY_DEV_REFERENCE.md` para documentación completa.
 
 ## 10. Frontend Unificado
 
-La mayoría de las apps usan Bootstrap 5 + HTMX. **Excepción: `simcity`** usa
-JS vanilla con Canvas 2D y CSS custom propio — no agregar Bootstrap al template
-del juego.
-
-    <!-- HTMX (apps estándar) -->
-    <button hx-get="/api/items/?page=2" hx-target="#items-list" hx-swap="beforeend">
-        Cargar más
-    </button>
-
-    // Chart.js
-    new Chart(ctx, { type: 'bar', data: { labels: [...], datasets: [...] } });
+Bootstrap 5 + HTMX en todas las apps. **Excepción: `simcity`** — JS vanilla + Canvas 2D + CSS custom. No agregar Bootstrap al template del juego.
 
 ---
 
@@ -396,40 +300,33 @@ del juego.
 |-----|-------|-----------|
 | sim | 157 | 100% |
 | analyst | 34/50 | 68% |
-| Otras | — | — |
-
-    python manage.py test sim.tests.test_generators sim.tests.test_gtr_engine -v 2
+| simcity | 0 | 0% — pendiente SC-8 |
 
 ---
 
 ## 12. Despliegue
 
-### build.sh (producción)
+### build.sh
 
-    pip install --no-cache-dir -r requirements.txt
     python manage.py migrate auth
     python manage.py migrate contenttypes
     python manage.py migrate accounts   # ← CRÍTICO: antes que el resto
     python manage.py migrate --no-input
     python manage.py collectstatic --no-input
 
-> ⚠️ En producción, `simcity` requiere que el engine proot esté accesible
-> en `ENGINE_BASE_URL`. Configurar como variable de entorno para prod.
-
 ### Variables de entorno (.env)
 
     SECRET_KEY=...
     DEBUG=False
-    AUTH_USER_MODEL=accounts.User
     DATABASE_URL=mysql://user:pass@localhost:3306/projects
     REDIS_URL=redis://:password@localhost:6379/0
-    SIMCITY_ENGINE_URL=http://localhost:8001   # URL del engine Micropolis
+    SIMCITY_ENGINE_URL=http://localhost:8001
 
 ---
 
 ## 13. Migraciones
 
-### Estado actual (2026-03-18)
+### Estado actual (2026-03-19)
 
 | App | Última migración | Notas |
 |-----|-----------------|-------|
@@ -438,48 +335,28 @@ del juego.
 | sim | 0006_rename_... | SIM-7a ACD multi-agente completo |
 | simcity | 0001_initial | Game con created_by + engine_game_id |
 | events | 0003_alter_... | — |
-| cv | 0001_initial | — |
-| memento | 0007_alter_... | — |
-| kpis | 0002_refactor_callrecord | UUID col + fecha DateField + 5 índices (MySQL-safe IF NOT EXISTS) |
+| kpis | 0002_refactor_callrecord | UUID + fecha DateField + 5 índices (IF NOT EXISTS) |
 
-### Orden de dependencias entre apps
+### Orden de dependencias
 
-1. `contenttypes`, `auth` (Django core)
-2. **`accounts`** — PRIMERO (AUTH_USER_MODEL)
+1. `contenttypes`, `auth`
+2. **`accounts`** — PRIMERO
 3. `events`, `analyst`, `sim`, `courses`, `simcity`
 4. `chat`, `rooms`, `bitacora`, `bots`
-5. Resto de apps
 
-### ⚠️ REGLA CRÍTICA: Nunca ignorar migrations/ en .gitignore
-
-El `.gitignore` fue corregido (commit `2ea63279`) — regla `*/migrations/*` primero,
-excepciones `!app/migrations/**` por app después.
-
-    git ls-files --others --exclude-standard | grep migrations
-    # Si devuelve algo → git add -f
-
-### Proceso UUID swap de PK (documentado en bitacora)
-
-1. Backup: `dumpdata`
-2. Campo `uuid_new` temporal + `RunPython` para poblar
-3. `SeparateDatabaseAndState` con SQL directo via `cursor.execute`
-4. No usar `makemigrations` automático para el swap en MariaDB
+### ⚠️ REGLA: Nunca ignorar migrations/ en .gitignore
 
 ---
 
 ## 14. Documentación
 
-### 3 tipos de documento por app
+| Tipo | Propósito |
+|------|-----------|
+| `APP_CONTEXT.md` | Mapa estructural (auto) |
+| `APP_DEV_REFERENCE.md` | Manual técnico |
+| `APP_DESIGN.md` | Diseño, fases, roadmap |
 
-| Tipo | Genera | Propósito |
-|------|--------|-----------|
-| `APP_CONTEXT.md` | `bash scripts/m360_map.sh app ./app` (auto) | Mapa estructural |
-| `APP_DEV_REFERENCE.md` | Devs / Claude | Manual técnico |
-| `APP_DESIGN.md` | PM / Claude | Diseño, fases, roadmap |
-
-    bash scripts/m360_map.sh app ./bitacora
     bash scripts/m360_map.sh app ./simcity
-    bash scripts/m360_map.sh app ./kpis
     bash scripts/m360_map.sh              # PROJECT_CONTEXT.md completo
 
 ---
@@ -492,14 +369,19 @@ excepciones `!app/migrations/**` por app después.
 | 2 | ✅ | analyst/sim | `started_at` inexistente en sim.Interaction |
 | 3 | ✅ | analyst | UUID Python en JS → `_safe_json_str()` |
 | 4 | ✅ | sim | `@keyframes` dentro de `<script>` |
+| 5 | ⬜ | chat | Notificaciones no siempre marcan como leídas |
+| 6 | ⬜ | events | Consultas N+1 en dashboard de proyectos |
+| 7 | ✅ | kpis | Índices compuestos + fecha DateField + UUID |
+| 8 | ⬜ | courses | Editor de contenido lento con muchos bloques |
 | 9 | ✅ | sim | `expected_vol` gauss negativo |
 | 10 | ✅ | accounts | `accounts_user` tabla inexistente — INC-001 |
 | 11 | ✅ | bitacora | `timezone.timedelta` → `from datetime import timedelta` |
 | 12 | ✅ | bitacora | `@csrf_exempt` en `upload_image` |
 | 13 | ✅ | bitacora | N+1 en `total_attachments` |
-| 14 | ✅ | bitacora | HTML render en modelos → movido a templatetags |
+| 14 | ✅ | bitacora | HTML render en modelos → templatetags |
 | 15 | ✅ | bitacora | Imports lazy → movidos al tope |
 | 16 | ✅ | bitacora | `content_block` no renderizaba en bitacora_tags |
+| 17 | ✅ | bitacora | `urls.py` usaba `<int:pk>` → `<uuid:pk>` (BIT-6) |
 | 18 | ✅ | events | Bloque `try` sin `except` en `assign_to_available_user()` |
 | 19 | ✅ | events | `STATUS_CHOICES` incorrecto en `TaskFilterForm` |
 | 20 | ✅ | events | Campos incorrectos en `TaskScheduleForm` |
@@ -508,18 +390,16 @@ excepciones `!app/migrations/**` por app después.
 | 23 | ✅ | events | Falta import de `Group` en `setup_views.py` |
 | 24 | ✅ | cv | Admin con campos inexistentes |
 | 25 | ✅ | kpis | Migración con dependencia incorrecta |
-| 5  | ⬜ | chat | Notificaciones no siempre marcan como leídas |
-| 6  | ⬜ | events | Consultas N+1 en dashboard de proyectos |
-| 7  | ✅ | kpis | Índices compuestos + fecha DateField + UUID — KPI-1 Sprint 7 |
-| 8  | ⬜ | courses | Editor de contenido lento con muchos bloques |
-| 17 | ⬜ | bitacora | `urls.py` usa `<int:pk>` en lugar de `<uuid:pk>` (BIT-6) |
-| SC-1 | ⬜ | simcity | `generate_zr_block` no está en urls.py de M360 |
-| SC-2 | ⬜ | simcity | `mobMoneyBtn` no llama a la API — solo loguea warning |
-| SC-3 | ⬜ | simcity | Engine offline da 500 genérico — falta manejo de `ConnectionError` |
-
-| 26 | ✅ | kpis | `ForeignKey(User)` en lugar de `settings.AUTH_USER_MODEL` — E301 |
+| 26 | ✅ | kpis | `ForeignKey(User)` → `settings.AUTH_USER_MODEL` |
 | 27 | ✅ | kpis | `Duplicate column name created_at` en 0002 — IF NOT EXISTS |
 | 28 | ✅ | scripts | `m360_map.sh`/`app_map.sh` convertidos en stubs — restaurados |
-
-> Bugs 18-25 corregidos por DeepSeek — pendientes de commit.
-> Bugs SC-1/SC-2/SC-3 documentados en `SIMCITY_DEV_REFERENCE.md`.
+| 29 | ✅ | bitacora | `entry.autor` en template → `entry.created_by` |
+| 30 | ✅ | bitacora | `entry.mood` raw en templates → `entry.get_mood_display` |
+| 31 | ✅ | bitacora | `entry.CATEGORIA_CHOICES` en templates → `categoria_choices` del contexto |
+| 32 | ✅ | bitacora | `entry.get_categoria_choices` en dashboard → `categoria_choices` |
+| 33 | ✅ | bitacora | `BitacoraEntry.CategoriaChoices` en views → `CategoriaChoices` (módulo-level) |
+| 34 | ⬜ | bitacora | Nav prev/next no filtra por `created_by`+`is_active` (BIT-17) |
+| 35 | ⬜ | bitacora | TinyMCE CDN usa `no-api-key` — registrar en tiny.cloud (BIT-18) |
+| SC-1 | ✅ `bf037497` | simcity | `generate_zr_block` no estaba en urls.py de M360 |
+| SC-2 | ✅ `bf037497` | simcity | `mobMoneyBtn` solo logueaba warning — ahora llama API |
+| SC-3 | ✅ `bf037497` | simcity | Engine offline daba 500 — ahora 503 EngineUnavailableError |

@@ -1,0 +1,165 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_head %}
+<style>
+#analyst-root {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 14px;
+  color: #111827;
+  line-height: 1.6;
+  width: 100%;
+  min-width: 0;
+}
+#analyst-root .docs-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 20px;
+  align-items: start;
+  padding: 20px 16px 48px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+@media(max-width: 768px) {
+  #analyst-root .docs-layout { grid-template-columns: 1fr; }
+  #analyst-root .docs-toc    { display: none; }
+}
+/* Sidebar nav */
+#analyst-root .docs-toc {
+  position: sticky;
+  top: 70px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px 0;
+  font-size: 13px;
+}
+#analyst-root .docs-toc-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #9ca3af;
+  padding: 0 16px 8px;
+}
+#analyst-root .docs-toc a {
+  display: block;
+  padding: 5px 16px;
+  color: #4b5563;
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: all .12s;
+}
+#analyst-root .docs-toc a:hover,
+#analyst-root .docs-toc a.active {
+  color: #2563eb;
+  border-left-color: #2563eb;
+  background: #eff6ff;
+}
+/* Content */
+#analyst-root .docs-body {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 28px 32px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  min-width: 0;
+  overflow-x: auto;
+}
+/* Markdown styles */
+#analyst-root .docs-body h1 { font-size: 22px; font-weight: 800; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; margin: 0 0 20px; }
+#analyst-root .docs-body h2 { font-size: 17px; font-weight: 700; color: #1e3a5f; border-left: 4px solid #2563eb; padding-left: 10px; margin: 28px 0 12px; }
+#analyst-root .docs-body h3 { font-size: 14px; font-weight: 700; color: #374151; margin: 20px 0 8px; }
+#analyst-root .docs-body h4 { font-size: 13px; font-weight: 700; color: #6b7280; margin: 14px 0 6px; }
+#analyst-root .docs-body p  { margin: 0 0 12px; color: #374151; }
+#analyst-root .docs-body ul, #analyst-root .docs-body ol { margin: 0 0 12px 20px; color: #374151; }
+#analyst-root .docs-body li { margin-bottom: 4px; }
+#analyst-root .docs-body a  { color: #2563eb; text-decoration: none; }
+#analyst-root .docs-body a:hover { text-decoration: underline; }
+#analyst-root .docs-body code {
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  padding: 1px 5px;
+  color: #7c3aed;
+}
+#analyst-root .docs-body pre {
+  background: #1e293b;
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+  margin: 12px 0;
+}
+#analyst-root .docs-body pre code {
+  background: none;
+  border: none;
+  color: #e2e8f0;
+  font-size: 12px;
+  padding: 0;
+}
+#analyst-root .docs-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 12px 0;
+  overflow-x: auto;
+  display: block;
+}
+#analyst-root .docs-body th {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 7px 12px;
+  text-align: left;
+  font-weight: 700;
+  color: #6b7280;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  white-space: nowrap;
+}
+#analyst-root .docs-body td {
+  border: 1px solid #e5e7eb;
+  padding: 6px 12px;
+  vertical-align: top;
+}
+#analyst-root .docs-body tr:nth-child(even) td { background: #f9fafb; }
+#analyst-root .docs-body blockquote {
+  border-left: 4px solid #2563eb;
+  background: #eff6ff;
+  padding: 10px 16px;
+  margin: 12px 0;
+  border-radius: 0 6px 6px 0;
+  color: #1e40af;
+  font-size: 13px;
+}
+#analyst-root .docs-body hr { border: none; border-top: 1px solid #e5e7eb; margin: 20px 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="analyst-root">
+  <div class="docs-layout">
+
+    <!-- ToC sidebar -->
+    <nav class="docs-toc">
+      <div class="docs-toc-title">Documentación</div>
+      {% for key, label in docs.items %}
+      <a href="{% url 'analyst:docs' key %}"
+         class="{% if key == doc_key %}active{% endif %}">
+        {% if key == 'context' %}🗂{% elif key == 'reference' %}📘{% else %}🚀{% endif %}
+        {{ label }}
+      </a>
+      {% endfor %}
+    </nav>
+
+    <!-- Rendered markdown -->
+    <article class="docs-body">
+      {{ content_html|safe }}
+    </article>
+
+  </div>
+</div>
+{% endblock %}

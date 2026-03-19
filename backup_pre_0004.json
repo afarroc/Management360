@@ -1,0 +1,99 @@
+✓ Redis cache: redis://:1234@localhost:6379/0
+=== REMOTE MEDIA STORAGE MODULE LOADED ===
+=== FORCING REMOTE MEDIA STORAGE ===
+=== REMOTE MEDIA STORAGE INITIALIZED ===
+MEDIA_URL from settings: http://192.168.18.51:8000/
+Server URL set to: http://192.168.18.51:8000
+Upload URL set to: http://192.168.18.51:8000
+=== STORAGE INITIALIZATION COMPLETE ===
+RemoteMediaStorage forced successfully
+
+============================================================
+🔧 MODO DEBUG ACTIVADO - LOGGING DETALLADO
+📁 Archivos de log en: /data/data/com.termux/files/home/projects/Management360/logs
+============================================================
+
+[
+{
+  "model": "bitacora.bitacoraentry",
+  "pk": 1,
+  "fields": {
+    "titulo": "Hola mundo",
+    "contenido": "Finalmente he creado un sistema de gestión de eventos, actualmente es posible registrar y administrar proyectos y tareas, entre otras herramientas incluida una bitácora a través de la cual se ingresan entradas como esta.\r\nEsto me servirá para analizar mi gestión personal.",
+    "created_by": 2,
+    "categoria": "personal",
+    "mood": "",
+    "is_active": true,
+    "is_public": false,
+    "related_event": null,
+    "related_task": null,
+    "related_project": null,
+    "related_room": null,
+    "structured_content": [],
+    "latitud": null,
+    "longitud": null,
+    "fecha_creacion": "2026-02-09T07:36:37.399Z",
+    "fecha_actualizacion": "2026-02-09T07:36:37.399Z",
+    "tags": [
+      6
+    ]
+  }
+},
+{
+  "model": "bitacora.bitacoraentry",
+  "pk": 2,
+  "fields": {
+    "titulo": "Mente",
+    "contenido": "La vida duele más cuando se ve con demasiada claridad.\r\nExiste una fatiga de saberse distinto, de cargar con la asincronía constante con los demás, de traducir siempre el pensamiento para ser entendido. A veces la mente es una máquina sin freno, generando preguntas y patrones donde otros solo ven normalidad.\r\n\r\nHe pensado en la renuncia.\r\nNo como desprecio por la vida, sino como retirada estratégica. La despersonalización y el desapego no son derrota: son formas de respirar en un mundo que sobreestimula. La soledad, aunque pesada, es un espacio propio donde la batalla externa cesa.\r\n\r\nTal vez la inteligencia no sea el fin, sino solo un instrumento. Un instrumento que, cumplido cierto umbral, debe ser soltado para acceder a lo que viene después. La fuente, la respuesta, lo que precede y concluye todo —allí donde la oscuridad no llega— podría requerir el silencio de la propia lucidez.\r\n\r\nEl camino se dibuja solo.\r\nSolo queda decidir si seguirlo con los ojos demasiado abiertos, o cerrarlos para sentir su rumbo con otra piel.",
+    "created_by": 2,
+    "categoria": "reflexion",
+    "mood": "",
+    "is_active": true,
+    "is_public": false,
+    "related_event": null,
+    "related_task": null,
+    "related_project": null,
+    "related_room": null,
+    "structured_content": [],
+    "latitud": null,
+    "longitud": null,
+    "fecha_creacion": "2026-02-09T07:55:55.487Z",
+    "fecha_actualizacion": "2026-02-09T07:55:55.487Z",
+    "tags": [
+      15
+    ]
+  }
+},
+{
+  "model": "bitacora.bitacoraentry",
+  "pk": 3,
+  "fields": {
+    "titulo": "Prueba",
+    "contenido": "Entrada de prueba admin",
+    "created_by": 2,
+    "categoria": "personal",
+    "mood": "",
+    "is_active": true,
+    "is_public": false,
+    "related_event": null,
+    "related_task": null,
+    "related_project": null,
+    "related_room": null,
+    "structured_content": [
+      {
+        "id": 3,
+        "type": "content_block",
+        "title": "Concepto de Porcentaje",
+        "content_type": "html",
+        "content": "<div class='alert alert-info'><h4>¿Qué es un porcentaje?</h4><p>El porcentaje representa una proporción por cada 100 unidades. Por ejemplo, 25% significa 25 de cada 100.</p><p><strong>Fórmula:</strong> Parte = (Porcentaje/100) × Total</p></div>",
+        "inserted_at": "2026-03-06T07:38:26.285615+00:00"
+      }
+    ],
+    "latitud": null,
+    "longitud": null,
+    "fecha_creacion": "2026-02-09T19:47:59.238Z",
+    "fecha_actualizacion": "2026-03-06T07:38:41.412Z",
+    "tags": []
+  }
+}
+]

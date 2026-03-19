@@ -1,0 +1,48 @@
+name,category,color,description,is_system
+@casa,Contexto,#3498db,Tareas que se hacen en casa,True
+@computadora,Contexto,#2ecc71,Tareas que requieren computadora,True
+@teléfono,Contexto,#27ae60,Llamadas o comunicación telefónica,True
+@taller,Contexto,#f39c12,Tareas en mesa de trabajo/carpintería,True
+@salud,Contexto,#e74c3c,Actividades relacionadas con salud,True
+@planificación,Contexto,#9b59b6,Tareas de planificación y organización,True
+@familia,Contexto,#1abc9c,Actividades familiares,True
+@social,Contexto,#34495e,Actividades sociales,True
+@creatividad,Contexto,#8e44ad,Actividades artísticas/creativas,True
+@fuera,Contexto,#16a085,Tareas fuera de casa,True
+@errands,Contexto,#d35400,Recados,True
+@auto,Contexto,#c0392b,Tareas en el auto o viaje,True
+@lectura,Contexto,#2980b9,Tareas de lectura o estudio,True
+@ejercicio,Contexto,#e74c3c,Actividad física,True
+@descanso,Contexto,#7f8c8d,Tiempo de descanso o relajación,True
+@trabajo,Contexto,#2c3e50,Tareas laborales,True
+Ropa,Área,#3498db,Gestión de vestimenta personal,False
+Piso,Área,#2980b9,Mantenimiento del hogar,False
+Patio,Área,#27ae60,Cuidado de área exterior,False
+Alimento,Área,#e67e22,Gestión de alimentación,False
+Educación,Área,#9b59b6,Aprendizaje y desarrollo,False
+Ocupación,Área,#34495e,Trabajo actual,False
+Profesión,Área,#2c3e50,Desarrollo profesional,False
+Salud,Área,#e74c3c,Bienestar físico y mental,False
+Descanso,Área,#7f8c8d,Sueño y recuperación,False
+Noticias,Área,#95a5a6,Mantenerse informado,False
+Arte,Área,#8e44ad,Expresión creativa,False
+Familia,Área,#1abc9c,Relaciones familiares,False
+Amistad,Área,#16a085,Relaciones sociales,False
+Creencias,Área,#f39c12,Valores y espiritualidad,False
+Alta,Prioridad,#e74c3c,Tareas críticas o urgentes,True
+Media,Prioridad,#f39c12,Tareas importantes,True
+Baja,Prioridad,#2ecc71,Tareas normales o de bajo impacto,True
+GTD,Metodología,#2ecc71,Sistema Getting Things Done,True
+Carpintería,Tipo,#8B4513,Proyectos de carpintería,False
+Estudio,Tipo,#3498db,Actividades de aprendizaje,False
+Limpieza,Tipo,#7f8c8d,Tareas de limpieza,False
+Ejercicio,Tipo,#e74c3c,Actividad física,False
+Cocina,Tipo,#d35400,Preparación de alimentos,False
+Organización,Tipo,#9b59b6,Tareas organizativas,False
+Social,Tipo,#1abc9c,Actividades sociales,False
+Hábito,Tipo,#34495e,Rutinas diarias,False
+Accionable,GTD,#27ae60,Item procesable según GTD,True
+No Accionable,GTD,#95a5a6,Item no procesable,True
+Referencia,GTD,#7f8c8d,Información para archivar,True
+Incubar,GTD,#f39c12,Para reconsiderar en el futuro,True
+Eliminar,GTD,#e74c3c,Item para descartar,True

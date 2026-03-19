@@ -1,0 +1,8 @@
+name,description,color,icon,is_system
+Contexto,Lugar o situación donde se puede ejecutar la tarea,#3498db,bi-geo,True
+Área,Área de responsabilidad o tema general,#e74c3c,bi-folder,True
+Prioridad,Nivel de importancia de la tarea,#f39c12,bi-exclamation,True
+Metodología,Sistema o metodología aplicada,#9b59b6,bi-diagram-3,True
+Tipo,Tipo de tarea o actividad,#1abc9c,bi-tag,True
+GTD,Categorías específicas del sistema GTD,#2ecc71,bi-check2-circle,True
+Personal,Tags personalizados del usuario,#34495e,bi-person,False

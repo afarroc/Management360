@@ -32,12 +32,19 @@
 #agent-root .gtr-mini{font-size:28px;font-weight:900;color:var(--g-primary-l);
   font-variant-numeric:tabular-nums;letter-spacing:2px}
 
+/* Skill badge (advanced) */
+#agent-root .skill-badge{background:var(--g-surf2);border:1px solid var(--g-border);
+  border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;
+  color:var(--g-purple);cursor:pointer;white-space:nowrap}
+#agent-root .skill-badge:hover{border-color:var(--g-purple)}
+
 /* Call card */
 #agent-root .call-card{background:var(--g-surf);border:2px solid var(--g-border);
   border-radius:14px;padding:20px;margin-bottom:14px;text-align:center;
   transition:border-color .3s}
 #agent-root .call-card.ringing{border-color:var(--g-teal);animation:glow .8s infinite alternate}
 #agent-root .call-card.on_call{border-color:var(--g-primary)}
+#agent-root .call-card.on_hold{border-color:var(--g-warning)}
 #agent-root .call-card.acw    {border-color:var(--g-orange)}
 @keyframes glow{from{box-shadow:0 0 8px #2dd4bf33}to{box-shadow:0 0 20px #2dd4bf66}}
 
@@ -48,6 +55,13 @@
 #agent-root .call-timer{font-size:32px;font-weight:900;font-family:monospace;
   color:var(--g-success);letter-spacing:3px}
 #agent-root .call-wait{font-size:13px;color:var(--g-text-m)}
+
+/* Hold banner */
+#agent-root .hold-banner{background:#f59e0b22;border:1px solid #f59e0b55;
+  border-radius:10px;padding:10px 14px;margin-bottom:10px;
+  display:none;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--g-warning)}
+#agent-root .hold-banner.visible{display:flex}
+#agent-root .hold-timer{font-size:20px;font-family:monospace;margin-left:auto}
 
 /* Buttons */
 #agent-root .btn{display:inline-flex;align-items:center;gap:5px;padding:10px 16px;
@@ -60,6 +74,8 @@
 #agent-root .btn-red    {background:var(--g-danger); border-color:var(--g-danger); color:#fff}
 #agent-root .btn-blue   {background:var(--g-primary);border-color:var(--g-primary);color:#fff}
 #agent-root .btn-orange {background:var(--g-orange); border-color:var(--g-orange); color:#fff}
+#agent-root .btn-yellow {background:var(--g-warning);border-color:var(--g-warning);color:#000}
+#agent-root .btn-purple {background:var(--g-purple); border-color:var(--g-purple); color:#fff}
 #agent-root .btn-ghost  {background:transparent;border-color:var(--g-border);color:var(--g-text-s)}
 #agent-root .btn-lg{padding:14px 20px;font-size:15px;border-radius:12px}
 #agent-root .btn-full{width:100%}
@@ -69,7 +85,7 @@
 #agent-root .action-grid.cols-2{grid-template-columns:1fr 1fr}
 #agent-root .action-grid.cols-3{grid-template-columns:1fr 1fr 1fr}
 
-/* Tipification (intermediate+) */
+/* Tipification */
 #agent-root .tipif-section{background:var(--g-surf);border:1px solid var(--g-border);
   border-radius:12px;padding:14px;margin-bottom:14px;display:none}
 #agent-root .tipif-section.visible{display:block}
@@ -92,13 +108,33 @@
 #agent-root .stats-bar{display:flex;gap:10px;background:var(--g-surf2);
   border:1px solid var(--g-border);border-radius:10px;padding:10px 14px;
   margin-bottom:14px;flex-wrap:wrap}
-#agent-root .stat-item{text-align:center;min-width:60px}
+#agent-root .stat-item{text-align:center;min-width:54px}
 #agent-root .stat-val{font-size:20px;font-weight:900;color:var(--g-primary-l);display:block}
 #agent-root .stat-lbl{font-size:10px;color:var(--g-text-m);text-transform:uppercase;letter-spacing:.05em}
 
 /* Idle screen */
 #agent-root .idle-screen{text-align:center;padding:48px 20px;color:var(--g-text-m)}
 #agent-root .idle-screen .idle-icon{font-size:48px;margin-bottom:12px;opacity:.4}
+
+/* ── Modal ─────────────────────────────────────────────────────────────── */
+#agent-root .modal-backdrop{position:fixed;inset:0;background:#00000088;z-index:1000;
+  display:none;align-items:center;justify-content:center;padding:20px}
+#agent-root .modal-backdrop.open{display:flex}
+#agent-root .modal-box{background:var(--g-surf);border:1px solid var(--g-border);
+  border-radius:16px;padding:24px;width:100%;max-width:380px}
+#agent-root .modal-title{font-size:16px;font-weight:800;margin-bottom:16px}
+#agent-root .slot-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;
+  max-height:240px;overflow-y:auto}
+#agent-root .slot-item{display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border:1px solid var(--g-border);border-radius:10px;cursor:pointer;transition:all .12s}
+#agent-root .slot-item:hover{border-color:var(--g-primary);background:var(--g-surf2)}
+#agent-root .slot-item.selected{border-color:var(--g-primary);background:#3b82f622}
+#agent-root .slot-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+#agent-root .dot-available{background:var(--g-success)}
+#agent-root .dot-on_call  {background:var(--g-primary)}
+#agent-root .dot-break    {background:var(--g-warning)}
+#agent-root .dot-offline  {background:var(--g-text-m)}
+#agent-root .dot-absent   {background:var(--g-danger)}
 </style>
 {% endblock %}
 
@@ -114,6 +150,11 @@
       <div style="font-size:12px;color:var(--g-text-m)">{{ slot.session.name }}</div>
     </div>
     <span class="status-chip chip-available" id="agent-status-chip">Disponible</span>
+    {% if slot.level == 'advanced' %}
+    <span class="skill-badge" id="skill-badge" onclick="openSkillModal()">
+      📡 <span id="skill-badge-label">{{ slot.skill|default:"General" }}</span>
+    </span>
+    {% endif %}
     <div style="flex:1"></div>
     <div class="gtr-mini" id="agent-clock">09:00</div>
   </div>
@@ -126,6 +167,9 @@
     {% if slot.level != 'basic' %}
     <div class="stat-item"><span class="stat-val" id="st-hold">0</span><div class="stat-lbl">Holds</div></div>
     <div class="stat-item"><span class="stat-val" id="st-transfer">0</span><div class="stat-lbl">Transfer</div></div>
+    {% endif %}
+    {% if slot.level == 'advanced' %}
+    <div class="stat-item"><span class="stat-val" id="st-conference">0</span><div class="stat-lbl">Conf.</div></div>
     {% endif %}
   </div>
 
@@ -155,17 +199,24 @@
 
     <!-- On call state -->
     <div id="oncall-state" style="display:none">
-      <div class="call-icon">🎙️</div>
+      <div class="call-icon" id="oncall-icon">🎙️</div>
       <div class="call-lead" id="oncall-lead">—</div>
       <div class="call-skill" id="oncall-skill">—</div>
       <div class="call-timer" id="call-timer">00:00</div>
 
-      <!-- Level básico -->
+      <!-- Hold banner -->
+      <div class="hold-banner" id="hold-banner">
+        ⏸ En espera
+        <span class="hold-timer" id="hold-timer">00:00</span>
+      </div>
+
+      <!-- Nivel básico -->
+      {% if slot.level == 'basic' %}
       <div id="basic-actions" class="action-grid cols-2" style="margin-top:14px">
         <button class="btn btn-orange btn-full" onclick="doAction('hold')" id="btn-hold">
           <i class="bi bi-pause-fill"></i> Hold
         </button>
-        <button class="btn btn-ghost btn-full" onclick="doAction('tipify',{tipificacion:'Venta'})" id="btn-venta">
+        <button class="btn btn-ghost btn-full" onclick="doAction('tipify',{tipificacion:'Venta'})">
           💰 Venta
         </button>
         <button class="btn btn-ghost btn-full" onclick="doAction('tipify',{tipificacion:'No interesado'})">
@@ -181,23 +232,64 @@
           <i class="bi bi-telephone-x"></i> Colgar
         </button>
       </div>
+      {% endif %}
+
+      <!-- Nivel intermedio -->
+      {% if slot.level == 'intermediate' %}
+      <div class="action-grid cols-2" style="margin-top:14px">
+        <button class="btn btn-orange btn-full" onclick="toggleHold()" id="btn-hold">
+          <i class="bi bi-pause-fill"></i> Hold
+        </button>
+        <button class="btn btn-ghost btn-full" onclick="openTransferModal()">
+          🔀 Transferir
+        </button>
+        <button class="btn btn-red btn-full cols-2" style="grid-column:1/-1" onclick="endCall()">
+          <i class="bi bi-telephone-x"></i> Colgar
+        </button>
+      </div>
+      {% endif %}
+
+      <!-- Nivel avanzado -->
+      {% if slot.level == 'advanced' %}
+      <div class="action-grid cols-3" style="margin-top:14px">
+        <button class="btn btn-orange btn-full" onclick="toggleHold()" id="btn-hold">
+          <i class="bi bi-pause-fill"></i> Hold
+        </button>
+        <button class="btn btn-ghost btn-full" onclick="openTransferModal()">
+          🔀 Transfer
+        </button>
+        <button class="btn btn-purple btn-full" onclick="openConferenceModal()">
+          👥 Conf.
+        </button>
+        <button class="btn btn-red btn-full" style="grid-column:1/-1" onclick="endCall()">
+          <i class="bi bi-telephone-x"></i> Colgar
+        </button>
+      </div>
+      {% endif %}
+
     </div>
   </div>
 
   <!-- Tipification section (intermediate+) -->
   {% if slot.level != 'basic' %}
   <div class="tipif-section" id="tipif-section">
-    <div class="f-label">Tipificación</div>
+    <label class="f-label">Tipificación</label>
     <select id="tipif-sel" class="f-select">
       <option value="">— seleccionar —</option>
       {% for t in tipificaciones %}
       <option value="{{ t }}">{{ t }}</option>
       {% endfor %}
     </select>
-    <div class="f-label">Observación</div>
-    <textarea id="tipif-notes" class="f-textarea" rows="2" placeholder="Notas opcionales…"></textarea>
+    {% if slot.level == 'advanced' %}
+    <label class="f-label">Sub-tipificación</label>
+    <select id="subtipif-sel" class="f-select">
+      <option value="">— opcional —</option>
+    </select>
+    {% endif %}
+    <label class="f-label">Notas</label>
+    <textarea id="tipif-notes" class="f-textarea" rows="2" placeholder="Observaciones..."></textarea>
     <button class="btn btn-blue btn-full" onclick="confirmTipify()">
-      <i class="bi bi-check-lg"></i> Guardar tipificación
+      <i class="bi bi-check2"></i> Guardar tipificación
     </button>
   </div>
   {% endif %}
@@ -221,7 +313,62 @@
     </button>
   </div>
 
-</div></div>
+</div><!-- /agent-page -->
+</div><!-- /agent-root -->
+
+<!-- ── Modal Transfer ────────────────────────────────────────────────────── -->
+<div id="agent-root">
+<div class="modal-backdrop" id="modal-transfer">
+  <div class="modal-box">
+    <div class="modal-title">🔀 Transferir llamada</div>
+    <div class="slot-list" id="transfer-slot-list">
+      <div style="color:var(--g-text-m);text-align:center;padding:20px">Cargando agentes...</div>
+    </div>
+    <div class="action-grid cols-2">
+      <button class="btn btn-ghost btn-full" onclick="closeModal('modal-transfer')">Cancelar</button>
+      <button class="btn btn-blue btn-full" onclick="confirmTransfer()">Transferir</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Conference ──────────────────────────────────────────────────── -->
+<div class="modal-backdrop" id="modal-conference">
+  <div class="modal-box">
+    <div class="modal-title">👥 Conferencia</div>
+    <div class="slot-list" id="conference-slot-list">
+      <div style="color:var(--g-text-m);text-align:center;padding:20px">Cargando agentes...</div>
+    </div>
+    <div class="action-grid cols-2">
+      <button class="btn btn-ghost btn-full" onclick="closeModal('modal-conference')">Cancelar</button>
+      <button class="btn btn-purple btn-full" onclick="confirmConference()">Iniciar conferencia</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal Cambiar Skill ───────────────────────────────────────────────── -->
+{% if slot.level == 'advanced' %}
+<div class="modal-backdrop" id="modal-skill">
+  <div class="modal-box">
+    <div class="modal-title">📡 Cambiar skill activo</div>
+    <div class="slot-list" id="skill-list">
+      {% for skill in session.account.config.inbound.skills|default_if_none:'' %}
+      <div class="slot-item" onclick="selectSkill('{{ skill }}')">
+        <span>{{ skill }}</span>
+      </div>
+      {% empty %}
+      <div style="color:var(--g-text-m);font-size:13px">No hay skills configurados en la cuenta.</div>
+      {% endfor %}
+    </div>
+    <label class="f-label" style="margin-top:8px">O ingresa uno manualmente</label>
+    <input id="skill-manual" class="f-select" placeholder="Ej: PLD, CONVENIOS...">
+    <div class="action-grid cols-2" style="margin-top:8px">
+      <button class="btn btn-ghost btn-full" onclick="closeModal('modal-skill')">Cancelar</button>
+      <button class="btn btn-blue btn-full" onclick="confirmSkill()">Aplicar</button>
+    </div>
+  </div>
+</div>
+{% endif %}
+</div><!-- /agent-root modal wrapper -->
 
 <script>
 const SLOT_ID = '{{ slot.id }}';
@@ -239,11 +386,16 @@ async function postJSON(url, body){
   return r.json();
 }
 
-let CURRENT_IX  = null;   // interacción activa
-let CALL_START  = null;   // timestamp cuando answered
-let CALL_TIMER  = null;   // interval del timer on_call
-let ACW_SECS    = 0;
-let ACW_TIMER   = null;
+let CURRENT_IX     = null;
+let CALL_START     = null;
+let CALL_TIMER     = null;
+let ACW_SECS       = 0;
+let ACW_TIMER      = null;
+let HOLD_ACTIVE    = false;
+let HOLD_START     = null;
+let HOLD_TIMER     = null;
+let SELECTED_SLOT  = null;   // para modales transfer/conference
+let AVAILABLE_SLOTS = [];    // actualizado en cada poll
 
 // ── Poll every 2s ─────────────────────────────────────────────────────────────
 setInterval(doPoll, 2000);
@@ -255,6 +407,7 @@ async function doPoll(){
     if(!d.success) return;
     updateClock(d.gtr_time);
     updateStats(d.slot);
+    if(d.available_slots) AVAILABLE_SLOTS = d.available_slots;
 
     const ix = d.active;
     if(ix){
@@ -281,8 +434,13 @@ function updateStats(s){
   document.getElementById('st-aht').textContent       = s.aht_min ? s.aht_min+'m' : '—';
   const stHold = document.getElementById('st-hold');
   const stTrans = document.getElementById('st-transfer');
+  const stConf  = document.getElementById('st-conference');
   if(stHold)  stHold.textContent  = s.hold_count??0;
   if(stTrans) stTrans.textContent = s.transfer_count??0;
+  if(stConf)  stConf.textContent  = s.conference_count??0;
+  // Actualizar skill badge
+  const sb = document.getElementById('skill-badge-label');
+  if(sb && s.skill) sb.textContent = s.skill || 'General';
 }
 
 function updateStatusChip(status){
@@ -298,10 +456,14 @@ function showIdle(){
   document.getElementById('ringing-state').style.display='none';
   document.getElementById('oncall-state').style.display='none';
   document.getElementById('acw-bar').classList.remove('visible');
-  if(LEVEL!=='basic') document.getElementById('tipif-section').classList.remove('visible');
+  const tipif = document.getElementById('tipif-section');
+  if(tipif) tipif.classList.remove('visible');
   document.getElementById('call-card').className='call-card';
   clearInterval(CALL_TIMER); CALL_TIMER=null; CALL_START=null;
   clearInterval(ACW_TIMER);  ACW_TIMER=null;
+  clearInterval(HOLD_TIMER); HOLD_TIMER=null; HOLD_ACTIVE=false; HOLD_START=null;
+  const hb = document.getElementById('hold-banner');
+  if(hb) hb.classList.remove('visible');
   document.getElementById('btn-break').style.display='';
   document.getElementById('btn-return').style.display='none';
 }
@@ -320,11 +482,12 @@ function showOnCall(ix){
   document.getElementById('idle-screen').style.display='none';
   document.getElementById('ringing-state').style.display='none';
   document.getElementById('oncall-state').style.display='';
-  document.getElementById('call-card').className='call-card on_call';
+  const cc = document.getElementById('call-card');
+  cc.className = HOLD_ACTIVE ? 'call-card on_hold' : 'call-card on_call';
   document.getElementById('oncall-lead').textContent  = ix.lead_id||'—';
   document.getElementById('oncall-skill').textContent = ix.skill||ix.canal;
-  if(LEVEL!=='basic') document.getElementById('tipif-section').classList.add('visible');
-
+  const tipif = document.getElementById('tipif-section');
+  if(LEVEL!=='basic' && tipif) tipif.classList.add('visible');
   if(!CALL_TIMER){
     CALL_START = new Date();
     CALL_TIMER = setInterval(()=>{
@@ -356,11 +519,44 @@ function updateACWDisplay(){
   document.getElementById('acw-timer').textContent = `${mm}:${ss}`;
 }
 
+// ── Hold toggle ───────────────────────────────────────────────────────────────
+function toggleHold(){
+  if(HOLD_ACTIVE){
+    // Unhold — calcular hold_s transcurrido
+    const hold_s = HOLD_START ? Math.floor((new Date()-HOLD_START)/1000) : 0;
+    HOLD_ACTIVE = false;
+    HOLD_START  = null;
+    clearInterval(HOLD_TIMER); HOLD_TIMER = null;
+    document.getElementById('hold-banner').classList.remove('visible');
+    document.getElementById('call-card').className = 'call-card on_call';
+    document.getElementById('btn-hold').innerHTML = '<i class="bi bi-pause-fill"></i> Hold';
+    document.getElementById('btn-hold').className = document.getElementById('btn-hold').className.replace('btn-yellow','btn-orange');
+    doAction('unhold', {hold_s});
+  } else {
+    // Hold
+    HOLD_ACTIVE = true;
+    HOLD_START  = new Date();
+    document.getElementById('hold-banner').classList.add('visible');
+    document.getElementById('call-card').className = 'call-card on_hold';
+    document.getElementById('btn-hold').innerHTML = '▶ Retomar';
+    document.getElementById('btn-hold').className = document.getElementById('btn-hold').className.replace('btn-orange','btn-yellow');
+    HOLD_TIMER = setInterval(()=>{
+      const s = Math.floor((new Date()-HOLD_START)/1000);
+      const mm = String(Math.floor(s/60)).padStart(2,'0');
+      const ss = String(s%60).padStart(2,'0');
+      document.getElementById('hold-timer').textContent = `${mm}:${ss}`;
+    }, 1000);
+    doAction('hold');
+  }
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
 async function doAction(action_type, extra_params={}){
   const params = {...extra_params};
   if(LEVEL!=='basic' && action_type==='tipify'){
-    params.tipificacion = document.getElementById('tipif-sel')?.value||params.tipificacion||'';
-    params.notes        = document.getElementById('tipif-notes')?.value||'';
+    params.tipificacion     = document.getElementById('tipif-sel')?.value||params.tipificacion||'';
+    params.sub_tipificacion = document.getElementById('subtipif-sel')?.value||'';
+    params.notes            = document.getElementById('tipif-notes')?.value||'';
   }
   const body = {
     action_type,
@@ -369,14 +565,20 @@ async function doAction(action_type, extra_params={}){
   };
   const r = await postJSON(URLS.action, body);
   if(!r.success) console.error('action error:', r.error);
-  // Poll immediately
   doPoll();
 }
 
 function endCall(){
-  // Tipify then end_acw
   const tipif = document.getElementById('tipif-sel')?.value || 'Atendida';
-  doAction('tipify', {tipificacion: tipif});
+  const sub   = document.getElementById('subtipif-sel')?.value || '';
+  const notes = document.getElementById('tipif-notes')?.value || '';
+  doAction('tipify', {tipificacion:tipif, sub_tipificacion:sub, notes});
+  // Si estaba en hold, unhold primero
+  if(HOLD_ACTIVE){
+    const hold_s = HOLD_START ? Math.floor((new Date()-HOLD_START)/1000) : 0;
+    doAction('unhold', {hold_s});
+    HOLD_ACTIVE=false;
+  }
   setTimeout(()=>doAction('end_acw'), 200);
 }
 
@@ -384,9 +586,84 @@ function confirmTipify(){
   const tipif = document.getElementById('tipif-sel')?.value;
   if(!tipif){ alert('Selecciona una tipificación.'); return; }
   doAction('tipify',{
-    tipificacion: tipif,
-    notes: document.getElementById('tipif-notes')?.value||'',
+    tipificacion:     tipif,
+    sub_tipificacion: document.getElementById('subtipif-sel')?.value||'',
+    notes:            document.getElementById('tipif-notes')?.value||'',
   });
 }
+
+// ── Modales transfer / conference ─────────────────────────────────────────────
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); SELECTED_SLOT=null; }
+
+function _renderSlotList(containerId){
+  const el = document.getElementById(containerId);
+  if(!AVAILABLE_SLOTS.length){
+    el.innerHTML = '<div style="color:var(--g-text-m);text-align:center;padding:20px">No hay otros agentes en la sesión.</div>';
+    return;
+  }
+  el.innerHTML = AVAILABLE_SLOTS.map(s=>{
+    const dotClass = `dot-${s.status||'offline'}`;
+    const statusLabel = {available:'Disponible',on_call:'En llamada',break:'Break',
+                         offline:'Offline',absent:'Ausente'}[s.status]||s.status;
+    return `<div class="slot-item" onclick="selectSlotItem(this,'${s.id}')" data-slot="${s.id}">
+      <span class="slot-status-dot ${dotClass}"></span>
+      <span style="font-weight:700;flex:1">${s.name||'Agente'}</span>
+      <span style="font-size:11px;color:var(--g-text-m)">${statusLabel}</span>
+      ${s.skill ? `<span style="font-size:11px;color:var(--g-purple)">${s.skill}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function selectSlotItem(el, slotId){
+  document.querySelectorAll('.slot-item').forEach(i=>i.classList.remove('selected'));
+  el.classList.add('selected');
+  SELECTED_SLOT = slotId;
+}
+
+function openTransferModal(){
+  _renderSlotList('transfer-slot-list');
+  openModal('modal-transfer');
+}
+
+function confirmTransfer(){
+  if(!SELECTED_SLOT){ alert('Selecciona un agente destino.'); return; }
+  doAction('transfer', {to_slot_id: SELECTED_SLOT});
+  closeModal('modal-transfer');
+}
+
+function openConferenceModal(){
+  _renderSlotList('conference-slot-list');
+  openModal('modal-conference');
+}
+
+function confirmConference(){
+  if(!SELECTED_SLOT){ alert('Selecciona un agente para la conferencia.'); return; }
+  doAction('conference', {with_slot_id: SELECTED_SLOT});
+  closeModal('modal-conference');
+}
+
+// ── Skill modal ───────────────────────────────────────────────────────────────
+function openSkillModal(){ openModal('modal-skill'); }
+
+function selectSkill(skill){
+  document.querySelectorAll('#skill-list .slot-item').forEach(i=>i.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+  document.getElementById('skill-manual').value = skill;
+}
+
+function confirmSkill(){
+  const skill = document.getElementById('skill-manual')?.value?.trim();
+  if(!skill){ alert('Ingresa o selecciona un skill.'); return; }
+  doAction('change_skill', {skill});
+  closeModal('modal-skill');
+  const lbl = document.getElementById('skill-badge-label');
+  if(lbl) lbl.textContent = skill;
+}
+
+// Cerrar modales con click en backdrop
+document.querySelectorAll('.modal-backdrop').forEach(bd=>{
+  bd.addEventListener('click', e=>{ if(e.target===bd) closeModal(bd.id); });
+});
 </script>
 {% endblock %}

@@ -1,0 +1,8 @@
+status_name,icon,active,color,model
+To Do,bi-card-checklist,True,#6c757d,Project
+Planning,bi-clipboard,True,#17a2b8,Project
+Active,bi-play,True,#007bff,Project
+Review,bi-eye,True,#ffc107,Project
+Completed,bi-check,True,#28a745,Project
+On Hold,bi-pause,True,#6c757d,Project
+Archived,bi-archive,True,#343a40,Project

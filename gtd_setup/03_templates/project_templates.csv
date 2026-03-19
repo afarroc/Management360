@@ -1,0 +1,9 @@
+name,description,category,estimated_duration,is_public,created_by_id
+Sistema GTD Personal,Implementar método Getting Things Done,Productividad,30,False,2
+Bienestar Integral,Plan de salud y bienestar,Salud,90,False,2
+Desarrollo Profesional,Avance en carrera profesional,Profesional,180,False,2
+Hogar Organizado,Organización completa del hogar,Hogar,60,False,2
+Proyecto Carpintería Básico,Primer proyecto de carpintería,Carpintería,14,False,2
+Curso de Aprendizaje,Curso completo sobre tema específico,Educación,30,False,2
+Rutina Diaria Saludable,Establecer hábitos saludables diarios,Salud,21,True,2
+Planificación Anual,Planificar objetivos anuales,Productividad,7,True,2

@@ -1,0 +1,1014 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
+    <title>SimCity Web — M360</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:       #0d0f14;
+            --surface:  #151820;
+            --border:   #2a2f3d;
+            --accent:   #f0c040;
+            --accent2:  #3ecf8e;
+            --accent3:  #a78bfa;
+            --danger:   #e05c5c;
+            --text:     #dde2f0;
+            --muted:    #6b7280;
+            --mono:     'Share Tech Mono', monospace;
+            --display:  'Barlow Condensed', sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: var(--display); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+        /* SETUP */
+        #setup-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 30px 20px; position: relative; }
+        #setup-screen::before { content: ''; position: fixed; inset: 0; background: repeating-linear-gradient(0deg, transparent, transparent 39px, #1a1f2e 39px, #1a1f2e 40px), repeating-linear-gradient(90deg, transparent, transparent 39px, #1a1f2e 39px, #1a1f2e 40px); opacity: 0.4; pointer-events: none; }
+        .setup-card { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: 4px; padding: 48px 56px; width: 100%; max-width: 520px; position: relative; box-shadow: 0 40px 80px rgba(0,0,0,0.6); }
+        .setup-card::after { content: 'v0.3-m360'; position: absolute; top: 16px; right: 20px; font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+        .city-title { font-size: clamp(52px,10vw,76px); font-weight: 900; line-height: 0.9; letter-spacing: -1px; margin-bottom: 6px; }
+        .city-title span { color: var(--accent); display: block; }
+        .city-subtitle { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+        .field-group { margin-bottom: 28px; }
+        .field-label { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; display: block; }
+        .agent-selector { display: flex; gap: 8px; }
+        .agent-btn { flex: 1; aspect-ratio: 1; border: 2px solid var(--border); background: transparent; color: var(--text); font-family: var(--display); font-weight: 700; font-size: 22px; cursor: pointer; border-radius: 4px; transition: all 0.15s; }
+        .agent-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .agent-btn.active { border-color: var(--accent); background: var(--accent); color: var(--bg); }
+        .size-options { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+        .size-opt { border: 2px solid var(--border); background: transparent; color: var(--text); font-family: var(--display); font-weight: 600; font-size: 14px; padding: 12px 8px; cursor: pointer; border-radius: 4px; transition: all 0.15s; text-align: center; }
+        .size-opt small { display: block; font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 3px; }
+        .size-opt:hover { border-color: var(--accent2); color: var(--accent2); }
+        .size-opt.active { border-color: var(--accent2); background: rgba(62,207,142,0.12); color: var(--accent2); }
+        .city-input { width: 100%; background: rgba(255,255,255,0.04); border: 2px solid var(--border); border-radius: 4px; color: var(--text); font-family: var(--mono); font-size: 14px; padding: 12px 16px; outline: none; letter-spacing: 1px; }
+        .city-input:focus { border-color: var(--accent); }
+        .city-input::placeholder { color: var(--muted); }
+        #startBtn { width: 100%; padding: 18px; background: var(--accent); color: var(--bg); border: none; border-radius: 4px; font-family: var(--display); font-size: 20px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; transition: all 0.15s; margin-top: 8px; }
+        #startBtn:hover { background: #f7d060; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(240,192,64,0.35); }
+        #startBtn.loading { opacity: 0.7; pointer-events: none; }
+        .btn-spinner { display: none; width: 18px; height: 18px; border: 2px solid var(--bg); border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 10px; vertical-align: middle; }
+        #startBtn.loading .btn-spinner { display: inline-block; }
+        #startBtn.loading .btn-text { display: none; }
+        .setup-error { margin-top: 12px; padding: 10px 14px; background: rgba(224,92,92,0.12); border: 1px solid var(--danger); border-radius: 4px; font-family: var(--mono); font-size: 12px; color: var(--danger); display: none; }
+
+        /* GAME */
+        #game-screen { display: none; height: 100vh; flex-direction: column; }
+        .game-header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; height: 52px; display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
+        .game-logo { font-family: var(--display); font-weight: 900; font-size: 20px; letter-spacing: 1px; color: var(--accent); }
+        .game-city-name { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+        .header-sep { flex: 1; }
+        .stat-pill { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 20px; padding: 4px 14px; font-family: var(--mono); font-size: 13px; }
+        .stat-pill .val { color: var(--accent); font-weight: bold; }
+        .stat-pill .val.green { color: var(--accent2); }
+        .tick-badge { font-family: var(--mono); font-size: 11px; color: var(--muted); padding: 4px 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 20px; }
+        .game-body { display: flex; flex: 1; overflow: hidden; }
+
+        /* LEFT */
+        .left-panel { width: 210px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
+        .panel-section { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+        .panel-title { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+        .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+        .tool-btn { padding: 9px 5px; border: 1px solid var(--border); background: transparent; color: var(--text); font-family: var(--display); font-size: 12px; font-weight: 600; cursor: pointer; border-radius: 3px; transition: all 0.12s; text-align: center; }
+        .tool-btn .ti { font-size: 15px; display: block; margin-bottom: 2px; }
+        .tool-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .tool-btn.active { border-color: var(--accent); background: rgba(240,192,64,0.12); color: var(--accent); }
+        .census-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .census-row:last-child { border-bottom: none; }
+        .census-row .c-label { color: var(--muted); }
+        .census-row .c-val { font-family: var(--mono); color: var(--text); }
+        .action-list { display: flex; flex-direction: column; gap: 5px; }
+        .action-btn { padding: 9px 12px; border: 1px solid var(--border); background: transparent; color: var(--text); font-family: var(--display); font-size: 13px; font-weight: 600; cursor: pointer; border-radius: 3px; transition: all 0.12s; text-align: left; }
+        .action-btn:hover { background: rgba(255,255,255,0.04); }
+        .action-btn.tick-btn:hover { border-color: #4a9eff; color: #4a9eff; }
+        .action-btn.auto-btn.running { border-color: var(--danger); color: var(--danger); }
+        .action-btn.auto-btn:not(.running):hover { border-color: var(--accent2); color: var(--accent2); }
+        .action-btn.money-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .action-btn.reset-btn:hover { border-color: var(--danger); color: var(--danger); }
+        .action-btn.block-btn { border-color: var(--accent3); color: var(--accent3); background: rgba(167,139,250,0.06); font-size: 13px; position: relative; overflow: hidden; }
+        .action-btn.block-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(167,139,250,0.15), transparent); transform: translateX(-100%); transition: transform 0.5s; }
+        .action-btn.block-btn:hover::before { transform: translateX(100%); }
+        .action-btn.block-btn:hover { background: rgba(167,139,250,0.14); }
+        .action-btn.block-btn.loading { opacity: 0.6; pointer-events: none; }
+        .bspinner { display: none; width: 11px; height: 11px; border: 2px solid var(--accent3); border-top-color: transparent; border-radius: 50%; animation: spin 0.5s linear infinite; margin-right: 5px; vertical-align: middle; }
+        .action-btn.block-btn.loading .bspinner { display: inline-block; }
+        .action-btn.zr-btn { border-color: #f97316; color: #f97316; background: rgba(249,115,22,0.06); font-size: 13px; position: relative; overflow: hidden; }
+        .action-btn.zr-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(249,115,22,0.15), transparent); transform: translateX(-100%); transition: transform 0.5s; }
+        .action-btn.zr-btn:hover::before { transform: translateX(100%); }
+        .action-btn.zr-btn:hover { background: rgba(249,115,22,0.14); }
+        .action-btn.zr-btn.loading { opacity: 0.6; pointer-events: none; }
+        .bspinner2 { display: none; width: 11px; height: 11px; border: 2px solid #f97316; border-top-color: transparent; border-radius: 50%; animation: spin 0.5s linear infinite; margin-right: 5px; vertical-align: middle; }
+        .action-btn.zr-btn.loading .bspinner2 { display: inline-block; }
+        .action-btn.monopoly-btn { border-color: #4f46e5; color: #4f46e5; background: rgba(79,70,229,0.06); font-size: 13px; position: relative; overflow: hidden; }
+        .action-btn.monopoly-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(79,70,229,0.15), transparent); transform: translateX(-100%); transition: transform 0.5s; }
+        .action-btn.monopoly-btn:hover::before { transform: translateX(100%); }
+        .action-btn.monopoly-btn:hover { background: rgba(79,70,229,0.14); }
+        .action-btn.monopoly-btn.loading { opacity: 0.6; pointer-events: none; }
+        .mbspinner { display: none; width: 11px; height: 11px; border: 2px solid #4f46e5; border-top-color: transparent; border-radius: 50%; animation: spin 0.5s linear infinite; margin-right: 5px; vertical-align: middle; }
+        .action-btn.monopoly-btn.loading .mbspinner { display: inline-block; }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+        .modal-card { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--accent3); border-radius: 6px; padding: 32px 36px; width: 420px; max-width: 95vw; box-shadow: 0 30px 70px rgba(0,0,0,0.8); transform: translateY(10px); transition: transform 0.2s; }
+        .modal-overlay.open .modal-card { transform: translateY(0); }
+        .modal-title { font-size: 28px; font-weight: 900; margin-bottom: 3px; }
+        .modal-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-bottom: 26px; }
+        .block-preview { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 24px; }
+        .bp-option { border: 2px solid var(--border); border-radius: 5px; padding: 12px 8px; cursor: pointer; transition: all 0.15s; text-align: center; background: transparent; width: 100%; }
+        .bp-option svg { display: block; margin: 0 auto 8px; }
+        .bp-label { font-family: var(--display); font-size: 14px; font-weight: 700; color: var(--text); }
+        .bp-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+        .bp-option:hover { border-color: var(--accent3); }
+        .bp-option.selected { border-color: var(--accent3); background: rgba(167,139,250,0.1); }
+        .bp-option.selected .bp-label { color: var(--accent3); }
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; padding: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 4px; }
+        .toggle-label { font-family: var(--display); font-size: 15px; font-weight: 600; }
+        .toggle-sub { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+        .toggle-switch { position: relative; width: 44px; height: 24px; cursor: pointer; flex-shrink: 0; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .toggle-track { position: absolute; inset: 0; background: var(--border); border-radius: 12px; transition: all 0.2s; }
+        .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: var(--muted); border-radius: 50%; transition: all 0.2s; }
+        .toggle-switch input:checked ~ .toggle-track { background: rgba(167,139,250,0.25); border: 1px solid var(--accent3); }
+        .toggle-switch input:checked ~ .toggle-thumb { left: 23px; background: var(--accent3); }
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-btn { flex: 1; padding: 13px; border: none; border-radius: 4px; font-family: var(--display); font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.15s; letter-spacing: 0.5px; }
+        .modal-btn.primary { background: var(--accent3); color: white; }
+        .modal-btn.primary:hover { background: #c4b5fd; transform: translateY(-1px); }
+        .modal-btn.secondary { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+        .modal-btn.secondary:hover { border-color: var(--text); color: var(--text); }
+
+        /* MAP */
+        .map-wrapper { flex: 1; position: relative; overflow: hidden; background: #090b10; }
+        .map-area { position: absolute; inset: 0; overflow: auto; display: block; }
+        #map { border: 1px solid var(--border); cursor: crosshair; display: block; image-rendering: crisp-edges; image-rendering: pixelated; max-width: none !important; max-height: none !important; }
+        .map-coords { position: absolute; bottom: 12px; right: 12px; z-index: 10; font-family: var(--mono); font-size: 11px; color: var(--muted); background: rgba(0,0,0,0.72); padding: 4px 8px; border-radius: 3px; pointer-events: none; }
+        .map-notification { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); z-index: 20; background: rgba(167,139,250,0.92); color: white; font-family: var(--display); font-size: 14px; font-weight: 700; padding: 8px 22px; border-radius: 20px; opacity: 0; pointer-events: none; transition: opacity 0.3s; white-space: nowrap; }
+        .map-notification.show { opacity: 1; }
+        .zoom-controls { position: absolute; bottom: 12px; left: 12px; z-index: 10; display: flex; flex-direction: column; gap: 3px; }
+        .zoom-btn { width: 30px; height: 30px; background: rgba(13,15,20,0.92); border: 1px solid var(--border); color: var(--text); font-size: 18px; font-weight: bold; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; user-select: none; line-height: 1; }
+        .zoom-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--surface); }
+        .zoom-btn:active { transform: scale(.88); }
+        .zoom-level { font-family: var(--mono); font-size: 10px; color: var(--muted); text-align: center; min-width: 30px; line-height: 1.3; background: rgba(13,15,20,0.92); border: 1px solid var(--border); border-radius: 4px; padding: 3px 2px; }
+
+        /* RIGHT */
+        .right-panel { width: 210px; flex-shrink: 0; background: var(--surface); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+        .log-header { padding: 12px 16px; border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        #clearLogBtn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 2px; cursor: pointer; transition: all 0.12s; }
+        #clearLogBtn:hover { color: var(--danger); border-color: var(--danger); }
+        #log { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+        .log-entry { font-family: var(--mono); font-size: 10px; line-height: 1.5; padding: 3px 6px; border-radius: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #6b7280; }
+        .log-entry:hover { white-space: normal; }
+        .log-entry.err  { color: #e05c5c; background: rgba(224,92,92,0.06); }
+        .log-entry.ok   { color: #3ecf8e; background: rgba(62,207,142,0.06); }
+        .log-entry.warn { color: #f0a040; }
+        .log-entry.info { color: #5b9cf6; }
+        .log-entry.block { color: #a78bfa; background: rgba(167,139,250,0.06); }
+        .log-entry.zr   { color: #f97316; background: rgba(249,115,22,0.06); }
+        #log::-webkit-scrollbar { width: 4px; }
+        #log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        .legend-mini { padding: 12px 16px; margin-top: auto; border-top: 1px solid var(--border); }
+        .legend-row { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+        .dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .mob-action.monopoly { border-color: #4f46e5; color: #4f46e5; background: rgba(79,70,229,0.06); }
+            .left-panel, .right-panel { display: none; }
+            .setup-card { padding: 32px 24px; }
+            .map-wrapper { padding-bottom: var(--mob-bar, 106px); }
+            #map { max-width: 100vw; max-height: calc(100vh - 52px - 110px); }
+            #mobile-bar { display: flex; flex-direction: column; gap: 0; position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); z-index: 500; padding-bottom: env(safe-area-inset-bottom); }
+            .mob-tools { display: flex; gap: 4px; padding: 6px 8px 0; overflow-x: auto; scrollbar-width: none; }
+            .mob-tools::-webkit-scrollbar { display: none; }
+            .mob-tool { flex-shrink: 0; padding: 6px 10px; border: 1px solid var(--border); background: transparent; color: var(--text); font-family: var(--display); font-size: 12px; font-weight: 600; border-radius: 4px; cursor: pointer; transition: all 0.12s; white-space: nowrap; }
+            .mob-tool.active { border-color: var(--accent); background: rgba(240,192,64,0.15); color: var(--accent); }
+            .mob-actions { display: flex; gap: 4px; padding: 6px 8px 8px; }
+            .mob-action { flex: 1; padding: 8px 4px; border: 1px solid var(--border); background: transparent; color: var(--text); font-family: var(--display); font-size: 11px; font-weight: 700; border-radius: 4px; cursor: pointer; text-align: center; transition: all 0.12s; letter-spacing: 0.2px; }
+            .mob-action.tick  { border-color: #4a9eff44; color: #4a9eff; }
+            .mob-action.auto  { border-color: var(--accent2); color: var(--accent2); }
+            .mob-action.auto.running { border-color: var(--danger); color: var(--danger); }
+            .mob-action.block { border-color: var(--accent3); color: var(--accent3); background: rgba(167,139,250,0.06); }
+            .mob-action.zr    { border-color: #f97316; color: #f97316; background: rgba(249,115,22,0.06); }
+            .mob-action.money { border-color: var(--accent); color: var(--accent); }
+        }
+        @media (min-width: 769px) { #mobile-bar { display: none; } }
+        .existing-game-item:hover { background: rgba(255,255,255,0.05); border-color: var(--accent); }
+        .existing-game-item:active { background: rgba(240,192,64,0.1); }
+    </style>
+</head>
+<body>
+
+<!-- ══════ SETUP ══════ -->
+<div id="setup-screen">
+    <div class="setup-card">
+        <div class="city-title">CIUDAD<span>CERO</span></div>
+        <div class="city-subtitle">Simulador urbano · M360</div>
+        <div class="field-group">
+            <label class="field-label">Nombre de tu ciudad</label>
+            <input class="city-input" type="text" id="cityName" placeholder="Ej: Nueva Esperanza" maxlength="40">
+        </div>
+        <div class="field-group">
+            <label class="field-label">Agentes iniciales</label>
+            <div class="agent-selector">
+                <button class="agent-btn" data-n="1">1</button>
+                <button class="agent-btn" data-n="2">2</button>
+                <button class="agent-btn active" data-n="3">3</button>
+                <button class="agent-btn" data-n="4">4</button>
+                <button class="agent-btn" data-n="5">5</button>
+                <button class="agent-btn" data-n="6">6</button>
+            </div>
+        </div>
+        <div class="field-group">
+            <label class="field-label">Terreno inicial</label>
+            <div class="size-options">
+                <button class="size-opt" data-sz="3">3 × 3<small>Mínimo</small></button>
+                <button class="size-opt active" data-sz="5">5 × 5<small>Estándar</small></button>
+                <button class="size-opt" data-sz="7">7 × 7<small>Amplio</small></button>
+            </div>
+        </div>
+        <div class="field-group">
+            <label class="field-label">Cargar ciudad existente</label>
+            <div id="existing-games-list" style="max-height:150px; overflow-y:auto; border:1px solid var(--border); border-radius:4px; padding:8px;">
+                <div style="text-align:center; color:var(--muted); padding:20px;">Cargando...</div>
+            </div>
+        </div>
+        <button id="startBtn" onclick="iniciarPartida(false)">
+            <span class="btn-spinner"></span><span class="btn-text">▶ FUNDAR CIUDAD</span>
+        </button>
+        <div class="setup-error" id="setupError"></div>
+    </div>
+</div>
+
+<!-- ══════ GAME ══════ -->
+<div id="game-screen">
+    <div class="game-header">
+        <div class="game-logo">CIUDAD CERO</div>
+        <div class="game-city-name" id="headerCityName">—</div>
+        <button id="backToSetupBtn" style="background:none; border:none; color:var(--muted); cursor:pointer; font-size:18px; margin-left:10px;" title="Volver a configuración">⚙️</button>
+        <div class="header-sep"></div>
+        <div class="stat-pill">💰 <span class="val" id="moneyDisplay">0</span></div>
+        <div class="stat-pill">👥 <span class="val green" id="popDisplay">0</span></div>
+        <div class="tick-badge">T: <span id="tickDisplay">0</span></div>
+    </div>
+    <div class="game-body">
+        <div class="left-panel">
+            <div class="panel-section">
+                <div class="panel-title">Herramientas</div>
+                <div class="tool-grid">
+                    <button class="tool-btn active" data-tool="r"><span class="ti">🏡</span>Resid.</button>
+                    <button class="tool-btn" data-tool="c"><span class="ti">🏢</span>Comerc.</button>
+                    <button class="tool-btn" data-tool="i"><span class="ti">🏭</span>Indust.</button>
+                    <button class="tool-btn" data-tool="t"><span class="ti">🛣️</span>Carret.</button>
+                    <button class="tool-btn" data-tool="e"><span class="ti">⚡</span>Planta</button>
+                    <button class="tool-btn" data-tool="w"><span class="ti">🔌</span>Cable</button>
+                    <button class="tool-btn" data-tool="b"><span class="ti">🚜</span>Bulldozer</button>
+                    <button class="tool-btn" data-tool="s"><span class="ti">🔍</span>Seleccionar</button>
+                </div>
+            </div>
+            <div class="panel-section">
+                <div class="panel-title">Censo</div>
+                <div class="census-row"><span class="c-label">🏠 Casas</span><span class="c-val" id="c-casas">0</span></div>
+                <div class="census-row"><span class="c-label">⚡ Con energía</span><span class="c-val" id="c-energia">0</span></div>
+                <div class="census-row"><span class="c-label">🔋 Sin energía</span><span class="c-val" id="c-sinener">0</span></div>
+                <div class="census-row"><span class="c-label">🛣️ Sin carret.</span><span class="c-val" id="c-sincar">0</span></div>
+                <div class="census-row"><span class="c-label">📦 Zonas vacías</span><span class="c-val" id="c-vacias">0</span></div>
+                <div class="census-row"><span class="c-label">🏢 Comerciales</span><span class="c-val" id="c-com">0</span></div>
+                <div class="census-row"><span class="c-label">🏭 Industriales</span><span class="c-val" id="c-ind">0</span></div>
+            </div>
+            <div class="panel-section">
+                <div class="panel-title">Acciones</div>
+                <div class="action-list">
+                    <button class="action-btn tick-btn" id="tickBtn">▶ Simular 1 tick</button>
+                    <button class="action-btn auto-btn" id="autoBtn">⏵ Auto (iniciar)</button>
+                    <button class="action-btn money-btn" id="addMoneyBtn">💰 Añadir fondos</button>
+                    <button class="action-btn block-btn" id="blockBtn">
+                        <span class="bspinner"></span>🏙️ Generar cuadrante
+                    </button>
+                    <button class="action-btn zr-btn" id="zrBtn">
+                        <span class="bspinner2"></span>🏘️ Cuadrante ZR 10×10
+                    </button>
+                    <button class="action-btn reset-btn" id="resetBtn">↺ Reiniciar</button>
+                    <button class="action-btn monopoly-btn" id="monopolyBtn">
+                        <span class="mbspinner"></span>🎲 Crear tablero Monopoly
+                    </button>
+                </div>
+            </div>
+            <div class="legend-mini">
+                <div class="panel-title" style="margin-bottom:8px;">Leyenda</div>
+                <div class="legend-row"><span class="dot" style="background:#555560;"></span> Carretera</div>
+                <div class="legend-row"><span class="dot" style="background:#2d5a2d;"></span> Zona vacía</div>
+                <div class="legend-row"><span class="dot" style="background:#3ecf8e;"></span> Casa + energía</div>
+                <div class="legend-row"><span class="dot" style="background:#444c44;"></span> Casa sin energía</div>
+                <div class="legend-row"><span class="dot" style="background:#1e4a8a;"></span> Comercial</div>
+                <div class="legend-row"><span class="dot" style="background:#8a5a10;"></span> Industrial</div>
+                <div class="legend-row"><span class="dot" style="background:#8a1a1a;"></span> Planta</div>
+                <div class="legend-row"><span class="dot" style="background:#f0c040; border-radius:50%;"></span> Agente</div>
+            </div>
+        </div>
+
+        <div class="map-wrapper">
+            <div class="map-area" id="mapArea">
+                <canvas id="map" width="640" height="640"></canvas>
+            </div>
+            <div class="map-coords" id="coordsDisplay">—</div>
+            <div class="map-notification" id="mapNotif"></div>
+            <div class="zoom-controls">
+                <button class="zoom-btn" id="zoomInBtn" title="Acercar (+)">+</button>
+                <div class="zoom-level" id="zoomDisplay">100%</div>
+                <button class="zoom-btn" id="zoomOutBtn" title="Alejar (−)">−</button>
+                <button class="zoom-btn" id="zoomResetBtn" title="Reset zoom (0)" style="font-size:11px;letter-spacing:-1px;">1:1</button>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="log-header">LOG <button id="clearLogBtn">✕ limpiar</button></div>
+            <div id="log"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════ BARRA INFERIOR MÓVIL ══════ -->
+<div id="mobile-bar">
+    <div class="mob-tools" id="mobTools">
+        <button class="mob-tool active" data-tool="r">🏡 Resid.</button>
+        <button class="mob-tool" data-tool="c">🏢 Comerc.</button>
+        <button class="mob-tool" data-tool="i">🏭 Indust.</button>
+        <button class="mob-tool" data-tool="t">🛣️ Carret.</button>
+        <button class="mob-tool" data-tool="e">⚡ Planta</button>
+        <button class="mob-tool" data-tool="w">🔌 Cable</button>
+        <button class="mob-tool" data-tool="b">🚜 Bulldozer</button>
+        <button class="mob-tool" data-tool="s">🔍 Sel.</button>
+    </div>
+    <div class="mob-actions">
+        <button class="mob-action tick" id="mobTickBtn">▶ Tick</button>
+        <button class="mob-action auto" id="mobAutoBtn">⏵ Auto</button>
+        <button class="mob-action block" id="mobBlockBtn">🏙️ Cuad.</button>
+        <button class="mob-action zr" id="mobZrBtn">🏘️ ZR</button>
+        <button class="mob-action money" id="mobMoneyBtn">💰 +$</button>
+        <button class="mob-action monopoly" id="mobMonopolyBtn">🎲 Monopoly</button>
+    </div>
+</div>
+
+<!-- ══════ MODAL CUADRANTE ══════ -->
+<div class="modal-overlay" id="blockModal">
+    <div class="modal-card">
+        <div class="modal-title">🏙️ Nuevo cuadrante</div>
+        <div class="modal-sub">PERÍMETRO DE CARRETERAS · 4 ZONAS RESIDENCIALES · PLAZA CENTRAL</div>
+        <div class="block-preview">
+            <button class="bp-option selected" data-size="small">
+                <svg width="60" height="60" viewBox="0 0 11 11" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="11" height="11" fill="#090b10"/>
+                    <rect x="0" y="0" width="11" height="1" fill="#555560"/>
+                    <rect x="0" y="10" width="11" height="1" fill="#555560"/>
+                    <rect x="0" y="1" width="1" height="9" fill="#555560"/>
+                    <rect x="10" y="1" width="1" height="9" fill="#555560"/>
+                    <rect x="2" y="2" width="2" height="2" fill="#2d5a2d"/>
+                    <rect x="7" y="2" width="2" height="2" fill="#2d5a2d"/>
+                    <rect x="2" y="7" width="2" height="2" fill="#2d5a2d"/>
+                    <rect x="7" y="7" width="2" height="2" fill="#2d5a2d"/>
+                </svg>
+                <div class="bp-label">Pequeño</div>
+                <div class="bp-sub">11 × 11</div>
+            </button>
+            <button class="bp-option" data-size="medium">
+                <svg width="60" height="60" viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="13" height="13" fill="#090b10"/>
+                    <rect x="0" y="0" width="13" height="1" fill="#555560"/>
+                    <rect x="0" y="12" width="13" height="1" fill="#555560"/>
+                    <rect x="0" y="1" width="1" height="11" fill="#555560"/>
+                    <rect x="12" y="1" width="1" height="11" fill="#555560"/>
+                    <rect x="2" y="2" width="3" height="3" fill="#2d5a2d"/>
+                    <rect x="8" y="2" width="3" height="3" fill="#2d5a2d"/>
+                    <rect x="2" y="8" width="3" height="3" fill="#2d5a2d"/>
+                    <rect x="8" y="8" width="3" height="3" fill="#2d5a2d"/>
+                    <rect x="5" y="5" width="3" height="3" fill="#1a1f2e"/>
+                </svg>
+                <div class="bp-label">Mediano</div>
+                <div class="bp-sub">13 × 13</div>
+            </button>
+            <button class="bp-option" data-size="large">
+                <svg width="60" height="60" viewBox="0 0 17 17" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="17" height="17" fill="#090b10"/>
+                    <rect x="0" y="0" width="17" height="1" fill="#555560"/>
+                    <rect x="0" y="16" width="17" height="1" fill="#555560"/>
+                    <rect x="0" y="1" width="1" height="15" fill="#555560"/>
+                    <rect x="16" y="1" width="1" height="15" fill="#555560"/>
+                    <rect x="2" y="2" width="3" height="3" fill="#2d5a2d"/>
+                    <rect x="12" y="2" width="3" height="3" fill="#2d5a2d"/>
+                    <rect x="2" y="12" width="3" height="3" fill="#2d5a2d"/>
+                    <rect x="12" y="12" width="3" height="3" fill="#2d5a2d"/>
+                    <rect x="5" y="5" width="7" height="7" fill="#1a1f2e"/>
+                </svg>
+                <div class="bp-label">Grande</div>
+                <div class="bp-sub">17 × 17</div>
+            </button>
+        </div>
+        <div class="toggle-row">
+            <div>
+                <div class="toggle-label">Conectar a ciudad existente</div>
+                <div class="toggle-sub">Traza carretera hasta el bloque más cercano</div>
+            </div>
+            <label class="toggle-switch">
+                <input type="checkbox" id="toggleConectar" checked>
+                <div class="toggle-track"></div>
+                <div class="toggle-thumb"></div>
+            </label>
+        </div>
+        <div class="modal-actions">
+            <button class="modal-btn secondary" id="modalCancelBtn">Cancelar</button>
+            <button class="modal-btn primary" id="modalConfirmBtn">🏙️ Generar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// CSRF — patrón estándar M360 (nunca hardcoded)
+// ══════════════════════════════════════════════════════════════════
+function csrf() {
+    return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+}
+
+// URLs de la API — apuntan al proxy M360 con namespace simcity
+const API = {
+    newGame:       '/simcity/api/games/new/',
+    listGames:     '/simcity/api/games/',
+    map:       id => `/simcity/api/game/${id}/map/`,
+    tick:      id => `/simcity/api/game/${id}/tick/`,
+    build:     id => `/simcity/api/game/${id}/build/`,
+    reset:     id => `/simcity/api/game/${id}/reset/`,
+    census:    id => `/simcity/api/game/${id}/census/`,
+    block:     id => `/simcity/api/game/${id}/generate_block/`,
+    zrBlock:   id => `/simcity/api/game/${id}/generate_zr_block/`,
+    tasks:     id => `/simcity/api/game/${id}/tasks/`,
+    delete:    id => `/simcity/api/game/${id}/delete/`,
+};
+
+// Helper fetch con CSRF automático
+async function apiFetch(url, options = {}) {
+    const defaults = {
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrf(),
+        },
+    };
+    return fetch(url, { ...defaults, ...options,
+        headers: { ...defaults.headers, ...(options.headers || {}) }
+    });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// Variables globales
+// ══════════════════════════════════════════════════════════════════
+let gameId = null, mapData = [], currentTool = 'r';
+let autoRunning = false, autoInterval = null;
+let isDrawing = false, lastX = -1, lastY = -1, pendingBuilds = [];
+let tickCount = 0;
+let _renderGen = 0;
+let selectedAgents = 3, selectedBlock = 5;
+let selectedBlockSize = 'small';
+let zoomLevel = 1;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 3;
+let _pendingAgents = null;
+
+const canvas = document.getElementById('map');
+const ctx    = canvas.getContext('2d');
+const CELL   = 10;
+
+// ── Persistencia ─────────────────────────────────────────────────
+const STORAGE_KEY = 'simcity_m360_session';
+function guardarSesion(id, nombre) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ id, nombre, ts: Date.now() })); } catch {}
+}
+function borrarSesion() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+}
+function recuperarSesion() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch { return null; }
+}
+
+// ── Init ─────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+    cargarListaJuegos();
+    const sesion = recuperarSesion();
+    if (!sesion) return;
+    try {
+        const res = await apiFetch(API.map(sesion.id));
+        if (!res.ok) throw new Error('not found');
+        const info = await res.json();
+        gameId = sesion.id;
+        document.getElementById('setup-screen').style.display  = 'none';
+        document.getElementById('game-screen').style.display   = 'flex';
+        document.getElementById('headerCityName').textContent  = (sesion.nombre || '—').toUpperCase();
+        document.getElementById('moneyDisplay').textContent    = info.money || 0;
+        await loadMap();
+        addLog(`🔄 Sesión recuperada: ${sesion.nombre}`, 'ok');
+    } catch {
+        borrarSesion();
+    }
+});
+
+// ── Setup listeners ──────────────────────────────────────────────
+document.querySelectorAll('.agent-btn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.agent-btn').forEach(x => x.classList.remove('active'));
+    b.classList.add('active'); selectedAgents = +b.dataset.n;
+}));
+document.querySelectorAll('.size-opt').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.size-opt').forEach(x => x.classList.remove('active'));
+    b.classList.add('active'); selectedBlock = +b.dataset.sz;
+}));
+
+async function iniciarPartida(monopolyMode = false) {
+    const nombre = document.getElementById('cityName').value.trim() || 'Ciudad sin nombre';
+    const errEl  = document.getElementById('setupError');
+    const btn    = document.getElementById('startBtn');
+    errEl.style.display = 'none';
+    btn.classList.add('loading');
+    try {
+        const r1 = await apiFetch(API.newGame, { method: 'POST', body: JSON.stringify({ name: nombre }) });
+        if (!r1.ok) throw new Error(`HTTP ${r1.status}`);
+        gameId = (await r1.json()).id;
+
+        const resetData = monopolyMode
+            ? { size: 200, num_agents: selectedAgents, initial_funds: 200000, monopoly: true }
+            : { size: 64,  num_agents: selectedAgents, initial_funds: 20000,  starter_block: selectedBlock };
+
+        const r2 = await apiFetch(API.reset(gameId), { method: 'POST', body: JSON.stringify(resetData) });
+        if (!r2.ok) { const e = await r2.json(); throw new Error(e.error || `Reset ${r2.status}`); }
+        const rd = await r2.json();
+
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display  = 'flex';
+        document.getElementById('headerCityName').textContent = nombre.toUpperCase();
+        document.getElementById('moneyDisplay').textContent   = rd.money || 20000;
+        guardarSesion(gameId, nombre);
+        await loadMap();
+        addLog(monopolyMode ? `🎲 Tablero Monopoly creado: ${nombre}` : `✅ Ciudad fundada: ${nombre}`, 'ok');
+    } catch(e) {
+        errEl.textContent = `Error: ${e.message}`;
+        errEl.style.display = 'block';
+    } finally { btn.classList.remove('loading'); }
+}
+
+// ── Modal cuadrante ──────────────────────────────────────────────
+document.querySelectorAll('.bp-option').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.bp-option').forEach(x => x.classList.remove('selected'));
+    b.classList.add('selected'); selectedBlockSize = b.dataset.size;
+}));
+document.getElementById('blockBtn').addEventListener('click', () => document.getElementById('blockModal').classList.add('open'));
+document.getElementById('modalCancelBtn').addEventListener('click', () => document.getElementById('blockModal').classList.remove('open'));
+document.getElementById('blockModal').addEventListener('click', e => {
+    if (e.target === document.getElementById('blockModal')) document.getElementById('blockModal').classList.remove('open');
+});
+document.getElementById('modalConfirmBtn').addEventListener('click', async () => {
+    document.getElementById('blockModal').classList.remove('open');
+    await generarCuadrante();
+});
+
+async function generarCuadrante() {
+    const btn = document.getElementById('blockBtn');
+    const conectar = document.getElementById('toggleConectar').checked;
+    btn.classList.add('loading');
+    try {
+        const res = await apiFetch(API.block(gameId), { method: 'POST', body: JSON.stringify({ size: selectedBlockSize, conectar }) });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.error || `HTTP ${res.status}`); }
+        const data = await res.json();
+        mapData = data.map;
+        document.getElementById('moneyDisplay').textContent = data.money;
+        if (data.agents) { _pendingAgents = data.agents; document.getElementById('popDisplay').textContent = data.agents.length; }
+        drawMap();
+        if (data.bloque) highlightBloque(data.bloque);
+        updateCensus();
+        addLog(`🏙️ ${data.mensaje}`, 'block');
+        showMapNotif(`✓ Cuadrante ${selectedBlockSize} · ${data.bloque?.zonas_count ?? 0} zonas`);
+    } catch(e) { addLog(`❌ Cuadrante: ${e.message}`, 'err'); }
+    finally { btn.classList.remove('loading'); }
+}
+
+function highlightBloque(bloque) {
+    const {x, y, ancho, alto} = bloque;
+    let f = 0;
+    const id = setInterval(() => {
+        drawMap(() => {
+            ctx.save();
+            ctx.strokeStyle = f % 2 === 0 ? '#a78bfa' : 'rgba(167,139,250,0.3)';
+            ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
+            ctx.strokeRect(x*CELL+1, y*CELL+1, ancho*CELL-2, alto*CELL-2);
+            ctx.restore();
+            if (++f >= 8) { clearInterval(id); drawMap(); }
+        });
+    }, 200);
+}
+
+function showMapNotif(msg) {
+    const el = document.getElementById('mapNotif');
+    el.textContent = msg; el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+// ── Render ───────────────────────────────────────────────────────
+function tileColor(tile) {
+    const base = tile & 0x3FF, pwr = !!(tile & 0x8000);
+    if (240 <= base && base <= 260) {
+        if (base === 244) return '#2d5a2d';
+        if (base >= 249) return (tile & 0x2000) ? '#7a3a1a' : (pwr ? '#3ecf8e' : '#444c44');
+        return '#2d6a2d';
+    }
+    if (423 <= base && base <= 609) return '#1e4a8a';
+    if (612 <= base && base <= 692) return '#8a5a10';
+    if (745 <= base && base <= 760) return '#8a1a1a';
+    if (208 <= base && base <= 222) return '#4a4a5a';
+    if (64  <= base && base <= 206) return '#555560';
+    if (base === 0) return '#090b10';
+    return '#1a1f2e';
+}
+
+function drawMap(onComplete) {
+    if (!mapData || mapData.length === 0) return;
+    const myGen = ++_renderGen;
+    const mapSize = mapData.length;
+    const totalTiles = mapSize * mapSize;
+    const localMap = mapData;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let tilesDrawn = 0;
+    function drawBatch() {
+        if (_renderGen !== myGen) return;
+        const startTime = performance.now();
+        while (tilesDrawn < totalTiles && (performance.now() - startTime) < 16) {
+            const x = Math.floor(tilesDrawn / mapSize);
+            const y = tilesDrawn % mapSize;
+            const tile = localMap[x]?.[y];
+            ctx.fillStyle = tile !== undefined ? tileColor(tile) : '#ff0000';
+            ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+            tilesDrawn++;
+        }
+        if (tilesDrawn < totalTiles) { requestAnimationFrame(drawBatch); }
+        else {
+            if (_pendingAgents) drawAgents(_pendingAgents);
+            if (typeof onComplete === 'function') onComplete();
+        }
+    }
+    drawBatch();
+}
+
+function redrawTile(x, y) {
+    const tile = mapData[x]?.[y];
+    if (tile === undefined) return;
+    ctx.fillStyle = tileColor(tile);
+    ctx.fillRect(x * CELL, y * CELL, CELL, CELL);
+    if (_pendingAgents) drawAgents(_pendingAgents);
+}
+
+function drawAgents(agents) {
+    if (!agents) return;
+    _pendingAgents = agents;
+    ctx.save();
+    agents.forEach(a => {
+        ctx.beginPath();
+        ctx.arc(a.x * CELL + CELL / 2, a.y * CELL + CELL / 2, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#f0c040';
+        ctx.fill();
+        ctx.strokeStyle = '#0d0f14';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+    });
+    ctx.restore();
+}
+
+// ── API calls ────────────────────────────────────────────────────
+async function loadMap() {
+    const res = await apiFetch(API.map(gameId));
+    const d   = await res.json();
+    mapData   = d.map;
+    if (!Array.isArray(mapData) || mapData.length === 0) {
+        addLog('❌ Datos del mapa vacíos', 'err'); return;
+    }
+    const mapSize = mapData.length;
+    canvas.width  = mapSize * CELL;
+    canvas.height = mapSize * CELL;
+    _applyZoom();
+    if (d.agents) { _pendingAgents = d.agents; document.getElementById('popDisplay').textContent = d.agents.length; }
+    drawMap(() => {
+        updateCensus();
+        if (mapSize > 100) {
+            const ma = _mapArea();
+            ma.scrollLeft = (canvas.width * zoomLevel / 2) - (ma.clientWidth  / 2);
+            ma.scrollTop  = (canvas.height * zoomLevel / 2) - (ma.clientHeight / 2);
+        }
+    });
+}
+
+async function build(x, y) {
+    if (currentTool === 's') {
+        const tile = mapData[x]?.[y];
+        if (tile !== undefined) addLog(`🔍 (${x},${y}) tile=${tile} base=${tile & 0x3FF} pwr=${!!(tile & 0x8000)}`, 'info');
+        return;
+    }
+    try {
+        const res  = await apiFetch(API.build(gameId), { method: 'POST', body: JSON.stringify({ tool: currentTool, x, y }) });
+        const data = await res.json();
+        if (!res.ok) {
+            const extra = data.fondos !== undefined ? ` (fondos: $${data.fondos}, necesita: $${data.costo})` : '';
+            addLog(`⚠️ ${data.error || `HTTP ${res.status}`}${extra}`, 'warn'); return;
+        }
+        mapData = data.map;
+        document.getElementById('moneyDisplay').textContent = data.money;
+        if (data.agents) { _pendingAgents = data.agents; document.getElementById('popDisplay').textContent = data.agents.length; }
+        data.map ? redrawTile(x, y) : drawMap();
+        updateCensus();
+    } catch(e) { addLog(`❌ Error (${x},${y}): ${e}`, 'err'); }
+}
+
+async function tick() {
+    const res  = await apiFetch(API.tick(gameId), { method: 'POST', body: JSON.stringify({ n: 1 }) });
+    const data = await res.json();
+    mapData = data.map; tickCount++;
+    document.getElementById('tickDisplay').textContent  = tickCount;
+    document.getElementById('moneyDisplay').textContent = data.money;
+    if (data.agents) { _pendingAgents = data.agents; document.getElementById('popDisplay').textContent = data.agents.length; }
+    drawMap();
+    updateCensus();
+    if (data.cambios) addLog(`⏱ T${tickCount} · ${data.cambios} cambios`, 'info');
+}
+
+async function updateCensus() {
+    try {
+        const d = await (await apiFetch(API.census(gameId))).json();
+        document.getElementById('c-casas').textContent   = d.casas ?? 0;
+        document.getElementById('c-energia').textContent = d.casas_con_energia ?? 0;
+        document.getElementById('c-sinener').textContent = d.casas_sin_energia ?? 0;
+        document.getElementById('c-sincar').textContent  = d.casas_sin_carretera ?? 0;
+        document.getElementById('c-vacias').textContent  = d.zonas_residenciales_vacias ?? 0;
+        document.getElementById('c-com').textContent     = d.zonas_comerciales ?? 0;
+        document.getElementById('c-ind').textContent     = d.zonas_industriales ?? 0;
+    } catch {}
+}
+
+async function generarCuadranteZR() {
+    const btn = document.getElementById('zrBtn');
+    btn.classList.add('loading');
+    try {
+        const res = await apiFetch(API.zrBlock(gameId), { method: 'POST', body: JSON.stringify({}) });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.error || `HTTP ${res.status}`); }
+        const data = await res.json();
+        mapData = data.map;
+        document.getElementById('moneyDisplay').textContent = data.money;
+        drawMap();
+        if (data.agents) { _pendingAgents = data.agents; document.getElementById('popDisplay').textContent = data.agents.length; }
+        if (data.bloque) highlightBloqueZR(data.bloque);
+        updateCensus();
+        addLog(`🏘️ ${data.mensaje}`, 'zr');
+        showMapNotif(`✓ ZR 10×10 · ${data.bloque?.zonas_count ?? 0} zonas`);
+    } catch(e) { addLog(`❌ ZR Block: ${e.message}`, 'err'); }
+    finally { btn.classList.remove('loading'); }
+}
+
+function highlightBloqueZR(bloque) {
+    const {x, y, ancho, alto} = bloque;
+    let f = 0;
+    const id = setInterval(() => {
+        drawMap(() => {
+            ctx.save();
+            ctx.strokeStyle = f % 2 === 0 ? '#f97316' : 'rgba(249,115,22,0.3)';
+            ctx.lineWidth = 3; ctx.setLineDash([6,3]);
+            ctx.strokeRect(x*CELL+1, y*CELL+1, ancho*CELL-2, alto*CELL-2);
+            if (f % 2 === 0) {
+                ctx.fillStyle = 'rgba(249,115,22,0.9)'; ctx.font = 'bold 10px monospace';
+                ctx.fillText('ZR 10×10', x*CELL+6, y*CELL+13);
+            }
+            ctx.restore();
+            if (++f >= 8) { clearInterval(id); drawMap(); }
+        });
+    }, 220);
+}
+
+async function crearTableroMonopoly() {
+    const btn = document.getElementById('monopolyBtn');
+    if (!gameId) { addLog('❌ No hay partida activa', 'err'); return; }
+    btn.classList.add('loading');
+    try {
+        const res = await apiFetch(API.reset(gameId), {
+            method: 'POST',
+            body: JSON.stringify({ size: 200, num_agents: 3, initial_funds: 200000, monopoly: true })
+        });
+        if (!res.ok) { const e = await res.json(); throw new Error(e.error || `HTTP ${res.status}`); }
+        const data = await res.json();
+        document.getElementById('moneyDisplay').textContent = data.money;
+        await loadMap();
+        addLog(`🎲 ${data.message || 'Tablero Monopoly creado'}`, 'ok');
+        showMapNotif('✓ Tablero Monopoly generado');
+    } catch(e) { addLog(`❌ Error al crear tablero: ${e.message}`, 'err'); }
+    finally { btn.classList.remove('loading'); }
+}
+
+async function cargarListaJuegos() {
+    const contenedor = document.getElementById('existing-games-list');
+    contenedor.innerHTML = '<div style="text-align:center; color:var(--muted); padding:20px;">Cargando...</div>';
+    try {
+        const res = await apiFetch(API.listGames);
+        if (!res.ok) throw new Error('Error al cargar');
+        const juegos = await res.json();
+        if (juegos.length === 0) {
+            contenedor.innerHTML = '<div style="text-align:center; color:var(--muted); padding:20px;">No hay partidas guardadas</div>';
+            return;
+        }
+        let html = '';
+        juegos.forEach(j => {
+            html += `<div class="existing-game-item" data-id="${j.id}" style="padding:8px; border-bottom:1px solid var(--border); cursor:pointer; transition:0.1s; display:flex; justify-content:space-between; align-items:center;">
+                <div style="flex:1;">
+                    <div style="font-weight:600;">${j.name}</div>
+                    <div style="font-family:var(--mono); font-size:10px; color:var(--muted);">ID: ${j.id} · $${j.money}</div>
+                </div>
+                <button class="delete-game-btn" data-id="${j.id}" data-nombre="${j.name}" style="background:none; border:none; color:var(--danger); font-size:16px; cursor:pointer; padding:0 5px;">🗑️</button>
+            </div>`;
+        });
+        contenedor.innerHTML = html;
+        document.querySelectorAll('.existing-game-item').forEach(item => {
+            item.addEventListener('click', () => cargarPartida(item.dataset.id));
+        });
+        document.querySelectorAll('.delete-game-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const { id, nombre } = btn.dataset;
+                if (!confirm(`¿Eliminar "${nombre}"?`)) return;
+                const res = await apiFetch(API.delete(id), { method: 'POST' });
+                if ((await res.json()).success) {
+                    if (gameId == id) { gameId = null; mapData = []; document.getElementById('game-screen').style.display='none'; document.getElementById('setup-screen').style.display='flex'; }
+                    cargarListaJuegos();
+                    addLog(`🗑️ "${nombre}" eliminada`, 'warn');
+                }
+            });
+        });
+    } catch(e) {
+        contenedor.innerHTML = '<div style="text-align:center; color:var(--danger); padding:20px;">Error al cargar</div>';
+    }
+}
+
+async function cargarPartida(id) {
+    try {
+        const res = await apiFetch(API.map(id));
+        if (!res.ok) throw new Error('No se pudo cargar');
+        const info = await res.json();
+        gameId = id;
+        document.getElementById('setup-screen').style.display = 'none';
+        document.getElementById('game-screen').style.display  = 'flex';
+        document.getElementById('headerCityName').textContent = (info.name || `Partida ${id}`).toUpperCase();
+        document.getElementById('moneyDisplay').textContent   = info.money || 0;
+        guardarSesion(id, info.name || `Partida ${id}`);
+        await loadMap();
+        addLog(`🔄 Partida cargada: ${id}`, 'ok');
+    } catch(e) { alert('Error al cargar: ' + e.message); }
+}
+
+// ── Log ──────────────────────────────────────────────────────────
+function addLog(msg, type='') {
+    const log = document.getElementById('log');
+    const p   = document.createElement('div');
+    p.className = `log-entry ${type}`;
+    p.textContent = `${new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit',second:'2-digit'})} ${msg}`;
+    p.title = msg; log.prepend(p);
+    while (log.children.length > 120) log.removeChild(log.lastChild);
+}
+
+// ── Canvas events ────────────────────────────────────────────────
+function coords(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: Math.floor((e.clientX - rect.left) * (canvas.width  / rect.width)  / CELL),
+        y: Math.floor((e.clientY - rect.top)  * (canvas.height / rect.height) / CELL),
+    };
+}
+canvas.addEventListener('mousedown', e => { e.preventDefault(); isDrawing=true; const {x,y}=coords(e); if(x>=0&&x<mapData.length&&y>=0&&y<mapData.length){build(x,y);lastX=x;lastY=y;} });
+canvas.addEventListener('mousemove', e => {
+    const {x,y}=coords(e); document.getElementById('coordsDisplay').textContent=`(${x}, ${y})`;
+    if (!isDrawing) return; e.preventDefault();
+    if (x===lastX&&y===lastY) return;
+    if (x>=0&&x<mapData.length&&y>=0&&y<mapData.length) {
+        if (currentTool==='t'||currentTool==='b') build(x,y); else pendingBuilds.push({x,y});
+        lastX=x; lastY=y;
+    }
+});
+canvas.addEventListener('mouseup',    e => { e.preventDefault(); isDrawing=false; pendingBuilds=[]; lastX=lastY=-1; });
+canvas.addEventListener('mouseleave', () => { isDrawing=false; pendingBuilds=[]; lastX=lastY=-1; document.getElementById('coordsDisplay').textContent='—'; });
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+canvas.addEventListener('dblclick', e => {
+    const {x,y}=coords(e);
+    const t=mapData[x]?.[y];
+    if (t!==undefined) addLog(`🔍 (${x},${y}) tile=${t} base=${t&0x3FF} pwr=${!!(t&0x8000)}`, 'info');
+});
+
+// ── Zoom ────────────────────────────────────────────────────────
+function _mapArea() { return document.getElementById('mapArea'); }
+function _applyZoom() {
+    canvas.style.width  = (canvas.width  * zoomLevel) + 'px';
+    canvas.style.height = (canvas.height * zoomLevel) + 'px';
+    const d = document.getElementById('zoomDisplay');
+    if (d) d.textContent = Math.round(zoomLevel * 100) + '%';
+}
+function _zoomAt(newLevel, pivotX, pivotY) {
+    const ma = _mapArea();
+    const wx = (ma.scrollLeft + pivotX) / zoomLevel;
+    const wy = (ma.scrollTop  + pivotY) / zoomLevel;
+    zoomLevel = newLevel; _applyZoom();
+    ma.scrollLeft = wx * zoomLevel - pivotX;
+    ma.scrollTop  = wy * zoomLevel - pivotY;
+}
+canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const ma = _mapArea(); const maRect = ma.getBoundingClientRect();
+    const factor = e.deltaY < 0 ? 1.1 : (1/1.1);
+    _zoomAt(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoomLevel * factor)), e.clientX - maRect.left, e.clientY - maRect.top);
+}, { passive: false });
+function zoomIn()    { const ma=_mapArea(); _zoomAt(Math.min(MAX_ZOOM, zoomLevel*1.25), ma.clientWidth/2, ma.clientHeight/2); }
+function zoomOut()   { const ma=_mapArea(); _zoomAt(Math.max(MIN_ZOOM, zoomLevel/1.25), ma.clientWidth/2, ma.clientHeight/2); }
+function resetZoom() { const ma=_mapArea(); _zoomAt(1, ma.clientWidth/2, ma.clientHeight/2); }
+document.getElementById('zoomInBtn')   ?.addEventListener('click', zoomIn);
+document.getElementById('zoomOutBtn')  ?.addEventListener('click', zoomOut);
+document.getElementById('zoomResetBtn')?.addEventListener('click', resetZoom);
+document.addEventListener('keydown', e => {
+    if (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if (e.key==='+'||e.key==='=') { e.preventDefault(); zoomIn(); }
+    if (e.key==='-'||e.key==='_') { e.preventDefault(); zoomOut(); }
+    if (e.key==='0') { e.preventDefault(); resetZoom(); }
+});
+
+// ── Toolbar & actions ────────────────────────────────────────────
+document.querySelectorAll('.tool-btn').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.tool-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); currentTool=b.dataset.tool;
+    addLog(`🔧 ${b.textContent.trim()}`, 'info');
+}));
+document.getElementById('tickBtn').addEventListener('click', tick);
+document.getElementById('autoBtn').addEventListener('click', () => {
+    if (autoRunning) {
+        clearInterval(autoInterval); autoRunning=false;
+        document.getElementById('autoBtn').textContent='⏵ Auto (iniciar)';
+        document.getElementById('autoBtn').classList.remove('running');
+        addLog('⏸ Auto detenido');
+    } else {
+        autoInterval=setInterval(tick,2000); autoRunning=true;
+        document.getElementById('autoBtn').textContent='⏸ Auto (detener)';
+        document.getElementById('autoBtn').classList.add('running');
+        addLog('⏵ Auto 2s', 'ok');
+    }
+});
+document.getElementById('addMoneyBtn').addEventListener('click', async () => {
+    const c = prompt('Cantidad:', '2000'); if (!c) return;
+    const d = await (await apiFetch(`/simcity/api/game/${gameId}/add_money/`,
+        { method: 'POST', body: JSON.stringify({ cantidad: +c }) })).json();
+    document.getElementById('moneyDisplay').textContent = d.money;
+    addLog(`💰 +$${c}`, 'ok');
+});
+document.getElementById('resetBtn').addEventListener('click', () => {
+    if (confirm('¿Reiniciar?')) {
+        borrarSesion();
+        document.getElementById('game-screen').style.display='none';
+        document.getElementById('setup-screen').style.display='flex';
+        tickCount=0; mapData=[]; gameId=null;
+        cargarListaJuegos();
+    }
+});
+document.getElementById('zrBtn').addEventListener('click', generarCuadranteZR);
+document.getElementById('monopolyBtn')?.addEventListener('click', crearTableroMonopoly);
+document.getElementById('clearLogBtn').addEventListener('click', () => { document.getElementById('log').innerHTML=''; addLog('🧹 Log limpiado'); });
+document.getElementById('backToSetupBtn').addEventListener('click', () => {
+    if (autoRunning) { clearInterval(autoInterval); autoRunning=false; document.getElementById('autoBtn').textContent='⏵ Auto (iniciar)'; document.getElementById('autoBtn').classList.remove('running'); }
+    document.getElementById('game-screen').style.display='none';
+    document.getElementById('setup-screen').style.display='flex';
+    cargarListaJuegos();
+});
+
+// ── Barra móvil ──────────────────────────────────────────────────
+document.querySelectorAll('.mob-tool').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.mob-tool, .tool-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); currentTool=b.dataset.tool;
+    document.querySelector(`.tool-btn[data-tool="${currentTool}"]`)?.classList.add('active');
+}));
+document.getElementById('mobTickBtn')?.addEventListener('click', tick);
+document.getElementById('mobAutoBtn')?.addEventListener('click', () => {
+    const mob=document.getElementById('mobAutoBtn');
+    if (autoRunning) {
+        clearInterval(autoInterval); autoRunning=false;
+        mob.textContent='⏵ Auto'; mob.classList.remove('running');
+        document.getElementById('autoBtn').textContent='⏵ Auto (iniciar)'; document.getElementById('autoBtn').classList.remove('running');
+    } else {
+        autoInterval=setInterval(tick,2000); autoRunning=true;
+        mob.textContent='⏸ Stop'; mob.classList.add('running');
+        document.getElementById('autoBtn').textContent='⏸ Auto (detener)'; document.getElementById('autoBtn').classList.add('running');
+    }
+});
+document.getElementById('mobBlockBtn')?.addEventListener('click', () => document.getElementById('blockModal').classList.add('open'));
+document.getElementById('mobZrBtn')?.addEventListener('click', generarCuadranteZR);
+document.getElementById('mobMoneyBtn')?.addEventListener('click', async () => {
+    const c=prompt('Cantidad:','2000'); if (!c) return;
+    addLog(`💰 +$${c} (pendiente endpoint add_money)`, 'warn');
+});
+document.getElementById('mobMonopolyBtn')?.addEventListener('click', crearTableroMonopoly);
+</script>
+</body>
+</html>

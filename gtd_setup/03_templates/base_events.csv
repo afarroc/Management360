@@ -1,0 +1,8 @@
+title,description,event_category,venue,max_attendees,ticket_price,status_id,host_id,assigned_to_id
+Proyecto Personal,Sistema personal de organización,inbox_personal,Home Office,1,0.00,1,2,2
+Proyecto Salud,Plan de bienestar personal,inbox_health,Casa,1,0.00,1,2,2
+Proyecto Profesional,Desarrollo profesional,inbox_work,Oficina,1,0.00,1,2,2
+Proyecto Hogar,Organización del hogar,inbox_home,Casa,1,0.00,1,2,2
+Proyecto Aprendizaje,Curso o estudio,inbox_learning,Estudio,1,0.00,1,2,2
+Evento Recurrente Semanal,Revisión y planificación semanal,inbox_review,Home Office,1,0.00,2,2,2
+Evento Diario,Rutinas diarias,inbox_daily,Casa,1,0.00,2,2,2

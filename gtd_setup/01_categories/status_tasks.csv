@@ -1,0 +1,8 @@
+status_name,icon,active,color,model
+To Do,bi-circle,True,#6c757d,Task
+In Progress,bi-play-circle,True,#007bff,Task
+Waiting,bi-clock,True,#ffc107,Task
+Review,bi-eye,True,#17a2b8,Task
+Done,bi-check-circle,True,#28a745,Task
+Blocked,bi-slash-circle,True,#dc3545,Task
+Delegated,bi-person-check,True,#20c997,Task

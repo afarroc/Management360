@@ -1,0 +1,584 @@
+#!/usr/bin/env python
+"""
+Script para poblar la base de datos con el curso "Complementos de Matemática"
+según el sílabo UPN para la carrera de Administración.
+Ejecutar: python scripts/poblar_curso_complementos.py [--tutor username]
+"""
+
+import os
+import sys
+import django
+from datetime import timedelta
+from django.utils import timezone
+
+# ----------------------------------------------------------------------
+# Configuración del entorno Django
+# ----------------------------------------------------------------------
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'panel.settings')
+django.setup()
+
+# ----------------------------------------------------------------------
+# Importaciones de modelos (después de django.setup)
+# ----------------------------------------------------------------------
+from django.contrib.auth.models import User
+from courses.models import (
+    Course, Module, Lesson, CourseCategory, ContentBlock,
+    CourseLevelChoices, LessonTypeChoices
+)
+
+
+def get_or_create_category(name, description=""):
+    """Obtiene o crea una categoría de curso."""
+    category, created = CourseCategory.objects.get_or_create(
+        name=name,
+        defaults={'description': description}
+    )
+    if created:
+        print(f"✅ Categoría '{name}' creada.")
+    else:
+        print(f"ℹ️  Categoría '{name}' ya existe.")
+    return category
+
+
+def get_tutor_user(username=None):
+    """
+    Retorna un usuario que tenga perfil de tutor (CV).
+    Si se proporciona username, lo busca; si no, el primero con CV.
+    Lanza excepción si no encuentra.
+    """
+    if username:
+        user = User.objects.filter(username=username).first()
+        if user and hasattr(user, 'cv'):
+            return user
+        else:
+            print(f"❌ Usuario '{username}' no tiene perfil CV o no existe.")
+            sys.exit(1)
+
+    # Buscar primer usuario con CV
+    user = User.objects.filter(cv__isnull=False).first()
+    if user:
+        print(f"ℹ️  Usuario tutor seleccionado: {user.username}")
+        return user
+
+    raise Exception("No hay ningún usuario con perfil de tutor (CV). Crea uno primero.")
+
+
+def create_course_structure(tutor_username=None):
+    """Crea el curso, módulos y lecciones."""
+    # 1. Categoría
+    cat = get_or_create_category(
+        "Matemáticas",
+        "Cursos de matemáticas y lógica aplicadas a los negocios"
+    )
+
+    # 2. Tutor
+    tutor = get_tutor_user(tutor_username)
+
+    # 3. Verificar si el curso ya existe
+    course_slug = "complementos-matematica-admin"
+    existing = Course.objects.filter(slug=course_slug).first()
+    if existing:
+        print(f"⚠️  El curso con slug '{course_slug}' ya existe (ID: {existing.id}).")
+        resp = input("¿Deseas eliminarlo y recrearlo? (s/n): ").strip().lower()
+        if resp == 's':
+            existing.delete()
+            print("✅ Curso anterior eliminado.")
+        else:
+            print("Operación cancelada.")
+            return
+
+    # 4. Crear curso
+    course = Course.objects.create(
+        title="Complementos de Matemática",
+        slug=course_slug,
+        description=(
+            "El curso es de naturaleza teórico-práctica y tiene como propósito familiarizar al estudiante "
+            "con los elementos y los procesos lógicos y formales de la matemática, con el fin de manejar "
+            "adecuadamente los conceptos y procedimientos de la matemática pre-universitaria de manera que "
+            "logre abordar en forma exitosa los cursos de pregrado. Los temas principales son: Aritmética, "
+            "Álgebra y Elementos de Geometría Analítica y Álgebra Lineal."
+        ),
+        short_description="Curso de matemáticas aplicadas a la administración (primer ciclo).",
+        tutor=tutor,
+        category=cat,
+        level=CourseLevelChoices.BEGINNER,
+        price=0,                     # Ajusta si es de pago
+        duration_hours=96,
+        is_published=False,           # No publicar automáticamente
+        is_featured=False,
+    )
+    print(f"✅ Curso '{course.title}' creado con ID {course.id}.")
+
+    # 5. Crear módulos
+    module1 = Module.objects.create(
+        course=course,
+        title="Unidad I: Aritmética",
+        description="Semanas 1 a 4",
+        order=1
+    )
+    module2 = Module.objects.create(
+        course=course,
+        title="Unidad II: Álgebra",
+        description="Semanas 5 a 8",
+        order=2
+    )
+    module3 = Module.objects.create(
+        course=course,
+        title="Unidad III: Geometría Analítica y Álgebra Lineal",
+        description="Semanas 9 a 15",
+        order=3
+    )
+    print("✅ Módulos creados.")
+
+    # 6. Crear lecciones por módulo
+    _crear_lecciones_unidad1(module1)
+    _crear_lecciones_unidad2(module2)
+    _crear_lecciones_unidad3(module3)
+
+    # 7. Bloques de contenido reutilizables (opcional)
+    _crear_content_blocks(tutor)
+
+    print("\n🎉 Estructura del curso completada exitosamente.")
+
+
+def _crear_lecciones_unidad1(module):
+    """Unidad I: Aritmética (semanas 1-4)"""
+    # Semana 1
+    Lesson.objects.create(
+        module=module,
+        title="Semana 1: Números reales y operaciones",
+        lesson_type=LessonTypeChoices.TEXT,
+        content="""
+        <h2>Números reales</h2>
+        <p>Los números reales incluyen números naturales, enteros, racionales e irracionales.</p>
+        <p><strong>Operaciones combinadas:</strong> respetan la jerarquía: paréntesis, potencias y raíces, multiplicaciones y divisiones, sumas y restas.</p>
+        """,
+        duration_minutes=60,
+        order=1,
+        is_free=True
+    )
+    Lesson.objects.create(
+        module=module,
+        title="Práctica: Operaciones combinadas",
+        lesson_type=LessonTypeChoices.QUIZ,
+        duration_minutes=30,
+        order=2,
+        quiz_questions=[
+            {
+                "question": "Calcula: (5+3) × 2 - 4²",
+                "options": ["0", "2", "4", "6"],
+                "correct_answer": "0",
+                "type": "multiple_choice"
+            },
+            {
+                "question": "¿Cuál es el resultado de √16 + 3²?",
+                "options": ["7", "13", "25", "9"],
+                "correct_answer": "13",
+                "type": "multiple_choice"
+            },
+            {
+                "question": "Simplifica: (8 - 3) × 2 + 10 ÷ 2",
+                "options": ["15", "10", "20", "12"],
+                "correct_answer": "15",
+                "type": "multiple_choice"
+            }
+        ]
+    )
+
+    # Semana 2
+    Lesson.objects.create(
+        module=module,
+        title="Semana 2: Razones, proporciones y reparto",
+        lesson_type=LessonTypeChoices.TEXT,
+        content="<h2>Razones y proporciones</h2><p>Una razón es la comparación de dos cantidades...</p>",
+        duration_minutes=60,
+        order=3
+    )
+    Lesson.objects.create(
+        module=module,
+        title="Taller: Problemas de reparto proporcional",
+        lesson_type=LessonTypeChoices.ASSIGNMENT,
+        order=4,
+        assignment_instructions=(
+            "Resuelve los siguientes problemas y sube un PDF con el desarrollo:\n\n"
+            "1. Tres socios invierten S/10 000, S/15 000 y S/25 000. Si la utilidad total es S/50 000, ¿cuánto recibe cada uno?\n"
+            "2. Si 3 máquinas producen 1200 unidades en 4 días, ¿cuántos días necesitan 5 máquinas para producir 2500 unidades?\n"
+            "3. Reparte 240 caramelos en proporción 2:3:5."
+        ),
+        assignment_due_date=timezone.now() + timedelta(days=7)
+    )
+
+    # Semana 3
+    Lesson.objects.create(
+        module=module,
+        title="Semana 3: Sistema internacional de unidades",
+        lesson_type=LessonTypeChoices.TEXT,
+        content="<h2>Conversión de unidades</h2><p>1 kg = 2.20462 lb, 1 L = 1000 mL...</p>",
+        duration_minutes=60,
+        order=5
+    )
+    Lesson.objects.create(
+        module=module,
+        title="Taller PCC: Conversiones",
+        lesson_type=LessonTypeChoices.QUIZ,
+        duration_minutes=30,
+        order=6,
+        quiz_questions=[
+            {
+                "question": "Convierte 5 kg a libras (1 lb = 0.4536 kg)",
+                "options": ["11.02 lb", "2.27 lb", "5 lb", "10 lb"],
+                "correct_answer": "11.02 lb",
+                "type": "multiple_choice"
+            },
+            {
+                "question": "¿Cuántos litros son 750 mL × 80 lotes?",
+                "options": ["60 L", "75 L", "80 L", "90 L"],
+                "correct_answer": "60 L",
+                "type": "multiple_choice"
+            }
+        ]
+    )
+
+    # Semana 4
+    Lesson.objects.create(
+        module=module,
+        title="Semana 4: Porcentajes y aplicaciones comerciales",
+        lesson_type=LessonTypeChoices.TEXT,
+        content="<h2>Porcentajes</h2><p>Aumentos y descuentos sucesivos...</p>",
+        duration_minutes=60,
+        order=7
+    )
+    Lesson.objects.create(
+        module=module,
+        title="Evaluación T1",
+        lesson_type=LessonTypeChoices.QUIZ,
+        duration_minutes=60,
+        order=8,
+        quiz_questions=[
+            {
+                "question": "Un artículo cuesta S/200. Se aplica un 20% de descuento y luego otro 10%. ¿Cuál es el precio final?",
+                "options": ["S/144", "S/140", "S/150", "S/160"],
+                "correct_answer": "S/144",
+                "type": "multiple_choice"
+            },
+            {
+                "question": "Una factura total es S/1180 con IGV 18% incluido. ¿Cuál es el valor neto?",
+                "options": ["S/1000", "S/980", "S/1100", "S/1050"],
+                "correct_answer": "S/1000",
+                "type": "multiple_choice"
+            },
+            {
+                "question": "Si un producto aumenta 30% y luego se rebaja 20%, ¿variación porcentual final?",
+                "options": ["4%", "5%", "6%", "8%"],
+                "correct_answer": "4%",
+                "type": "multiple_choice"
+            }
+        ]
+    )
+
+
+def _crear_lecciones_unidad2(module):
+    """Unidad II: Álgebra (semanas 5-8)"""
+    # Semana 5
+    Lesson.objects.create(
+        module=module,
+        title="Semana 5: Ecuaciones lineales",
+        lesson_type=LessonTypeChoices.TEXT,
+        content="<h2>Ecuaciones de primer grado</h2><p>Forma ax + b = c. Aplicación al punto de equilibrio.</p>",
+        duration_minutes=60,
+        order=1
+    )
+    Lesson.objects.create(
+        module=module,
+        title="Práctica: Ecuaciones lineales",
+        lesson_type=LessonTypeChoices.QUIZ,
+        order=2,
+        quiz_questions=[
+            {
+                "question": "Resuelve: 3x + 5 = 20",
+                "options": ["5", "15", "25", "10"],
+                "correct_answer": "5",
+                "type": "multiple_choice"
+            }
+        ]
+    )
+
+    # Semana 6
+    Lesson.objects.create(
+        module=module,
+        title="Semana 6: Ecuaciones cuadráticas",
+        lesson_type=LessonTypeChoices.TEXT,
+        content="<h2>Ecuaciones de segundo grado</h2><p>Fórmula general. Aplicación a ingresos.</p>",
+        duration_minutes=60,
+        order=3
+    )
+    Lesson.objects.create(
+        module=module,
+        title="Práctica: Cuadráticas",
+        lesson_type=LessonTypeChoices.ASSIGNMENT,
+        order=4,
+        assignment_instructions="Resuelve: x² - 5x + 6 = 0 y explica su interpretación en un problema de ingresos."
+    )
+
+    # Semana 7
+    Lesson.objects.create(
+        module=module,
+        title="Semana 7: Ecuaciones exponenciales",
+        lesson_type=LessonTypeChoices.TEXT,
+        content="<h2>Ecuaciones exponenciales e interés compuesto</h2>",
+        duration_minutes=60,
+        order=5
+    )
+    Lesson.objects.create(
+        module=module,
+        title="Práctica: Exponenciales",
+        lesson_type=LessonTypeChoices.QUIZ,
+        order=6,
+        quiz_questions=[
+            {
+                "question": "Si inviertes S/10 000 al 8% anual, ¿en cuántos años alcanzas S/12 597,12?",
+                "options": ["2 años", "3 años", "4 años", "5 años"],
+                "correct_answer": "3 años",
+                "type": "multiple_choice"
+            }
+        ]
+    )
+
+    # Semana 8
+    Lesson.objects.create(
+        module=module,
+        title="Semana 8: Ecuaciones logarítmicas",
+        lesson_type=LessonTypeChoices.TEXT,
+        content="<h2>Ecuaciones logarítmicas</h2><p>Propiedades y relación con exponenciales.</p>",
+        duration_minutes=60,
+        order=7
+    )
+    Lesson.objects.create(
+        module=module,
+        title="Evaluación Parcial",
+        lesson_type=LessonTypeChoices.QUIZ,
+        duration_minutes=90,
+        order=8,
+        quiz_questions=[
+            {
+                "question": "Resuelve log₂(x) + log₂(x-2) = 3",
+                "options": ["x=4", "x=6", "x=8", "x=10"],
+                "correct_answer": "x=4",
+                "type": "multiple_choice"
+            }
+        ]
+    )
+
+
+def _crear_lecciones_unidad3(module):
+    """Unidad III: Geometría Analítica y Álgebra Lineal (semanas 9-15)"""
+    # Semana 9
+    Lesson.objects.create(
+        module=module,
+        title="Semana 9: Matrices",
+        lesson_type=LessonTypeChoices.TEXT,
+        content="<h2>Matrices</h2><p>Operaciones básicas y determinantes.</p>",
+        duration_minutes=60,
+        order=1
+    )
+    Lesson.objects.create(
+        module=module,
+        title="Práctica: Matrices",
+        lesson_type=LessonTypeChoices.QUIZ,
+        order=2,
+        quiz_questions=[
+            {
+                "question": "Dadas A=[[1,2],[3,4]] y B=[[0,1],[1,0]], calcula A+B",
+                "options": ["[[1,3],[4,4]]", "[[1,3],[4,4]]", "[[1,3],[4,4]]", "[[1,3],[4,4]]"],
+                "correct_answer": "[[1,3],[4,4]]",
+                "type": "multiple_choice"
+            }
+        ]
+    )
+
+    # Semana 10
+    Lesson.objects.create(
+        module=module,
+        title="Semana 10: Sistemas de ecuaciones lineales",
+        lesson_type=LessonTypeChoices.TEXT,
+        content="<h2>Sistemas 2x2 y 3x3. Método de Cramer.</h2>",
+        duration_minutes=60,
+        order=3
+    )
+    Lesson.objects.create(
+        module=module,
+        title="Práctica: Sistemas",
+        lesson_type=LessonTypeChoices.ASSIGNMENT,
+        order=4,
+        assignment_instructions="Resuelve el sistema de producción de sillas y mesas usando matrices."
+    )
+
+    # Semana 11
+    Lesson.objects.create(
+        module=module,
+        title="Semana 11: La recta",
+        lesson_type=LessonTypeChoices.TEXT,
+        content="<h2>Función lineal: pendiente, ecuación punto-pendiente.</h2>",
+        duration_minutes=60,
+        order=5
+    )
+    Lesson.objects.create(
+        module=module,
+        title="Taller PCC",
+        lesson_type=LessonTypeChoices.QUIZ,
+        order=6,
+        quiz_questions=[
+            {
+                "question": "Pendiente de la recta que pasa por (1,2) y (3,8)",
+                "options": ["2", "3", "4", "5"],
+                "correct_answer": "3",
+                "type": "multiple_choice"
+            }
+        ]
+    )
+
+    # Semana 12
+    Lesson.objects.create(
+        module=module,
+        title="Semana 12: Aplicaciones de la recta",
+        lesson_type=LessonTypeChoices.TEXT,
+        content="<h2>Depreciación lineal, costo, ingreso.</h2>",
+        duration_minutes=60,
+        order=7
+    )
+    Lesson.objects.create(
+        module=module,
+        title="Evaluación T2",
+        lesson_type=LessonTypeChoices.QUIZ,
+        duration_minutes=60,
+        order=8,
+        quiz_questions=[
+            {
+                "question": "Una máquina cuesta S/50 000 y se deprecia linealmente a S/5 000 en 10 años. ¿Valor tras 4 años?",
+                "options": ["S/32 000", "S/30 000", "S/28 000", "S/25 000"],
+                "correct_answer": "S/32 000",
+                "type": "multiple_choice"
+            }
+        ]
+    )
+
+    # Semana 13
+    Lesson.objects.create(
+        module=module,
+        title="Semana 13: La parábola",
+        lesson_type=LessonTypeChoices.TEXT,
+        content="<h2>Elementos de la parábola. Aplicación a maximización.</h2>",
+        duration_minutes=60,
+        order=9
+    )
+    Lesson.objects.create(
+        module=module,
+        title="Práctica: Parábola",
+        lesson_type=LessonTypeChoices.QUIZ,
+        order=10,
+        quiz_questions=[
+            {
+                "question": "Vértice de la función U(x) = -2x² + 80x - 500",
+                "options": ["(20,300)", "(20,200)", "(40,300)", "(40,200)"],
+                "correct_answer": "(20,300)",
+                "type": "multiple_choice"
+            }
+        ]
+    )
+
+    # Semana 14
+    Lesson.objects.create(
+        module=module,
+        title="Semana 14: La hipérbola",
+        lesson_type=LessonTypeChoices.TEXT,
+        content="<h2>Ecuación de la hipérbola. Asíntotas.</h2>",
+        duration_minutes=60,
+        order=11
+    )
+    Lesson.objects.create(
+        module=module,
+        title="Práctica: Hipérbola",
+        lesson_type=LessonTypeChoices.ASSIGNMENT,
+        order=12,
+        assignment_instructions="Analiza el comportamiento del costo promedio C(x)=500/x+2. ¿Qué pasa cuando x → ∞?"
+    )
+
+    # Semana 15
+    Lesson.objects.create(
+        module=module,
+        title="Semana 15: Caso de estudio - Plan de negocio",
+        lesson_type=LessonTypeChoices.ASSIGNMENT,
+        order=13,
+        assignment_instructions=(
+            "Desarrolla un pequeño plan de negocio donde apliques:\n"
+            "- Porcentajes (márgenes de ganancia)\n"
+            "- Ecuaciones lineales (costos, ingresos)\n"
+            "- Matrices (inventarios)\n"
+            "- Función lineal (proyección de ventas)\n"
+            "Sube un PDF con el desarrollo."
+        ),
+        assignment_due_date=timezone.now() + timedelta(days=14)
+    )
+
+    # Semana 16
+    Lesson.objects.create(
+        module=module,
+        title="Semana 16: Examen final",
+        lesson_type=LessonTypeChoices.QUIZ,
+        duration_minutes=120,
+        order=14,
+        quiz_questions=[
+            {
+                "question": "Pregunta de ejemplo final (integradora)",
+                "options": ["Opción A", "Opción B", "Opción C", "Opción D"],
+                "correct_answer": "Opción A",
+                "type": "multiple_choice"
+            }
+        ]
+    )
+
+
+def _crear_content_blocks(author):
+    """Crea algunos bloques de contenido reutilizables."""
+    block, created = ContentBlock.objects.get_or_create(
+        slug="concepto-porcentaje",
+        defaults={
+            "title": "Concepto de Porcentaje",
+            "description": "Explicación básica de porcentajes para aplicaciones comerciales",
+            "content_type": "html",
+            "html_content": (
+                "<div class='alert alert-info'>"
+                "<h4>¿Qué es un porcentaje?</h4>"
+                "<p>El porcentaje representa una proporción por cada 100 unidades. "
+                "Por ejemplo, 25% significa 25 de cada 100.</p>"
+                "<p><strong>Fórmula:</strong> Parte = (Porcentaje/100) × Total</p>"
+                "</div>"
+            ),
+            "author": author,
+            "is_public": True
+        }
+    )
+    if created:
+        print("✅ Bloque reutilizable 'Concepto de Porcentaje' creado.")
+
+
+# ----------------------------------------------------------------------
+# Punto de entrada
+# ----------------------------------------------------------------------
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="Crea la estructura del curso Complementos de Matemática en la app courses."
+    )
+    parser.add_argument(
+        "--tutor",
+        help="Username del tutor que será dueño del curso (debe tener CV asociado)."
+    )
+    args = parser.parse_args()
+
+    try:
+        create_course_structure(args.tutor)
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        sys.exit(1)

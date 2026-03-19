@@ -1,0 +1,103 @@
+<!-- analyst/templates/analyst/partials/clipboard_details.html -->
+<div class="clipboard-details">
+    <div class="details-header" style="margin-bottom: 1.5rem;">
+        <h4 style="margin: 0 0 0.5rem 0;">
+            <i class="fas fa-database"></i> {{ clip.key }}
+        </h4>
+        {% if clip.filename %}
+        <div style="font-size: 0.875rem; color: var(--gray-600);">
+            <i class="fas fa-file"></i> {{ clip.filename }}
+        </div>
+        {% endif %}
+        <div style="font-size: 0.875rem; color: var(--gray-600);">
+            <i class="fas fa-clock"></i> {{ clip.timestamp }}
+        </div>
+    </div>
+    
+    <!-- Estadísticas -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem;">
+        <div style="text-align: center; padding: 1rem; background: var(--glass-bg); border-radius: 0.75rem;">
+            <div style="font-size: 1.5rem; font-weight: 600;">{{ clip.stats.total_rows }}</div>
+            <div style="font-size: 0.875rem; opacity: 0.8;">Filas</div>
+        </div>
+        <div style="text-align: center; padding: 1rem; background: var(--glass-bg); border-radius: 0.75rem;">
+            <div style="font-size: 1.5rem; font-weight: 600;">{{ clip.stats.total_cols }}</div>
+            <div style="font-size: 0.875rem; opacity: 0.8;">Columnas</div>
+        </div>
+        <div style="text-align: center; padding: 1rem; background: var(--glass-bg); border-radius: 0.75rem;">
+            <div style="font-size: 1.5rem; font-weight: 600;">{{ clip.stats.memory_usage|filesizeformat }}</div>
+            <div style="font-size: 0.875rem; opacity: 0.8;">Memoria</div>
+        </div>
+    </div>
+    
+    <!-- Vista previa de datos -->
+    <h5 style="margin: 0 0 1rem 0;">
+        <i class="fas fa-table"></i> Vista Previa (primeras 10 filas)
+    </h5>
+    
+    <div style="overflow-x: auto; border-radius: 0.75rem; border: 1px solid var(--gray-200);">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.875rem;">
+            <thead>
+                <tr style="background: var(--gray-100);">
+                    {% for col in clip.data.columns %}
+                    <th style="padding: 0.75rem 1rem; text-align: left; white-space: nowrap;">
+                        {{ col }}
+                    </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in clip.data.rows %}
+                <tr>
+                    {% for cell in row %}
+                    <td style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--gray-200);">
+                        {% if cell is None or cell == '' %}
+                        <span style="color: var(--gray-400); font-style: italic;">null</span>
+                        {% else %}
+                        {{ cell|truncatechars:50 }}
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Tipos de datos -->
+    <div style="margin-top: 1.5rem;">
+        <h5 style="margin: 0 0 0.75rem 0;">
+            <i class="fas fa-code"></i> Tipos de Datos
+        </h5>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+            {% for col, dtype in clip.stats.dtypes.items %}
+            <span class="badge badge-info" style="display: inline-flex; align-items: center; gap: 0.25rem;">
+                {{ col }}: 
+                {% if 'int' in dtype %}
+                <i class="fas fa-hashtag"></i>
+                {% elif 'float' in dtype %}
+                <i class="fas fa-divide"></i>
+                {% elif 'datetime' in dtype %}
+                <i class="fas fa-calendar"></i>
+                {% elif 'bool' in dtype %}
+                <i class="fas fa-toggle-on"></i>
+                {% else %}
+                <i class="fas fa-font"></i>
+                {% endif %}
+                {{ dtype }}
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Acciones -->
+    <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: flex-end;">
+        <a href="{% url 'analyst:export_clipboard_csv' %}?key={{ clip.key }}" 
+           class="btn btn-sm btn-success" target="_blank">
+            <i class="fas fa-download"></i> Exportar CSV
+        </a>
+        <button class="btn btn-sm btn-outline-secondary" onclick="closeModal()">
+            <i class="fas fa-times"></i> Cerrar
+        </button>
+    </div>
+</div>

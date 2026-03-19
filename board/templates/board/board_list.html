@@ -1,0 +1,117 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Mis Boards - Management360{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Header tipo app móvil -->
+    <header class="bg-white border-b sticky top-0 z-30">
+        <div class="px-4 py-4 flex items-center justify-between">
+            <h1 class="text-2xl font-semibold text-gray-900">Mis Boards</h1>
+            <a href="{% url 'board:create' %}" 
+               class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors">
+                <i class="fas fa-plus"></i>
+                <span>Nuevo Board</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- Contenido principal -->
+    <div class="p-4">
+        {% if boards %}
+            <!-- Grid responsive estilo Pinterest -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {% for board in boards %}
+                    <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 overflow-hidden">
+                        <!-- Cover imagen o placeholder -->
+                        <a href="{% url 'board:detail' board.pk %}" class="block">
+                            <div class="aspect-video bg-gradient-to-br from-blue-500 to-purple-600 relative">
+                                {% if board.cover_image %}
+                                    <img src="{{ board.cover_image.url }}" 
+                                         alt="{{ board.name }}"
+                                         class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <i class="fas fa-th text-white text-4xl opacity-50"></i>
+                                    </div>
+                                {% endif %}
+                                <!-- Número de tarjetas -->
+                                <div class="absolute bottom-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full">
+                                    <i class="fas fa-file-alt mr-1"></i> {{ board.cards.count }}
+                                </div>
+                            </div>
+                        </a>
+                        
+                        <div class="p-4">
+                            <div class="flex items-start justify-between">
+                                <div>
+                                    <a href="{% url 'board:detail' board.pk %}" 
+                                       class="font-medium text-gray-900 hover:text-blue-600">
+                                        {{ board.name }}
+                                    </a>
+                                    <p class="text-sm text-gray-500 mt-1 line-clamp-2">
+                                        {{ board.description|default:"Sin descripción" }}
+                                    </p>
+                                </div>
+                                
+                                <!-- Menú de opciones -->
+                                <div class="relative" x-data="{ open: false }">
+                                    <button @click="open = !open" 
+                                            class="p-1 hover:bg-gray-100 rounded">
+                                        <i class="fas fa-ellipsis-v text-gray-500"></i>
+                                    </button>
+                                    
+                                    <div x-show="open" 
+                                         @click.away="open = false"
+                                         x-cloak
+                                         class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg py-1 z-20 border">
+                                        <a href="{% url 'board:detail' board.pk %}" 
+                                           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                            <i class="fas fa-eye w-5"></i> Abrir
+                                        </a>
+                                        <a href="#" 
+                                           class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                            <i class="fas fa-share-alt w-5"></i> Compartir
+                                        </a>
+                                        <hr class="my-1">
+                                        <button onclick="if(confirm('¿Eliminar este board?')) location.href='#'" 
+                                                class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                            <i class="fas fa-trash w-5"></i> Eliminar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Metadata -->
+                            <div class="mt-3 flex items-center justify-between text-xs text-gray-400">
+                                <span>
+                                    <i class="far fa-clock mr-1"></i>
+                                    {{ board.updated_at|date:"d/m/Y" }}
+                                </span>
+                                <span class="capitalize px-2 py-1 bg-gray-100 rounded-full">
+                                    {{ board.get_layout_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- Estado vacío -->
+            <div class="text-center py-12">
+                <div class="text-8xl mb-6 text-gray-300">
+                    <i class="fas fa-chalkboard"></i>
+                </div>
+                <h2 class="text-2xl font-semibold text-gray-700 mb-3">No tienes boards aún</h2>
+                <p class="text-gray-500 mb-6">Crea tu primer board para empezar a organizar tus ideas</p>
+                <a href="{% url 'board:create' %}" 
+                   class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>
+                    Crear mi primer board
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

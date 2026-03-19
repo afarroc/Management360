@@ -1,0 +1,2065 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+#analyst-root *,
+#analyst-root *::before,
+#analyst-root *::after { box-sizing: border-box; }
+
+#analyst-root {
+  --ar-bg:            #f4f6f9;
+  --ar-surface:       #ffffff;
+  --ar-border:        #e5e7eb;
+  --ar-border-light:  #f3f4f6;
+  --ar-primary:       #2563eb;
+  --ar-primary-light: #eff6ff;
+  --ar-primary-dark:  #1d4ed8;
+  --ar-success:       #059669;
+  --ar-success-light: #ecfdf5;
+  --ar-success-border:#6ee7b7;
+  --ar-warning:       #d97706;
+  --ar-warning-light: #fffbeb;
+  --ar-warning-border:#fcd34d;
+  --ar-danger:        #dc2626;
+  --ar-danger-light:  #fef2f2;
+  --ar-danger-border: #fca5a5;
+  --ar-text:          #111827;
+  --ar-text-secondary:#4b5563;
+  --ar-text-muted:    #9ca3af;
+  --ar-gray-50:       #f9fafb;
+  --ar-gray-100:      #f3f4f6;
+  --ar-gray-200:      #e5e7eb;
+  --ar-gray-300:      #d1d5db;
+  --ar-radius-sm:     6px;
+  --ar-radius:        8px;
+  --ar-radius-lg:     12px;
+  --ar-shadow-sm:     0 1px 3px rgba(0,0,0,.07);
+  --ar-shadow:        0 2px 8px rgba(0,0,0,.08);
+  --ar-transition:    .15s ease;
+
+  --bg:            var(--ar-bg);
+  --surface:       var(--ar-surface);
+  --border:        var(--ar-border);
+  --border-light:  var(--ar-border-light);
+  --primary:       var(--ar-primary);
+  --primary-light: var(--ar-primary-light);
+  --primary-dark:  var(--ar-primary-dark);
+  --success:       var(--ar-success);
+  --success-light: var(--ar-success-light);
+  --success-border:var(--ar-success-border);
+  --warning:       var(--ar-warning);
+  --warning-light: var(--ar-warning-light);
+  --warning-border:var(--ar-warning-border);
+  --danger:        var(--ar-danger);
+  --danger-light:  var(--ar-danger-light);
+  --danger-border: var(--ar-danger-border);
+  --text:          var(--ar-text);
+  --text-secondary:var(--ar-text-secondary);
+  --text-muted:    var(--ar-text-muted);
+  --gray-50:       var(--ar-gray-50);
+  --gray-100:      var(--ar-gray-100);
+  --gray-200:      var(--ar-gray-200);
+  --gray-300:      var(--ar-gray-300);
+  --radius-sm:     var(--ar-radius-sm);
+  --radius:        var(--ar-radius);
+  --radius-lg:     var(--ar-radius-lg);
+  --shadow-sm:     var(--ar-shadow-sm);
+  --shadow:        var(--ar-shadow);
+  --transition:    var(--ar-transition);
+
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--ar-text);
+  line-height: 1.5;
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+/* NiceAdmin isolation */
+#analyst-root .btn {
+  font-family: 'Nunito', system-ui, sans-serif;
+  border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; line-height: 1.4;
+  padding: 6px 14px;
+  transition: background .12s, border-color .12s, color .12s, box-shadow .12s;
+  display: inline-flex; align-items: center; gap: 6px;
+  text-decoration: none; cursor: pointer; vertical-align: middle;
+}
+#analyst-root table { border-collapse: collapse; }
+#analyst-root h1,#analyst-root h2,#analyst-root h3,
+#analyst-root h4,#analyst-root h5,#analyst-root h6 {
+  font-family: 'Nunito', system-ui, sans-serif;
+  color: var(--text); margin-bottom: 0; line-height: 1.3;
+}
+
+/* ── Page ── */
+#analyst-root .dashboard-container {
+  width: 100%; padding: 14px 12px 32px;
+}
+#analyst-root .dashboard-header {
+  margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--border);
+}
+#analyst-root .dashboard-header h1 {
+  font-size: 20px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 8px;
+}
+#analyst-root .dashboard-header h1 i { color: var(--primary); font-size: 18px; }
+#analyst-root .dashboard-header p { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+
+/* ── Toolbar ── */
+#analyst-root .analyst-toolbar {
+  display: flex; align-items: center; flex-wrap: nowrap;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+  gap: 2px; background: var(--surface); border: 1px solid var(--border);
+  border-bottom: 2px solid var(--primary); border-radius: var(--radius);
+  padding: 6px 10px; margin-bottom: 14px; box-shadow: var(--shadow-sm);
+}
+#analyst-root .analyst-toolbar::-webkit-scrollbar { display: none; }
+#analyst-root .tb-section {
+  display: flex; align-items: center; gap: 2px;
+  padding: 0 8px; border-right: 1px solid var(--border);
+}
+#analyst-root .tb-section:last-child { border-right: none; }
+#analyst-root .tb-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  color: var(--text-muted); letter-spacing: .06em; padding: 0 4px 0 0; white-space: nowrap;
+}
+#analyst-root .tb-btn {
+  display: inline-flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 3px; padding: 5px 7px;
+  background: transparent !important; border: 1px solid transparent;
+  border-radius: var(--ar-radius-sm, 6px); cursor: pointer;
+  font-family: 'Nunito', system-ui, sans-serif; font-size: 11px; font-weight: 600;
+  color: var(--ar-text-secondary, #4b5563); white-space: nowrap;
+  text-decoration: none !important; min-width: 44px;
+  transition: background .12s, border-color .12s, color .12s, transform .1s;
+  position: relative; line-height: 1; vertical-align: middle; box-shadow: none !important;
+}
+#analyst-root .tb-btn, #analyst-root .tb-btn:link, #analyst-root .tb-btn:visited {
+  color: var(--ar-text-secondary, #4b5563);
+}
+#analyst-root .tb-btn span { font-size: 10px; line-height: 1; color: var(--ar-text-muted, #9ca3af); }
+#analyst-root .tb-btn:hover:not(:disabled) { transform: translateY(-1px); border-color: var(--border); }
+#analyst-root .tb-btn:active:not(:disabled) { transform: translateY(0); }
+#analyst-root .tb-btn:disabled { opacity: .38; cursor: default; }
+#analyst-root .tb-icon-pill {
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  width: 28px; height: 28px; border-radius: 8px; font-size: 13px; line-height: 1;
+  transition: background .12s, box-shadow .12s; flex-shrink: 0; box-sizing: border-box;
+}
+#analyst-root .tb-btn:hover:not(:disabled) .tb-icon-pill { box-shadow: 0 2px 6px rgba(0,0,0,.14); }
+#analyst-root .tip-blue   { background: #dbeafe !important; color: #1d4ed8 !important; }
+#analyst-root .tip-green  { background: #d1fae5 !important; color: #047857 !important; }
+#analyst-root .tip-amber  { background: #fef3c7 !important; color: #b45309 !important; }
+#analyst-root .tip-orange { background: #ffedd5 !important; color: #c2410c !important; }
+#analyst-root .tip-rose   { background: #fce7f3 !important; color: #be185d !important; }
+#analyst-root .tip-purple { background: #ede9fe !important; color: #6d28d9 !important; }
+#analyst-root .tip-teal   { background: #ccfbf1 !important; color: #0f766e !important; }
+#analyst-root .tip-red    { background: #fee2e2 !important; color: #b91c1c !important; }
+#analyst-root .tip-gray   { background: #f3f4f6 !important; color: #4b5563 !important; }
+#analyst-root .tb-btn:hover:not(:disabled) .tip-blue   { background: #bfdbfe !important; }
+#analyst-root .tb-btn:hover:not(:disabled) .tip-green  { background: #a7f3d0 !important; }
+#analyst-root .tb-btn:hover:not(:disabled) .tip-amber  { background: #fde68a !important; }
+#analyst-root .tb-btn:hover:not(:disabled) .tip-orange { background: #fed7aa !important; }
+#analyst-root .tb-btn:hover:not(:disabled) .tip-rose   { background: #fbcfe8 !important; }
+#analyst-root .tb-btn:hover:not(:disabled) .tip-purple { background: #ddd6fe !important; }
+#analyst-root .tb-btn:hover:not(:disabled) .tip-teal   { background: #99f6e4 !important; }
+#analyst-root .tb-btn:hover:not(:disabled) .tip-red    { background: #fecaca !important; }
+#analyst-root .tb-spacer { flex: 1; }
+
+/* ── Buttons ── */
+#analyst-root .btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 16px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-family: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer; color: var(--text); white-space: nowrap; text-decoration: none;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+  line-height: 1;
+}
+#analyst-root .btn:hover:not(:disabled)  { background: var(--gray-50); }
+#analyst-root .btn:disabled              { opacity: .4; cursor: default; }
+#analyst-root .btn-primary   { background: var(--primary);      color: #fff; border-color: var(--primary); }
+#analyst-root .btn-primary:hover:not(:disabled) { background: var(--primary-dark); border-color: var(--primary-dark); }
+#analyst-root .btn-success   { background: var(--success);      color: #fff; border-color: var(--success); }
+#analyst-root .btn-success:hover:not(:disabled) { background: #047857; }
+#analyst-root .btn-danger    { background: var(--danger-light);  color: var(--danger); border-color: var(--danger-border); }
+#analyst-root .btn-danger:hover:not(:disabled)  { background: #fee2e2; }
+#analyst-root .btn-outline-secondary { background: #fff; color: var(--text-secondary); border-color: var(--gray-300); }
+#analyst-root .btn-outline-secondary:hover:not(:disabled) { background: var(--gray-50); }
+#analyst-root .btn-sm { padding: 5px 10px; font-size: 12px; }
+
+/* ── Card ── */
+#analyst-root .card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); margin-bottom: 14px;
+}
+#analyst-root .card-header {
+  padding: 12px 16px; background: var(--gray-50); border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  font-size: 13px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 6px;
+}
+#analyst-root .card-header i { color: var(--primary); }
+#analyst-root .card-body { padding: 16px; }
+
+/* ── Forms ── */
+#analyst-root .form-group { margin-bottom: 14px; }
+#analyst-root .form-group:last-child { margin-bottom: 0; }
+#analyst-root .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+#analyst-root small { font-size: 12px; color: var(--text-muted); display: block; margin-top: 4px; }
+#analyst-root .form-control,
+#analyst-root select.form-control,
+#analyst-root textarea.form-control {
+  width: 100%; background: var(--surface); border: 1px solid var(--gray-300);
+  border-radius: var(--radius-sm); font-family: inherit; font-size: 13px;
+  padding: 8px 10px; color: var(--text); outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition); line-height: 1.5;
+}
+#analyst-root .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+#analyst-root textarea.form-control { resize: vertical; min-height: 60px; }
+#analyst-root .form-check { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; }
+#analyst-root .form-check-input { width: 16px; height: 16px; flex-shrink: 0; accent-color: var(--primary); margin-top: 2px; }
+#analyst-root .form-check-label { font-size: 13px; color: var(--text); cursor: pointer; }
+
+/* ── Badges ── */
+#analyst-root .badge {
+  display: inline-flex; align-items: center; padding: 2px 8px;
+  font-size: 11px; font-weight: 600; border-radius: 20px;
+  border: 1px solid var(--border); background: var(--gray-100); color: var(--text-secondary);
+}
+#analyst-root .badge-success { background: var(--success-light); border-color: var(--success-border); color: var(--success); }
+#analyst-root .badge-warning { background: var(--warning-light); border-color: var(--warning-border); color: var(--warning); }
+#analyst-root .badge-danger  { background: var(--danger-light);  border-color: var(--danger-border);  color: var(--danger); }
+#analyst-root .badge-info    { background: var(--primary-light); border-color: #93c5fd; color: var(--primary); }
+
+/* ── Alerts ── */
+#analyst-root .alert {
+  padding: 10px 14px; border-radius: var(--radius); font-size: 13px; font-weight: 500;
+  display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+}
+#analyst-root .alert-info    { background: var(--primary-light); color: var(--primary);  border: 1px solid #93c5fd; }
+#analyst-root .alert-warning { background: var(--warning-light); color: var(--warning);  border: 1px solid var(--warning-border); }
+#analyst-root .alert-success { background: var(--success-light); color: var(--success);  border: 1px solid var(--success-border); }
+#analyst-root .alert-danger  { background: var(--danger-light);  color: var(--danger);   border: 1px solid var(--danger-border); }
+
+/* ── Stats bar ── */
+#analyst-root .summary-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px; margin-bottom: 14px;
+}
+#analyst-root .stat-item {
+  background: var(--gray-50); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 12px; text-align: center;
+}
+#analyst-root .stat-value { font-size: 22px; font-weight: 700; color: var(--primary); line-height: 1.2; }
+#analyst-root .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 3px; font-weight: 500; }
+
+/* ── Preview table ── */
+#analyst-root .table-responsive {
+  overflow-x: auto; border: 1px solid var(--border);
+  border-radius: var(--radius); background: var(--surface);
+}
+#analyst-root .preview-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+#analyst-root .preview-table th {
+  background: var(--gray-50); border-bottom: 2px solid var(--border);
+  border-right: 1px solid var(--border-light); padding: 8px 12px;
+  font-weight: 700; text-align: left; white-space: nowrap; font-size: 11.5px;
+  position: sticky; top: 0; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .3px;
+}
+#analyst-root .preview-table td {
+  border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light);
+  padding: 7px 12px; white-space: nowrap;
+}
+#analyst-root .preview-table tr:nth-child(even) td { background: var(--gray-50); }
+#analyst-root .preview-table tr:hover td { background: var(--primary-light); }
+
+/* ── Pagination ── */
+#analyst-root .pg-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 30px; height: 30px; padding: 0 6px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--surface); color: var(--text);
+  font-size: 12px; font-weight: 600; cursor: pointer; transition: background .12s, color .12s;
+  font-family: inherit; line-height: 1;
+}
+#analyst-root .pg-btn:hover:not(:disabled) { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+#analyst-root .pg-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+#analyst-root .pg-btn:disabled { opacity: .4; cursor: default; }
+
+/* ── Modal ── */
+#analyst-root .modal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.35); backdrop-filter: blur(2px);
+  z-index: 1050; align-items: center; justify-content: center; padding: 16px;
+}
+#analyst-root .modal.active { display: flex; }
+#analyst-root .modal-content {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: 0 20px 40px rgba(0,0,0,.14);
+  width: 100%; max-width: 580px; max-height: 85vh; overflow: hidden;
+  display: flex; flex-direction: column; animation: modalIn .18s ease;
+}
+#analyst-root .modal-content.modal-lg { max-width: 720px; }
+@keyframes modalIn { from { opacity:0; transform:scale(.96) translateY(8px); } to { opacity:1; transform:none; } }
+#analyst-root .modal-header {
+  background: var(--gray-50); border-bottom: 1px solid var(--border);
+  padding: 14px 18px; display: flex; justify-content: space-between; align-items: center;
+}
+#analyst-root .modal-header h3 {
+  margin: 0; font-size: 14px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 7px;
+}
+#analyst-root .modal-header h3 i { color: var(--primary); }
+#analyst-root .close-modal {
+  background: none; border: 1px solid transparent; border-radius: var(--radius-sm);
+  color: var(--text-muted); font-size: 18px; line-height: 1;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; padding: 0; transition: background var(--transition), color var(--transition);
+}
+#analyst-root .close-modal:hover { background: var(--gray-100); color: var(--text); }
+#analyst-root .modal-body {
+  padding: 18px; overflow-y: auto; max-height: calc(80vh - 110px);
+  font-size: 13px; color: var(--text-secondary); line-height: 1.6;
+}
+#analyst-root .modal-footer {
+  padding: 12px 18px; border-top: 1px solid var(--border);
+  background: var(--gray-50); display: flex; justify-content: flex-end; gap: 8px;
+}
+
+/* ── Spinner ── */
+#analyst-root .spinner {
+  width: 28px; height: 28px; border: 3px solid var(--gray-200);
+  border-top-color: #2563eb; border-radius: 50%;
+  animation: spin .7s linear infinite; margin: 0 auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Notifications ── */
+#analyst-root #notificationContainer {
+  position: fixed; top: calc(var(--ni-header-h, 60px) + 6px); right: 1.2rem;
+  z-index: 9999; display: flex; flex-direction: column; gap: 6px;
+}
+
+/* ── Layout: sidebar + main ── */
+#ab-layout {
+  display: flex; gap: 14px; align-items: flex-start; min-height: 60vh;
+}
+#ab-sidebar {
+  width: 240px; flex-shrink: 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+#ab-sidebar-hdr {
+  padding: 10px 12px; background: var(--gray-50); border-bottom: 1px solid var(--border);
+  font-size: 12px; font-weight: 700; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: .06em; display: flex;
+  align-items: center; justify-content: space-between;
+}
+#ab-sidebar-search {
+  padding: 8px 10px; border-bottom: 1px solid var(--border);
+}
+#ab-sidebar-search input {
+  width: 100%; background: var(--gray-50); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 12px; padding: 5px 8px;
+  color: var(--text); outline: none; transition: border-color var(--transition);
+}
+#ab-sidebar-search input:focus { border-color: var(--primary); }
+#ab-list { max-height: 70vh; overflow-y: auto; }
+#ab-list::-webkit-scrollbar { width: 4px; }
+#ab-list::-webkit-scrollbar-thumb { background: var(--gray-200); border-radius: 4px; }
+.ab-cat-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted);
+  letter-spacing: .08em; padding: 8px 12px 2px;
+}
+.ab-item {
+  display: flex; align-items: center; padding: 8px 12px; cursor: pointer;
+  border-left: 3px solid transparent; gap: 8px;
+  transition: background var(--transition), border-color var(--transition);
+}
+.ab-item:hover { background: var(--gray-50); }
+.ab-item.active { background: var(--primary-light); border-left-color: var(--primary); }
+.ab-item-icon { font-size: 14px; flex-shrink: 0; }
+.ab-item-body { min-width: 0; flex: 1; }
+.ab-item-name { font-size: 12.5px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ab-item-meta { font-size: 11px; color: var(--text-muted); }
+.ab-item-count { font-size: 11px; font-weight: 700; color: var(--primary); flex-shrink: 0; }
+
+/* ── Main panel ── */
+#ab-main { flex: 1; min-width: 0; }
+#ab-empty {
+  text-align: center; padding: 48px 24px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); box-shadow: var(--shadow-sm);
+}
+#ab-empty .empty-icon { font-size: 48px; opacity: .4; margin-bottom: 12px; }
+#ab-empty h3 { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+#ab-empty p  { font-size: 13px; color: var(--text-secondary); max-width: 340px; margin: 0 auto 16px; line-height: 1.6; }
+
+/* ── Tab nav ── */
+#analyst-root .ab-tabs {
+  display: flex; gap: 0; border-bottom: 2px solid var(--border);
+  margin-bottom: 14px; overflow-x: auto; scrollbar-width: none;
+}
+#analyst-root .ab-tabs::-webkit-scrollbar { display: none; }
+#analyst-root .ab-tab {
+  padding: 8px 16px; font-size: 13px; font-weight: 600; color: var(--text-secondary);
+  cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px;
+  white-space: nowrap; transition: color var(--transition), border-color var(--transition);
+  display: flex; align-items: center; gap: 5px;
+}
+#analyst-root .ab-tab:hover:not(.active) { color: var(--primary); }
+#analyst-root .ab-tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+#analyst-root .ab-tab-count {
+  background: var(--gray-100); color: var(--text-muted); font-size: 10px; font-weight: 700;
+  padding: 1px 5px; border-radius: 10px;
+}
+#analyst-root .ab-tab.active .ab-tab-count { background: var(--primary-light); color: var(--primary); }
+#analyst-root .ab-pane { display: none; }
+#analyst-root .ab-pane.active { display: block; }
+
+/* ── Schema builder ── */
+.col-entry {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px;
+  transition: border-color var(--transition);
+}
+.col-entry:hover { border-color: #93c5fd; }
+.col-entry-hdr {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+}
+.col-num {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--primary);
+  color: #fff; font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.col-remove {
+  margin-left: auto; background: none; border: none; color: var(--text-muted);
+  cursor: pointer; font-size: 18px; line-height: 1; padding: 0;
+  transition: color var(--transition);
+}
+.col-remove:hover { color: var(--danger); }
+.col-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.col-checks { display: flex; gap: 16px; }
+.col-type-badge {
+  display: inline-flex; align-items: center; padding: 2px 8px;
+  font-size: 11px; font-weight: 600; border-radius: 20px;
+  background: var(--primary-light); color: var(--primary); border: 1px solid #93c5fd;
+}
+
+/* ── Import zone ── */
+#analyst-root .drop-zone {
+  border: 2px dashed var(--border); border-radius: var(--radius);
+  padding: 24px; text-align: center; color: var(--text-muted);
+  font-size: 13px; cursor: pointer; transition: border-color var(--transition), background var(--transition);
+  margin-bottom: 12px;
+}
+#analyst-root .drop-zone:hover,
+#analyst-root .drop-zone.hover { border-color: var(--primary); background: var(--primary-light); }
+#analyst-root .drop-zone.has-file { border-color: var(--success); background: var(--success-light); color: var(--success); }
+
+/* ── Base card in list (when no base selected) ── */
+.ab-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.ab-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-left: 3px solid var(--primary); border-radius: var(--radius);
+  padding: 12px 14px; cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.ab-card:hover { border-color: var(--primary); box-shadow: 0 2px 8px rgba(37,99,235,.1); }
+.ab-card-title { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.ab-card-title i { color: var(--primary); }
+.ab-card-meta { font-size: 12px; color: var(--text-secondary); }
+
+/* ── Import source tabs ── */
+.import-src-tabs {
+  display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.import-src-tab {
+  padding: 6px 12px; background: var(--gray-50); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; cursor: pointer;
+  color: var(--text-secondary); display: flex; align-items: center; gap: 5px;
+  transition: background var(--transition), border-color var(--transition), color var(--transition);
+}
+.import-src-tab:hover { border-color: var(--primary); color: var(--primary); }
+.import-src-tab.active { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+.import-src-pane { display: none; }
+.import-src-pane.active { display: block; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  #ab-layout { flex-direction: column; }
+  #ab-sidebar { width: 100%; }
+  #ab-list { max-height: 200px; }
+  .col-grid { grid-template-columns: 1fr; }
+  .ab-grid  { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock extra_head %}
+
+{% block content %}
+{% csrf_token %}
+
+<div id="analyst-root">
+<div class="dashboard-container">
+
+  <!-- Header -->
+  <div class="dashboard-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div>
+        <h1><i class="bi bi-database"></i> Bases de Datos</h1>
+        <p>Crea y gestiona bases de datos propias sin migraciones Django. Los datos se almacenan como datasets vivos.</p>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <a href="{% url 'analyst:data_upload' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-upload"></i> Carga</a>
+        <a href="{% url 'analyst:dataset_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-layers"></i> Datasets</a>
+        <a href="{% url 'analyst:cross_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-shuffle"></i> Cruces</a>
+        <a href="{% url 'analyst:etl_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-repeat"></i> ETL</a>
+        <a href="{% url 'analyst:report_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-graph-up"></i> Reportes</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="analyst-toolbar">
+    <div class="tb-section">
+      <span class="tb-label">Base</span>
+      <button class="tb-btn" onclick="openCreateModal()" title="Nueva base">
+        <div class="tb-icon-pill tip-blue"><i class="bi bi-plus-lg"></i></div>
+        <span>Nueva</span>
+      </button>
+      <button class="tb-btn" id="tb-schema-btn" onclick="openSchemaModal()" disabled title="Editar schema">
+        <div class="tb-icon-pill tip-purple"><i class="bi bi-layout-text-sidebar"></i></div>
+        <span>Schema</span>
+      </button>
+      <button class="tb-btn" id="tb-delete-btn" onclick="confirmDeleteBase()" disabled title="Eliminar base">
+        <div class="tb-icon-pill tip-red"><i class="bi bi-trash3"></i></div>
+        <span>Eliminar</span>
+      </button>
+    </div>
+    <div class="tb-section">
+      <span class="tb-label">Datos</span>
+      <button class="tb-btn" id="tb-add-row-btn" onclick="openAddRowModal()" disabled title="Agregar fila">
+        <div class="tb-icon-pill tip-green"><i class="bi bi-plus-circle"></i></div>
+        <span>Agregar</span>
+      </button>
+      <button class="tb-btn" id="tb-import-btn" onclick="switchTab('import')" disabled title="Importar archivo">
+        <div class="tb-icon-pill tip-teal"><i class="bi bi-upload"></i></div>
+        <span>Importar</span>
+      </button>
+      <button class="tb-btn" id="tb-export-btn" onclick="exportBase()" disabled title="Exportar CSV">
+        <div class="tb-icon-pill tip-amber"><i class="bi bi-download"></i></div>
+        <span>Exportar</span>
+      </button>
+    </div>
+    <div class="tb-section">
+      <span class="tb-label">Acción masiva</span>
+      <button class="tb-btn" id="tb-bulk-del-btn" style="display:none" onclick="bulkDelete()">
+        <div class="tb-icon-pill tip-red"><i class="bi bi-trash3-fill"></i></div>
+        <span>Eliminar sel.</span>
+      </button>
+    </div>
+    <div class="tb-spacer"></div>
+  </div>
+
+  <!-- Layout -->
+  <div id="ab-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <aside id="ab-sidebar">
+      <div id="ab-sidebar-hdr">
+        <span>Mis bases</span>
+        <span id="ab-total-count" class="badge">{{ bases|length }}</span>
+      </div>
+      <div id="ab-sidebar-search">
+        <input type="text" placeholder="🔍 Buscar..." oninput="filterSidebar(this.value)">
+      </div>
+      <div id="ab-list">
+        {% if bases %}
+          {% for base in bases %}
+          <div class="ab-item" data-id="{{ base.id }}" data-name="{{ base.name|lower }}"
+               onclick="selectBase('{{ base.id }}')">
+            <div class="ab-item-icon">📦</div>
+            <div class="ab-item-body">
+              <div class="ab-item-name">{{ base.name }}</div>
+              <div class="ab-item-meta">{{ base.schema|length }} col · <span class="ab-row-count-{{ base.id }}">{{ base.row_count }}</span> filas</div>
+            </div>
+            <div class="ab-item-count">{{ base.row_count }}</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="padding:20px;text-align:center;font-size:12px;color:var(--text-muted)">
+            Sin bases aún.<br>Crea la primera arriba.
+          </div>
+        {% endif %}
+      </div>
+    </aside>
+
+    <!-- ── MAIN ── -->
+    <div id="ab-main">
+
+      <!-- Empty state -->
+      <div id="ab-empty">
+        <div class="empty-icon">🗃️</div>
+        <h3>Selecciona o crea una base</h3>
+        <p>Elige una base del panel izquierdo para ver y editar sus datos, o crea una nueva base de datos dinámica sin necesidad de migraciones Django.</p>
+        {% if bases %}
+        <div class="ab-grid">
+          {% for base in bases %}
+          <div class="ab-card" onclick="selectBase('{{ base.id }}')">
+            <div class="ab-card-title"><i class="bi bi-database"></i> {{ base.name }}</div>
+            <div class="ab-card-meta">
+              <span class="badge {% if base.category %}badge-info{% endif %}">{{ base.get_category_display|default:"Sin categoría" }}</span>
+              · {{ base.schema|length }} columnas · {{ base.row_count }} registros
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <button class="btn btn-primary" onclick="openCreateModal()">
+          <i class="bi bi-plus-lg"></i> Crear primera base
+        </button>
+        {% endif %}
+      </div>
+
+      <!-- Active panel (hidden until base selected) -->
+      <div id="ab-active-panel" style="display:none">
+
+        <!-- Stats -->
+        <div class="summary-stats" id="ab-stats">
+          <div class="stat-item">
+            <div class="stat-value" id="stat-rows">—</div>
+            <div class="stat-label">registros</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="stat-cols">—</div>
+            <div class="stat-label">columnas</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="stat-pages">—</div>
+            <div class="stat-label">páginas</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="stat-cat" style="font-size:14px">—</div>
+            <div class="stat-label">categoría</div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="ab-tabs">
+          <div class="ab-tab active" onclick="switchTab('data')" data-tab="data">
+            <i class="bi bi-table"></i> Datos <span class="ab-tab-count" id="tc-rows">0</span>
+          </div>
+          <div class="ab-tab" onclick="switchTab('schema')" data-tab="schema">
+            <i class="bi bi-layout-text-sidebar"></i> Schema <span class="ab-tab-count" id="tc-cols">0</span>
+          </div>
+          <div class="ab-tab" onclick="switchTab('import')" data-tab="import">
+            <i class="bi bi-upload"></i> Importar
+          </div>
+        </div>
+
+        <!-- TAB: Datos -->
+        <div class="ab-pane active" id="pane-data">
+          <!-- Search + bulk -->
+          <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap;">
+            <input type="text" id="data-search" class="form-control" style="max-width:260px"
+                   placeholder="🔍 Buscar en datos..." oninput="debounceSearch(this.value)">
+            <div id="bulk-actions" style="display:none;display:flex;gap:6px;align-items:center;">
+              <span id="bulk-count" style="font-size:12px;color:var(--text-muted)"></span>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="preview-table">
+              <thead id="data-thead"></thead>
+              <tbody id="data-tbody"></tbody>
+            </table>
+          </div>
+
+          <div id="data-pagination" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:10px;font-size:12px;"></div>
+        </div>
+
+        <!-- TAB: Schema -->
+        <div class="ab-pane" id="pane-schema">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <span style="font-size:13px;font-weight:700;color:var(--text)">Estructura de columnas</span>
+            <button class="btn btn-sm btn-primary" onclick="openSchemaModal()">
+              <i class="bi bi-pencil"></i> Editar
+            </button>
+          </div>
+          <div id="schema-view-table"></div>
+        </div>
+
+        <!-- TAB: Importar -->
+        <div class="ab-pane" id="pane-import">
+          <div style="max-width:640px;">
+
+            <!-- Source tabs — scrollable en mobile -->
+            <div style="overflow-x:auto;scrollbar-width:none;margin-bottom:12px;">
+              <div class="import-src-tabs" style="flex-wrap:nowrap;min-width:max-content;">
+                <div class="import-src-tab active" onclick="switchImportSrc('file')" data-src="file">
+                  <i class="bi bi-file-earmark-arrow-up"></i> CSV / Excel
+                </div>
+                <div class="import-src-tab" onclick="switchImportSrc('clipboard')" data-src="clipboard">
+                  <i class="bi bi-clipboard2-data"></i> Portapapeles
+                </div>
+                <div class="import-src-tab" onclick="switchImportSrc('clip')" data-src="clip">
+                  <i class="bi bi-clipboard2-check"></i> Clip guardado
+                </div>
+                <div class="import-src-tab" onclick="switchImportSrc('json')" data-src="json">
+                  <i class="bi bi-filetype-json"></i> JSON
+                </div>
+                <div class="import-src-tab" onclick="switchImportSrc('dataset')" data-src="dataset">
+                  <i class="bi bi-layers"></i> Dataset
+                </div>
+              </div>
+            </div>
+
+            <!-- FILE -->
+            <div class="import-src-pane active" id="src-file">
+              <div class="drop-zone" id="drop-zone" onclick="document.getElementById('import-file').click()">
+                <div style="font-size:28px;margin-bottom:8px">📂</div>
+                <div>Clic o arrastra CSV / Excel aquí</div>
+                <div style="font-size:11px;margin-top:4px;color:var(--text-muted)">.csv · .xls · .xlsx · máx. 10 MB</div>
+              </div>
+              <input type="file" id="import-file" accept=".csv,.xls,.xlsx" style="display:none" onchange="onFileChange(this)">
+              <div id="file-info" style="display:none;" class="alert alert-info" style="margin-bottom:10px;"></div>
+            </div>
+
+            <!-- CLIPBOARD (texto pegado) -->
+            <div class="import-src-pane" id="src-clipboard">
+              <div class="form-group">
+                <label class="form-label">Pega aquí los datos (TSV, CSV o tabla copiada de Excel)</label>
+                <textarea id="clipboard-text" class="form-control" rows="8"
+                          placeholder="nombre&#9;email&#9;telefono&#10;Juan Pérez&#9;juan@mail.com&#9;3001234567&#10;..."></textarea>
+                <small>El separador se detecta automáticamente: tab, coma o punto y coma.</small>
+              </div>
+              <div class="form-group">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" id="clip-header" checked>
+                  <label class="form-check-label" for="clip-header">Primera fila es encabezado</label>
+                </div>
+              </div>
+            </div>
+
+            <!-- CLIP GUARDADO (DataFrameClipboard) -->
+            <div class="import-src-pane" id="src-clip">
+              <div class="form-group">
+                <label class="form-label">Seleccionar clip del portapapeles</label>
+                <small>Clips guardados desde el panel de carga (<i class="bi bi-clipboard2-data"></i> Guardar en portapapeles).</small>
+                <select id="clip-select" class="form-control" style="margin-top:6px">
+                  <option value="">— Cargando clips... —</option>
+                </select>
+              </div>
+              <div id="clip-import-info" style="display:none;" class="alert alert-info"></div>
+            </div>
+
+            <!-- JSON -->
+            <div class="import-src-pane" id="src-json">
+              <div class="form-group">
+                <label class="form-label">JSON (array de objetos o array de arrays)</label>
+                <textarea id="json-text" class="form-control" rows="10"
+                          placeholder='[{"nombre": "Juan", "edad": 30}, {"nombre": "María", "edad": 25}]'></textarea>
+                <small>Formatos soportados: <code>[{}, {}]</code> · <code>{"data": [{}, {}]}</code> · <code>[[col1, col2], [val1, val2]]</code></small>
+              </div>
+            </div>
+
+            <!-- DATASET -->
+            <div class="import-src-pane" id="src-dataset">
+              <div class="form-group">
+                <label class="form-label">Seleccionar StoredDataset existente</label>
+                <select id="dataset-select" class="form-control">
+                  <option value="">— Cargando... —</option>
+                </select>
+                <small>Importa filas desde un dataset ya procesado en el panel principal.</small>
+              </div>
+              <div id="dataset-preview-info" style="display:none;" class="alert alert-info"></div>
+            </div>
+
+            <!-- Common options -->
+            <div class="form-group" style="margin-top:14px;">
+              <label class="form-label">Modo de importación</label>
+              <select id="import-mode" class="form-control" style="max-width:320px;">
+                <option value="append">Agregar al final (mantener datos existentes)</option>
+                <option value="replace">Reemplazar todo (eliminar datos anteriores)</option>
+              </select>
+            </div>
+
+            <!-- Column hint -->
+            <div class="card" style="margin-bottom:14px;">
+              <div class="card-header"><i class="bi bi-info-circle"></i> Columnas esperadas</div>
+              <div class="card-body">
+                <div id="import-cols-hint" style="font-size:12px;line-height:2;"></div>
+              </div>
+            </div>
+
+            <button class="btn btn-primary" id="import-btn" onclick="submitImport()">
+              <i class="bi bi-upload"></i> Importar datos
+            </button>
+
+            <div id="import-result" style="display:none;margin-top:12px;"></div>
+          </div>
+        </div>
+
+      </div><!-- /ab-active-panel -->
+    </div><!-- /ab-main -->
+  </div><!-- /ab-layout -->
+
+</div><!-- /dashboard-container -->
+
+<!-- ── NOTIFICATIONS ── -->
+<div id="notificationContainer"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL — Crear base
+════════════════════════════════════════════════════ -->
+<div class="modal" id="modal-create">
+  <div class="modal-content modal-lg">
+    <div class="modal-header">
+      <h3><i class="bi bi-database-add"></i> Nueva Base de Datos</h3>
+      <button class="close-modal" onclick="closeModal('modal-create')">×</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="col-grid" style="margin-bottom:14px;">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Nombre <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="create-name" class="form-control" placeholder="Ej: Leads Comerciales">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Categoría</label>
+          <select id="create-category" class="form-control">
+            {% for val, label in categories %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <textarea id="create-description" class="form-control" rows="2" placeholder="Para qué se usará esta base..."></textarea>
+      </div>
+
+      <!-- Schema source tabs — scrollable en mobile -->
+      <div style="border-bottom:2px solid var(--border);margin-bottom:14px;overflow-x:auto;scrollbar-width:none;">
+        <div style="display:flex;gap:0;min-width:max-content;">
+          <div class="ab-tab active" onclick="switchSchemaSrc('manual')" data-ssrc="manual" style="font-size:12px;padding:7px 14px;white-space:nowrap;">
+            <i class="bi bi-pencil-square"></i> Manual
+          </div>
+          <div class="ab-tab" onclick="switchSchemaSrc('template')" data-ssrc="template" style="font-size:12px;padding:7px 14px;white-space:nowrap;">
+            <i class="bi bi-grid-1x2"></i> Plantilla
+          </div>
+          <div class="ab-tab" onclick="switchSchemaSrc('csv')" data-ssrc="csv" style="font-size:12px;padding:7px 14px;white-space:nowrap;">
+            <i class="bi bi-filetype-csv"></i> CSV
+          </div>
+          <div class="ab-tab" onclick="switchSchemaSrc('json-schema')" data-ssrc="json-schema" style="font-size:12px;padding:7px 14px;white-space:nowrap;">
+            <i class="bi bi-filetype-json"></i> JSON
+          </div>
+          <div class="ab-tab" onclick="switchSchemaSrc('clipboard-schema')" data-ssrc="clipboard-schema" style="font-size:12px;padding:7px 14px;white-space:nowrap;">
+            <i class="bi bi-clipboard2"></i> Portapapeles
+          </div>
+          <div class="ab-tab" onclick="switchSchemaSrc('dataset-schema')" data-ssrc="dataset-schema" style="font-size:12px;padding:7px 14px;white-space:nowrap;">
+            <i class="bi bi-layers"></i> Dataset
+          </div>
+          <div class="ab-tab" onclick="switchSchemaSrc('clip-schema')" data-ssrc="clip-schema" style="font-size:12px;padding:7px 14px;white-space:nowrap;">
+            <i class="bi bi-clipboard2-data"></i> Clip guardado
+          </div>
+        </div>
+      </div>
+
+      <!-- MANUAL -->
+      <div id="ssrc-manual" class="ab-pane active">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-size:13px;font-weight:700;color:var(--text)">Columnas <span style="color:var(--danger)">*</span></span>
+          <button class="btn btn-sm btn-outline-secondary" onclick="addColEntry()">
+            <i class="bi bi-plus"></i> Columna
+          </button>
+        </div>
+        <div id="col-builder"></div>
+      </div>
+
+      <!-- TEMPLATE -->
+      <div id="ssrc-template" class="ab-pane">
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Selecciona una plantilla para pre-cargar las columnas más comunes.</div>
+        <div class="ab-grid">
+          <div class="ab-card" onclick="applyTemplate('leads')">
+            <div class="ab-card-title"><i class="bi bi-person-lines-fill"></i> Leads</div>
+            <div class="ab-card-meta">10 columnas · nombre, email, canal, estado, valor estimado...</div>
+          </div>
+          <div class="ab-card" onclick="applyTemplate('ventas')">
+            <div class="ab-card-title"><i class="bi bi-cart-check"></i> Ventas</div>
+            <div class="ab-card-meta">9 columnas · ID venta, agente, producto, valor, estado...</div>
+          </div>
+          <div class="ab-card" onclick="applyTemplate('calidad')">
+            <div class="ab-card-title"><i class="bi bi-star-half"></i> Evaluaciones de Calidad</div>
+            <div class="ab-card-meta">10 columnas · agente, puntajes por dimensión, aprobado...</div>
+          </div>
+          <div class="ab-card" onclick="applyTemplate('asistencia')">
+            <div class="ab-card-title"><i class="bi bi-calendar-check"></i> Asistencia</div>
+            <div class="ab-card-meta">8 columnas · empleado, fecha, horario, estado...</div>
+          </div>
+          <div class="ab-card" onclick="applyTemplate('incidencias')">
+            <div class="ab-card-title"><i class="bi bi-exclamation-triangle"></i> Incidencias</div>
+            <div class="ab-card-meta">8 columnas · tipo, severidad, responsable, estado, SLA...</div>
+          </div>
+          <div class="ab-card" onclick="applyTemplate('contactos')">
+            <div class="ab-card-title"><i class="bi bi-people"></i> Contactos</div>
+            <div class="ab-card-meta">7 columnas · nombre, empresa, cargo, email, teléfono...</div>
+          </div>
+        </div>
+        <div id="template-preview" style="display:none;margin-top:12px;"></div>
+      </div>
+
+      <!-- CSV SCHEMA -->
+      <div id="ssrc-csv" class="ab-pane">
+        <div class="form-group">
+          <label class="form-label">Sube un CSV de ejemplo</label>
+          <small>Se leerá el encabezado y los tipos se detectarán automáticamente a partir de las primeras filas.</small>
+          <div class="drop-zone" id="schema-drop-zone" style="margin-top:8px" onclick="document.getElementById('schema-csv-file').click()">
+            <div style="font-size:24px;margin-bottom:6px">📄</div>
+            <div>Clic o arrastra tu CSV aquí</div>
+          </div>
+          <input type="file" id="schema-csv-file" accept=".csv,.xls,.xlsx" style="display:none" onchange="inferSchemaFromFile(this)">
+        </div>
+        <div id="csv-schema-preview" style="display:none;"></div>
+      </div>
+
+      <!-- JSON SCHEMA -->
+      <div id="ssrc-json-schema" class="ab-pane">
+        <div class="form-group">
+          <label class="form-label">Pega un array JSON de ejemplo</label>
+          <small>Las claves del primer objeto se usarán como columnas; el tipo se infiere del valor.</small>
+          <textarea id="json-schema-text" class="form-control" rows="8"
+                    placeholder='[{"nombre":"Juan","edad":30,"activo":true,"fecha":"2026-01-15"}]'></textarea>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" onclick="inferSchemaFromJSON()">
+          <i class="bi bi-magic"></i> Inferir columnas
+        </button>
+        <div id="json-schema-preview" style="display:none;margin-top:10px;"></div>
+      </div>
+
+      <!-- CLIPBOARD SCHEMA -->
+      <div id="ssrc-clipboard-schema" class="ab-pane">
+        <div class="form-group">
+          <label class="form-label">Pega datos tabulares (CSV, TSV o tabla copiada de Excel)</label>
+          <small>La primera fila se usará como encabezado. Los tipos se inferirán de los valores.</small>
+          <textarea id="clip-schema-text" class="form-control" rows="8"
+                    placeholder="nombre&#9;edad&#9;email&#10;Juan&#9;30&#9;juan@mail.com"></textarea>
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" onclick="inferSchemaFromClipboard()">
+          <i class="bi bi-magic"></i> Inferir columnas
+        </button>
+        <div id="clip-schema-preview" style="display:none;margin-top:10px;"></div>
+      </div>
+
+      <!-- DATASET SCHEMA -->
+      <div id="ssrc-dataset-schema" class="ab-pane">
+        <div class="form-group">
+          <label class="form-label">Seleccionar StoredDataset como referencia</label>
+          <small>Las columnas del dataset seleccionado se usarán como base del schema. Los datos no se importan aquí.</small>
+          <select id="schema-dataset-select" class="form-control" style="margin-top:6px" onchange="inferSchemaFromDataset(this.value)">
+            <option value="">— Cargando... —</option>
+          </select>
+        </div>
+        <div id="dataset-schema-preview" style="display:none;margin-top:10px;"></div>
+      </div>
+
+      <!-- CLIP GUARDADO SCHEMA -->
+      <div id="ssrc-clip-schema" class="ab-pane">
+        <div class="form-group">
+          <label class="form-label">Seleccionar clip del portapapeles</label>
+          <small>Usa las columnas de un DataFrame guardado en el portapapeles del panel de carga.</small>
+          <select id="schema-clip-select" class="form-control" style="margin-top:6px" onchange="inferSchemaFromClip(this.value)">
+            <option value="">— Cargando... —</option>
+          </select>
+        </div>
+        <div id="clip-schema-preview2" style="display:none;margin-top:10px;"></div>
+      </div>
+
+      <!-- Inferred schema builder (shared) -->
+      <div id="inferred-schema-wrap" style="display:none;margin-top:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:13px;font-weight:700;color:var(--text)">
+            Columnas inferidas — revisa y ajusta
+          </span>
+          <button class="btn btn-sm btn-outline-secondary" onclick="addColEntry('inferred-col-builder')">
+            <i class="bi bi-plus"></i> Columna
+          </button>
+        </div>
+        <div id="inferred-col-builder"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline-secondary" onclick="closeModal('modal-create')">Cancelar</button>
+      <button class="btn btn-primary" onclick="submitCreate()">
+        <i class="bi bi-database-add"></i> Crear base
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL — Agregar / Editar fila
+════════════════════════════════════════════════════ -->
+<div class="modal" id="modal-row">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modal-row-title"><i class="bi bi-plus-circle"></i> Agregar fila</h3>
+      <button class="close-modal" onclick="closeModal('modal-row')">×</button>
+    </div>
+    <div class="modal-body" id="modal-row-fields"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline-secondary" onclick="closeModal('modal-row')">Cancelar</button>
+      <button class="btn btn-primary" id="modal-row-submit" onclick="submitRow()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL — Editar Schema
+════════════════════════════════════════════════════ -->
+<div class="modal" id="modal-schema">
+  <div class="modal-content modal-lg">
+    <div class="modal-header">
+      <h3><i class="bi bi-layout-text-sidebar"></i> Editar Schema</h3>
+      <button class="close-modal" onclick="closeModal('modal-schema')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="schema-locked-warn" style="display:none;" class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        Esta base tiene datos. Solo puedes <strong>agregar columnas nuevas</strong> (opcionales) o editar etiquetas/opciones. No es posible eliminar ni renombrar columnas existentes.
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+        <button class="btn btn-sm btn-outline-secondary" onclick="addColEntry('schema-col-builder')">
+          <i class="bi bi-plus"></i> Columna
+        </button>
+      </div>
+      <div id="schema-col-builder"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline-secondary" onclick="closeModal('modal-schema')">Cancelar</button>
+      <button class="btn btn-primary" onclick="submitSchemaUpdate()">Guardar schema</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL — Confirmar eliminar
+════════════════════════════════════════════════════ -->
+<div class="modal" id="modal-confirm-delete">
+  <div class="modal-content" style="max-width:420px;">
+    <div class="modal-header">
+      <h3><i class="bi bi-trash3" style="color:var(--danger)"></i> Eliminar Base</h3>
+      <button class="close-modal" onclick="closeModal('modal-confirm-delete')">×</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Estás seguro de que deseas eliminar <strong id="delete-base-name"></strong>?</p>
+      <p class="alert alert-danger"><i class="bi bi-exclamation-octagon-fill"></i> Esta acción eliminará permanentemente todos los datos almacenados.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline-secondary" onclick="closeModal('modal-confirm-delete')">Cancelar</button>
+      <button class="btn btn-danger" onclick="submitDeleteBase()">
+        <i class="bi bi-trash3"></i> Sí, eliminar
+      </button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /analyst-root -->
+{% endblock content %}
+
+{% block extra_js %}
+<script>
+/* ════════════════════════════════════════════════════════════════════════════
+   AnalystBase JS
+════════════════════════════════════════════════════════════════════════════ */
+
+const FIELD_TYPES = {{ field_types|safe }};
+
+const AB = {
+  baseId:    null,
+  schema:    [],
+  page:      1,
+  pageSize:  50,
+  rowCount:  0,
+  editIdx:   null,
+  searchTerm:'',
+  debounce:  null,
+  schemaSrc: 'manual',
+  importSrc: 'file',
+};
+
+// ── Utils ─────────────────────────────────────────────────────────────────
+
+function csrf() {
+  return document.querySelector('[name=csrfmiddlewaretoken]')?.value ?? '';
+}
+async function postJSON(url, data) {
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json','X-CSRFToken':csrf()},
+    body: JSON.stringify(data),
+  });
+  return r.json();
+}
+function showNotification(msg, type='info') {
+  const c = document.getElementById('notificationContainer');
+  const t = document.createElement('div');
+  const colors = {
+    success: 'var(--success)', error: 'var(--danger)',
+    warning: 'var(--warning)', info:  'var(--primary)',
+  };
+  t.style.cssText = `
+    background:var(--surface);border:1px solid var(--border);
+    border-left:3px solid ${colors[type]||colors.info};
+    border-radius:var(--radius);padding:10px 14px;font-size:13px;
+    color:var(--text);box-shadow:var(--shadow);max-width:320px;
+    animation:slideIn .2s ease;
+  `;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3800);
+}
+function openModal(id)  { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape')
+    document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
+});
+document.querySelectorAll('.modal').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('active'); });
+});
+
+// ── Sidebar ───────────────────────────────────────────────────────────────
+
+function filterSidebar(q) {
+  document.querySelectorAll('.ab-item').forEach(el => {
+    el.style.display = el.dataset.name.includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function selectBase(id) {
+  AB.baseId = id; AB.page = 1; AB.searchTerm = '';
+  document.querySelectorAll('.ab-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+  document.getElementById('ab-empty').style.display       = 'none';
+  document.getElementById('ab-active-panel').style.display = 'block';
+  // Enable toolbar buttons
+  ['tb-schema-btn','tb-delete-btn','tb-add-row-btn','tb-import-btn','tb-export-btn']
+    .forEach(b => { const el = document.getElementById(b); if(el) el.disabled = false; });
+  switchTab('data');
+  loadData();
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────
+
+function switchTab(name) {
+  document.querySelectorAll('.ab-tab[data-tab]').forEach(t => {
+    t.classList.toggle('active', t.dataset.tab === name);
+  });
+  document.querySelectorAll('.ab-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById(`pane-${name}`).classList.add('active');
+  if (name === 'schema') renderSchemaView();
+  if (name === 'import') renderImportHint();
+}
+
+// ── Load data ─────────────────────────────────────────────────────────────
+
+async function loadData(page, pageSize) {
+  if (!AB.baseId) return;
+  page     = page     ?? AB.page;
+  pageSize = pageSize ?? AB.pageSize;
+  const params = new URLSearchParams({page, page_size: pageSize, search: AB.searchTerm});
+  const data   = await fetch(`/analyst/bases/${AB.baseId}/data/?${params}`).then(r => r.json());
+  if (!data.success) { showNotification(data.error, 'error'); return; }
+
+  AB.page     = data.pagination.page;
+  AB.pageSize = data.pagination.page_size;
+  AB.schema   = data.schema;
+  AB.rowCount = data.pagination.total_rows;
+
+  // Stats
+  document.getElementById('stat-rows').textContent  = data.pagination.total_rows;
+  document.getElementById('stat-cols').textContent  = data.schema.length;
+  document.getElementById('stat-pages').textContent = data.pagination.total_pages;
+  document.getElementById('tc-rows').textContent    = data.pagination.total_rows;
+  document.getElementById('tc-cols').textContent    = data.schema.length;
+
+  // Sidebar meta
+  const item = document.querySelector(`.ab-item[data-id="${AB.baseId}"]`);
+  if (item) {
+    document.getElementById('stat-cat').textContent = item.querySelector('.ab-item-meta')?.textContent?.split('·')[0]?.trim() || '—';
+  }
+
+  renderTable(data.schema, data.rows, data.pagination);
+  renderPagination(data.pagination);
+}
+
+// ── Table ─────────────────────────────────────────────────────────────────
+
+function renderTable(schema, rows, pg) {
+  const offset = (AB.page - 1) * AB.pageSize;
+
+  // Header
+  const thead = document.getElementById('data-thead');
+  let hrow = '<tr><th style="width:32px"><input type="checkbox" onchange="toggleAll(this)"></th>';
+  schema.forEach(col => {
+    hrow += `<th>${col.label||col.name}`;
+    if (col.required) hrow += ` <span style="color:var(--danger)">*</span>`;
+    hrow += `</th>`;
+  });
+  hrow += '<th style="width:60px;text-align:right">Acc.</th></tr>';
+  thead.innerHTML = hrow;
+
+  // Body
+  const tbody = document.getElementById('data-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="${schema.length+2}" style="text-align:center;padding:24px;color:var(--text-muted);font-size:13px;">Sin datos</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map((row, i) => {
+    const idx = offset + i;
+    let r = `<tr><td><input type="checkbox" class="row-cb" data-idx="${idx}" onchange="updateBulkBtn()"></td>`;
+    schema.forEach(col => {
+      let v = row[col.name];
+      if (v === null || v === undefined) v = '';
+      if (col.type === 'boolean') v = v ? '✅' : (v === false ? '❌' : '');
+      r += `<td title="${String(v).replace(/"/g,"'")}">${String(v).substring(0,80)}</td>`;
+    });
+    const rowJson = JSON.stringify(row).replace(/'/g,'&apos;');
+    r += `<td style="text-align:right">
+      <button class="btn btn-sm" style="padding:2px 6px" title="Editar" onclick="openEditRow(${idx},'${rowJson}')">
+        <i class="bi bi-pencil"></i>
+      </button>
+      <button class="btn btn-sm btn-danger" style="padding:2px 6px" title="Eliminar" onclick="deleteRow(${idx})">
+        <i class="bi bi-trash3"></i>
+      </button>
+    </td></tr>`;
+    return r;
+  }).join('');
+}
+
+function toggleAll(cb) {
+  document.querySelectorAll('.row-cb').forEach(c => c.checked = cb.checked);
+  updateBulkBtn();
+}
+function updateBulkBtn() {
+  const any = [...document.querySelectorAll('.row-cb')].some(c => c.checked);
+  const tb  = document.getElementById('tb-bulk-del-btn');
+  if (tb) tb.style.display = any ? '' : 'none';
+}
+
+// ── Pagination ────────────────────────────────────────────────────────────
+
+function renderPagination(p) {
+  const el = document.getElementById('data-pagination');
+  if (p.total_pages <= 1) { el.innerHTML = ''; return; }
+  let html = `<span style="color:var(--text-muted);margin-right:4px;">
+    ${p.start}–${p.end} de ${p.total_rows}</span>`;
+  html += `<button class="pg-btn" ${p.page<=1?'disabled':''} onclick="goPage(1)">«</button>`;
+  html += `<button class="pg-btn" ${p.page<=1?'disabled':''} onclick="goPage(${p.page-1})">‹</button>`;
+  for (let i = Math.max(1,p.page-2); i <= Math.min(p.total_pages, p.page+2); i++) {
+    html += `<button class="pg-btn${i===p.page?' active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  html += `<button class="pg-btn" ${p.page>=p.total_pages?'disabled':''} onclick="goPage(${p.page+1})">›</button>`;
+  html += `<button class="pg-btn" ${p.page>=p.total_pages?'disabled':''} onclick="goPage(${p.total_pages})">»</button>`;
+  html += `<select style="font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);margin-left:4px;"
+           onchange="goPage(1,+this.value)">
+    ${[25,50,100,200].map(v=>`<option value="${v}"${v===AB.pageSize?' selected':''}>${v}/pág</option>`).join('')}
+  </select>`;
+  el.innerHTML = html;
+}
+function goPage(p, ps) {
+  AB.page = p;
+  if (ps) AB.pageSize = ps;
+  loadData(p, AB.pageSize);
+}
+
+function debounceSearch(v) {
+  clearTimeout(AB.debounce);
+  AB.debounce = setTimeout(() => { AB.searchTerm = v; AB.page = 1; loadData(); }, 350);
+}
+
+// ── Schema view ───────────────────────────────────────────────────────────
+
+function renderSchemaView() {
+  const el = document.getElementById('schema-view-table');
+  if (!AB.schema.length) { el.innerHTML = '<p style="color:var(--text-muted)">Sin schema cargado.</p>'; return; }
+  el.innerHTML = `<div class="table-responsive"><table class="preview-table">
+    <thead><tr>
+      <th>#</th><th>Nombre</th><th>Etiqueta</th><th>Tipo</th><th>Req.</th><th>Único</th><th>Default</th><th>Opciones</th>
+    </tr></thead>
+    <tbody>
+    ${AB.schema.map((c,i) => `<tr>
+      <td style="color:var(--text-muted)">${i+1}</td>
+      <td><code style="background:var(--gray-50);padding:1px 5px;border-radius:3px;font-size:11px;">${c.name}</code></td>
+      <td>${c.label||c.name}</td>
+      <td><span class="badge badge-info">${c.type}</span></td>
+      <td>${c.required ? '✅' : '—'}</td>
+      <td>${c.unique  ? '🔑' : '—'}</td>
+      <td style="color:var(--text-muted)">${c.default != null ? c.default : '—'}</td>
+      <td style="font-size:11px;color:var(--text-muted)">${c.choices?.length ? c.choices.join(', ') : '—'}</td>
+    </tr>`).join('')}
+    </tbody></table></div>`;
+}
+
+// ── Column entry builder ──────────────────────────────────────────────────
+
+let colCounter = 0;
+
+function addColEntry(container = 'col-builder', defaults = {}) {
+  colCounter++;
+  const id   = `ce-${colCounter}`;
+  const list = document.getElementById(container);
+  const div  = document.createElement('div');
+  div.className = 'col-entry';
+  div.id = id;
+  const typ = defaults.type || 'text';
+  div.innerHTML = `
+    <div class="col-entry-hdr">
+      <div class="col-num">${colCounter}</div>
+      <span style="font-size:12px;font-weight:600;color:var(--text-secondary);">Columna ${colCounter}</span>
+      <button class="col-remove" onclick="document.getElementById('${id}').remove()">×</button>
+    </div>
+    <div class="col-grid" style="margin-bottom:8px;">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" style="font-size:11px;">Nombre (snake_case)</label>
+        <input type="text" class="form-control col-name" value="${defaults.name||''}"
+               placeholder="ej: nombre_lead" oninput="autoLabel(this,'${id}')">
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" style="font-size:11px;">Etiqueta visible</label>
+        <input type="text" class="form-control col-label" value="${defaults.label||''}" placeholder="ej: Nombre del Lead">
+      </div>
+    </div>
+    <div class="col-grid">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" style="font-size:11px;">Tipo</label>
+        <select class="form-control col-type" onchange="onTypeChange(this,'${id}')">
+          ${FIELD_TYPES.map(t=>`<option value="${t.type}"${t.type===typ?' selected':''}>${t.icon} ${t.label}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label" style="font-size:11px;">Flags</label>
+        <div class="col-checks">
+          <label class="form-check-label" style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="checkbox" class="form-check-input col-required" ${defaults.required?'checked':''}> Requerido
+          </label>
+          <label class="form-check-label" style="font-size:12px;display:flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="checkbox" class="form-check-input col-unique" ${defaults.unique?'checked':''}> Único
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="col-extra-${id}" style="margin-top:8px;">
+      ${typ==='choice' ? `<div class="form-group" style="margin-bottom:0">
+        <label class="form-label" style="font-size:11px;">Opciones (separadas por coma)</label>
+        <input type="text" class="form-control col-choices" value="${(defaults.choices||[]).join(', ')}" placeholder="opción1, opción2, opción3">
+      </div>` : ''}
+    </div>`;
+  list.appendChild(div);
+}
+
+function autoLabel(nameInput, entryId) {
+  const entry = document.getElementById(entryId);
+  const lbl   = entry.querySelector('.col-label');
+  if (!lbl.dataset.touched) {
+    lbl.value = nameInput.value.replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase());
+  }
+}
+function onTypeChange(sel, id) {
+  const extra = document.querySelector(`.col-extra-${id}`);
+  extra.innerHTML = sel.value === 'choice' ? `
+    <div class="form-group" style="margin-bottom:0">
+      <label class="form-label" style="font-size:11px;">Opciones (coma separadas) *</label>
+      <input type="text" class="form-control col-choices" placeholder="opción1, opción2">
+    </div>` : '';
+}
+
+function collectSchema(containerId) {
+  return [...document.querySelectorAll(`#${containerId} .col-entry`)].map(e => {
+    const type    = e.querySelector('.col-type')?.value || 'text';
+    const choices = e.querySelector('.col-choices')?.value
+      ? e.querySelector('.col-choices').value.split(',').map(s=>s.trim()).filter(Boolean) : [];
+    return {
+      name:     e.querySelector('.col-name')?.value  || '',
+      label:    e.querySelector('.col-label')?.value || '',
+      type,
+      required: e.querySelector('.col-required')?.checked || false,
+      unique:   e.querySelector('.col-unique')?.checked   || false,
+      choices,
+      default:  null,
+    };
+  });
+}
+
+// ── Schema source switch ──────────────────────────────────────────────────
+
+function switchSchemaSrc(src) {
+  AB.schemaSrc = src;
+  document.querySelectorAll('[data-ssrc]').forEach(t => {
+    t.classList.toggle('active', t.dataset.ssrc === src);
+  });
+  document.querySelectorAll('#modal-create .ab-pane').forEach(p => {
+    const id = p.id.replace('ssrc-','');
+    p.classList.toggle('active', id === src || `ssrc-${id}` === `ssrc-${src}`);
+  });
+}
+
+// ── Schema inference ──────────────────────────────────────────────────────
+
+function _typeFromValue(v) {
+  if (v === null || v === undefined || v === '') return 'text';
+  if (typeof v === 'boolean') return 'boolean';
+  if (typeof v === 'number') return Number.isInteger(v) ? 'number' : 'decimal';
+  const s = String(v).trim();
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return 'datetime';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return 'date';
+  if (/^[\d\s\+\-\(\)]{6,20}$/.test(s) && /\d{6,}/.test(s)) return 'phone';
+  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(s)) return 'email';
+  if (!isNaN(parseFloat(s)) && s.includes('.')) return 'decimal';
+  if (!isNaN(parseInt(s)) && /^\d+$/.test(s)) return 'number';
+  return 'text';
+}
+
+function _buildInferred(cols) {
+  // cols = [{name, type}]
+  colCounter = 0;
+  document.getElementById('inferred-col-builder').innerHTML = '';
+  cols.forEach(c => addColEntry('inferred-col-builder', {
+    name: c.name.replace(/\s+/g,'_').toLowerCase(),
+    label: c.name,
+    type: c.type || 'text',
+  }));
+  document.getElementById('inferred-schema-wrap').style.display = '';
+}
+
+function _renderInferredPreview(cols, containerId, previewId) {
+  const prev = document.getElementById(previewId);
+  prev.style.display = '';
+  prev.innerHTML = `<div class="alert alert-success">
+    <i class="bi bi-check-circle-fill"></i>
+    <strong>${cols.length} columnas detectadas.</strong> Revisa el schema inferido abajo.
+  </div>`;
+  _buildInferred(cols);
+}
+
+function inferSchemaFromJSON() {
+  try {
+    let raw = JSON.parse(document.getElementById('json-schema-text').value.trim());
+    if (!Array.isArray(raw)) raw = raw.data || raw.records || Object.values(raw)[0] || [];
+    if (!raw.length) { showNotification('El array está vacío.','warning'); return; }
+    const first = raw[0];
+    const cols  = Array.isArray(first)
+      ? first.map((_,i) => ({name:`col_${i+1}`,type:'text'}))
+      : Object.keys(first).map(k => ({name:k, type:_typeFromValue(first[k])}));
+    _renderInferredPreview(cols, 'inferred-col-builder', 'json-schema-preview');
+    document.getElementById('json-schema-preview').style.display = '';
+  } catch(e) {
+    showNotification('JSON inválido: ' + e.message, 'error');
+  }
+}
+
+function inferSchemaFromClipboard() {
+  const text = document.getElementById('clip-schema-text').value.trim();
+  if (!text) { showNotification('Pega datos primero.','warning'); return; }
+  const sep   = text.includes('\t') ? '\t' : text.includes(';') ? ';' : ',';
+  const lines = text.split('\n').filter(l=>l.trim());
+  const hdrs  = lines[0].split(sep).map(s=>s.trim().replace(/^"|"$/g,''));
+  const first = lines[1] ? lines[1].split(sep).map(s=>s.trim().replace(/^"|"$/g,'')) : [];
+  const cols  = hdrs.map((h,i) => ({name:h, type:_typeFromValue(first[i]||'')}));
+  _renderInferredPreview(cols, 'inferred-col-builder', 'clip-schema-preview');
+  document.getElementById('clip-schema-preview').style.display = '';
+}
+
+async function inferSchemaFromFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const dz = document.getElementById('schema-drop-zone');
+  dz.classList.add('has-file');
+  dz.innerHTML = `<div style="font-size:24px;margin-bottom:6px">✅</div><div>${file.name}</div>`;
+
+  // Read CSV client-side for header inference
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    const sep  = text.includes('\t') ? '\t' : text.includes(';') ? ';' : ',';
+    const lines= text.split('\n').filter(l=>l.trim());
+    const hdrs = lines[0].split(sep).map(s=>s.trim().replace(/^"|"$/g,''));
+    const row2 = lines[1] ? lines[1].split(sep).map(s=>s.trim().replace(/^"|"$/g,'')) : [];
+    const cols = hdrs.map((h,i) => ({name:h, type:_typeFromValue(row2[i]||'')}));
+    _renderInferredPreview(cols, 'inferred-col-builder', 'csv-schema-preview');
+    document.getElementById('csv-schema-preview').style.display = '';
+  };
+  reader.readAsText(file);
+}
+
+// Inferir schema desde StoredDataset — usa sus columnas y dtype_map
+async function inferSchemaFromDataset(id) {
+  if (!id) return;
+  const prev = document.getElementById('dataset-schema-preview');
+  prev.innerHTML = '<div class="spinner"></div>';
+  prev.style.display = '';
+
+  // Buscar en la caché de sources ya cargada
+  const cached = window._sourcesCache;
+  const ds = cached?.datasets?.find(d => d.id === id);
+  if (ds && ds.columns?.length) {
+    const dtypeToType = t => {
+      if (!t) return 'text';
+      t = t.toLowerCase();
+      if (t.includes('int'))   return 'number';
+      if (t.includes('float') || t.includes('decimal')) return 'decimal';
+      if (t.includes('bool'))  return 'boolean';
+      if (t.includes('date') && t.includes('time')) return 'datetime';
+      if (t.includes('date'))  return 'date';
+      return 'text';
+    };
+    const cols = ds.columns.map(c => ({
+      name: c, type: dtypeToType(ds.dtype_map?.[c])
+    }));
+    _renderInferredPreview(cols, 'inferred-col-builder', 'dataset-schema-preview');
+    return;
+  }
+  prev.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Sin información disponible.</span>';
+}
+
+// Inferir schema desde Clip guardado
+async function inferSchemaFromClip(clipKey) {
+  if (!clipKey) return;
+  const prev = document.getElementById('clip-schema-preview2');
+  prev.innerHTML = '<div class="spinner"></div>';
+  prev.style.display = '';
+
+  const cached = window._sourcesCache;
+  const clip = cached?.clips?.find(c => c.key === clipKey);
+  if (!clip) {
+    prev.innerHTML = '<span style="color:var(--text-muted);font-size:12px;">Clip no encontrado.</span>';
+    return;
+  }
+  // El clip no expone columnas directamente — mostrar info y dejar que el usuario importe
+  prev.innerHTML = `<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i>
+    Clip <strong>${clipKey}</strong>: ${clip.rows} filas · ${clip.cols} columnas.
+    Al crear la base se inferirán las columnas del clip.
+  </div>`;
+  // Intentar cargar columnas desde el endpoint de importación raw (dry-run)
+  const data = await postJSON('/analyst/bases/sources/columns-from-clip/', {clip_key: clipKey}).catch(()=>null);
+  if (data?.success && data.columns?.length) {
+    _renderInferredPreview(data.columns, 'inferred-col-builder', 'clip-schema-preview2');
+  }
+}
+
+// Carga todas las fuentes (datasets + clips) una sola vez y rellena todos los selectores
+async function loadSources() {
+  const data = await fetch('/analyst/bases/sources/').then(r=>r.json()).catch(()=>null);
+  if (!data?.success) return;
+  window._sourcesCache = data;
+
+  // ── Selects de schema (dentro del modal crear) ──
+  const dsOpts  = data.datasets.map(d =>
+    `<option value="${d.id}">${d.name} (${d.rows} filas · ${d.col_count} cols)</option>`
+  ).join('');
+  const clipOpts = data.clips.map(c =>
+    `<option value="${c.key}">${c.key} — ${c.rows} filas · ${c.cols} cols${c.filename ? ' · ' + c.filename : ''}</option>`
+  ).join('');
+
+  const sDatasetSchema = document.getElementById('schema-dataset-select');
+  const sClipSchema    = document.getElementById('schema-clip-select');
+  const sDatasetImport = document.getElementById('dataset-select');
+  const sClipImport    = document.getElementById('clip-select');
+
+  const emptyDs  = '<option value="">— Seleccionar dataset —</option>';
+  const emptyClp = '<option value="">— Seleccionar clip —</option>';
+
+  if (sDatasetSchema) sDatasetSchema.innerHTML = emptyDs  + (dsOpts  || '<option disabled>Sin datasets disponibles</option>');
+  if (sClipSchema)    sClipSchema.innerHTML    = emptyClp + (clipOpts || '<option disabled>Sin clips disponibles</option>');
+  if (sDatasetImport) sDatasetImport.innerHTML = emptyDs  + (dsOpts  || '<option disabled>Sin datasets disponibles</option>');
+  if (sClipImport)    sClipImport.innerHTML    = emptyClp + (clipOpts || '<option disabled>Sin clips disponibles</option>');
+
+  // Mostrar info al seleccionar dataset de importación
+  const dpi = document.getElementById('dataset-preview-info');
+  if (sDatasetImport && dpi) {
+    sDatasetImport.addEventListener('change', () => {
+      const ds = data.datasets.find(d => d.id === sDatasetImport.value);
+      if (ds) {
+        dpi.style.display = '';
+        dpi.innerHTML = `<i class="bi bi-info-circle"></i> <strong>${ds.name}</strong> — ${ds.rows} filas · ${ds.col_count} columnas · ${ds.source_file || 'sin fuente'}`;
+      } else {
+        dpi.style.display = 'none';
+      }
+    });
+  }
+
+  // Mostrar info al seleccionar clip de importación
+  const cli = document.getElementById('clip-import-info');
+  if (sClipImport && cli) {
+    sClipImport.addEventListener('change', () => {
+      const clip = data.clips.find(c => c.key === sClipImport.value);
+      if (clip) {
+        cli.style.display = '';
+        cli.innerHTML = `<i class="bi bi-clipboard2-data"></i> <strong>${clip.key}</strong> — ${clip.rows} filas · ${clip.cols} columnas${clip.description ? ' · ' + clip.description : ''}`;
+      } else {
+        cli.style.display = 'none';
+      }
+    });
+  }
+}
+
+// Alias para compatibilidad con llamada anterior
+function loadDatasetSelects() { loadSources(); }
+
+// ── Templates ─────────────────────────────────────────────────────────────
+
+const TEMPLATES = {
+  leads: {
+    name:'Leads Comerciales', cat:'ventas',
+    cols:[
+      {name:'fecha_contacto',label:'Fecha de contacto',type:'date',    required:true},
+      {name:'nombre',        label:'Nombre',            type:'text',    required:true},
+      {name:'empresa',       label:'Empresa',           type:'text'},
+      {name:'telefono',      label:'Teléfono',          type:'phone'},
+      {name:'email',         label:'Email',             type:'email'},
+      {name:'canal',         label:'Canal',             type:'choice',  choices:['web','llamada','referido','evento','otro']},
+      {name:'estado',        label:'Estado',            type:'choice',  required:true, choices:['nuevo','contactado','calificado','cerrado','perdido']},
+      {name:'valor_estimado',label:'Valor estimado',    type:'decimal'},
+      {name:'responsable',   label:'Responsable',       type:'text',    required:true},
+      {name:'notas',         label:'Notas',             type:'text'},
+    ]
+  },
+  ventas: {
+    name:'Registro de Ventas', cat:'ventas',
+    cols:[
+      {name:'fecha_venta',    label:'Fecha de venta',   type:'date',    required:true},
+      {name:'id_venta',       label:'ID Venta',         type:'text',    required:true, unique:true},
+      {name:'agente',         label:'Agente',           type:'text',    required:true},
+      {name:'producto',       label:'Producto',         type:'choice',  required:true, choices:['plan_a','plan_b','addon','otro']},
+      {name:'cantidad',       label:'Cantidad',         type:'number'},
+      {name:'valor_unitario', label:'Valor unitario',   type:'decimal', required:true},
+      {name:'valor_total',    label:'Valor total',      type:'decimal', required:true},
+      {name:'estado',         label:'Estado',           type:'choice',  required:true, choices:['pendiente','confirmada','cancelada']},
+      {name:'cliente_id',     label:'ID Cliente',       type:'text'},
+    ]
+  },
+  calidad: {
+    name:'Evaluaciones de Calidad', cat:'calidad',
+    cols:[
+      {name:'fecha_evaluacion', label:'Fecha evaluación', type:'date',    required:true},
+      {name:'agente',           label:'Agente',           type:'text',    required:true},
+      {name:'supervisor',       label:'Supervisor',       type:'text',    required:true},
+      {name:'tipo_contacto',    label:'Tipo de contacto', type:'choice',  required:true, choices:['llamada','chat','email','presencial']},
+      {name:'puntaje_saludo',   label:'Saludo',           type:'number',  required:true},
+      {name:'puntaje_proceso',  label:'Proceso',          type:'number',  required:true},
+      {name:'puntaje_cierre',   label:'Cierre',           type:'number',  required:true},
+      {name:'puntaje_total',    label:'Puntaje total',    type:'decimal', required:true},
+      {name:'aprobado',         label:'Aprobado',         type:'boolean', required:true},
+      {name:'observaciones',    label:'Observaciones',    type:'text'},
+    ]
+  },
+  asistencia: {
+    name:'Control de Asistencia', cat:'rrhh',
+    cols:[
+      {name:'fecha',         label:'Fecha',         type:'date',   required:true},
+      {name:'empleado_id',   label:'ID Empleado',   type:'text',   required:true},
+      {name:'nombre',        label:'Nombre',        type:'text',   required:true},
+      {name:'area',          label:'Área',          type:'text'},
+      {name:'hora_entrada',  label:'Hora entrada',  type:'text'},
+      {name:'hora_salida',   label:'Hora salida',   type:'text'},
+      {name:'estado',        label:'Estado',        type:'choice', required:true, choices:['asistio','tarde','ausente','permiso','vacacion']},
+      {name:'observaciones', label:'Observaciones', type:'text'},
+    ]
+  },
+  incidencias: {
+    name:'Registro de Incidencias', cat:'operaciones',
+    cols:[
+      {name:'fecha',          label:'Fecha',          type:'date',    required:true},
+      {name:'id_incidencia',  label:'ID',             type:'text',    required:true, unique:true},
+      {name:'tipo',           label:'Tipo',           type:'choice',  required:true, choices:['técnico','operativo','cliente','RRHH','otro']},
+      {name:'severidad',      label:'Severidad',      type:'choice',  required:true, choices:['baja','media','alta','crítica']},
+      {name:'descripcion',    label:'Descripción',    type:'text',    required:true},
+      {name:'responsable',    label:'Responsable',    type:'text'},
+      {name:'estado',         label:'Estado',         type:'choice',  required:true, choices:['abierta','en proceso','cerrada','escalada']},
+      {name:'fecha_cierre',   label:'Fecha cierre',   type:'date'},
+    ]
+  },
+  contactos: {
+    name:'Directorio de Contactos', cat:'otro',
+    cols:[
+      {name:'nombre',   label:'Nombre',   type:'text',  required:true},
+      {name:'empresa',  label:'Empresa',  type:'text'},
+      {name:'cargo',    label:'Cargo',    type:'text'},
+      {name:'email',    label:'Email',    type:'email'},
+      {name:'telefono', label:'Teléfono', type:'phone'},
+      {name:'area',     label:'Área',     type:'text'},
+      {name:'notas',    label:'Notas',    type:'text'},
+    ]
+  },
+};
+
+function applyTemplate(key) {
+  const tmpl = TEMPLATES[key];
+  if (!tmpl) return;
+  document.getElementById('create-name').value = tmpl.name;
+  document.getElementById('create-category').value = tmpl.cat;
+  // Switch to manual tab and build columns
+  switchSchemaSrc('manual');
+  colCounter = 0;
+  document.getElementById('col-builder').innerHTML = '';
+  tmpl.cols.forEach(c => addColEntry('col-builder', c));
+  // Show preview badge
+  const prev = document.getElementById('template-preview');
+  prev.style.display = '';
+  prev.innerHTML = `<div class="alert alert-success">
+    <i class="bi bi-check-circle-fill"></i>
+    Plantilla <strong>${tmpl.name}</strong> cargada con ${tmpl.cols.length} columnas. Puedes ajustarlas en la pestaña Manual.
+  </div>`;
+  showNotification(`Plantilla "${tmpl.name}" aplicada.`, 'success');
+}
+
+// ── Create base ───────────────────────────────────────────────────────────
+
+function openCreateModal() {
+  colCounter = 0;
+  document.getElementById('col-builder').innerHTML = '';
+  document.getElementById('create-name').value        = '';
+  document.getElementById('create-description').value = '';
+  document.getElementById('inferred-schema-wrap').style.display = 'none';
+  document.getElementById('inferred-col-builder').innerHTML     = '';
+  document.getElementById('template-preview').style.display     = 'none';
+  ['csv-schema-preview','json-schema-preview','clip-schema-preview','dataset-schema-preview']
+    .forEach(id => { const el = document.getElementById(id); if(el) el.style.display='none'; });
+  switchSchemaSrc('manual');
+  addColEntry('col-builder');
+  openModal('modal-create');
+  loadDatasetSelects();
+}
+
+async function submitCreate() {
+  const name = document.getElementById('create-name').value.trim();
+  if (!name) { showNotification('El nombre es obligatorio.','error'); return; }
+
+  // Collect schema from active builder
+  let schema;
+  const wrap = document.getElementById('inferred-schema-wrap');
+  if (wrap.style.display !== 'none' && document.getElementById('inferred-col-builder').children.length) {
+    schema = collectSchema('inferred-col-builder');
+  } else {
+    schema = collectSchema('col-builder');
+  }
+
+  const data = await postJSON('/analyst/bases/create/', {
+    name,
+    description: document.getElementById('create-description').value.trim(),
+    category:    document.getElementById('create-category').value,
+    schema,
+  });
+  if (!data.success) { showNotification(data.error, 'error'); return; }
+
+  showNotification(`Base "${name}" creada.`, 'success');
+  closeModal('modal-create');
+  addSidebarItem(data.base);
+  selectBase(data.base.id);
+  document.getElementById('ab-total-count').textContent =
+    String(parseInt(document.getElementById('ab-total-count').textContent||'0') + 1);
+}
+
+function addSidebarItem(base) {
+  const list = document.getElementById('ab-list');
+  const div  = document.createElement('div');
+  div.className = 'ab-item';
+  div.dataset.id   = base.id;
+  div.dataset.name = base.name.toLowerCase();
+  div.onclick = () => selectBase(base.id);
+  div.innerHTML = `
+    <div class="ab-item-icon">📦</div>
+    <div class="ab-item-body">
+      <div class="ab-item-name">${base.name}</div>
+      <div class="ab-item-meta">${base.col_count} col · 0 filas</div>
+    </div>
+    <div class="ab-item-count">0</div>`;
+  list.prepend(div);
+  // Hide "no bases" message if present
+  const empty = list.querySelector('[style*="padding"]');
+  if (empty && !empty.classList.contains('ab-item')) empty.remove();
+}
+
+// ── Add / Edit row ────────────────────────────────────────────────────────
+
+function openAddRowModal() {
+  AB.editIdx = null;
+  document.getElementById('modal-row-title').innerHTML = '<i class="bi bi-plus-circle"></i> Agregar fila';
+  document.getElementById('modal-row-submit').textContent = 'Guardar';
+  renderRowFields({});
+  openModal('modal-row');
+}
+
+function openEditRow(idx, rowJson) {
+  AB.editIdx = idx;
+  const row = JSON.parse(rowJson);
+  document.getElementById('modal-row-title').innerHTML = '<i class="bi bi-pencil"></i> Editar fila';
+  document.getElementById('modal-row-submit').textContent = 'Actualizar';
+  renderRowFields(row);
+  openModal('modal-row');
+}
+
+function renderRowFields(row) {
+  const container = document.getElementById('modal-row-fields');
+  container.innerHTML = AB.schema.map(col => {
+    const val = row[col.name] ?? col.default ?? '';
+    let input;
+    if (col.type === 'choice') {
+      input = `<select id="rf-${col.name}" class="form-control">
+        <option value="">— seleccionar —</option>
+        ${(col.choices||[]).map(c=>`<option value="${c}"${c==val?' selected':''}>${c}</option>`).join('')}
+      </select>`;
+    } else if (col.type === 'boolean') {
+      input = `<select id="rf-${col.name}" class="form-control">
+        <option value="">— seleccionar —</option>
+        <option value="true"${val===true||val==='true'?' selected':''}>Sí</option>
+        <option value="false"${val===false||val==='false'?' selected':''}>No</option>
+      </select>`;
+    } else {
+      const typeMap = {date:'date',datetime:'datetime-local',number:'number',decimal:'number',email:'email',text:'text',phone:'tel'};
+      input = `<input type="${typeMap[col.type]||'text'}" id="rf-${col.name}" class="form-control"
+               value="${val}" ${col.type==='decimal'?'step="0.01"':''}>`;
+    }
+    return `<div class="form-group">
+      <label class="form-label">${col.label||col.name}${col.required?` <span style="color:var(--danger)">*</span>`:''}</label>
+      ${input}
+    </div>`;
+  }).join('');
+}
+
+function collectRow() {
+  const row = {};
+  AB.schema.forEach(col => {
+    const el = document.getElementById(`rf-${col.name}`);
+    if (el) row[col.name] = el.value === '' ? null : el.value;
+  });
+  return row;
+}
+
+async function submitRow() {
+  const row = collectRow();
+  const url = AB.editIdx === null
+    ? `/analyst/bases/${AB.baseId}/rows/add/`
+    : `/analyst/bases/${AB.baseId}/rows/edit/`;
+  const body = AB.editIdx === null ? {row} : {row, row_index: AB.editIdx};
+  const data = await postJSON(url, body);
+  if (!data.success) { showNotification((data.errors||[data.error]).join(' · '),'error'); return; }
+  showNotification(data.message||'Guardado.','success');
+  closeModal('modal-row');
+  loadData();
+  updateSidebarCount(AB.baseId, data.row_count ?? AB.rowCount);
+}
+
+// ── Delete rows ───────────────────────────────────────────────────────────
+
+async function deleteRow(idx) {
+  if (!confirm('¿Eliminar esta fila?')) return;
+  const data = await postJSON(`/analyst/bases/${AB.baseId}/rows/delete/`, {indices:[idx]});
+  if (!data.success) { showNotification(data.error,'error'); return; }
+  showNotification(data.message,'success');
+  loadData();
+  updateSidebarCount(AB.baseId, data.row_count);
+}
+
+async function bulkDelete() {
+  const indices = [...document.querySelectorAll('.row-cb:checked')].map(c => +c.dataset.idx);
+  if (!indices.length) return;
+  if (!confirm(`¿Eliminar ${indices.length} fila(s)?`)) return;
+  const data = await postJSON(`/analyst/bases/${AB.baseId}/rows/delete/`, {indices});
+  if (!data.success) { showNotification(data.error,'error'); return; }
+  showNotification(data.message,'success');
+  document.getElementById('tb-bulk-del-btn').style.display = 'none';
+  loadData();
+  updateSidebarCount(AB.baseId, data.row_count);
+}
+
+// ── Schema edit ───────────────────────────────────────────────────────────
+
+function openSchemaModal() {
+  if (!AB.baseId) return;
+  const warn = document.getElementById('schema-locked-warn');
+  warn.style.display = AB.rowCount > 0 ? '' : 'none';
+  const builder = document.getElementById('schema-col-builder');
+  builder.innerHTML = '';
+  colCounter = 0;
+  AB.schema.forEach(col => {
+    addColEntry('schema-col-builder', col);
+    // Lock name if has data
+    if (AB.rowCount > 0) {
+      const last = builder.lastElementChild;
+      const nameInput = last.querySelector('.col-name');
+      if (nameInput) { nameInput.readOnly = true; nameInput.style.opacity = '.5'; }
+    }
+  });
+  openModal('modal-schema');
+}
+
+async function submitSchemaUpdate() {
+  const schema = collectSchema('schema-col-builder');
+  const data   = await postJSON(`/analyst/bases/${AB.baseId}/schema/`, {schema});
+  if (!data.success) { showNotification(data.error,'error'); return; }
+  showNotification('Schema actualizado.','success');
+  AB.schema = data.base.schema;
+  closeModal('modal-schema');
+  renderSchemaView();
+}
+
+// ── Delete base ───────────────────────────────────────────────────────────
+
+function confirmDeleteBase() {
+  if (!AB.baseId) return;
+  const item = document.querySelector(`.ab-item[data-id="${AB.baseId}"]`);
+  document.getElementById('delete-base-name').textContent =
+    item?.querySelector('.ab-item-name')?.textContent || '';
+  openModal('modal-confirm-delete');
+}
+
+async function submitDeleteBase() {
+  const data = await postJSON(`/analyst/bases/${AB.baseId}/delete/`, {});
+  if (!data.success) { showNotification(data.error,'error'); return; }
+  showNotification('Base eliminada.','success');
+  closeModal('modal-confirm-delete');
+  document.querySelector(`.ab-item[data-id="${AB.baseId}"]`)?.remove();
+  AB.baseId = null;
+  document.getElementById('ab-active-panel').style.display = 'none';
+  document.getElementById('ab-empty').style.display = '';
+  ['tb-schema-btn','tb-delete-btn','tb-add-row-btn','tb-import-btn','tb-export-btn']
+    .forEach(b => { const el = document.getElementById(b); if(el) el.disabled = true; });
+  document.getElementById('ab-total-count').textContent =
+    String(Math.max(0, parseInt(document.getElementById('ab-total-count').textContent||'0') - 1));
+}
+
+// ── Export ────────────────────────────────────────────────────────────────
+
+function exportBase() {
+  if (AB.baseId) window.location.href = `/analyst/bases/${AB.baseId}/export/`;
+}
+
+// ── Import ────────────────────────────────────────────────────────────────
+
+function switchImportSrc(src) {
+  AB.importSrc = src;
+  document.querySelectorAll('.import-src-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.src === src);
+  });
+  document.querySelectorAll('.import-src-pane').forEach(p => p.classList.remove('active'));
+  document.getElementById(`src-${src}`).classList.add('active');
+}
+
+function renderImportHint() {
+  const el = document.getElementById('import-cols-hint');
+  if (!AB.schema.length) { el.textContent = 'Selecciona una base primero.'; return; }
+  el.innerHTML = AB.schema.map(col => {
+    const req = col.required ? `<span style="color:var(--danger)">*</span>` : '';
+    return `<span style="margin-right:12px;"><code style="background:var(--gray-50);padding:1px 5px;border-radius:3px;font-size:11px;">${col.name}</code>${req} <span class="badge">${col.type}</span></span>`;
+  }).join('');
+}
+
+// Drop zone events
+const dz = document.getElementById('drop-zone');
+if (dz) {
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('hover'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('hover'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('hover');
+    const f = e.dataTransfer.files[0];
+    if (f) { document.getElementById('import-file').files = e.dataTransfer.files; onFileChange({files:[f]}); }
+  });
+}
+
+function onFileChange(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  dz.classList.add('has-file');
+  dz.innerHTML = `<div style="font-size:24px;margin-bottom:6px">✅</div>
+    <div>${file.name} <span style="color:var(--text-muted);font-size:11px;">(${(file.size/1024).toFixed(1)} KB)</span></div>`;
+  const info = document.getElementById('file-info');
+  info.style.display = '';
+  info.textContent   = `📄 ${file.name}`;
+}
+
+async function submitImport() {
+  if (!AB.baseId) return;
+  const btn  = document.getElementById('import-btn');
+  const src  = AB.importSrc;
+  const mode = document.getElementById('import-mode').value;
+  const resEl= document.getElementById('import-result');
+  btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Importando...';
+
+  let r, data;
+
+  if (src === 'file') {
+    const file = document.getElementById('import-file').files[0];
+    if (!file) { showNotification('Selecciona un archivo.','warning'); btn.disabled=false; btn.innerHTML='<i class="bi bi-upload"></i> Importar datos'; return; }
+    const fd = new FormData();
+    fd.append('file', file); fd.append('mode', mode);
+    r    = await fetch(`/analyst/bases/${AB.baseId}/bulk-import/`, {method:'POST',headers:{'X-CSRFToken':csrf()},body:fd});
+    data = await r.json();
+
+  } else if (src === 'clipboard') {
+    const text = document.getElementById('clipboard-text').value.trim();
+    if (!text) { showNotification('Pega datos primero.','warning'); btn.disabled=false; btn.innerHTML='<i class="bi bi-upload"></i> Importar datos'; return; }
+    const hasHeader = document.getElementById('clip-header').checked;
+    data = await postJSON(`/analyst/bases/${AB.baseId}/bulk-import-raw/`, {source:'clipboard', text, has_header:hasHeader, mode});
+
+  } else if (src === 'json') {
+    const text = document.getElementById('json-text').value.trim();
+    if (!text) { showNotification('Pega JSON primero.','warning'); btn.disabled=false; btn.innerHTML='<i class="bi bi-upload"></i> Importar datos'; return; }
+    data = await postJSON(`/analyst/bases/${AB.baseId}/bulk-import-raw/`, {source:'json', text, mode});
+
+  } else if (src === 'clip') {
+    const clipKey = document.getElementById('clip-select').value;
+    if (!clipKey) { showNotification('Selecciona un clip.','warning'); btn.disabled=false; btn.innerHTML='<i class="bi bi-upload"></i> Importar datos'; return; }
+    data = await postJSON(`/analyst/bases/${AB.baseId}/bulk-import-raw/`, {source:'clip', clip_key:clipKey, mode});
+
+  } else if (src === 'dataset') {
+    const dsId = document.getElementById('dataset-select').value;
+    if (!dsId) { showNotification('Selecciona un dataset.','warning'); btn.disabled=false; btn.innerHTML='<i class="bi bi-upload"></i> Importar datos'; return; }
+    data = await postJSON(`/analyst/bases/${AB.baseId}/bulk-import-raw/`, {source:'dataset', dataset_id:dsId, mode});
+  }
+
+  resEl.style.display = '';
+  if (data.success) {
+    resEl.innerHTML = `<div class="alert alert-success">
+      <i class="bi bi-check-circle-fill"></i>
+      <strong>${data.imported_rows} filas importadas.</strong>
+      ${data.skipped_rows ? `${data.skipped_rows} filas con error.` : ''}
+      Total: ${data.total_rows} registros.
+      ${data.row_errors?.length ? `<br><small>${data.row_errors.slice(0,5).map(e=>`Fila ${e.row}: ${e.errors.join(', ')}`).join('<br>')}</small>` : ''}
+    </div>`;
+    showNotification(data.message || 'Importación completada.', 'success');
+    loadData();
+    updateSidebarCount(AB.baseId, data.total_rows);
+  } else {
+    resEl.innerHTML = `<div class="alert alert-danger">
+      <i class="bi bi-x-circle-fill"></i>
+      <strong>${data.error}</strong>
+      ${data.row_errors?.length ? `<br><small>${data.row_errors.slice(0,5).map(e=>`Fila ${e.row}: ${e.errors.join(', ')}`).join('<br>')}</small>` : ''}
+    </div>`;
+    showNotification(data.error, 'error');
+  }
+  btn.disabled = false; btn.innerHTML = '<i class="bi bi-upload"></i> Importar datos';
+}
+
+// ── Sidebar count update ──────────────────────────────────────────────────
+
+function updateSidebarCount(id, count) {
+  const item = document.querySelector(`.ab-item[data-id="${id}"]`);
+  if (!item) return;
+  item.querySelector('.ab-item-count').textContent = count;
+  const meta = item.querySelector('.ab-item-meta');
+  if (meta) meta.innerHTML = `${AB.schema.length} col · ${count} filas`;
+  document.getElementById('stat-rows').textContent = count;
+  document.getElementById('tc-rows').textContent   = count;
+  AB.rowCount = count;
+}
+</script>
+{% endblock extra_js %}

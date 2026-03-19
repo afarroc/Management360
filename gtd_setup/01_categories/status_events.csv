@@ -1,0 +1,7 @@
+status_name,icon,active,color,model
+Created,bi-plus-circle,True,#6c757d,Event
+Planned,bi-calendar,True,#17a2b8,Event
+In Progress,bi-play-circle,True,#007bff,Event
+Completed,bi-check-circle,True,#28a745,Event
+Cancelled,bi-x-circle,True,#dc3545,Event
+Postponed,bi-clock,True,#ffc107,Event

@@ -1,0 +1,78 @@
+# ================================
+# Python/Django específico
+# ================================
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+*.egg-info/
+*.egg
+.python-version
+venv/
+env/
+.venv/
+ENV/
+
+# ================================
+# Configuración y secretos
+# ================================
+.env
+.env.*
+panel/secrets.py
+*.key
+*.cert
+
+# Scripts de diagnóstico con credenciales de producción
+test_production_db.py
+check_db.py
+
+# ================================
+# Sistema/Editores
+# ================================
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ================================
+# Base de datos
+# ================================
+db.sqlite3
+*.dump
+
+# ================================
+# Migraciones (INCLUIDAS en el repositorio)
+# ================================
+!accounts/migrations/
+!campaigns/migrations/
+!chat/migrations/
+!core/migrations/
+!courses/migrations/
+!cv/migrations/
+!events/migrations/
+!kpis/migrations/
+!memento/migrations/
+!rooms/migrations/
+!tools/migrations/
+*/migrations/*
+
+# ================================
+# Media/Static files
+# ================================
+/media/*
+!/media/.gitkeep
+/media/documents/*
+!media/documents/
+/media/images/*
+!media/images/
+/media/profile_pics/*
+!media/profile_pics/
+/staticfiles/
+
+# ================================
+# Logs y reportes
+# ================================
+*.log
+logs/
