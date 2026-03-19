@@ -113,3 +113,4 @@ backup_*.json
 _fix_git_ignore.py
 gtd_config.yaml
 backup_pre_migration_*.json
+media/
