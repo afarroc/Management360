@@ -16,7 +16,7 @@ from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, UpdateView,
 )
 
-from .models import BitacoraAttachment, BitacoraEntry
+from .models import BitacoraAttachment, BitacoraEntry, CategoriaChoices
 from .forms import BitacoraAttachmentForm, BitacoraEntryForm
 from .utils import extract_structured_content
 
@@ -88,12 +88,12 @@ class BitacoraListView(LoginRequiredMixin, ListView):
                 all_entries.filter(is_public=True).count() / max(total, 1) * 100
             ),
             'categories_used':    all_entries.values('categoria').distinct().count(),
-            'total_categories':   len(BitacoraEntry.CategoriaChoices),
+            'total_categories':   len(CategoriaChoices),
             'total_attachments':  total_attachments,
         }
 
         context['category_stats'] = {}
-        for choice in BitacoraEntry.CategoriaChoices:
+        for choice in CategoriaChoices:
             count = all_entries.filter(categoria=choice.value).count()
             if count > 0:
                 context['category_stats'][choice.label] = {
@@ -121,7 +121,7 @@ class BitacoraListView(LoginRequiredMixin, ListView):
         except Exception:
             context['active_tasks'] = []
         
-        context['categoria_choices'] = BitacoraEntry.CategoriaChoices.choices
+        context['categoria_choices'] = CategoriaChoices.choices
         return context
 
 
