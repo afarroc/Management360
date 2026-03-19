@@ -8,7 +8,9 @@ from django.views.decorators.http import require_POST
 from django.conf import settings
 from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.db import IntegrityError
 from datetime import datetime, timedelta
 from django.views import View

@@ -8,7 +8,9 @@ from django.utils import timezone
 from django.core.cache import cache
 from django.core.files.storage import default_storage
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 import asyncio
 import json
 import re

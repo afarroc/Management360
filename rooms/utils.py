@@ -1,4 +1,6 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.utils.crypto import get_random_string
 from django.contrib.auth.hashers import make_password
 from chat.models import RoomMember, Room
@@ -72,7 +74,9 @@ def setup_dev():
     r4 = create_room('Football')
     fill_room(r4.pk, 100)
     
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.utils.crypto import get_random_string
 from django.contrib.auth.hashers import make_password
 from .models import PlayerProfile, Room, RoomObject, EntranceExit

@@ -103,9 +103,8 @@
                         {% if current_lesson.assignment_instructions %}
                         <div class="assignment-instructions mb-4">
                             <h6>Instrucciones:</h6>
-                            {{ current_lesson.assignment_instructions|linebreaks }}
-                        </div>
-                        {% endif %}
+                            {{ current_lesson.assignment_instructions|safe }}
+                        </div>                        {% endif %}
 
                         {% if current_lesson.assignment_file %}
                         <div class="mb-3">

@@ -161,9 +161,10 @@
                     {% else %}
                     <div class="assignment-instructions mb-4">
                         <h6>Instrucciones:</h6>
-                        {{ current_lesson.assignment_instructions|linebreaks }}
+                        {{ current_lesson.assignment_instructions|safe }}
                     </div>
                     
+                    <!-- Resto del código de la tarea -->
                     {% if current_lesson.assignment_file %}
                     <div class="mb-3">
                         <a href="{{ current_lesson.assignment_file.url }}" class="btn btn-outline-primary" download>
@@ -201,7 +202,6 @@
                     {% endif %}
                 </div>
                 {% endif %}
-
                 <!-- Archivos adjuntos -->
                 {% load lesson_tags %}
                 {% with attached_files=current_lesson|get_attached_files %}

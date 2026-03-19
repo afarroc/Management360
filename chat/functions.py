@@ -6,7 +6,9 @@ Permite al asistente ejecutar comandos CRUD básicos a través del chat
 import re
 import time
 from typing import Dict, Any, Optional, Callable
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from events.models import Project, ProjectStatus, Task, TaskStatus, Event, Status
 from .models import CommandLog
 
