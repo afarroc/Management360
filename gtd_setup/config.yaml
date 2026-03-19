@@ -1,0 +1,44 @@
+# Configuración del sistema GTD
+defaults:
+  user_id: 2
+  base_path: "gtd_setup"
+  verbose: true
+  
+steps:
+  categories:
+    enabled: true
+    files:
+      - "01_categories/tag_categories.csv"
+      - "01_categories/tags.csv"
+  
+  classifications:
+    enabled: true
+    files:
+      - "01_categories/classifications.csv"
+  
+  status:
+    enabled: true
+    files:
+      - "01_categories/status_events.csv"
+      - "01_categories/status_projects.csv"
+      - "01_categories/status_tasks.csv"
+  
+  inbox:
+    enabled: true
+    files:
+      - "02_inbox/inbox_items.csv"
+  
+  templates:
+    enabled: true
+    files:
+      - "03_templates/project_templates.csv"
+      - "03_templates/base_events.csv"
+  
+  settings:
+    enabled: true
+
+# Notas:
+# 1. Los archivos CSV deben usar codificación UTF-8
+# 2. Las fechas deben estar en formato YYYY-MM-DD
+# 3. Los precios usan punto decimal
+# 4. Los booleanos: True/False

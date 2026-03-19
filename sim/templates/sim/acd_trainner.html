@@ -20,8 +20,7 @@
 /* Header */
 #acd-root .acd-header{display:flex;align-items:center;justify-content:space-between;
   flex-wrap:wrap;gap:10px;margin-bottom:16px;
-  padding:12px 18px;background:var(--a-surf);border:1px solid var(--a-border);
-  border-radius:12px}
+  padding:12px 18px;background:var(--a-surf);border:1px solid var(--a-border);border-radius:12px}
 #acd-root .acd-title{font-size:18px;font-weight:800;display:flex;align-items:center;gap:10px}
 
 /* Tabs */
@@ -35,58 +34,80 @@
 /* KPI bar */
 #acd-root .kpi-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 #acd-root .kpi-chip{background:var(--a-surf2);border:1px solid var(--a-border);
-  border-radius:10px;padding:10px 14px;text-align:center;min-width:90px}
+  border-radius:10px;padding:10px 14px;text-align:center;min-width:90px;flex:1}
 #acd-root .kpi-chip .val{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums;
   color:var(--a-primary-l)}
 #acd-root .kpi-chip .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;
   color:var(--a-text-m);margin-top:2px}
-#acd-root .kpi-chip.ok .val{color:var(--a-success)}
+#acd-root .kpi-chip.ok   .val{color:var(--a-success)}
 #acd-root .kpi-chip.warn .val{color:var(--a-warning)}
 #acd-root .kpi-chip.danger .val{color:var(--a-danger)}
 
+/* Layout dos columnas en pantalla ancha */
+#acd-root .live-layout{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:900px){
+  #acd-root .live-layout{grid-template-columns:1fr 320px}
+}
+
 /* Agent grid */
-#acd-root .agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+#acd-root .section-label{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--a-text-m);margin-bottom:8px;
+  display:flex;justify-content:space-between;align-items:center}
+#acd-root .agent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
 #acd-root .agent-card{background:var(--a-surf);border:1px solid var(--a-border);
-  border-radius:10px;padding:12px 14px;position:relative;transition:border-color .15s}
+  border-radius:10px;padding:12px 14px;position:relative;transition:border-color .2s}
 #acd-root .agent-card::before{content:'';position:absolute;top:0;left:0;width:4px;
   height:100%;border-radius:4px 0 0 4px}
 #acd-root .agent-card.available::before{background:var(--a-success)}
-#acd-root .agent-card.on_call::before{background:var(--a-primary)}
-#acd-root .agent-card.ringing::before{background:var(--a-teal);animation:pulse .8s infinite}
-#acd-root .agent-card.acw::before{background:var(--a-orange)}
-#acd-root .agent-card.break::before{background:var(--a-warning)}
-#acd-root .agent-card.absent::before, #acd-root .agent-card.offline::before{background:var(--a-text-m)}
+#acd-root .agent-card.on_call::before {background:var(--a-primary)}
+#acd-root .agent-card.ringing::before {background:var(--a-teal);animation:pulse .8s infinite}
+#acd-root .agent-card.acw::before     {background:var(--a-orange)}
+#acd-root .agent-card.break::before   {background:var(--a-warning)}
+#acd-root .agent-card.absent::before,
+#acd-root .agent-card.offline::before {background:var(--a-text-m)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 #acd-root .agent-name{font-size:13px;font-weight:700;margin-bottom:4px;
-  display:flex;align-items:center;gap:6px}
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 #acd-root .agent-status-pill{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
-#acd-root .pill-available {background:#10b98122;color:#10b981}
+#acd-root .pill-available{background:#10b98122;color:#10b981}
 #acd-root .pill-on_call  {background:#3b82f622;color:#60a5fa}
 #acd-root .pill-ringing  {background:#2dd4bf22;color:#2dd4bf}
 #acd-root .pill-acw      {background:#fb923c22;color:#fb923c}
 #acd-root .pill-break    {background:#f59e0b22;color:#f59e0b}
-#acd-root .pill-absent, #acd-root .pill-offline{background:#47556922;color:#94a3b8}
-
-#acd-root .agent-meta{font-size:11px;color:var(--a-text-m);margin-bottom:8px}
-#acd-root .agent-stats{display:flex;gap:8px;font-size:11px;flex-wrap:wrap}
-#acd-root .agent-stat{color:var(--a-text-s)}
+#acd-root .pill-absent,
+#acd-root .pill-offline  {background:#47556922;color:#94a3b8}
+#acd-root .agent-meta  {font-size:11px;color:var(--a-text-m);margin-bottom:8px}
+#acd-root .agent-stats {display:flex;gap:8px;font-size:11px;flex-wrap:wrap}
+#acd-root .agent-stat  {color:var(--a-text-s)}
 #acd-root .agent-stat b{color:var(--a-text)}
 #acd-root .agent-actions{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
 
-/* Queue panel */
-#acd-root .queue-panel{background:var(--a-surf);border:1px solid var(--a-border);
-  border-radius:10px;overflow:hidden;margin-bottom:14px}
-#acd-root .queue-header{padding:10px 14px;border-bottom:1px solid var(--a-border);
+/* Activity feed */
+#acd-root .feed-panel{background:var(--a-surf);border:1px solid var(--a-border);
+  border-radius:10px;overflow:hidden}
+#acd-root .feed-header{padding:10px 14px;border-bottom:1px solid var(--a-border);
   display:flex;justify-content:space-between;align-items:center;
-  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
-  color:var(--a-text-m)}
-#acd-root .queue-table{width:100%;border-collapse:collapse;font-size:12px}
-#acd-root .queue-table th{padding:6px 10px;text-align:left;color:var(--a-text-m);
-  font-size:10px;text-transform:uppercase;letter-spacing:.05em;
-  border-bottom:1px solid var(--a-border);background:var(--a-surf2)}
-#acd-root .queue-table td{padding:6px 10px;border-bottom:1px solid var(--a-border)}
-#acd-root .queue-table tr:last-child td{border-bottom:none}
+  font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--a-text-m)}
+#acd-root .feed-list{max-height:460px;overflow-y:auto}
+#acd-root .feed-item{display:flex;align-items:center;gap:8px;padding:7px 14px;
+  border-bottom:1px solid var(--a-border);font-size:12px}
+#acd-root .feed-item:last-child{border-bottom:none}
+#acd-root .feed-item.new{animation:fadeIn .5s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+#acd-root .feed-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+#acd-root .fd-completed{background:var(--a-success)}
+#acd-root .fd-on_call  {background:var(--a-primary);animation:pulse 1.5s infinite}
+#acd-root .fd-ringing  {background:var(--a-teal);animation:pulse .8s infinite}
+#acd-root .fd-acw      {background:var(--a-orange)}
+#acd-root .fd-abandoned,
+#acd-root .fd-rejected {background:var(--a-danger)}
+#acd-root .fd-queued   {background:var(--a-text-m)}
+#acd-root .feed-lead{font-family:monospace;font-size:11px;color:var(--a-text-s);
+  min-width:80px;flex-shrink:0}
+#acd-root .feed-tipif{flex:1;color:var(--a-text-s);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+#acd-root .feed-dur{font-size:11px;color:var(--a-text-m);flex-shrink:0}
 
 /* Buttons */
 #acd-root .btn{display:inline-flex;align-items:center;gap:4px;padding:7px 13px;
@@ -124,14 +145,11 @@
 #acd-root .f-input:focus,#acd-root .f-select:focus{border-color:var(--a-primary)}
 #acd-root .f-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
-/* Badge */
-#acd-root .badge{display:inline-flex;padding:2px 8px;border-radius:20px;
-  font-size:10px;font-weight:700}
+/* Badge / GTR */
+#acd-root .badge{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
 #acd-root .badge-real{background:#3b82f622;color:#60a5fa;border:1px solid #3b82f644}
 #acd-root .badge-sim {background:#a78bfa22;color:#a78bfa;border:1px solid #a78bfa44}
 #acd-root .badge-live{background:#10b98133;color:#10b981;border:1px solid #10b98155;animation:pulse 2s infinite}
-
-/* GTR clock display */
 #acd-root .gtr-bar{background:var(--a-surf2);border:1px solid var(--a-border);
   border-radius:10px;padding:10px 16px;margin-bottom:12px;
   display:flex;align-items:center;gap:16px;flex-wrap:wrap}
@@ -176,8 +194,8 @@
 
   <!-- Tabs -->
   <div class="acd-tabs">
-    <button class="acd-tab active" id="tab-live" onclick="showTab('live')">📡 En vivo</button>
-    <button class="acd-tab" id="tab-sessions" onclick="showTab('sessions')">📋 Sesiones</button>
+    <button class="acd-tab active" id="tab-live"     onclick="showTab('live')">📡 En vivo</button>
+    <button class="acd-tab"        id="tab-sessions" onclick="showTab('sessions')">📋 Sesiones</button>
   </div>
 
   <!-- LIVE TAB -->
@@ -201,49 +219,50 @@
       </div>
     </div>
 
-    <!-- KPI bar -->
-    <div class="kpi-bar" id="kpi-bar">
-      <div class="kpi-chip"><div class="val" id="kpi-total">—</div><div class="lbl">Interacciones</div></div>
-      <div class="kpi-chip ok"><div class="val" id="kpi-atendidas">—</div><div class="lbl">Atendidas</div></div>
-      <div class="kpi-chip"><div class="val" id="kpi-na">—</div><div class="lbl">NA%</div></div>
-      <div class="kpi-chip"><div class="val" id="kpi-ventas">—</div><div class="lbl">Ventas</div></div>
-      <div class="kpi-chip warn"><div class="val" id="kpi-cola">—</div><div class="lbl">En cola</div></div>
-      <div class="kpi-chip"><div class="val" id="kpi-llamada">—</div><div class="lbl">En llamada</div></div>
-      <div class="kpi-chip ok"><div class="val" id="kpi-dispon">—</div><div class="lbl">Disponibles</div></div>
-      <div class="kpi-chip warn"><div class="val" id="kpi-break">—</div><div class="lbl">Break</div></div>
+    <!-- KPI bar — sin "En cola" (dato inestable por diseño) -->
+    <div class="kpi-bar">
+      <div class="kpi-chip">      <div class="val" id="kpi-total">—</div>    <div class="lbl">Total</div></div>
+      <div class="kpi-chip ok">   <div class="val" id="kpi-atendidas">—</div><div class="lbl">Atendidas</div></div>
+      <div class="kpi-chip">      <div class="val" id="kpi-na">—</div>       <div class="lbl">NA%</div></div>
+      <div class="kpi-chip">      <div class="val" id="kpi-ventas">—</div>   <div class="lbl">Ventas</div></div>
+      <div class="kpi-chip">      <div class="val" id="kpi-llamada">—</div>  <div class="lbl">En llamada</div></div>
+      <div class="kpi-chip ok">   <div class="val" id="kpi-dispon">—</div>   <div class="lbl">Disponibles</div></div>
+      <div class="kpi-chip warn"> <div class="val" id="kpi-break">—</div>    <div class="lbl">Break</div></div>
     </div>
 
-    <!-- Queue -->
-    <div class="queue-panel" id="queue-panel">
-      <div class="queue-header">
-        <span>📥 Cola de espera</span>
-        <span id="queue-count" style="color:var(--a-text)">0</span>
+    <!-- Layout: agentes (izq) + feed actividad (der) -->
+    <div class="live-layout">
+      <div>
+        <div class="section-label">
+          <span>👥 Agentes</span>
+          <button class="btn btn-ghost btn-sm" id="btn-add-slot" disabled onclick="openAddSlotModal()">
+            <i class="bi bi-person-plus"></i> Agregar
+          </button>
+        </div>
+        <div class="agent-grid" id="agent-grid">
+          <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--a-text-m)">
+            <div style="font-size:32px;opacity:.3;margin-bottom:8px">👥</div>
+            Inicia una sesión ACD para ver los agentes en vivo.
+          </div>
+        </div>
       </div>
-      <div style="overflow-x:auto;max-height:160px;overflow-y:auto">
-        <table class="queue-table">
-          <thead><tr><th>Lead</th><th>Canal</th><th>Skill</th><th>Espera</th></tr></thead>
-          <tbody id="queue-tbody">
-            <tr><td colspan="4" style="text-align:center;padding:16px;color:var(--a-text-m)">Sin llamadas en cola</td></tr>
-          </tbody>
-        </table>
+
+      <div>
+        <div class="section-label">
+          <span>⚡ Actividad</span>
+          <span id="feed-count" style="color:var(--a-text)">0</span>
+        </div>
+        <div class="feed-panel">
+          <div class="feed-list" id="feed-list">
+            <div style="text-align:center;padding:32px;color:var(--a-text-m);font-size:13px">
+              Sin actividad aún
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Agent grid -->
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
-         color:var(--a-text-m);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
-      <span>👥 Agentes</span>
-      <button class="btn btn-ghost btn-sm" id="btn-add-slot" disabled onclick="openAddSlotModal()">
-        <i class="bi bi-person-plus"></i> Agregar agente
-      </button>
-    </div>
-    <div class="agent-grid" id="agent-grid">
-      <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--a-text-m)">
-        <div style="font-size:32px;opacity:.3;margin-bottom:8px">👥</div>
-        Inicia una sesión ACD para ver los agentes en vivo.
-      </div>
-    </div>
-  </div>
+  </div><!-- /panel-live -->
 
   <!-- SESSIONS TAB -->
   <div id="panel-sessions" style="display:none">
@@ -273,8 +292,10 @@
 
 </div></div>
 
-<!-- ══ MODAL: Crear sesión ═════════════════════════════════════════════════ -->
+<!-- ══ Modales ══════════════════════════════════════════════════════════════ -->
 <div id="acd-root">
+
+<!-- Crear sesión -->
 <div class="modal" id="modal-create">
   <div class="modal-box">
     <div class="modal-hdr">
@@ -322,14 +343,12 @@
     </div>
     <div class="modal-ftr">
       <button class="btn btn-ghost" onclick="closeModal('modal-create')">Cancelar</button>
-      <button class="btn btn-primary" onclick="createSession()">
-        <i class="bi bi-floppy"></i> Crear sesión
-      </button>
+      <button class="btn btn-primary" onclick="createSession()"><i class="bi bi-floppy"></i> Crear</button>
     </div>
   </div>
 </div>
 
-<!-- ══ MODAL: Agregar agente ══════════════════════════════════════════════ -->
+<!-- Agregar agente -->
 <div class="modal" id="modal-slot">
   <div class="modal-box">
     <div class="modal-hdr">
@@ -376,7 +395,7 @@
       </div>
       <div class="f-row">
         <div class="f-group">
-          <label class="f-label">Nombre display (opcional)</label>
+          <label class="f-label">Nombre display</label>
           <input type="text" id="s-name" class="f-input" placeholder="Ej: AGT-001">
         </div>
         <div class="f-group">
@@ -387,49 +406,51 @@
     </div>
     <div class="modal-ftr">
       <button class="btn btn-ghost" onclick="closeModal('modal-slot')">Cancelar</button>
-      <button class="btn btn-success" onclick="addSlot()">
-        <i class="bi bi-person-plus"></i> Agregar
-      </button>
+      <button class="btn btn-success" onclick="addSlot()"><i class="bi bi-person-plus"></i> Agregar</button>
     </div>
   </div>
 </div>
-</div>
+</div><!-- /modales -->
 
 <script>
 const URLS = {
-  sessionsApi: "{% url 'sim:acd_sessions_api' %}",
-  create:      "{% url 'sim:acd_session_create' %}",
-  state:       id => `/sim/acd/sessions/${id}/state/`,
-  start:       id => `/sim/acd/sessions/${id}/start/`,
-  pause:       id => `/sim/acd/sessions/${id}/pause/`,
-  resume:      id => `/sim/acd/sessions/${id}/resume/`,
-  stop:        id => `/sim/acd/sessions/${id}/stop/`,
-  slotAdd:     id => `/sim/acd/sessions/${id}/slots/add/`,
-  slotRemove:  (sid, slotId) => `/sim/acd/sessions/${sid}/slots/${slotId}/remove/`,
-  slotControl: (sid, slotId) => `/sim/acd/sessions/${sid}/slots/${slotId}/control/`,
-  agentPanel:  slotId => `/sim/acd/agent/${slotId}/`,
+  sessionsApi:  "{% url 'sim:acd_sessions_api' %}",
+  create:       "{% url 'sim:acd_session_create' %}",
+  state:        id => `/sim/acd/sessions/${id}/state/`,
+  start:        id => `/sim/acd/sessions/${id}/start/`,
+  pause:        id => `/sim/acd/sessions/${id}/pause/`,
+  resume:       id => `/sim/acd/sessions/${id}/resume/`,
+  stop:         id => `/sim/acd/sessions/${id}/stop/`,
+  slotAdd:      id => `/sim/acd/sessions/${id}/slots/add/`,
+  slotRemove:   (sid,slotId) => `/sim/acd/sessions/${sid}/slots/${slotId}/remove/`,
+  slotControl:  (sid,slotId) => `/sim/acd/sessions/${sid}/slots/${slotId}/control/`,
+  agentPanel:   slotId => `/sim/acd/agent/${slotId}/`,
+  interactions: (id,since) => `/sim/acd/sessions/${id}/interactions/${since?'?since='+encodeURIComponent(since):''}`,
 };
 
 function csrf(){ return document.cookie.match(/csrftoken=([^;]+)/)?.[1]??''; }
-async function postJSON(url, body){
-  const r = await fetch(url,{method:'POST',
+async function postJSON(url,body){
+  const r=await fetch(url,{method:'POST',
     headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},
     body:JSON.stringify(body)});
   return r.json();
 }
 function closeModal(id){ document.getElementById(id).classList.remove('active'); }
-function openModal(id) { document.getElementById(id).classList.add('active'); }
+function openModal(id) { document.getElementById(id).classList.add('active');   }
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape') document.querySelectorAll('.modal.active').forEach(m=>m.classList.remove('active'));
 });
 
-let SESSION_ID = null;
-let POLL_TIMER = null;
-let IS_PAUSED  = false;
+let SESSION_ID  = null;
+let POLL_TIMER  = null;
+let FEED_TIMER  = null;
+let IS_PAUSED   = false;
+let FEED_SINCE  = null;
+let FEED_COUNT  = 0;
 
 function showTab(tab){
-  document.getElementById('panel-live').style.display      = tab==='live'     ? '':'none';
-  document.getElementById('panel-sessions').style.display  = tab==='sessions' ? '':'none';
+  document.getElementById('panel-live').style.display     = tab==='live'     ? '':'none';
+  document.getElementById('panel-sessions').style.display = tab==='sessions' ? '':'none';
   document.getElementById('tab-live').classList.toggle('active',     tab==='live');
   document.getElementById('tab-sessions').classList.toggle('active', tab==='sessions');
 }
@@ -454,13 +475,13 @@ async function createSession(){
   document.getElementById('session-name-display').textContent = r.session.name;
   document.getElementById('dialing-mode-display').textContent = r.session.dialing_label;
   enableControls('created');
-  notify('success',`Sesión "${r.session.name}" creada. Agrega agentes y luego inicia.`);
+  notify('success',`Sesión "${r.session.name}" creada.`);
 }
 
 async function startSession(){
   if(!SESSION_ID) return;
   const sim_date = document.getElementById('c-date').value || new Date().toISOString().split('T')[0];
-  const r = await postJSON(URLS.start(SESSION_ID), {sim_date});
+  const r = await postJSON(URLS.start(SESSION_ID),{sim_date});
   if(!r.success){ alert(r.error); return; }
   document.getElementById('acd-status-badge').style.display='';
   document.getElementById('gtr-bar').style.display='flex';
@@ -472,7 +493,7 @@ async function startSession(){
 async function pauseResume(){
   if(!SESSION_ID) return;
   if(IS_PAUSED){
-    const r = await postJSON(URLS.resume(SESSION_ID),{});
+    await postJSON(URLS.resume(SESSION_ID),{});
     IS_PAUSED=false;
     document.getElementById('btn-pause').innerHTML='<i class="bi bi-pause-circle"></i> Pausar';
     startPolling();
@@ -495,12 +516,18 @@ async function stopSession(){
   notify('info','Sesión detenida. Interacciones persistidas en BD.');
 }
 
+// ── Polling doble: estado (3s) + feed (5s) ────────────────────────────────────
 function startPolling(){
   if(POLL_TIMER) clearInterval(POLL_TIMER);
+  if(FEED_TIMER) clearInterval(FEED_TIMER);
+  doPoll();
+  doFeed();
   POLL_TIMER = setInterval(doPoll, 3000);
+  FEED_TIMER = setInterval(doFeed, 5000);
 }
 function stopPolling(){
   if(POLL_TIMER){ clearInterval(POLL_TIMER); POLL_TIMER=null; }
+  if(FEED_TIMER){ clearInterval(FEED_TIMER); FEED_TIMER=null; }
 }
 
 async function doPoll(){
@@ -509,70 +536,117 @@ async function doPoll(){
     const r = await fetch(URLS.state(SESSION_ID));
     const d = await r.json();
     if(d.success) updateUI(d);
-  } catch(e){ console.error('ACD poll error',e); }
+  } catch(e){}
 }
 
+// ── Feed append-only — usa ?since= para pedir solo items nuevos ───────────────
+async function doFeed(){
+  if(!SESSION_ID||IS_PAUSED) return;
+  try{
+    const url = URLS.interactions(SESSION_ID, FEED_SINCE);
+    const r   = await fetch(url);
+    const d   = await r.json();
+    if(!d.success||!d.interactions.length) return;
+
+    const items = [...d.interactions].sort((a,b)=>
+      new Date(a.queued_at)-new Date(b.queued_at));
+
+    const list = document.getElementById('feed-list');
+    if(FEED_COUNT===0) list.innerHTML='';
+
+    items.forEach(ix=>{
+      if(document.getElementById('fi-'+ix.id)) return;
+      const el  = document.createElement('div');
+      el.id     = 'fi-'+ix.id;
+      el.className = 'feed-item new';
+      const dur   = ix.duration_s ? fmtDur(ix.duration_s) : (ix.status==='on_call'?'…':'—');
+      const tipif = ix.tipificacion || statusLabel(ix.status);
+      el.innerHTML = `
+        <span class="feed-dot fd-${ix.status}"></span>
+        <span class="feed-lead">${esc(ix.lead_id||'—')}</span>
+        <span class="feed-tipif" title="${esc(tipif)}">${esc(tipif)}</span>
+        <span class="feed-dur">${dur}</span>`;
+      list.insertBefore(el, list.firstChild);
+      FEED_COUNT++;
+    });
+
+    document.getElementById('feed-count').textContent = FEED_COUNT;
+    FEED_SINCE = items[items.length-1].queued_at;
+
+    // Límite de 80 items en DOM
+    const rows = list.querySelectorAll('.feed-item');
+    if(rows.length>80) [...rows].slice(80).forEach(r=>r.remove());
+  } catch(e){}
+}
+
+function statusLabel(s){
+  return {completed:'Completada',abandoned:'Abandonada',rejected:'Rechazada',
+          on_call:'En llamada',ringing:'Timbrando',acw:'Post-llamada',queued:'En cola'}[s]||s;
+}
+function fmtDur(s){ const m=Math.floor(s/60),ss=s%60; return m?`${m}m${ss}s`:`${ss}s`; }
+
+// ── updateUI: KPIs + agent grid (patch sin repaint) ───────────────────────────
 function updateUI(d){
-  // GTR clock
-  const gtr = d.gtr || {};
-  if(gtr.sim_time) document.getElementById('gtr-clock').textContent = gtr.sim_time;
-  if(gtr.sim_progress !== undefined){
+  const gtr=d.gtr||{};
+  if(gtr.sim_time) _setText('gtr-clock', gtr.sim_time);
+  if(gtr.sim_progress!==undefined){
     document.getElementById('prog-fill').style.width = gtr.sim_progress+'%';
-    document.getElementById('prog-pct').textContent = gtr.sim_progress.toFixed(1)+'%';
+    _setText('prog-pct', gtr.sim_progress.toFixed(1)+'%');
   }
+  const k=d.kpis||{};
+  _setText('kpi-total',    fmtN(k.total));
+  _setText('kpi-atendidas',fmtN(k.atendidas));
+  _setText('kpi-na',       (k.na_pct||0).toFixed(1)+'%');
+  _setText('kpi-ventas',   fmtN(k.ventas));
+  _setText('kpi-llamada',  fmtN(k.en_llamada));
+  _setText('kpi-dispon',   fmtN(k.disponibles));
+  _setText('kpi-break',    fmtN(k.en_break));
 
-  // KPIs
-  const k = d.kpis || {};
-  document.getElementById('kpi-total').textContent    = fmtN(k.total);
-  document.getElementById('kpi-atendidas').textContent= fmtN(k.atendidas);
-  document.getElementById('kpi-na').textContent       = (k.na_pct||0).toFixed(1)+'%';
-  document.getElementById('kpi-ventas').textContent   = fmtN(k.ventas);
-  document.getElementById('kpi-cola').textContent     = fmtN(k.en_cola);
-  document.getElementById('kpi-llamada').textContent  = fmtN(k.en_llamada);
-  document.getElementById('kpi-dispon').textContent   = fmtN(k.disponibles);
-  document.getElementById('kpi-break').textContent    = fmtN(k.en_break);
-
-  // Queue
-  const queue = d.queue || [];
-  document.getElementById('queue-count').textContent = queue.length;
-  const tbody = document.getElementById('queue-tbody');
-  if(queue.length===0){
-    tbody.innerHTML='<tr><td colspan="4" style="text-align:center;padding:14px;color:var(--a-text-m)">Sin llamadas en cola</td></tr>';
-  } else {
-    tbody.innerHTML = queue.map(ix=>`
-      <tr>
-        <td style="font-family:monospace;font-size:11px">${ix.lead_id||'—'}</td>
-        <td>${ix.canal}</td>
-        <td>${ix.skill||'—'}</td>
-        <td style="color:var(--a-text-m)">${ix.wait_s||0}s</td>
-      </tr>`).join('');
+  // Agent grid patch
+  const slots=d.slots||[];
+  const grid=document.getElementById('agent-grid');
+  if(!slots.length){
+    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--a-text-m)">Sin agentes.</div>';
+    return;
   }
+  const existingIds=new Set([...grid.querySelectorAll('.agent-card')].map(el=>el.id));
+  const newIds=new Set(slots.map(s=>'slot-'+s.id));
+  existingIds.forEach(id=>{ if(!newIds.has(id)) document.getElementById(id)?.remove(); });
+  slots.forEach(s=>{
+    const existing=document.getElementById('slot-'+s.id);
+    if(!existing){ grid.insertAdjacentHTML('beforeend',renderSlotCard(s)); return; }
+    const tmp=document.createElement('div');
+    tmp.innerHTML=renderSlotCard(s).trim();
+    const card=tmp.firstElementChild;
+    if(existing.className!==card.className) existing.className=card.className;
+    _patchEl(existing,card,'.agent-status-pill','className');
+    _patchEl(existing,card,'.agent-status-pill','textContent');
+    _patchEl(existing,card,'.agent-meta','textContent');
+    const os=existing.querySelector('.agent-stats');
+    const ns=card.querySelector('.agent-stats');
+    if(os&&ns&&os.innerHTML!==ns.innerHTML) os.innerHTML=ns.innerHTML;
+  });
+}
 
-  // Agent grid
-  const slots = d.slots || [];
-  const grid  = document.getElementById('agent-grid');
-  if(slots.length===0){
-    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--a-text-m)">Sin agentes configurados. Agrega uno.</div>';
-  } else {
-    grid.innerHTML = slots.map(s => renderSlotCard(s)).join('');
-  }
+function _setText(id,val){
+  const el=document.getElementById(id);
+  if(el&&el.textContent!==String(val)) el.textContent=val;
+}
+function _patchEl(p,np,sel,prop){
+  const a=p.querySelector(sel),b=np.querySelector(sel);
+  if(a&&b&&a[prop]!==b[prop]) a[prop]=b[prop];
 }
 
 function renderSlotCard(s){
-  const pillCls = `agent-status-pill pill-${s.status}`;
-  const typeBadge = s.agent_type==='real'
-    ? '<span class="badge badge-real">OJT</span>'
-    : '<span class="badge badge-sim">SIM</span>';
-  const link = s.agent_type==='real' && s.user_id
-    ? `<a href="${URLS.agentPanel(s.id)}" target="_blank" class="btn btn-ghost btn-sm"><i class="bi bi-box-arrow-up-right"></i></a>`
-    : '';
+  const pillCls=`agent-status-pill pill-${s.status}`;
+  const badge=s.agent_type==='real'
+    ?'<span class="badge badge-real">OJT</span>'
+    :'<span class="badge badge-sim">SIM</span>';
+  const link=s.agent_type==='real'&&s.user_id
+    ?`<a href="${URLS.agentPanel(s.id)}" target="_blank" class="btn btn-ghost btn-sm"><i class="bi bi-box-arrow-up-right"></i></a>`:'';
   return `
   <div class="agent-card ${s.status}" id="slot-${s.id}">
-    <div class="agent-name">
-      ${typeBadge}
-      ${esc(s.name)}
-      <span class="${pillCls}">${esc(s.status_label)}</span>
-    </div>
+    <div class="agent-name">${badge}${esc(s.name)}<span class="${pillCls}">${esc(s.status_label)}</span></div>
     <div class="agent-meta">${esc(s.skill)||'—'} · AHT ${s.aht_min}min</div>
     <div class="agent-stats">
       <span class="agent-stat">Atend <b>${s.atendidas}</b></span>
@@ -588,29 +662,27 @@ function renderSlotCard(s){
   </div>`;
 }
 
-async function slotControl(slotId, status){
+async function slotControl(slotId,status){
   if(!SESSION_ID) return;
-  await postJSON(URLS.slotControl(SESSION_ID, slotId), {status});
+  await postJSON(URLS.slotControl(SESSION_ID,slotId),{status});
   doPoll();
 }
-
 function onSlotTypeChange(val){
   document.getElementById('s-sim-section').style.display  = val==='simulated'?'':'none';
   document.getElementById('s-real-section').style.display = val==='real'?'':'none';
 }
-
 function openAddSlotModal(){ openModal('modal-slot'); }
 
 async function addSlot(){
   if(!SESSION_ID) return;
-  const type = document.getElementById('s-type').value;
-  const r = await postJSON(URLS.slotAdd(SESSION_ID),{
+  const type=document.getElementById('s-type').value;
+  const r=await postJSON(URLS.slotAdd(SESSION_ID),{
     agent_type:   type,
-    user_id:      type==='real' ? document.getElementById('s-user').value||null : null,
-    profile_id:   type==='simulated' ? document.getElementById('s-profile').value||null : null,
+    user_id:      type==='real'?document.getElementById('s-user').value||null:null,
+    profile_id:   type==='simulated'?document.getElementById('s-profile').value||null:null,
     display_name: document.getElementById('s-name').value.trim(),
     skill:        document.getElementById('s-skill').value.trim(),
-    level:        type==='real' ? document.getElementById('s-level').value : 'basic',
+    level:        type==='real'?document.getElementById('s-level').value:'basic',
   });
   if(!r.success){ alert(r.error); return; }
   closeModal('modal-slot');
@@ -618,15 +690,17 @@ async function addSlot(){
 }
 
 async function loadSession(id){
-  SESSION_ID = id;
+  SESSION_ID=id; FEED_SINCE=null; FEED_COUNT=0;
+  document.getElementById('feed-list').innerHTML=
+    '<div style="text-align:center;padding:32px;color:var(--a-text-m);font-size:13px">Cargando...</div>';
   showTab('live');
-  const r = await fetch(URLS.state(id));
-  const d = await r.json();
+  const r=await fetch(URLS.state(id));
+  const d=await r.json();
   if(d.success){
     updateUI(d);
     enableControls(d.session.status==='active'?'active':'created');
-    document.getElementById('session-name-display').textContent = d.session.name;
-    document.getElementById('dialing-mode-display').textContent = d.session.dialing_label;
+    document.getElementById('session-name-display').textContent=d.session.name;
+    document.getElementById('dialing-mode-display').textContent=d.session.dialing_label;
     if(d.session.status==='active'){
       document.getElementById('acd-status-badge').style.display='';
       document.getElementById('gtr-bar').style.display='flex';
@@ -636,26 +710,22 @@ async function loadSession(id){
 }
 
 function enableControls(state){
-  const btnStart  = document.getElementById('btn-start');
-  const btnPause  = document.getElementById('btn-pause');
-  const btnStop   = document.getElementById('btn-stop');
-  const btnSlot   = document.getElementById('btn-add-slot');
-  btnStart.disabled  = state !== 'created';
-  btnPause.disabled  = state !== 'active';
-  btnStop.disabled   = state !== 'active';
-  btnSlot.disabled   = !['created','active'].includes(state);
+  document.getElementById('btn-start').disabled    = state!=='created';
+  document.getElementById('btn-pause').disabled    = state!=='active';
+  document.getElementById('btn-stop').disabled     = state!=='active';
+  document.getElementById('btn-add-slot').disabled = !['created','active'].includes(state);
 }
 
 function fmtN(n){ return n==null?'—':new Intl.NumberFormat('es').format(n); }
-function esc(s){ return (s||'').replace(/</g,'&lt;'); }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
 
-function notify(type, msg){
-  const colors={success:'#ecfdf5',error:'#fef2f2',info:'#eff6ff'};
-  const borders={success:'#6ee7b7',error:'#fca5a5',info:'#93c5fd'};
+function notify(type,msg){
+  const c={success:'#ecfdf5',error:'#fef2f2',info:'#eff6ff'};
+  const b={success:'#6ee7b7',error:'#fca5a5',info:'#93c5fd'};
   const el=document.createElement('div');
   el.style.cssText=`position:fixed;top:70px;right:1rem;z-index:9999;
     padding:10px 14px;border-radius:8px;font-size:13px;font-weight:700;
-    background:${colors[type]||colors.info};border:1px solid ${borders[type]||borders.info};
+    background:${c[type]||c.info};border:1px solid ${b[type]||b.info};
     max-width:300px;box-shadow:0 2px 8px rgba(0,0,0,.15)`;
   el.textContent=msg;
   document.body.appendChild(el);

@@ -1,0 +1,462 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Datasets Guardados{% endblock %}
+
+{% block content %}
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:            #f4f6f9;
+  --surface:       #ffffff;
+  --border:        #e5e7eb;
+  --border-light:  #f3f4f6;
+  --primary:       #2563eb;
+  --primary-light: #eff6ff;
+  --primary-dark:  #1d4ed8;
+  --success:       #059669;
+  --success-light: #ecfdf5;
+  --success-border:#6ee7b7;
+  --warning:       #d97706;
+  --danger:        #dc2626;
+  --danger-light:  #fef2f2;
+  --danger-border: #fca5a5;
+  --text:          #111827;
+  --text-secondary:#4b5563;
+  --text-muted:    #9ca3af;
+  --gray-50:       #f9fafb;
+  --gray-100:      #f3f4f6;
+  --gray-200:      #e5e7eb;
+  --gray-300:      #d1d5db;
+  --radius-sm:     6px;
+  --radius:        8px;
+  --radius-lg:     12px;
+  --shadow-sm:     0 1px 3px rgba(0,0,0,.07);
+  --shadow:        0 4px 12px rgba(0,0,0,.08);
+  --transition:    .15s ease;
+}
+
+body {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.dm-page { max-width: 1300px; margin: 0 auto; padding: 24px 16px 48px; }
+
+/* ── Page header ─────────────────────────────────────────────────────── */
+.page-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+  padding-bottom: 16px; border-bottom: 1px solid var(--border);
+}
+.page-title {
+  font-size: 20px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 10px;
+}
+.page-icon {
+  width: 40px; height: 40px;
+  background: var(--primary-light); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; border: 1px solid #bfdbfe; flex-shrink: 0;
+}
+.page-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; font-weight: 400; }
+
+/* ── Nav bar ─────────────────────────────────────────────────────────── */
+.toolbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 10px 16px; margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.toolbar-info { font-size: 13px; color: var(--text-secondary); margin-right: auto; }
+.toolbar-info strong { color: var(--text); }
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px;
+  border-radius: var(--radius-sm); font-family: inherit; font-size: 13px;
+  font-weight: 600; cursor: pointer; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text);
+  text-decoration: none; white-space: nowrap;
+  transition: background var(--transition), border-color var(--transition), color var(--transition), opacity var(--transition);
+}
+.btn:disabled { opacity: .4; cursor: default; pointer-events: none; }
+
+.btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+.btn-ghost   { background: var(--surface); color: var(--text-secondary); border-color: var(--border); }
+.btn-ghost:hover { background: var(--gray-50); border-color: var(--gray-300); color: var(--text); }
+.btn-danger  { background: var(--danger-light); color: var(--danger); border-color: var(--danger-border); }
+.btn-danger:hover { background: #fee2e2; border-color: var(--danger); }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+/* ── Card ────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); margin-bottom: 16px;
+  overflow: hidden; box-shadow: var(--shadow-sm);
+}
+.card-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  font-size: 13px; font-weight: 700; color: var(--text);
+  background: var(--gray-50);
+  display: flex; align-items: center; gap: 6px;
+}
+.card-header i { color: var(--primary); }
+
+/* ── Table ───────────────────────────────────────────────────────────── */
+.ds-table { width: 100%; border-collapse: collapse; }
+.ds-table thead tr { background: var(--gray-50); }
+.ds-table th {
+  padding: 10px 14px; text-align: left;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--text-muted);
+  border-bottom: 2px solid var(--border); white-space: nowrap;
+}
+.ds-table td { padding: 12px 14px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+.ds-table tbody tr { cursor: pointer; transition: background var(--transition); }
+.ds-table tbody tr:hover   { background: var(--gray-50); }
+.ds-table tbody tr.selected { background: var(--primary-light); }
+.ds-table tbody tr:last-child td { border-bottom: none; }
+
+.ds-name   { font-weight: 700; font-size: 14px; color: var(--text); }
+.ds-desc   { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+.ds-source { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* ── Column pills ────────────────────────────────────────────────────── */
+.col-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.col-tag {
+  font-size: 11px; background: var(--gray-100); color: var(--text-secondary);
+  border: 1px solid var(--border); border-radius: 4px; padding: 2px 8px;
+  white-space: nowrap; max-width: 130px; overflow: hidden; text-overflow: ellipsis;
+  display: inline-block; font-weight: 500;
+}
+.col-tag-more {
+  font-size: 11px; background: var(--primary-light); color: var(--primary);
+  border: 1px solid #bfdbfe; border-radius: 4px; padding: 2px 8px; font-weight: 700;
+}
+
+/* ── Empty state ─────────────────────────────────────────────────────── */
+.empty-state { padding: 52px 24px; text-align: center; color: var(--text-muted); }
+.empty-state .empty-icon { font-size: 44px; margin-bottom: 14px; }
+.empty-state p { font-size: 14px; margin-bottom: 16px; }
+
+/* ── Detail panel ────────────────────────────────────────────────────── */
+.detail-panel {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 14px;
+  box-shadow: var(--shadow-sm);
+}
+.detail-title { font-weight: 700; font-size: 14px; margin-bottom: 8px; color: var(--text); }
+
+/* ── Status bar ──────────────────────────────────────────────────────── */
+.statusbar {
+  display: flex; flex-wrap: wrap;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px 16px;
+  font-size: 12px; color: var(--text-secondary);
+  box-shadow: var(--shadow-sm);
+}
+.sb-item { border-right: 1px solid var(--border); padding-right: 14px; margin-right: 14px; }
+.sb-item:last-child { border-right: none; padding-right: 0; margin-right: 0; }
+
+/* ── Modals ──────────────────────────────────────────────────────────── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.3); backdrop-filter: blur(2px);
+  z-index: 1000; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 40px rgba(0,0,0,.12);
+  width: 400px; max-width: 95vw; overflow: hidden;
+  animation: modalIn .18s ease;
+}
+@keyframes modalIn { from { opacity:0; transform:scale(.96) translateY(8px); } to { opacity:1; transform:none; } }
+.modal-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  background: var(--gray-50);
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 700; font-size: 15px; color: var(--text);
+}
+.modal-close {
+  background: none; border: 1px solid transparent; border-radius: var(--radius-sm);
+  cursor: pointer; color: var(--text-muted); font-size: 18px; line-height: 1;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  transition: background var(--transition), color var(--transition);
+}
+.modal-close:hover { background: var(--gray-200); color: var(--text); }
+.modal-body { padding: 20px; font-size: 13px; line-height: 1.6; color: var(--text-secondary); }
+.modal-target {
+  background: var(--gray-50); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 8px 12px;
+  font-weight: 700; font-size: 14px; margin: 10px 0; color: var(--text);
+  word-break: break-all;
+}
+.modal-hint { font-size: 12px; color: var(--text-muted); }
+.modal-footer {
+  padding: 14px 20px; border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: 8px;
+  background: var(--gray-50);
+}
+
+/* ── Toasts ──────────────────────────────────────────────────────────── */
+#notifArea { position: fixed; bottom: 24px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.notif {
+  padding: 10px 16px; font-size: 13px; border-radius: var(--radius);
+  display: flex; align-items: center; gap: 8px;
+  box-shadow: var(--shadow); max-width: 380px; font-weight: 600;
+  animation: slideIn .2s ease;
+}
+@keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+.notif-ok  { background: var(--success-light); border: 1px solid var(--success-border); color: var(--success); }
+.notif-err { background: var(--danger-light);  border: 1px solid var(--danger-border);  color: var(--danger); }
+.notif-inf { background: var(--primary-light); border: 1px solid #93c5fd; color: var(--primary); }
+</style>
+
+<div class="dm-page">
+
+  <div class="page-header">
+    <div class="page-title">
+      <div class="page-icon">📦</div>
+      <div>
+        Datasets Guardados
+        <div class="page-subtitle">Gestión de datos persistentes · Management360 Analyst</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <span class="toolbar-info">
+      <strong id="dsCount">{{ datasets.count }}</strong> dataset(s) almacenados
+    </span>
+    <button class="btn btn-ghost" onclick="openPreviewModal()">👁 Abrir en Panel</button>
+    <button class="btn btn-danger" id="btnDelete" onclick="deleteSelected()" disabled>🗑 Eliminar</button>
+    <a class="btn btn-ghost" id="btnExport" href="#" style="opacity:.4;pointer-events:none;">⬇ CSV</a>
+    <a class="btn btn-ghost" href="{% url 'analyst:report_list' %}">📊 Reportes</a>
+    <a class="btn btn-ghost" href="{% url 'analyst:base_list' %}">🗃 Bases</a>
+    <a class="btn btn-ghost" href="{% url 'analyst:cross_list' %}">🔀 Cruces</a>
+    <a class="btn btn-ghost" href="{% url 'analyst:etl_list' %}">⚙ ETL</a>
+    <a class="btn btn-primary" href="{% url 'analyst:data_upload' %}">↑ Subir Datos</a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">Lista de Datasets</div>
+    <div style="overflow-x:auto;">
+      <table class="ds-table">
+        <thead>
+          <tr>
+            <th style="width:30%;min-width:200px;">Nombre</th>
+            <th style="min-width:130px;">Filas · Columnas</th>
+            <th style="min-width:100px;">Fecha</th>
+            <th style="min-width:220px;">Columnas</th>
+            <th style="min-width:120px;text-align:right;">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="dsList">
+          {% for ds in datasets %}
+          <tr id="ds-{{ ds.id }}" onclick="selectRow('{{ ds.id }}')" ondblclick="openPreviewModal()">
+            <td>
+              <div class="ds-name">{{ ds.name }}</div>
+              {% if ds.description %}<div class="ds-desc">{{ ds.description }}</div>{% endif %}
+              {% if ds.source_file %}<div class="ds-source">📁 {{ ds.source_file }}</div>{% endif %}
+            </td>
+            <td style="font-size:13px;">
+              <div>{{ ds.rows|floatformat:"0" }} filas</div>
+              <div style="color:#94a3b8;font-size:12px;">{{ ds.col_count }} columnas</div>
+            </td>
+            <td style="font-size:12px;color:#64748b;white-space:nowrap;">
+              {{ ds.created_at|date:"d/m/Y" }}<br>
+              <span style="color:#94a3b8;">{{ ds.created_at|date:"H:i" }}</span>
+            </td>
+            <td>
+              <div class="col-tags">
+                {% for col in ds.columns|slice:":7" %}
+                <span class="col-tag" title="{{ col }}">{{ col }}</span>
+                {% endfor %}
+                {% if ds.columns|length > 7 %}
+                <span class="col-tag-more">+{{ ds.columns|length|add:"-7" }}</span>
+                {% endif %}
+              </div>
+            </td>
+            <td>
+              <div style="display:flex;gap:4px;justify-content:flex-end;">
+                <button class="btn btn-ghost btn-sm" title="Abrir en panel"
+                        onclick="event.stopPropagation();selectRow('{{ ds.id }}');openPreviewModal()">👁</button>
+                <a class="btn btn-ghost btn-sm" title="Exportar CSV"
+                   href="{% url 'analyst:dataset_export' ds.id %}" onclick="event.stopPropagation()">⬇</a>
+                <button class="btn btn-danger btn-sm" title="Eliminar"
+                        onclick="event.stopPropagation();confirmDelete('{{ ds.id }}','{{ ds.name|escapejs }}')">🗑</button>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5">
+            <div class="empty-state">
+              <div class="empty-icon">📭</div>
+              <p>Sin datasets guardados.<br>Sube un archivo y usa <strong>"Guardar como Dataset"</strong>.</p>
+              <a href="{% url 'analyst:data_upload' %}" class="btn btn-primary">↑ Ir al panel de carga</a>
+            </div>
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="detail-panel" id="detailGroup" style="display:none;">
+    <div class="detail-title" id="detailName"></div>
+    <div class="col-tags" id="detailCols"></div>
+  </div>
+
+  <div class="statusbar">
+    <span class="sb-item" id="sbStatus">Listo</span>
+    <span class="sb-item" id="sbSelected">Sin selección</span>
+    <span>Doble clic para abrir · Supr para eliminar</span>
+  </div>
+
+</div>
+
+<!-- Modal: Abrir en Panel -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span>👁 Abrir en Panel de Carga</span>
+      <button class="modal-close" onclick="closeModal('previewModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      ¿Cargar este dataset en el panel de vista previa?
+      <div class="modal-target" id="previewTargetName"></div>
+      <div class="modal-hint">El dataset guardado no se modifica.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('previewModal')">Cancelar</button>
+      <button class="btn btn-primary" id="previewConfirmBtn" onclick="doPreview()">↗ Abrir en Panel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Eliminar -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-box">
+    <div class="modal-header" style="color:#dc2626;">
+      <span>⚠ Confirmar Eliminación</span>
+      <button class="modal-close" onclick="closeModal('deleteModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      ¿Eliminar este dataset permanentemente?
+      <div class="modal-target" id="deleteTargetName"></div>
+      <div class="modal-hint">Esta acción no se puede deshacer. Los reportes que usen este dataset fallarán.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('deleteModal')">Cancelar</button>
+      <button class="btn btn-danger" id="deleteConfirmBtn" onclick="doDelete()" style="background:#fef2f2;border-color:#dc2626;font-weight:600;">🗑 Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div id="notifArea"></div>
+
+<script>
+const URLS = {
+  dsDelete:  id => `/analyst/datasets/${id}/delete/`,
+  dsPreview: id => `/analyst/datasets/${id}/preview/`,
+  dsExport:  id => `/analyst/datasets/${id}/export/`,
+  upload:    "{% url 'analyst:data_upload' %}",
+  reports:   "{% url 'analyst:report_list' %}",
+};
+let _selectedId=null, _selectedName=null, _pendingDeleteId=null, _pendingDeleteName=null;
+
+function sb(id,txt){const e=document.getElementById(id);if(e)e.textContent=txt;}
+function notify(type,msg){
+  const map={success:'ok',error:'err',info:'inf'};
+  const icon={success:'✓',error:'✕',info:'ℹ'}[type]??'ℹ';
+  const el=document.createElement('div');
+  el.className=`notif notif-${map[type]??'inf'}`;
+  el.innerHTML=`<span>${icon}</span><span>${msg}</span>`;
+  document.getElementById('notifArea').appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},4000);
+}
+function selectRow(id){
+  document.querySelectorAll('#dsList tr').forEach(r=>r.classList.remove('selected'));
+  const row=document.getElementById(`ds-${id}`);if(!row)return;
+  row.classList.add('selected');
+  _selectedId=id;
+  _selectedName=row.querySelector('.ds-name')?.textContent?.trim()??id;
+  document.getElementById('btnDelete').disabled=false;
+  const expBtn=document.getElementById('btnExport');
+  expBtn.href=URLS.dsExport(id);expBtn.style.opacity='1';expBtn.style.pointerEvents='auto';
+  const colTags=[...row.querySelectorAll('.col-tag,.col-tag-more')];
+  const meta=row.querySelector('td:nth-child(2)')?.innerText?.replace('\n','  ·  ');
+  document.getElementById('detailName').textContent=`${_selectedName}  —  ${meta??''}`;
+  document.getElementById('detailCols').innerHTML=colTags.map(t=>`<span class="${t.className}" title="${t.title||t.textContent}">${t.textContent}</span>`).join('');
+  document.getElementById('detailGroup').style.display='block';
+  sb('sbSelected',`Seleccionado: ${_selectedName}`);
+}
+function openPreviewModal(){
+  if(!_selectedId){notify('info','Selecciona un dataset primero.');return;}
+  document.getElementById('previewTargetName').textContent=_selectedName;
+  document.getElementById('previewModal').classList.add('open');
+}
+async function doPreview(){
+  if(!_selectedId)return;
+  const btn=document.getElementById('previewConfirmBtn');
+  btn.disabled=true;btn.textContent='⏳ Cargando…';
+  try{
+    const r=await fetch(URLS.dsPreview(_selectedId));
+    const d=await r.json();
+    if(d.success){sessionStorage.setItem('__ds_preview__',JSON.stringify(d));window.location.href=URLS.upload+'?from=dataset';}
+    else{notify('error',d.error??'Error cargando.');closeModal('previewModal');}
+  }catch(e){notify('error','Error de conexión.');}
+  finally{btn.disabled=false;btn.textContent='↗ Abrir en Panel';}
+}
+function confirmDelete(id,name){
+  _pendingDeleteId=id;_pendingDeleteName=name;
+  document.getElementById('deleteTargetName').textContent=name;
+  document.getElementById('deleteModal').classList.add('open');
+}
+function deleteSelected(){if(_selectedId)confirmDelete(_selectedId,_selectedName);}
+async function doDelete(){
+  if(!_pendingDeleteId)return;
+  const btn=document.getElementById('deleteConfirmBtn');
+  btn.disabled=true;btn.textContent='⏳ Eliminando…';
+  try{
+    const r=await fetch(URLS.dsDelete(_pendingDeleteId),{method:'POST',headers:{'X-CSRFToken':csrf()}});
+    const d=await r.json();
+    if(d.success){
+      document.getElementById(`ds-${_pendingDeleteId}`)?.remove();
+      const remaining=document.querySelectorAll('#dsList tr[id^="ds-"]').length;
+      document.getElementById('dsCount').textContent=remaining;
+      notify('success',`Dataset "${_pendingDeleteName}" eliminado.`);
+      closeModal('deleteModal');
+      _selectedId=null;_selectedName=null;
+      document.getElementById('btnDelete').disabled=true;
+      const expBtn=document.getElementById('btnExport');
+      expBtn.href='#';expBtn.style.opacity='.4';expBtn.style.pointerEvents='none';
+      document.getElementById('detailGroup').style.display='none';
+      sb('sbSelected','Sin selección');
+      if(remaining===0){document.getElementById('dsList').innerHTML=`<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">📭</div><p>Sin datasets.</p><a href="${URLS.upload}" class="btn btn-primary">↑ Subir Datos</a></div></td></tr>`;}
+    }else{notify('error',d.error??'Error.');}
+  }catch(e){notify('error','Error de conexión.');}
+  finally{btn.disabled=false;btn.textContent='🗑 Eliminar';}
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+function csrf(){return document.querySelector('[name=csrfmiddlewaretoken]')?.value??'';}
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')document.querySelectorAll('.modal-overlay').forEach(m=>m.classList.remove('open'));
+  if(e.key==='Delete'&&_selectedId&&!document.querySelector('.modal-overlay.open'))confirmDelete(_selectedId,_selectedName);
+  if(e.key==='Enter'&&document.getElementById('previewModal').classList.contains('open'))doPreview();
+  if(e.key==='Enter'&&document.getElementById('deleteModal').classList.contains('open'))doDelete();
+});
+</script>
+{% endblock %}

@@ -90,7 +90,11 @@ def _slot_row(slot: ACDAgentSlot) -> dict:
         'aht_s':       slot.aht_s,
         'aht_min':     round(slot.aht_s / 60, 2),
         'hold_count':  s.get('hold_count', 0),
-        'transfer_count': s.get('transfer_count', 0),
+        'transfer_count':   s.get('transfer_count', 0),
+        'conference_count': s.get('conference_count', 0),
+
+      
+      
     }
 
 
@@ -129,7 +133,7 @@ def _acd_state(session: ACDSession, gtr_state: dict = None) -> dict:
     total       = all_ix.count()
     atendidas   = all_ix.filter(status='completed').count()
     ventas      = all_ix.filter(tipificacion__icontains='venta').count()
-    en_cola     = all_ix.filter(status='queued').count()
+    en_cola     = all_ix.filter(status__in=['queued','ringing']).count()
     en_llamada  = all_ix.filter(status='on_call').count()
     en_acw      = slots_in_status(slots, 'acw')
     disponibles = slots_in_status(slots, 'available')
@@ -139,7 +143,7 @@ def _acd_state(session: ACDSession, gtr_state: dict = None) -> dict:
     return {
         'session':    _session_row(session),
         'slots':      [_slot_row(s) for s in slots],
-        'queue':      [_interaction_row(ix) for ix in interactions if ix.status == 'queued'],
+        'queue':      [_interaction_row(ix) for ix in interactions if ix.status in ('queued','ringing')],
         'kpis': {
             'total':       total,
             'atendidas':   atendidas,
@@ -314,7 +318,7 @@ def acd_panel(request):
     User = get_user_model()
     users = User.objects.filter(is_active=True).order_by('username')
 
-    return render(request, 'sim/acd_trainer.html', {
+    return render(request, 'sim/acd_trainner.html', {
         'sessions':      sessions,
         'accounts':      accounts,
         'profiles':      profiles,
@@ -418,15 +422,21 @@ def acd_session_state(request, session_id):
     gtr_state = {}
     if session.gtr_session_id:
         try:
-            gtr_tick = engine.tick(session.gtr_session_id)
-            gtr_state = gtr_tick
-            # Auto-routing: asignar interacciones en cola a slots disponibles
-            if session.status == 'active':
-                _do_routing(session, gtr_tick)
+            gtr_state = engine.tick(session.gtr_session_id)
         except Exception as e:
             logger.warning("ACD GTR tick error: %s", e)
 
-    return JsonResponse({'success': True, **_acd_state(session, gtr_state)})
+    # Capturar estado ANTES del routing — la cola es visible un tick completo
+    state = _acd_state(session, gtr_state)
+
+    # Routing después del snapshot para evitar parpadeo de cola
+    if session.status == 'active':
+        try:
+            _do_routing(session, gtr_state)
+        except Exception as e:
+            logger.warning("ACD routing error: %s", e)
+
+    return JsonResponse({'success': True, **state})
 
 
 def _do_routing(session: ACDSession, gtr_state: dict):
@@ -636,13 +646,27 @@ def acd_agent_poll(request, slot_id):
             h, m = gtr_sess.sim_time()
             gtr_time = f"{h:02d}:{m:02d}"
 
+
+# Slots disponibles para transfer/conference (nivel avanzado)
+    available_slots = []
+    if slot.level == 'advanced':
+        qs_slots = ACDAgentSlot.objects.filter(
+            session=session
+        ).exclude(id=slot.id).select_related('user', 'profile')
+        available_slots = [
+            {'id': str(s.id), 'name': s.name,
+             'status': s.status, 'skill': s.skill}
+            for s in qs_slots
+        ]
+
     return JsonResponse({
-        'success':       True,
-        'slot':          _slot_row(slot),
-        'active':        _interaction_row(active_ix) if active_ix else None,
-        'next_queued':   _interaction_row(next_queued) if next_queued else None,
-        'gtr_time':      gtr_time,
-        'session_status':session.status,
+        'success':         True,
+        'slot':            _slot_row(slot),
+        'active':          _interaction_row(active_ix) if active_ix else None,
+        'next_queued':     _interaction_row(next_queued) if next_queued else None,
+        'gtr_time':        gtr_time,
+        'session_status':  session.status,
+        'available_slots': available_slots,
     })
 
 
@@ -735,6 +759,28 @@ def acd_agent_action(request, slot_id):
                     slot.save(update_fields=['status', 'stats'])
                 except ACDAgentSlot.DoesNotExist:
                     pass
+
+        elif action_type == 'unhold' and ix:
+            hold_dur = int(params.get('hold_s', 0))
+            ix.hold_s = (ix.hold_s or 0) + hold_dur
+            ix.save(update_fields=['hold_s'])
+            stats = slot.stats or {}
+            stats['hold_count'] = stats.get('hold_count', 0) + 1
+            slot.stats = stats
+            slot.save(update_fields=['stats'])
+
+        elif action_type == 'conference' and ix:
+            stats = slot.stats or {}
+            stats['conference_count'] = stats.get('conference_count', 0) + 1
+            slot.stats = stats
+            slot.save(update_fields=['stats'])
+
+        elif action_type == 'change_skill':
+            new_skill = params.get('skill', '')
+            if new_skill:
+                slot.skill = new_skill
+                slot.save(update_fields=['skill'])
+
 
         # Registrar acción
         if ix:

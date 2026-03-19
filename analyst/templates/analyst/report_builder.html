@@ -1,0 +1,752 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block title %}Report Builder{% endblock %}
+
+{% block content %}
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:            #f4f6f9;
+  --surface:       #ffffff;
+  --border:        #e5e7eb;
+  --border-light:  #f3f4f6;
+  --primary:       #2563eb;
+  --primary-light: #eff6ff;
+  --primary-dark:  #1d4ed8;
+  --success:       #059669;
+  --success-light: #ecfdf5;
+  --success-border:#6ee7b7;
+  --warning:       #d97706;
+  --warning-light: #fffbeb;
+  --warning-border:#fcd34d;
+  --danger:        #dc2626;
+  --danger-light:  #fef2f2;
+  --danger-border: #fca5a5;
+  --text:          #111827;
+  --text-secondary:#4b5563;
+  --text-muted:    #9ca3af;
+  --gray-50:       #f9fafb;
+  --gray-100:      #f3f4f6;
+  --gray-200:      #e5e7eb;
+  --gray-300:      #d1d5db;
+  --radius-sm:     6px;
+  --radius:        8px;
+  --radius-lg:     12px;
+  --shadow-sm:     0 1px 3px rgba(0,0,0,.07);
+  --shadow:        0 4px 12px rgba(0,0,0,.08);
+  --transition:    .15s ease;
+}
+
+body {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.rb-page { max-width: 1300px; margin: 0 auto; padding: 24px 16px 48px; }
+
+/* ── Page header ─────────────────────────────────────────────────────── */
+.page-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+  padding-bottom: 16px; border-bottom: 1px solid var(--border);
+}
+.page-title {
+  font-size: 20px; font-weight: 700; color: var(--text);
+  display: flex; align-items: center; gap: 10px;
+}
+.page-icon {
+  width: 40px; height: 40px;
+  background: var(--primary-light); border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; border: 1px solid #bfdbfe; flex-shrink: 0;
+}
+.page-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 2px; font-weight: 400; }
+
+/* ── Layout ──────────────────────────────────────────────────────────── */
+.rb-layout { display: grid; grid-template-columns: 390px 1fr; gap: 16px; align-items: start; }
+@media(max-width: 900px) { .rb-layout { grid-template-columns: 1fr; } }
+@media(max-width:900px){ .rb-layout { grid-template-columns: 1fr; } }
+
+/* ── Card ────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); margin-bottom: 14px;
+  overflow: visible; box-shadow: var(--shadow-sm);
+}
+.card-header {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  font-size: 13px; font-weight: 700; color: var(--text);
+  background: var(--gray-50); border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  display: flex; align-items: center; gap: 6px;
+}
+.card-step {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; background: var(--primary); color: #fff;
+  border-radius: 50%; font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.card-body { padding: 14px 16px; }
+
+/* ── Form elements ───────────────────────────────────────────────────── */
+.f-group { margin-bottom: 12px; }
+.f-group:last-child { margin-bottom: 0; }
+.f-label { display: block; font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+.f-label.req::after { content: ' *'; color: var(--danger); }
+.f-input, .f-select, .f-textarea {
+  width: 100%; padding: 8px 10px;
+  border: 1px solid var(--gray-300); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 13px; color: var(--text);
+  background: var(--surface); outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  line-height: 1.5;
+}
+.f-input:focus, .f-select:focus, .f-textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+}
+.f-textarea { resize: vertical; min-height: 56px; }
+.f-select-multi { min-height: 80px; }
+.f-hint { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px; padding: 8px 16px;
+  border-radius: var(--radius-sm); font-family: inherit; font-size: 13px;
+  font-weight: 600; cursor: pointer; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text);
+  text-decoration: none; white-space: nowrap;
+  transition: background var(--transition), border-color var(--transition), color var(--transition), opacity var(--transition);
+}
+.btn:disabled { opacity: .4; cursor: default; pointer-events: none; }
+.btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+.btn-success { background: var(--success); color: #fff; border-color: var(--success); }
+.btn-success:hover { background: #047857; border-color: #047857; }
+.btn-ghost   { background: var(--surface); color: var(--text-secondary); border-color: var(--border); }
+.btn-ghost:hover { background: var(--gray-50); border-color: var(--gray-300); }
+.btn-danger  { background: var(--danger-light); color: var(--danger); border-color: var(--danger-border); }
+.btn-sm      { padding: 4px 10px; font-size: 12px; }
+.btn-row     { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ── Function list ───────────────────────────────────────────────────── */
+.fn-list { display: flex; flex-direction: column; gap: 6px; }
+.fn-opt {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; transition: border-color var(--transition), background var(--transition);
+  background: var(--surface);
+}
+.fn-opt:hover   { border-color: #93c5fd; background: var(--gray-50); }
+.fn-opt.selected { border-color: var(--primary); background: var(--primary-light); }
+.fn-opt input[type=radio] { margin-top: 2px; flex-shrink: 0; accent-color: var(--primary); }
+.fn-opt-label  { font-size: 13px; font-weight: 700; color: var(--text); }
+.fn-opt-cat    { display: inline-block; font-size: 10px; background: var(--gray-100); color: var(--text-secondary); border: 1px solid var(--border); border-radius: 4px; padding: 1px 6px; margin-left: 6px; font-weight: 600; }
+.fn-opt-desc   { font-size: 12px; color: var(--text-secondary); margin-top: 3px; line-height: 1.5; }
+
+/* ── Source slot ─────────────────────────────────────────────────────── */
+.src-slot { background: var(--gray-50); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px; }
+.src-slot.filled { background: var(--success-light); border-color: var(--success-border); }
+.src-slot:last-child { margin-bottom: 0; }
+.src-slot-lbl { font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+/* ── Param row ───────────────────────────────────────────────────────── */
+.param-row { background: var(--gray-50); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px; }
+.param-row:last-child { margin-bottom: 0; }
+.param-lbl { font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+
+/* ── Error box ───────────────────────────────────────────────────────── */
+.err-box { background: var(--danger-light); border: 1px solid var(--danger-border); border-radius: var(--radius); padding: 10px 12px; font-size: 13px; color: var(--danger); margin-bottom: 10px; }
+
+/* ── Status bar ──────────────────────────────────────────────────────── */
+.statusbar { display: flex; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 16px; font-size: 12px; color: var(--text-secondary); margin-top: 4px; box-shadow: var(--shadow-sm); }
+.sb-item { border-right: 1px solid var(--border); padding-right: 14px; margin-right: 14px; }
+.sb-item:last-child { border-right: none; }
+
+/* ── Reports table ───────────────────────────────────────────────────── */
+.rpt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rpt-table th { padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); border-bottom: 2px solid var(--border); background: var(--gray-50); }
+.rpt-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+.rpt-table tbody tr:last-child td { border-bottom: none; }
+.rpt-table tbody tr:hover td { background: var(--gray-50); }
+.rpt-name { font-weight: 700; color: var(--text); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Status badge ────────────────────────────────────────────────────── */
+.sbadge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.sbadge-done    { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border); }
+.sbadge-error   { background: var(--danger-light);  color: var(--danger);  border: 1px solid var(--danger-border); }
+.sbadge-running { background: var(--warning-light); color: var(--warning); border: 1px solid var(--warning-border); }
+.sbadge-pending { background: var(--gray-100); color: var(--text-muted); border: 1px solid var(--border); }
+
+/* ── Result table ────────────────────────────────────────────────────── */
+.result-wrap { overflow-x: auto; overflow-y: auto; max-height: 420px; border: 1px solid var(--border); border-radius: var(--radius); -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y; }
+.result-table { border-collapse: collapse; font-size: 12.5px; width: 100%; min-width: max-content; }
+.result-table th { background: var(--gray-50); border-bottom: 2px solid var(--border); border-right: 1px solid var(--border-light); padding: 8px 12px; text-align: left; white-space: nowrap; font-size: 11px; font-weight: 700; color: var(--text-secondary); position: sticky; top: 0; letter-spacing: .3px; text-transform: uppercase; }
+.result-table td { border-bottom: 1px solid var(--border-light); border-right: 1px solid var(--border-light); padding: 7px 12px; white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
+.result-table tr:nth-child(even) td { background: var(--gray-50); }
+.result-table tr:hover td { background: var(--primary-light); }
+.null-cell { color: var(--text-muted); font-style: italic; font-size: 11px; }
+
+/* ── Checkbox ────────────────────────────────────────────────────────── */
+.cb-row { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0; }
+.cb-row input[type=checkbox] { accent-color: var(--primary); width: 15px; height: 15px; }
+
+/* ── fn-card (kept for backward compat) ─────────────────────────────── */
+.fn-grid { display: flex; flex-direction: column; gap: 6px; }
+.fn-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 12px; cursor: pointer;
+  transition: border-color var(--transition), background var(--transition);
+  background: var(--surface);
+}
+.fn-card:hover   { border-color: #93c5fd; background: var(--gray-50); }
+.fn-card.selected { border-color: var(--primary); background: var(--primary-light); }
+
+/* ── Source/param form controls ──────────────────────────────────────── */
+.form-control, select.form-control {
+  width: 100%; padding: 7px 10px;
+  border: 1px solid var(--gray-300); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 13px; color: var(--text);
+  background: var(--surface); outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.form-control:focus, select.form-control:focus {
+  border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+}
+
+/* ── Toasts ──────────────────────────────────────────────────────────── */
+#notifArea { position: fixed; bottom: 24px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.notif { padding: 10px 16px; font-size: 13px; border-radius: var(--radius); display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow); max-width: 380px; font-weight: 600; animation: slideIn .2s ease; }
+@keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+.notif-ok  { background: var(--success-light); border: 1px solid var(--success-border); color: var(--success); }
+.notif-err { background: var(--danger-light);  border: 1px solid var(--danger-border);  color: var(--danger); }
+.notif-inf { background: var(--primary-light); border: 1px solid #93c5fd; color: var(--primary); }
+
+@media(max-width: 768px) {
+  .rb-layout { grid-template-columns: 1fr; }
+  .rb-page { padding: 8px 4px 24px; }
+  .rb-layout > div { min-width: 0; }
+  .result-wrap { max-height: 42vh; }
+  .result-table th, .result-table td { padding: 5px 8px; font-size: 11px; }
+  .rpt-table th, .rpt-table td { padding: 6px 8px; font-size: 12px; }
+  .rpt-name { max-width: 120px; }
+  .card-body { padding: 10px 12px; }
+  .card-header { padding: 10px 12px; }
+  .fn-opt { padding: 8px 10px; }
+  .src-slot, .param-row { padding: 8px 10px; }
+  .btn-row { gap: 6px; }
+  .statusbar { padding: 6px 10px; font-size: 11px; }
+  .sb-item { padding-right: 10px; margin-right: 10px; }
+  .page-title { font-size: 17px; }
+}
+@media(max-width: 480px) {
+  .rb-layout { grid-template-columns: 1fr; }
+  .result-wrap { max-height: 36vh; }
+  .result-table th, .result-table td { padding: 4px 6px; font-size: 10.5px; }
+  .page-title { font-size: 15px; }
+  .page-icon { width: 32px; height: 32px; font-size: 15px; }
+}
+
+
+/* ── Toolbar ────────────────────────────────────────────────────────────── */
+.analyst-toolbar{display:flex;align-items:center;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;gap:2px;background:var(--surface);border:1px solid var(--border);border-bottom:2px solid var(--primary);border-radius:var(--radius);padding:6px 10px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+.analyst-toolbar::-webkit-scrollbar{display:none}
+.tb-section{display:flex;align-items:center;gap:2px;padding:0 8px;border-right:1px solid var(--border)}
+.tb-section:last-child{border-right:none}
+.tb-label{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:.06em;padding:0 4px;white-space:nowrap}
+.tb-btn{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 7px;background:transparent!important;border:1px solid transparent;border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;font-size:11px;font-weight:600;color:var(--text-secondary);white-space:nowrap;text-decoration:none!important;min-width:44px;transition:background .12s,border-color .12s,color .12s,transform .1s;line-height:1}
+.tb-btn:hover:not(:disabled){transform:translateY(-1px);border-color:var(--border)}
+.tb-btn:disabled{opacity:.38;cursor:default}
+.tb-icon-pill{display:flex!important;align-items:center!important;justify-content:center!important;width:28px;height:28px;border-radius:8px;font-size:13px;line-height:1;transition:background .12s,box-shadow .12s;flex-shrink:0}
+.tb-btn:hover:not(:disabled) .tb-icon-pill{box-shadow:0 2px 6px rgba(0,0,0,.14)}
+.tb-btn span{font-size:10px;line-height:1;color:var(--text-muted)}
+.tb-spacer{flex:1}
+.tip-blue{background:#dbeafe!important;color:#1d4ed8!important}
+.tip-green{background:#d1fae5!important;color:#047857!important}
+.tip-amber{background:#fef3c7!important;color:#b45309!important}
+.tip-purple{background:#ede9fe!important;color:#6d28d9!important}
+.tip-teal{background:#ccfbf1!important;color:#0f766e!important}
+.tip-orange{background:#ffedd5!important;color:#c2410c!important}
+.tip-gray{background:#f3f4f6!important;color:#4b5563!important}
+@media(max-width:768px){
+  .analyst-toolbar{padding:4px 6px;gap:1px}
+  .tb-label{display:none}
+  .tb-btn span{display:none}
+  .tb-btn{min-width:34px;padding:5px}
+  .tb-icon-pill{width:24px;height:24px;font-size:11px;border-radius:6px}
+}
+</style>
+
+<div class="rb-page">
+
+    <!-- Toolbar -->
+  <div class="analyst-toolbar">
+    <div class="tb-section">
+      <span class="tb-label">Reporte</span>
+      <button type="button" class="tb-btn" onclick="resetForm()" title="Nuevo reporte">
+        <div class="tb-icon-pill tip-blue"><i class="bi bi-plus-lg"></i></div>
+        <span>Nuevo</span>
+      </button>
+    </div>
+    <div class="tb-section">
+      <span class="tb-label">Datos</span>
+      <a href="{% url 'analyst:data_upload' %}" class="tb-btn" title="Subir archivo">
+        <div class="tb-icon-pill tip-teal"><i class="bi bi-upload"></i></div>
+        <span>Carga</span>
+      </a>
+      <a href="{% url 'analyst:dataset_list' %}" class="tb-btn" title="Datasets guardados">
+        <div class="tb-icon-pill tip-purple"><i class="bi bi-layers"></i></div>
+        <span>Datasets</span>
+      </a>
+      <a href="{% url 'analyst:base_list' %}" class="tb-btn" title="Bases de datos">
+        <div class="tb-icon-pill tip-orange"><i class="bi bi-database"></i></div>
+        <span>Bases</span>
+      </a>
+      <a href="{% url 'analyst:etl_list' %}" class="tb-btn" title="Gestor ETL">
+        <div class="tb-icon-pill tip-amber"><i class="bi bi-arrow-repeat"></i></div>
+        <span>ETL</span>
+      </a>
+      <a href="{% url 'analyst:cross_list' %}" class="tb-btn" title="Cruces de datos">
+        <div class="tb-icon-pill tip-green"><i class="bi bi-shuffle"></i></div>
+        <span>Cruces</span>
+      </a>
+    </div>
+    <div class="tb-spacer"></div>
+  </div>
+
+<div class="page-header">
+    <div class="page-title">
+      <div class="page-icon">📊</div>
+      <div>
+        Report Builder
+        <div class="page-subtitle">Generador de reportes · Management360 Analyst</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rb-layout">
+
+    <!-- ══ LEFT: FORM ══ -->
+    <div>
+
+      <!-- 1. Info -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-step">1</span> Información del Reporte
+        </div>
+        <div class="card-body">
+          <div class="f-group">
+            <label class="f-label req">Nombre</label>
+            <input type="text" id="rName" class="f-input"
+                   placeholder="Ej: Portabilidad Móvil – Marzo 2026"
+                   oninput="checkBuildReady()">
+          </div>
+          <div class="f-group">
+            <label class="f-label">Descripción <span style="color:#94a3b8;font-weight:400;">(opcional)</span></label>
+            <textarea id="rDesc" class="f-textarea" rows="2" placeholder="Descripción breve del reporte"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Función -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-step">2</span> Función Predefinida
+        </div>
+        <div class="card-body">
+          <div class="fn-list" id="fnList">
+            {% for key, fn in registry.items %}
+            <label class="fn-opt" id="fnopt-{{ key }}" onclick="selectFunction('{{ key }}')">
+              <input type="radio" name="fnRadio" value="{{ key }}">
+              <div>
+                <span class="fn-opt-label">{{ fn.label }}</span>
+                <span class="fn-opt-cat">{{ fn.category }}</span>
+                <div class="fn-opt-desc">{{ fn.description|truncatechars:90 }}</div>
+              </div>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Fuentes -->
+      <div class="card" id="sourcesGroup" style="display:none;">
+        <div class="card-header">
+          <span class="card-step">3</span> Fuentes de Datos
+        </div>
+        <div class="card-body" id="sourcesContainer"></div>
+      </div>
+
+      <!-- 4. Parámetros -->
+      <div class="card" id="paramsGroup" style="display:none;">
+        <div class="card-header">
+          <span class="card-step">4</span> Parámetros
+        </div>
+        <div class="card-body" id="paramsContainer"></div>
+      </div>
+
+      <!-- Acción -->
+      <div class="card">
+        <div class="card-body">
+          <div id="buildError" class="err-box" style="display:none;"></div>
+          <div class="btn-row">
+            <button type="button" class="btn btn-success" id="buildBtn" onclick="buildReport()" disabled>
+              ▶ Generar Reporte
+            </button>
+            <button type="button" class="btn btn-ghost" onclick="resetForm()">↺ Limpiar</button>
+            <a href="{% url 'analyst:dataset_list' %}" class="btn btn-ghost">📦 Datasets</a>
+            <a href="{% url 'analyst:data_upload' %}"  class="btn btn-ghost">↑ Subir Datos</a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══ RIGHT: RESULTS ══ -->
+    <div>
+
+      <!-- Resultado activo -->
+      <div class="card" id="activeResult" style="display:none;">
+        <div class="card-header" id="activeResultTitle">Resultado</div>
+        <div class="card-body">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+            <span class="sbadge sbadge-done" id="activeResultRows"></span>
+            <span id="activeTableNote" style="font-size:12px;color:#64748b;flex:1;"></span>
+            <button class="btn btn-ghost btn-sm" id="activeExportBtn">⬇ Exportar CSV</button>
+          </div>
+          <div class="result-wrap" id="activeTableWrap"></div>
+        </div>
+      </div>
+
+      <!-- Reportes guardados -->
+      <div class="card">
+        <div class="card-header">
+          📋 Reportes Guardados
+          <span id="reportCount" style="font-weight:400;font-size:12px;color:#94a3b8;margin-left:4px;">({{ reports.count }})</span>
+        </div>
+        <div style="overflow-x:auto;max-height:400px;overflow-y:auto;">
+          <table class="rpt-table">
+            <thead>
+              <tr>
+                <th style="min-width:160px;">Nombre</th>
+                <th style="min-width:110px;">Función</th>
+                <th style="min-width:90px;">Fecha</th>
+                <th style="min-width:80px;">Estado</th>
+                <th style="min-width:100px;text-align:right;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="reportsList">
+              {% for r in reports %}
+              <tr id="rcard-{{ r.id }}">
+                <td><div class="rpt-name" title="{{ r.name }}">{{ r.name }}</div></td>
+                <td style="font-size:12px;color:#64748b;">{{ r.function_key }}</td>
+                <td style="font-size:12px;color:#64748b;white-space:nowrap;">{{ r.created_at|date:"d/m/Y H:i" }}</td>
+                <td><span class="sbadge sbadge-{{ r.status }}">{{ r.get_status_display }}</span></td>
+                <td>
+                  <div style="display:flex;gap:4px;justify-content:flex-end;">
+                    {% if r.status == "done" %}
+                    <button type="button" class="btn btn-ghost btn-sm"
+                            onclick="viewReport('{{ r.id }}','{{ r.name|escapejs }}')" title="Ver">👁</button>
+                    <a class="btn btn-ghost btn-sm"
+                       href="{% url 'analyst:report_export' r.id %}" title="CSV">⬇</a>
+                    {% endif %}
+                    <button type="button" class="btn btn-danger btn-sm"
+                            onclick="deleteReport('{{ r.id }}')" title="Eliminar">🗑</button>
+                  </div>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" id="emptyReports"
+                  style="text-align:center;padding:32px 16px;font-size:13px;color:#94a3b8;">
+                Sin reportes. Completa el formulario y presiona ▶ Generar Reporte.
+              </td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="statusbar">
+    <span class="sb-item" id="sbStatus">Listo</span>
+    <span class="sb-item" id="sbFn">Función: —</span>
+    <span class="sb-item" id="sbSrc">Fuentes: 0 / 0</span>
+    <span>Datasets: {{ datasets.count }} · Clips: {{ clips|length }}</span>
+  </div>
+
+</div>
+<div id="notifArea"></div>
+
+<script>
+// ─── Data ─────────────────────────────────────────────────────────────────────
+const REGISTRY = {{ registry_json|safe }};
+const DATASETS = [{% for ds in datasets %}{"id":"{{ ds.id }}","name":"{{ ds.name|escapejs }}","columns":{{ ds.columns|safe }},"dtype_map":{{ ds.dtype_map|safe }}},{% endfor %}];
+const CLIPS    = [{% for c in clips %}{"key":"{{ c.key|escapejs }}","name":"{{ c.key|escapejs }}","columns":[]},{% endfor %}];
+const MODELS   = {{ model_choices_json|safe }};
+
+const URLS = {
+  build:        "{% url 'analyst:report_build' %}",
+  detail:       id => `/analyst/reports/${id}/detail/`,
+  exportReport: id => `/analyst/reports/${id}/export/`,
+  deleteReport: id => `/analyst/reports/${id}/delete/`,
+  dsColumns:    "{% url 'analyst:dataset_columns_api' %}",
+};
+
+let STATE = { fnKey: null, sources: {}, params: {} };
+
+function csrf(){ return document.querySelector('[name=csrfmiddlewaretoken]')?.value ?? ''; }
+async function postJSON(url, body){
+  const r = await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify(body)});
+  return r.json();
+}
+function sb(id,txt){ const e=document.getElementById(id); if(e) e.textContent=txt; }
+function notify(type,msg){
+  const map={success:'ok',error:'err',info:'inf'};
+  const icon={success:'✓',error:'✕',info:'ℹ'}[type]??'ℹ';
+  const el=document.createElement('div');
+  el.className=`notif notif-${map[type]??'inf'}`;
+  el.innerHTML=`<span>${icon}</span><span>${msg}</span>`;
+  document.getElementById('notifArea').appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},4200);
+}
+function colsForSource(srcId){ return STATE.sources[srcId]?.columns ?? []; }
+
+/* ── Function selection ── */
+function selectFunction(key){
+  STATE.fnKey=key; STATE.sources={}; STATE.params={};
+  document.querySelectorAll('.fn-opt').forEach(e=>e.classList.remove('selected'));
+  const opt=document.getElementById(`fnopt-${key}`);
+  if(opt){opt.classList.add('selected');opt.querySelector('input[type=radio]').checked=true;}
+  const meta=REGISTRY[key]; if(!meta) return;
+  sb('sbFn',`Función: ${meta.label}`);
+  renderSources(meta.sources);
+  renderParams(meta.params);
+  checkBuildReady();
+}
+
+/* ── Sources ── */
+function renderSources(defs){
+  const grp=document.getElementById('sourcesGroup');
+  const con=document.getElementById('sourcesContainer');
+  grp.style.display=defs.length?'block':'none';
+  con.innerHTML='';
+  defs.forEach(d=>{
+    const s=document.createElement('div');
+    s.className='src-slot'; s.id=`slot-${d.id}`;
+    s.innerHTML=`<div class="src-slot-lbl">${d.required?'* ':''}${d.label}</div>
+      <div class="f-group" style="margin-bottom:6px;">
+        <label class="f-label">Tipo de fuente</label>
+        <select class="f-select" id="srcType-${d.id}" onchange="onSourceTypeChange('${d.id}')">
+          <option value="">— seleccionar —</option>
+          <option value="dataset">📦 Dataset Guardado</option>
+          <option value="clip">📋 Clipboard (temporal)</option>
+          <option value="model">🗄️ Modelo Django</option>
+        </select>
+      </div>
+      <div id="srcRef-${d.id}" style="display:none;"></div>`;
+    con.appendChild(s);
+  });
+  updateSrcStatus();
+}
+
+function onSourceTypeChange(srcId){
+  const type=document.getElementById(`srcType-${srcId}`)?.value;
+  const ref=document.getElementById(`srcRef-${srcId}`);
+  if(!type){ref.style.display='none';delete STATE.sources[srcId];checkBuildReady();updateSrcStatus();return;}
+  const rowWrap=(lbl,inner)=>`<div class="f-group"><label class="f-label">${lbl}</label>${inner}</div>`;
+  let html='';
+  if(type==='dataset')
+    html=rowWrap('Dataset',`<select class="f-select" id="srcVal-${srcId}" onchange="onSourceSelected('${srcId}','dataset',this.value,this.options[this.selectedIndex].text)"><option value="">— seleccionar dataset —</option>${DATASETS.map(d=>`<option value="${d.id}">${d.name} (${d.columns?.length??0} cols)</option>`).join('')}</select>`);
+  else if(type==='clip')
+    html=rowWrap('Clipboard',`<select class="f-select" id="srcVal-${srcId}" onchange="onSourceSelected('${srcId}','clip',this.value,this.options[this.selectedIndex].text)"><option value="">— seleccionar clip —</option>${CLIPS.map(c=>`<option value="${c.key}">${c.name}</option>`).join('')}</select>`);
+  else
+    html=rowWrap('Modelo',`<select class="f-select" id="srcVal-${srcId}" onchange="onSourceSelected('${srcId}','model',this.value,this.options[this.selectedIndex].text)"><option value="">— seleccionar modelo —</option>${MODELS.map(m=>`<option value="${m.value}">${m.label}</option>`).join('')}</select>`);
+  ref.innerHTML=html; ref.style.display='block';
+  delete STATE.sources[srcId]; checkBuildReady();
+}
+
+async function onSourceSelected(srcId,type,ref,name){
+  if(!ref){delete STATE.sources[srcId];checkBuildReady();updateSrcStatus();return;}
+  let columns=[];
+  if(type==='dataset'){
+    const ds=DATASETS.find(d=>d.id===ref);
+    columns=ds?(ds.columns||[]).map(c=>({name:c,dtype:ds.dtype_map?.[c]??'object'})):[];
+  }else if(type==='model'){
+    try{const r=await fetch(`${URLS.dsColumns}?models[]=${encodeURIComponent(ref)}`);const d=await r.json();columns=d.sources?.[`model:${ref}`]?.columns??[];}catch(e){}
+  }
+  STATE.sources[srcId]={type,ref,name,columns};
+  const slot=document.getElementById(`slot-${srcId}`);
+  if(slot) slot.className='src-slot filled';
+  const meta=REGISTRY[STATE.fnKey];
+  if(meta) refreshParamSelectors(meta.params);
+  checkBuildReady(); updateSrcStatus();
+}
+
+function updateSrcStatus(){
+  const meta=STATE.fnKey?REGISTRY[STATE.fnKey]:null;
+  if(!meta){sb('sbSrc','Fuentes: 0 / 0');return;}
+  const req=meta.sources.filter(s=>s.required).length;
+  const ok=meta.sources.filter(s=>s.required&&STATE.sources[s.id]).length;
+  sb('sbSrc',`Fuentes: ${ok} / ${req}`);
+}
+
+/* ── Params ── */
+function renderParams(defs){
+  const grp=document.getElementById('paramsGroup');
+  const con=document.getElementById('paramsContainer');
+  grp.style.display=defs.length?'block':'none';
+  con.innerHTML='';
+  defs.forEach(p=>{
+    const d=document.createElement('div');
+    d.className='param-row'; d.id=`param-wrap-${p.id}`;
+    d.innerHTML=`<div class="param-lbl">${p.required!==false?'* ':''}${p.label}</div>${buildParamInput(p)}`;
+    con.appendChild(d);
+  });
+}
+
+function buildParamInput(p){
+  const cols=colsForSource(p.source);
+  const opts=cols.map(c=>`<option value="${c.name}">${c.name} (${c.dtype})</option>`).join('');
+  if(p.type==='column_select')
+    return `<select class="f-select" id="param-${p.id}" onchange="onParamChange('${p.id}',this.value)"><option value="">— columna —</option>${opts}</select>`;
+  if(p.type==='multi_column')
+    return `<select class="f-select f-select-multi" id="param-${p.id}" multiple onchange="onParamMultiChange('${p.id}',this)">${opts}</select><div class="f-hint">Ctrl+clic para selección múltiple</div>`;
+  if(p.type==='boolean')
+    return `<label class="cb-row"><input type="checkbox" id="param-${p.id}" ${p.default?'checked':''} onchange="onParamChange('${p.id}',this.checked)"> ${p.label}</label>`;
+  if(p.type==='number')
+    return `<input type="number" class="f-input" id="param-${p.id}" value="${p.default??''}" style="max-width:140px;" onchange="onParamChange('${p.id}',parseFloat(this.value))">`;
+  return `<input type="text" class="f-input" id="param-${p.id}" placeholder="${p.label}" onchange="onParamChange('${p.id}',this.value)">`;
+}
+
+function refreshParamSelectors(defs){
+  defs.forEach(p=>{
+    if(p.type!=='column_select'&&p.type!=='multi_column') return;
+    const el=document.getElementById(`param-${p.id}`); if(!el) return;
+    const opts=colsForSource(p.source).map(c=>`<option value="${c.name}">${c.name} (${c.dtype})</option>`).join('');
+    const prev=el.type==='select-multiple'?[...el.selectedOptions].map(o=>o.value):[el.value];
+    el.innerHTML=(p.type==='column_select'?'<option value="">— columna —</option>':'')+opts;
+    prev.forEach(v=>{const o=el.querySelector(`option[value="${v}"]`);if(o)o.selected=true;});
+  });
+}
+
+function onParamChange(id,val){ STATE.params[id]=val; checkBuildReady(); }
+function onParamMultiChange(id,sel){ STATE.params[id]=[...sel.selectedOptions].map(o=>o.value); checkBuildReady(); }
+
+/* ── Validation ── */
+function checkBuildReady(){
+  const btn=document.getElementById('buildBtn');
+  const meta=STATE.fnKey?REGISTRY[STATE.fnKey]:null;
+  const name=document.getElementById('rName')?.value?.trim();
+  if(!btn) return;
+  if(!meta||!name){btn.disabled=true;sb('sbStatus',name?'Selecciona una función':'Escribe un nombre');return;}
+  const srcOk=(meta.sources||[]).filter(s=>s.required).every(s=>STATE.sources[s.id]);
+  const prmOk=(meta.params||[]).filter(p=>p.required!==false).every(p=>{const v=STATE.params[p.id];return v!==undefined&&v!==null&&v!==''&&!(Array.isArray(v)&&v.length===0);});
+  btn.disabled=!(srcOk&&prmOk);
+  sb('sbStatus',btn.disabled?'Completa los campos requeridos (*)':'Listo para generar');
+}
+
+/* ── Build ── */
+async function buildReport(){
+  const btn=document.getElementById('buildBtn');
+  const errEl=document.getElementById('buildError');
+  errEl.style.display='none';
+  const name=document.getElementById('rName').value.trim();
+  const desc=document.getElementById('rDesc').value.trim();
+  const srcMap={};
+  Object.entries(STATE.sources).forEach(([k,s])=>{srcMap[k]={type:s.type,ref:s.ref,name:s.name};});
+  btn.disabled=true; btn.textContent='⏳ Generando…'; sb('sbStatus','Procesando…');
+  try{
+    const data=await postJSON(URLS.build,{name,description:desc,function_key:STATE.fnKey,sources:srcMap,params:STATE.params});
+    if(!data.success){errEl.textContent=data.error??'Error generando el reporte.';errEl.style.display='block';sb('sbStatus','Error');return;}
+    notify('success',`Reporte "${name}" generado — ${data.preview?.total??0} filas`);
+    showActiveResult(data.report,data.preview);
+    prependReportCard(data.report);
+    document.getElementById('emptyReports')?.remove();
+    sb('sbStatus',`OK — ${data.preview?.total??0} filas`);
+    const cEl=document.getElementById('reportCount');
+    if(cEl) cEl.textContent=`(${parseInt(cEl.textContent.replace(/\D/g,''))+1})`;
+  }catch(e){errEl.textContent='Error de conexión: '+e.message;errEl.style.display='block';}
+  finally{btn.disabled=false;btn.textContent='▶ Generar Reporte';}
+}
+
+function resetForm(){
+  STATE={fnKey:null,sources:{},params:{}};
+  document.getElementById('rName').value='';
+  document.getElementById('rDesc').value='';
+  document.querySelectorAll('.fn-opt').forEach(e=>e.classList.remove('selected'));
+  document.querySelectorAll('.fn-opt input[type=radio]').forEach(r=>r.checked=false);
+  ['sourcesGroup','paramsGroup'].forEach(id=>document.getElementById(id).style.display='none');
+  document.getElementById('buildError').style.display='none';
+  document.getElementById('buildBtn').disabled=true;
+  sb('sbStatus','Listo'); sb('sbFn','Función: —'); sb('sbSrc','Fuentes: 0 / 0');
+}
+
+/* ── Result ── */
+function showActiveResult(report,preview){
+  const panel=document.getElementById('activeResult');
+  panel.style.display='block';
+  document.getElementById('activeResultTitle').textContent=`Resultado: ${report.name}`;
+  document.getElementById('activeResultRows').textContent=`${preview.total} filas`;
+  document.getElementById('activeTableNote').textContent=preview.total>100?`Mostrando primeras 100 de ${preview.total} filas`:'';
+  document.getElementById('activeExportBtn').onclick=()=>window.location.href=URLS.exportReport(report.id);
+  document.getElementById('activeTableWrap').innerHTML=buildTable(preview.columns,preview.rows);
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function buildTable(cols,rows){
+  if(!cols?.length) return '<p style="padding:12px;font-size:13px;color:#94a3b8;">Sin columnas.</p>';
+  const ths=cols.map(c=>`<th>${c}</th>`).join('');
+  const trs=rows.map(row=>`<tr>${cols.map(c=>{const v=row[c];return v===null||v===undefined?`<td><span class="null-cell">null</span></td>`:`<td>${String(v).substring(0,80)}</td>`;}).join('')}</tr>`).join('');
+  return `<table class="result-table"><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+
+async function viewReport(id,name){
+  sb('sbStatus','Cargando…');
+  try{
+    const r=await fetch(URLS.detail(id));
+    const d=await r.json();
+    if(d.success){showActiveResult(d.report,{columns:d.report.result_meta?.columns??[],rows:d.rows,total:d.total});sb('sbStatus',`OK — ${d.total} filas`);}
+    else notify('error',d.error);
+  }catch(e){notify('error','Error de conexión.');}
+}
+
+function prependReportCard(r){
+  const list=document.getElementById('reportsList');
+  const tr=document.createElement('tr');
+  tr.id=`rcard-${r.id}`;
+  tr.innerHTML=`
+    <td><div class="rpt-name" title="${r.name}">${r.name}</div></td>
+    <td style="font-size:12px;color:#64748b;">${r.function_key}</td>
+    <td style="font-size:12px;color:#64748b;white-space:nowrap;">${new Date(r.created_at).toLocaleString('es')}</td>
+    <td><span class="sbadge sbadge-${r.status}">${r.status_label}</span></td>
+    <td>
+      <div style="display:flex;gap:4px;justify-content:flex-end;">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="viewReport('${r.id}','${r.name.replace(/'/g,"\\'")}')">👁</button>
+        <a class="btn btn-ghost btn-sm" href="${URLS.exportReport(r.id)}">⬇</a>
+        <button type="button" class="btn btn-danger btn-sm" onclick="deleteReport('${r.id}')">🗑</button>
+      </div>
+    </td>`;
+  list.prepend(tr);
+}
+
+async function deleteReport(id){
+  if(!confirm('¿Eliminar este reporte permanentemente?')) return;
+  try{
+    const d=await postJSON(URLS.deleteReport(id),{});
+    if(d.success){
+      document.getElementById(`rcard-${id}`)?.remove();
+      notify('success','Reporte eliminado.');
+      const cEl=document.getElementById('reportCount');
+      if(cEl) cEl.textContent=`(${Math.max(0,parseInt(cEl.textContent.replace(/\D/g,''))-1)})`;
+    }else notify('error',d.error??'Error eliminando.');
+  }catch(e){notify('error','Error de conexión.');}
+}
+</script>
+{% endblock %}

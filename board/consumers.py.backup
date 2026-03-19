@@ -1,0 +1,45 @@
+import json
+from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+from django.contrib.auth.models import User
+from .models import Board, Card
+
+class BoardConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.board_id = self.scope['url_route']['kwargs']['board_id']
+        self.room_group_name = f'board_{self.board_id}'
+        
+        # Verificar permisos
+        if self.scope["user"].is_authenticated:
+            await self.channel_layer.group_add(
+                self.room_group_name,
+                self.channel_name
+            )
+            await self.accept()
+        else:
+            await self.close()
+    
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name
+        )
+    
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        action = data.get('action')
+        
+        if action == 'card_moved':
+            # Broadcast movimiento en tiempo real
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'card_update',
+                    'action': 'moved',
+                    'card_id': data['card_id'],
+                    'position': data['position']
+                }
+            )
+    
+    async def card_update(self, event):
+        await self.send(text_data=json.dumps(event))

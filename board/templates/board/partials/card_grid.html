@@ -1,0 +1,15 @@
+{% load static %}
+{% for card in cards %}
+    {% include 'board/partials/card.html' with card=card %}
+{% empty %}
+<div class="col-span-full text-center py-12">
+    <div class="text-6xl mb-4">📋</div>
+    <h3 class="text-lg font-medium text-gray-900 mb-2">Board vacío</h3>
+    <p class="text-gray-500 mb-4">Comienza agregando tu primera tarjeta</p>
+    <button @click="$dispatch('open-create-modal')"
+            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <i class="fas fa-plus mr-2"></i>
+        Crear tarjeta
+    </button>
+</div>
+{% endfor %}

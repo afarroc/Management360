@@ -1,0 +1,1013 @@
+{% extends 'layouts/base.html' %}
+
+{% load static %}
+
+{% block extra_head %}
+<style>
+#analyst-root *,#analyst-root *::before,#analyst-root *::after{box-sizing:border-box}
+#analyst-root{
+  --ar-bg:#f4f6f9;--ar-surface:#fff;--ar-border:#e5e7eb;--ar-border-light:#f3f4f6;
+  --ar-primary:#2563eb;--ar-primary-light:#eff6ff;--ar-primary-dark:#1d4ed8;
+  --ar-success:#059669;--ar-success-light:#ecfdf5;--ar-success-border:#6ee7b7;
+  --ar-warning:#d97706;--ar-warning-light:#fffbeb;--ar-warning-border:#fcd34d;
+  --ar-danger:#dc2626;--ar-danger-light:#fef2f2;--ar-danger-border:#fca5a5;
+  --ar-text:#111827;--ar-text-secondary:#4b5563;--ar-text-muted:#9ca3af;
+  --ar-gray-50:#f9fafb;--ar-gray-100:#f3f4f6;--ar-gray-200:#e5e7eb;--ar-gray-300:#d1d5db;
+  --ar-radius-sm:6px;--ar-radius:8px;--ar-radius-lg:12px;
+  --ar-shadow-sm:0 1px 3px rgba(0,0,0,.07);--ar-shadow:0 2px 8px rgba(0,0,0,.08);
+  --ar-transition:.15s ease;
+  --bg:var(--ar-bg);--surface:var(--ar-surface);--border:var(--ar-border);
+  --border-light:var(--ar-border-light);--primary:var(--ar-primary);
+  --primary-light:var(--ar-primary-light);--primary-dark:var(--ar-primary-dark);
+  --success:var(--ar-success);--success-light:var(--ar-success-light);
+  --success-border:var(--ar-success-border);--warning:var(--ar-warning);
+  --warning-light:var(--ar-warning-light);--warning-border:var(--ar-warning-border);
+  --danger:var(--ar-danger);--danger-light:var(--ar-danger-light);
+  --danger-border:var(--ar-danger-border);--text:var(--ar-text);
+  --text-secondary:var(--ar-text-secondary);--text-muted:var(--ar-text-muted);
+  --gray-50:var(--ar-gray-50);--gray-100:var(--ar-gray-100);--gray-200:var(--ar-gray-200);
+  --gray-300:var(--ar-gray-300);--radius-sm:var(--ar-radius-sm);--radius:var(--ar-radius);
+  --radius-lg:var(--ar-radius-lg);--shadow-sm:var(--ar-shadow-sm);--shadow:var(--ar-shadow);
+  --transition:var(--ar-transition);
+  font-family:'Nunito',system-ui,sans-serif;font-size:14px;color:var(--ar-text);
+  line-height:1.5;width:100%;min-width:0;overflow-x:auto;
+}
+/* NiceAdmin isolation */
+#analyst-root .btn{font-family:'Nunito',system-ui,sans-serif;border-radius:var(--radius-sm);font-size:13px;font-weight:600;line-height:1.4;padding:6px 14px;transition:background .12s,border-color .12s,color .12s;display:inline-flex;align-items:center;gap:6px;text-decoration:none;cursor:pointer;vertical-align:middle}
+#analyst-root h1,#analyst-root h2,#analyst-root h3,#analyst-root h4,#analyst-root h5,#analyst-root h6{font-family:'Nunito',system-ui,sans-serif;color:var(--text);margin-bottom:0;line-height:1.3}
+#analyst-root table{border-collapse:collapse}
+/* Page */
+#analyst-root .dashboard-container{width:100%;padding:14px 12px 32px}
+#analyst-root .dashboard-header{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+#analyst-root .dashboard-header h1{font-size:20px;font-weight:700;display:flex;align-items:center;gap:8px}
+#analyst-root .dashboard-header h1 i{color:var(--primary);font-size:18px}
+#analyst-root .dashboard-header p{font-size:13px;color:var(--text-secondary);margin-top:3px}
+/* Toolbar */
+#analyst-root .analyst-toolbar{display:flex;align-items:center;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;gap:2px;background:var(--surface);border:1px solid var(--border);border-bottom:2px solid var(--primary);border-radius:var(--radius);padding:6px 10px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
+#analyst-root .analyst-toolbar::-webkit-scrollbar{display:none}
+#analyst-root .tb-section{display:flex;align-items:center;gap:2px;padding:0 8px;border-right:1px solid var(--border)}
+#analyst-root .tb-section:last-child{border-right:none}
+#analyst-root .tb-label{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-muted);letter-spacing:.06em;padding:0 4px 0 0;white-space:nowrap}
+#analyst-root .tb-btn{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:5px 7px;background:transparent!important;border:1px solid transparent;border-radius:var(--ar-radius-sm,6px);cursor:pointer;font-family:'Nunito',system-ui,sans-serif;font-size:11px;font-weight:600;color:var(--ar-text-secondary,#4b5563);white-space:nowrap;text-decoration:none!important;min-width:44px;transition:background .12s,border-color .12s,color .12s,transform .1s;position:relative;line-height:1;vertical-align:middle;box-shadow:none!important}
+#analyst-root .tb-btn,#analyst-root .tb-btn:link,#analyst-root .tb-btn:visited{color:var(--ar-text-secondary,#4b5563)}
+#analyst-root .tb-btn span{font-size:10px;line-height:1;color:var(--ar-text-muted,#9ca3af)}
+#analyst-root .tb-btn:hover:not(:disabled){transform:translateY(-1px);border-color:var(--border)}
+#analyst-root .tb-btn:disabled{opacity:.38;cursor:default}
+#analyst-root .tb-icon-pill{display:flex!important;align-items:center!important;justify-content:center!important;width:28px;height:28px;border-radius:8px;font-size:13px;line-height:1;transition:background .12s,box-shadow .12s;flex-shrink:0}
+#analyst-root .tb-btn:hover:not(:disabled) .tb-icon-pill{box-shadow:0 2px 6px rgba(0,0,0,.14)}
+#analyst-root .tip-blue{background:#dbeafe!important;color:#1d4ed8!important}
+#analyst-root .tip-green{background:#d1fae5!important;color:#047857!important}
+#analyst-root .tip-amber{background:#fef3c7!important;color:#b45309!important}
+#analyst-root .tip-orange{background:#ffedd5!important;color:#c2410c!important}
+#analyst-root .tip-purple{background:#ede9fe!important;color:#6d28d9!important}
+#analyst-root .tip-red{background:#fee2e2!important;color:#b91c1c!important}
+#analyst-root .tip-teal{background:#ccfbf1!important;color:#0f766e!important}
+#analyst-root .tip-gray{background:#f3f4f6!important;color:#4b5563!important}
+#analyst-root .tb-btn:hover:not(:disabled) .tip-blue{background:#bfdbfe!important}
+#analyst-root .tb-btn:hover:not(:disabled) .tip-green{background:#a7f3d0!important}
+#analyst-root .tb-btn:hover:not(:disabled) .tip-amber{background:#fde68a!important}
+#analyst-root .tb-btn:hover:not(:disabled) .tip-purple{background:#ddd6fe!important}
+#analyst-root .tb-btn:hover:not(:disabled) .tip-red{background:#fecaca!important}
+#analyst-root .tb-spacer{flex:1}
+/* Buttons */
+#analyst-root .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;color:var(--text);white-space:nowrap;text-decoration:none;transition:background var(--transition),border-color var(--transition),color var(--transition);line-height:1}
+#analyst-root .btn:hover:not(:disabled){background:var(--gray-50)}
+#analyst-root .btn:disabled{opacity:.4;cursor:default}
+#analyst-root .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+#analyst-root .btn-primary:hover:not(:disabled){background:var(--primary-dark);border-color:var(--primary-dark)}
+#analyst-root .btn-success{background:var(--success);color:#fff;border-color:var(--success)}
+#analyst-root .btn-success:hover:not(:disabled){background:#047857}
+#analyst-root .btn-danger{background:var(--danger-light);color:var(--danger);border-color:var(--danger-border)}
+#analyst-root .btn-danger:hover:not(:disabled){background:#fee2e2}
+#analyst-root .btn-outline-secondary{background:#fff;color:var(--text-secondary);border-color:var(--gray-300)}
+#analyst-root .btn-outline-secondary:hover:not(:disabled){background:var(--gray-50)}
+#analyst-root .btn-sm{padding:5px 10px;font-size:12px}
+/* Card */
+#analyst-root .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);margin-bottom:14px}
+#analyst-root .card-header{padding:12px 16px;background:var(--gray-50);border-bottom:1px solid var(--border);border-radius:var(--radius-lg) var(--radius-lg) 0 0;font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px}
+#analyst-root .card-header i{color:var(--primary)}
+#analyst-root .card-body{padding:16px}
+/* Forms */
+#analyst-root .form-group{margin-bottom:14px}
+#analyst-root .form-group:last-child{margin-bottom:0}
+#analyst-root .form-label{display:block;font-size:13px;font-weight:600;color:var(--text);margin-bottom:5px}
+#analyst-root small{font-size:12px;color:var(--text-muted);display:block;margin-top:4px}
+#analyst-root .form-control,#analyst-root select.form-control,#analyst-root textarea.form-control{width:100%;background:var(--surface);border:1px solid var(--gray-300);border-radius:var(--radius-sm);font-family:inherit;font-size:13px;padding:8px 10px;color:var(--text);outline:none;transition:border-color var(--transition),box-shadow var(--transition);line-height:1.5}
+#analyst-root .form-control:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+/* Badges / Alerts */
+#analyst-root .badge{display:inline-flex;align-items:center;padding:2px 8px;font-size:11px;font-weight:600;border-radius:20px;border:1px solid var(--border);background:var(--gray-100);color:var(--text-secondary)}
+#analyst-root .badge-success{background:var(--success-light);border-color:var(--success-border);color:var(--success)}
+#analyst-root .badge-warning{background:var(--warning-light);border-color:var(--warning-border);color:var(--warning)}
+#analyst-root .badge-info{background:var(--primary-light);border-color:#93c5fd;color:var(--primary)}
+#analyst-root .alert{padding:10px 14px;border-radius:var(--radius);font-size:13px;font-weight:500;display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+#analyst-root .alert-info{background:var(--primary-light);color:var(--primary);border:1px solid #93c5fd}
+#analyst-root .alert-success{background:var(--success-light);color:var(--success);border:1px solid var(--success-border)}
+#analyst-root .alert-warning{background:var(--warning-light);color:var(--warning);border:1px solid var(--warning-border)}
+#analyst-root .alert-danger{background:var(--danger-light);color:var(--danger);border:1px solid var(--danger-border)}
+/* Preview table */
+#analyst-root .table-responsive{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+#analyst-root .preview-table{width:100%;border-collapse:collapse;font-size:12.5px}
+#analyst-root .preview-table th{background:var(--gray-50);border-bottom:2px solid var(--border);border-right:1px solid var(--border-light);padding:8px 12px;font-weight:700;text-align:left;white-space:nowrap;font-size:11.5px;position:sticky;top:0;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.3px}
+#analyst-root .preview-table td{border-bottom:1px solid var(--border-light);border-right:1px solid var(--border-light);padding:7px 12px;white-space:nowrap}
+#analyst-root .preview-table tr:nth-child(even) td{background:var(--gray-50)}
+#analyst-root .preview-table tr:hover td{background:var(--primary-light)}
+/* Pagination */
+#analyst-root .pg-btn{display:inline-flex;align-items:center;justify-content:center;min-width:30px;height:30px;padding:0 6px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:background .12s,color .12s;font-family:inherit;line-height:1}
+#analyst-root .pg-btn:hover:not(:disabled){background:var(--primary-light);color:var(--primary);border-color:var(--primary)}
+#analyst-root .pg-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+#analyst-root .pg-btn:disabled{opacity:.4;cursor:default}
+/* Modal */
+#analyst-root .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(2px);z-index:1050;align-items:center;justify-content:center;padding:16px}
+#analyst-root .modal.active{display:flex}
+#analyst-root .modal-content{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:0 20px 40px rgba(0,0,0,.14);width:100%;max-width:640px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;animation:modalIn .18s ease}
+#analyst-root .modal-content.modal-lg{max-width:800px}
+@keyframes modalIn{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+#analyst-root .modal-header{background:var(--gray-50);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;justify-content:space-between;align-items:center}
+#analyst-root .modal-header h3{margin:0;font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px}
+#analyst-root .modal-header h3 i{color:var(--primary)}
+#analyst-root .close-modal{background:none;border:1px solid transparent;border-radius:var(--radius-sm);color:var(--text-muted);font-size:18px;line-height:1;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:background var(--transition),color var(--transition)}
+#analyst-root .close-modal:hover{background:var(--gray-100);color:var(--text)}
+#analyst-root .modal-body{padding:18px;overflow-y:auto;max-height:calc(90vh - 120px);font-size:13px;color:var(--text-secondary);line-height:1.6}
+#analyst-root .modal-footer{padding:12px 18px;border-top:1px solid var(--border);background:var(--gray-50);display:flex;justify-content:flex-end;gap:8px}
+/* Spinner */
+#analyst-root .spinner{width:28px;height:28px;border:3px solid var(--gray-200);border-top-color:#2563eb;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Notifications */
+#analyst-root #notificationContainer{position:fixed;top:calc(var(--ni-header-h,60px) + 6px);right:1.2rem;z-index:9999;display:flex;flex-direction:column;gap:6px}
+/* Layout: sidebar + main */
+#cs-layout{display:flex;gap:14px;align-items:flex-start}
+#cs-sidebar{width:250px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);overflow:hidden}
+#cs-sidebar-hdr{padding:10px 12px;background:var(--gray-50);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;justify-content:space-between}
+#cs-list{max-height:75vh;overflow-y:auto}
+#cs-list::-webkit-scrollbar{width:4px}
+#cs-list::-webkit-scrollbar-thumb{background:var(--gray-200);border-radius:4px}
+.cs-item{display:flex;align-items:center;padding:10px 12px;cursor:pointer;border-left:3px solid transparent;gap:8px;transition:background var(--transition),border-color var(--transition)}
+.cs-item:hover{background:var(--gray-50)}
+.cs-item.active{background:var(--primary-light);border-left-color:var(--primary)}
+.cs-item-icon{font-size:16px;flex-shrink:0}
+.cs-item-body{min-width:0;flex:1}
+.cs-item-name{font-size:12.5px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cs-item-meta{font-size:11px;color:var(--text-muted)}
+.cs-item-badge{font-size:10px;font-weight:700;color:var(--success);flex-shrink:0}
+#cs-main{flex:1;min-width:0;max-width:100%;overflow:hidden}
+/* Empty state */
+#cs-empty{text-align:center;padding:48px 24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}
+#cs-empty .empty-icon{font-size:48px;opacity:.4;margin-bottom:12px}
+/* Tabs */
+#analyst-root .cs-tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:14px;overflow-x:auto;scrollbar-width:none}
+#analyst-root .cs-tabs::-webkit-scrollbar{display:none}
+#analyst-root .cs-tab{padding:8px 16px;font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:color var(--transition),border-color var(--transition);display:flex;align-items:center;gap:5px}
+#analyst-root .cs-tab:hover:not(.active){color:var(--primary)}
+#analyst-root .cs-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+#analyst-root .cs-pane{display:none}
+#analyst-root .cs-pane.active{display:block}
+#result-content .table-responsive{overflow-x:auto;overflow-y:auto;max-height:60vh;-webkit-overflow-scrolling:touch;}
+#result-content .preview-table{min-width:max-content}
+/* Source card (builder) */
+.src-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;transition:border-color var(--transition)}
+.src-card:hover{border-color:#93c5fd}
+.src-card-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.src-card-title i{color:var(--primary)}
+/* Join key rows */
+.join-row{display:grid;grid-template-columns:1fr auto 1fr auto;gap:8px;align-items:center;margin-bottom:6px}
+.join-row select{font-size:12px}
+.join-equals{font-size:16px;font-weight:700;color:var(--primary);text-align:center}
+.join-remove{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:16px;padding:0;transition:color var(--transition)}
+.join-remove:hover{color:var(--danger)}
+/* Result card */
+.result-card{background:var(--success-light);border:1px solid var(--success-border);border-radius:var(--radius);padding:12px 14px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--success)}
+.result-card i{font-size:18px;flex-shrink:0}
+/* Stats */
+#analyst-root .summary-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+#analyst-root .stat-item{background:var(--gray-50);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;text-align:center}
+#analyst-root .stat-value{font-size:22px;font-weight:700;color:var(--primary);line-height:1.2}
+#analyst-root .stat-label{font-size:11px;color:var(--text-muted);margin-top:3px;font-weight:500}
+/* Cross grid */
+.cs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.cs-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:var(--radius);padding:12px 14px;cursor:pointer;transition:border-color var(--transition),box-shadow var(--transition);display:flex;flex-direction:column;gap:6px}
+.cs-card:hover{border-color:var(--primary);box-shadow:0 2px 8px rgba(37,99,235,.1)}
+.cs-card-title{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px}
+.cs-card-meta{font-size:12px;color:var(--text-secondary)}
+/* Op badge */
+.op-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;background:var(--primary-light);color:var(--primary);border:1px solid #93c5fd}
+/* Responsive */
+@media(max-width:768px){#cs-layout{flex-direction:column}#cs-sidebar{width:100%}#cs-list{max-height:200px}.join-row{grid-template-columns:1fr auto;gap:4px}.join-equals{display:none}.cs-grid{grid-template-columns:1fr}#result-content .table-responsive{max-height:45vh}#analyst-root .preview-table th,#analyst-root .preview-table td{padding:5px 8px;font-size:11px}}
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<div id="analyst-root">
+<div class="dashboard-container">
+
+  <div class="dashboard-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div>
+        <h1><i class="bi bi-shuffle"></i> Cruces de Datos</h1>
+        <p>Combina dos fuentes con join, merge o concatenación y guarda el resultado como un nuevo dataset re-ejecutable.</p>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <a href="{% url 'analyst:data_upload' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-upload"></i> Carga</a>
+        <a href="{% url 'analyst:dataset_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-layers"></i> Datasets</a>
+        <a href="{% url 'analyst:base_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-database"></i> Bases</a>
+        <a href="{% url 'analyst:etl_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-repeat"></i> ETL</a>
+        <a href="{% url 'analyst:report_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-graph-up"></i> Reportes</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="analyst-toolbar">
+    <div class="tb-section">
+      <span class="tb-label">Cruce</span>
+      <button class="tb-btn" onclick="openCreateModal()" title="Nuevo cruce">
+        <div class="tb-icon-pill tip-blue"><i class="bi bi-plus-lg"></i></div>
+        <span>Nuevo</span>
+      </button>
+      <button class="tb-btn" id="tb-edit-btn" onclick="openEditModal()" disabled>
+        <div class="tb-icon-pill tip-purple"><i class="bi bi-pencil"></i></div>
+        <span>Editar</span>
+      </button>
+      <button class="tb-btn" id="tb-delete-btn" onclick="confirmDelete()" disabled>
+        <div class="tb-icon-pill tip-red"><i class="bi bi-trash3"></i></div>
+        <span>Eliminar</span>
+      </button>
+    </div>
+    <div class="tb-section">
+      <span class="tb-label">Ejecutar</span>
+      <button class="tb-btn" id="tb-run-btn" onclick="runCross()" disabled>
+        <div class="tb-icon-pill tip-green"><i class="bi bi-play-circle"></i></div>
+        <span>Ejecutar</span>
+      </button>
+      <button class="tb-btn" id="tb-export-btn" onclick="exportResult()" disabled>
+        <div class="tb-icon-pill tip-amber"><i class="bi bi-download"></i></div>
+        <span>Exportar</span>
+      </button>
+    </div>
+    <div class="tb-spacer"></div>
+  </div>
+
+  <!-- Layout -->
+  <div id="cs-layout">
+    <!-- Sidebar -->
+    <aside id="cs-sidebar">
+      <div id="cs-sidebar-hdr">
+        <span>Mis cruces</span>
+        <span id="cs-total" class="badge">{{ crosses|length }}</span>
+      </div>
+      <div id="cs-list">
+        {% if crosses %}
+          {% for cs in crosses %}
+          <div class="cs-item" data-id="{{ cs.id }}" onclick="selectCross('{{ cs.id }}')">
+            <div class="cs-item-icon">🔀</div>
+            <div class="cs-item-body">
+              <div class="cs-item-name">{{ cs.name }}</div>
+              <div class="cs-item-meta">{{ cs.operation_label }}</div>
+            </div>
+            {% if cs.has_result %}
+            <div class="cs-item-badge">✓</div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <div style="padding:20px;text-align:center;font-size:12px;color:var(--text-muted)">
+            Sin cruces aún.<br>Crea el primero arriba.
+          </div>
+        {% endif %}
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div id="cs-main">
+      <!-- Empty state -->
+      <div id="cs-empty">
+        <div class="empty-icon">🔀</div>
+        <h3 style="font-size:16px;font-weight:700;margin-bottom:6px">Selecciona o crea un cruce</h3>
+        <p style="font-size:13px;color:var(--text-secondary);max-width:360px;margin:0 auto 16px;line-height:1.6">
+          Un cruce combina dos fuentes de datos (datasets, bases, ETL o clips) en un único
+          dataset resultado que puedes usar en reportes y dashboards.
+        </p>
+        {% if crosses %}
+        <div class="cs-grid">
+          {% for cs in crosses %}
+          <div class="cs-card" onclick="selectCross('{{ cs.id }}')">
+            <div class="cs-card-title"><i class="bi bi-shuffle"></i> {{ cs.name }}</div>
+            <div class="cs-card-meta">
+              <span class="op-badge">{{ cs.operation_label }}</span>
+              {% if cs.has_result %}· <span style="color:var(--success)">{{ cs.last_row_count }} filas</span>{% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <button class="btn btn-primary" onclick="openCreateModal()">
+          <i class="bi bi-plus-lg"></i> Crear primer cruce
+        </button>
+        {% endif %}
+      </div>
+
+      <!-- Panel activo -->
+      <div id="cs-active" style="display:none">
+        <!-- Stats -->
+        <div class="summary-stats">
+          <div class="stat-item"><div class="stat-value" id="stat-op">—</div><div class="stat-label">operación</div></div>
+          <div class="stat-item"><div class="stat-value" id="stat-rows">—</div><div class="stat-label">filas resultado</div></div>
+          <div class="stat-item"><div class="stat-value" id="stat-cols">—</div><div class="stat-label">columnas</div></div>
+          <div class="stat-item"><div class="stat-value" id="stat-last" style="font-size:12px">—</div><div class="stat-label">última ejecución</div></div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="cs-tabs">
+          <div class="cs-tab active" onclick="switchTab('config')" data-tab="config"><i class="bi bi-sliders"></i> Configuración</div>
+          <div class="cs-tab" onclick="switchTab('result')" data-tab="result"><i class="bi bi-table"></i> Resultado</div>
+        </div>
+
+        <!-- TAB: Configuración (solo lectura, editar abre modal) -->
+        <div class="cs-pane active" id="pane-config">
+          <div id="config-view"></div>
+          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary" onclick="runCross()">
+              <i class="bi bi-play-circle"></i> Ejecutar cruce
+            </button>
+            <button class="btn btn-outline-secondary" onclick="openEditModal()">
+              <i class="bi bi-pencil"></i> Editar configuración
+            </button>
+          </div>
+          <div id="run-result" style="display:none;margin-top:12px;"></div>
+        </div>
+
+        <!-- TAB: Resultado -->
+        <div class="cs-pane" id="pane-result">
+          <div id="result-empty" style="padding:10px 14px;border-radius:8px;font-size:13px;font-weight:500;display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;background:var(--primary-light);color:var(--primary);border:1px solid #93c5fd">
+            <i class="bi bi-info-circle"></i>
+            No hay resultado aún. Ejecuta el cruce desde la pestaña Configuración.
+          </div>
+          <div id="result-content" style="display:none">
+            <!-- Búsqueda -->
+            <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap;">
+              <input type="text" id="result-search" class="form-control" style="max-width:260px"
+                     placeholder="🔍 Buscar en resultado..." oninput="debounceSearch(this.value)">
+              <button class="btn btn-sm btn-outline-secondary" onclick="exportResult()">
+                <i class="bi bi-download"></i> Exportar CSV
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table class="preview-table">
+                <thead id="result-thead"></thead>
+                <tbody id="result-tbody"></tbody>
+              </table>
+            </div>
+            <div id="result-pagination" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:10px;font-size:12px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Notifications -->
+<div id="notificationContainer"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL — Crear / Editar cruce
+════════════════════════════════════════════════════ -->
+<div class="modal" id="modal-cross">
+  <div class="modal-content modal-lg">
+    <div class="modal-header">
+      <h3 id="modal-cross-title"><i class="bi bi-plus-circle"></i> Nuevo Cruce</h3>
+      <button class="close-modal" onclick="closeModal('modal-cross')">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Nombre y descripción -->
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:14px;">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Nombre *</label>
+          <input type="text" id="cs-name" class="form-control" placeholder="Ej: Asistencia + Nómina">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Operación *</label>
+          <select id="cs-op" class="form-control" onchange="onOpChange()">
+            <option value="left_join">Left Join</option>
+            <option value="inner_join">Inner Join</option>
+            <option value="outer_join">Outer Join</option>
+            <option value="concat">Concatenar (apilar)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <textarea id="cs-desc" class="form-control" rows="2" placeholder="Para qué sirve este cruce..."></textarea>
+      </div>
+
+      <!-- Fuentes -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <!-- IZQUIERDA -->
+        <div class="src-card" id="src-left-card">
+          <div class="src-card-title"><i class="bi bi-arrow-left-circle"></i> Fuente Izquierda</div>
+          <div class="form-group">
+            <label class="form-label" style="font-size:11px">Tipo</label>
+            <select id="left-type" class="form-control" onchange="onSrcTypeChange('left')">
+              <option value="stored_dataset">Dataset guardado</option>
+              <option value="analyst_base">Base de analista</option>
+              <option value="etl_source">Fuente ETL</option>
+              <option value="clip">Clip del portapapeles</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-size:11px">Seleccionar</label>
+            <select id="left-id" class="form-control" onchange="loadSrcColumns('left')">
+              <option value="">— Seleccionar —</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" style="font-size:11px">Alias (opcional)</label>
+            <input type="text" id="left-alias" class="form-control" placeholder="ej: asistencia">
+          </div>
+        </div>
+
+        <!-- DERECHA -->
+        <div class="src-card" id="src-right-card">
+          <div class="src-card-title"><i class="bi bi-arrow-right-circle"></i> Fuente Derecha</div>
+          <div class="form-group">
+            <label class="form-label" style="font-size:11px">Tipo</label>
+            <select id="right-type" class="form-control" onchange="onSrcTypeChange('right')">
+              <option value="stored_dataset">Dataset guardado</option>
+              <option value="analyst_base">Base de analista</option>
+              <option value="etl_source">Fuente ETL</option>
+              <option value="clip">Clip del portapapeles</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="font-size:11px">Seleccionar</label>
+            <select id="right-id" class="form-control" onchange="loadSrcColumns('right')">
+              <option value="">— Seleccionar —</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" style="font-size:11px">Alias (opcional)</label>
+            <input type="text" id="right-alias" class="form-control" placeholder="ej: nomina">
+          </div>
+        </div>
+      </div>
+
+      <!-- Columnas de join (oculto para concat) -->
+      <div id="join-section">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:13px;font-weight:700;color:var(--text)">
+            <i class="bi bi-key" style="color:var(--primary)"></i> Columnas de unión *
+          </span>
+          <button class="btn btn-sm btn-outline-secondary" onclick="addJoinRow()">+ Par</button>
+        </div>
+        <div id="join-rows"></div>
+        <small>Selecciona las columnas equivalentes en cada fuente por las que se hará el join.</small>
+      </div>
+
+      <!-- Sufijos -->
+      <div id="suffix-section" style="margin-top:14px;">
+        <div class="form-group">
+          <label class="form-label">Sufijos para columnas duplicadas</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <input type="text" id="suffix-left"  class="form-control" value="_izq" placeholder="_izq">
+            <input type="text" id="suffix-right" class="form-control" value="_der" placeholder="_der">
+          </div>
+          <small>Se agregan al nombre de columnas que existen en ambas fuentes (excepto las de join).</small>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline-secondary" onclick="closeModal('modal-cross')">Cancelar</button>
+      <button class="btn btn-primary" id="modal-cross-submit" onclick="submitCross()">
+        <i class="bi bi-shuffle"></i> Crear cruce
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL — Confirmar eliminar
+════════════════════════════════════════════════════ -->
+<div class="modal" id="modal-del">
+  <div class="modal-content" style="max-width:420px">
+    <div class="modal-header">
+      <h3><i class="bi bi-trash3" style="color:var(--danger)"></i> Eliminar Cruce</h3>
+      <button class="close-modal" onclick="closeModal('modal-del')">×</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Eliminar <strong id="del-name"></strong>?</p>
+      <div class="alert alert-danger">
+        <i class="bi bi-exclamation-octagon-fill"></i>
+        Se eliminará también el dataset resultado asociado.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline-secondary" onclick="closeModal('modal-del')">Cancelar</button>
+      <button class="btn btn-danger" onclick="submitDelete()"><i class="bi bi-trash3"></i> Eliminar</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /analyst-root -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   CrossSource JS
+═══════════════════════════════════════════════════════════════════════════ */
+
+// Datos pre-serializados en Python con allow_nan=False (JSON estrictamente válido)
+const SOURCES = {
+  datasets:    {{ datasets_json|safe }},
+  bases:       {{ bases_json|safe }},
+  etl_sources: {{ etl_sources_json|safe }},
+  clips:       {{ clips_json|safe }},
+};
+
+const CS = {
+  id:         null,
+  config:     null,
+  hasResult:  false,
+  resultId:   null,
+  page:       1,
+  pageSize:   50,
+  searchTerm: '',
+  debounce:   null,
+  editMode:   false,
+  leftCols:   [],
+  rightCols:  [],
+};
+
+// ── Utils ──────────────────────────────────────────────────────────────────
+
+function csrf() { return document.querySelector('[name=csrfmiddlewaretoken]')?.value ?? ''; }
+async function postJSON(url, data) {
+  const r = await fetch(url, {method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':csrf()},body:JSON.stringify(data)});
+  return r.json();
+}
+function showNotification(msg, type='info') {
+  const c = document.getElementById('notificationContainer');
+  const t = document.createElement('div');
+  const col = {success:'var(--success)',error:'var(--danger)',warning:'var(--warning)',info:'var(--primary)'}[type]||'var(--primary)';
+  t.style.cssText = `background:var(--surface);border:1px solid var(--border);border-left:3px solid ${col};border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--text);box-shadow:var(--shadow);max-width:320px;animation:modalIn .18s ease;`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3800);
+}
+function openModal(id)  { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+document.addEventListener('keydown', e => { if(e.key==='Escape') document.querySelectorAll('.modal.active').forEach(m=>m.classList.remove('active')); });
+document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if(e.target===m) m.classList.remove('active'); }));
+
+// ── Sidebar ────────────────────────────────────────────────────────────────
+
+function selectCross(id) {
+  CS.id = id;
+  document.querySelectorAll('.cs-item').forEach(el => el.classList.toggle('active', el.dataset.id === id));
+  document.getElementById('cs-empty').style.display  = 'none';
+  document.getElementById('cs-active').style.display = 'block';
+  ['tb-edit-btn','tb-delete-btn','tb-run-btn'].forEach(b => {
+    const el = document.getElementById(b); if(el) el.disabled = false;
+  });
+  switchTab('config');
+  loadConfigView();
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.cs-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.cs-pane').forEach(p => p.classList.remove('active'));
+  const pane = document.getElementById(`pane-${name}`);
+  if (!pane) return;
+  pane.classList.add('active');
+  if (name === 'result') {
+    if (CS.hasResult) setTimeout(() => loadResultPage(), 80);
+    else CS._pendingResultTab = true;
+  }
+}
+
+// ── Config view ────────────────────────────────────────────────────────────
+
+async function loadConfigView() {
+  const data = await fetch(`/analyst/cross/api/`).then(r=>r.json()).catch(()=>null);
+  if (!data?.success) return;
+  const cs = data.crosses.find(c => c.id === CS.id);
+  if (!cs) return;
+
+  CS.config    = cs.config;
+  CS.hasResult = cs.has_result;
+  CS.resultId  = cs.result_id;
+  if (CS._pendingResultTab && CS.hasResult) { CS._pendingResultTab = false; setTimeout(() => loadResultPage(), 80); }
+
+  // Stats
+  document.getElementById('stat-op').textContent   = cs.operation_label || '—';
+  document.getElementById('stat-rows').textContent  = cs.has_result ? cs.last_row_count : '—';
+  document.getElementById('stat-cols').textContent  = cs.has_result
+    ? (cs.config?.output_columns?.length || '—') : '—';
+  document.getElementById('stat-last').textContent  = cs.last_run_at
+    ? new Date(cs.last_run_at).toLocaleString() : 'Nunca';
+
+  // Export button
+  const expBtn = document.getElementById('tb-export-btn');
+  if (expBtn) expBtn.disabled = !cs.has_result;
+
+  // Config view render
+  const el = document.getElementById('config-view');
+  const cfg = cs.config || {};
+  const srcLabel = s => s ? `<span class="badge badge-info">${s.type}</span> <strong>${s.alias||s.id}</strong>` : '—';
+  const onPairs  = (cfg.on||[]).map(p =>
+    `<code style="background:var(--gray-50);padding:1px 5px;border-radius:3px;font-size:11px;">${p.left}</code>
+     <span style="color:var(--primary)"> = </span>
+     <code style="background:var(--gray-50);padding:1px 5px;border-radius:3px;font-size:11px;">${p.right}</code>`
+  ).join('<br>');
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="src-card">
+        <div class="src-card-title"><i class="bi bi-arrow-left-circle"></i> Izquierda</div>
+        <div style="font-size:13px;">${srcLabel(cfg.left)}</div>
+        ${cfg.left?.columns?.length ? `<small>Columnas: ${cfg.left.columns.join(', ')}</small>` : ''}
+      </div>
+      <div class="src-card">
+        <div class="src-card-title"><i class="bi bi-arrow-right-circle"></i> Derecha</div>
+        <div style="font-size:13px;">${srcLabel(cfg.right)}</div>
+        ${cfg.right?.columns?.length ? `<small>Columnas: ${cfg.right.columns.join(', ')}</small>` : ''}
+      </div>
+    </div>
+    <div style="margin-top:10px;padding:10px 14px;background:var(--gray-50);border:1px solid var(--border);border-radius:var(--radius);">
+      <div style="font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">
+        <span class="op-badge">${cs.operation_label}</span>
+      </div>
+      ${cfg.operation !== 'concat' ? `<div style="font-size:13px;margin-top:6px;">${onPairs||'—'}</div>` : '<div style="font-size:12px;color:var(--text-muted);">Se apilan las filas de ambas fuentes.</div>'}
+      ${cfg.suffixes?.length ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Sufijos: ${cfg.suffixes.join(', ')}</div>` : ''}
+    </div>
+    ${cs.has_result ? `
+    <div class="result-card" style="margin-top:10px;">
+      <i class="bi bi-check-circle-fill"></i>
+      <div>Resultado disponible: <strong>${cs.last_row_count} filas</strong> · <a href="#" onclick="switchTab('result');return false;" style="color:var(--success);">Ver datos →</a></div>
+    </div>` : ''}
+  `;
+}
+
+// ── Run ────────────────────────────────────────────────────────────────────
+
+async function runCross() {
+  if (!CS.id) return;
+  const btn    = document.getElementById('tb-run-btn');
+  const resEl  = document.getElementById('run-result');
+  btn.disabled = true;
+  btn.querySelector('.tb-icon-pill').innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;margin:0"></span>';
+  resEl.style.display = 'none';
+
+  const data = await postJSON(`/analyst/cross/${CS.id}/run/`, {}).catch(e => ({success:false,error:String(e)}));
+
+  btn.disabled = false;
+  btn.querySelector('.tb-icon-pill').innerHTML = '<i class="bi bi-play-circle"></i>';
+
+  if (data.success) {
+    showNotification(`Cruce ejecutado: ${data.preview.total} filas.`, 'success');
+    CS.hasResult = true;
+    CS.resultId  = data.dataset.id;
+    resEl.style.display = '';
+    resEl.innerHTML = `<div class="alert alert-success">
+      <i class="bi bi-check-circle-fill"></i>
+      <strong>${data.preview.total} filas</strong> · ${data.dataset.col_count} columnas ·
+      <a href="#" onclick="switchTab('result');return false;" style="color:var(--success);">Ver resultado →</a>
+    </div>`;
+    document.getElementById('stat-rows').textContent = data.preview.total;
+    document.getElementById('stat-cols').textContent = data.dataset.col_count;
+    document.getElementById('stat-last').textContent = new Date().toLocaleString();
+    const expBtn = document.getElementById('tb-export-btn');
+    if (expBtn) expBtn.disabled = false;
+    // Update sidebar badge
+    const item = document.querySelector(`.cs-item[data-id="${CS.id}"]`);
+    if (item) item.querySelector('.cs-item-badge')?.remove() || item.insertAdjacentHTML('beforeend','<div class="cs-item-badge">✓</div>');
+  } else {
+    showNotification(data.error, 'error');
+    resEl.style.display = '';
+    resEl.innerHTML = `<div class="alert alert-danger"><i class="bi bi-x-circle-fill"></i> <strong>${data.error}</strong></div>`;
+  }
+}
+
+// ── Result table ───────────────────────────────────────────────────────────
+
+async function loadResultPage(page, pageSize) {
+  if (!CS.id || !CS.hasResult) return;
+  page     = page     ?? CS.page;
+  pageSize = pageSize ?? CS.pageSize;
+  const params = new URLSearchParams({page, page_size:pageSize, search:CS.searchTerm});
+  const data   = await fetch(`/analyst/cross/${CS.id}/preview/?${params}`).then(r=>r.json());
+  if (!data.success) { showNotification(data.error,'error'); return; }
+
+  CS.page     = data.pagination.page;
+  CS.pageSize = data.pagination.page_size;
+
+  const emptyEl   = document.getElementById('result-empty');
+  const contentEl = document.getElementById('result-content');
+  if (!contentEl) return;
+  if (emptyEl) emptyEl.style.display = 'none';
+  contentEl.setAttribute('style', 'display:block');
+
+  // Header
+  const thead = document.getElementById('result-thead');
+  thead.innerHTML = '<tr>' + data.columns.map(c =>
+    `<th>${c}</th>`
+  ).join('') + '</tr>';
+
+  // Body
+  const tbody = document.getElementById('result-tbody');
+  if (!data.rows.length) {
+    tbody.innerHTML = `<tr><td colspan="${data.columns.length}" style="text-align:center;padding:24px;color:var(--text-muted);">Sin datos</td></tr>`;
+  } else {
+    tbody.innerHTML = data.rows.map(row =>
+      '<tr>' + data.columns.map(c => {
+        let v = row[c]; if(v===null||v===undefined) v='';
+        return `<td title="${String(v).replace(/"/g,"'")}">${String(v).substring(0,80)}</td>`;
+      }).join('') + '</tr>'
+    ).join('');
+  }
+
+  // Pagination
+  const pEl = document.getElementById('result-pagination');
+  const p   = data.pagination;
+  if (p.total_pages <= 1) { pEl.innerHTML=''; return; }
+  let html = `<span style="color:var(--text-muted);margin-right:4px;">${p.start}–${p.end} de ${p.total_rows}</span>`;
+  html += `<button class="pg-btn" ${p.page<=1?'disabled':''} onclick="goPage(1)">«</button>`;
+  html += `<button class="pg-btn" ${p.page<=1?'disabled':''} onclick="goPage(${p.page-1})">‹</button>`;
+  for (let i=Math.max(1,p.page-2); i<=Math.min(p.total_pages,p.page+2); i++)
+    html += `<button class="pg-btn${i===p.page?' active':''}" onclick="goPage(${i})">${i}</button>`;
+  html += `<button class="pg-btn" ${p.page>=p.total_pages?'disabled':''} onclick="goPage(${p.page+1})">›</button>`;
+  html += `<button class="pg-btn" ${p.page>=p.total_pages?'disabled':''} onclick="goPage(${p.total_pages})">»</button>`;
+  html += `<select style="font-size:12px;padding:3px 6px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);margin-left:4px;" onchange="goPage(1,+this.value)">
+    ${[25,50,100,200].map(v=>`<option value="${v}"${v===CS.pageSize?' selected':''}>${v}/pág</option>`).join('')}
+  </select>`;
+  pEl.innerHTML = html;
+}
+
+function goPage(p, ps) { CS.page=p; if(ps) CS.pageSize=ps; loadResultPage(p, CS.pageSize); }
+function debounceSearch(v) {
+  clearTimeout(CS.debounce);
+  CS.debounce = setTimeout(() => { CS.searchTerm=v; CS.page=1; loadResultPage(); }, 350);
+}
+
+function exportResult() {
+  if (CS.resultId) window.location.href = `/analyst/datasets/${CS.resultId}/export/`;
+}
+
+// ── Source selectors ───────────────────────────────────────────────────────
+
+function onSrcTypeChange(side) {
+  populateSrcSelect(side);
+  // Clear columns cache
+  if (side === 'left')  CS.leftCols  = [];
+  if (side === 'right') CS.rightCols = [];
+  refreshJoinCols();
+}
+
+function populateSrcSelect(side) {
+  const typeEl = document.getElementById(`${side}-type`);
+  const idEl   = document.getElementById(`${side}-id`);
+  const type   = typeEl.value;
+  idEl.innerHTML = '<option value="">— Seleccionar —</option>';
+
+  const items = {
+    stored_dataset: SOURCES.datasets,
+    analyst_base:   SOURCES.bases,
+    etl_source:     SOURCES.etl_sources,
+    clip:           SOURCES.clips,
+  }[type] || [];
+
+  items.forEach(item => {
+    const opt = document.createElement('option');
+    opt.value = item.id || item.key;
+    opt.textContent = item.name || item.key;
+    if (item.rows !== undefined) opt.textContent += ` (${item.rows} filas)`;
+    idEl.appendChild(opt);
+  });
+}
+
+async function loadSrcColumns(side) {
+  const type = document.getElementById(`${side}-type`).value;
+  const id   = document.getElementById(`${side}-id`).value;
+  if (!id) return;
+
+  const data = await postJSON('/analyst/cross/api/columns/', {type, id}).catch(()=>null);
+  if (data?.success) {
+    if (side === 'left')  CS.leftCols  = data.columns;
+    if (side === 'right') CS.rightCols = data.columns;
+    refreshJoinCols();
+  }
+}
+
+// ── Join rows ──────────────────────────────────────────────────────────────
+
+let joinRowCount = 0;
+
+function addJoinRow(leftVal='', rightVal='') {
+  joinRowCount++;
+  const id  = `jr-${joinRowCount}`;
+  const el  = document.createElement('div');
+  el.className = 'join-row';
+  el.id = id;
+
+  const leftOpts  = CS.leftCols.map(c =>
+    `<option value="${c.name}"${c.name===leftVal?' selected':''}>${c.name}</option>`
+  ).join('');
+  const rightOpts = CS.rightCols.map(c =>
+    `<option value="${c.name}"${c.name===rightVal?' selected':''}>${c.name}</option>`
+  ).join('');
+
+  el.innerHTML = `
+    <select class="form-control join-left" style="font-size:12px;">
+      <option value="">— col. izquierda —</option>${leftOpts}
+    </select>
+    <div class="join-equals">=</div>
+    <select class="form-control join-right" style="font-size:12px;">
+      <option value="">— col. derecha —</option>${rightOpts}
+    </select>
+    <button class="join-remove" onclick="document.getElementById('${id}').remove()">×</button>
+  `;
+  document.getElementById('join-rows').appendChild(el);
+}
+
+function refreshJoinCols() {
+  // Re-render existing join rows with updated column options
+  const rows = [...document.querySelectorAll('#join-rows .join-row')];
+  const vals = rows.map(r => ({
+    left:  r.querySelector('.join-left')?.value  || '',
+    right: r.querySelector('.join-right')?.value || '',
+  }));
+  document.getElementById('join-rows').innerHTML = '';
+  joinRowCount = 0;
+  if (vals.length) vals.forEach(v => addJoinRow(v.left, v.right));
+  else addJoinRow();
+}
+
+function onOpChange() {
+  const isConcat = document.getElementById('cs-op').value === 'concat';
+  document.getElementById('join-section').style.display   = isConcat ? 'none' : '';
+  document.getElementById('suffix-section').style.display = isConcat ? 'none' : '';
+}
+
+function collectConfig() {
+  const op = document.getElementById('cs-op').value;
+  const leftType  = document.getElementById('left-type').value;
+  const leftId    = document.getElementById('left-id').value;
+  const leftAlias = document.getElementById('left-alias').value.trim();
+  const rightType = document.getElementById('right-type').value;
+  const rightId   = document.getElementById('right-id').value;
+  const rightAlias= document.getElementById('right-alias').value.trim();
+
+  const on = op !== 'concat'
+    ? [...document.querySelectorAll('#join-rows .join-row')].map(r => ({
+        left:  r.querySelector('.join-left')?.value  || '',
+        right: r.querySelector('.join-right')?.value || '',
+      })).filter(p => p.left && p.right)
+    : [];
+
+  return {
+    operation:  op,
+    left:  { type: leftType,  id: leftId,  alias: leftAlias  || leftType  },
+    right: { type: rightType, id: rightId, alias: rightAlias || rightType },
+    on,
+    suffixes:       [document.getElementById('suffix-left').value  || '_izq',
+                     document.getElementById('suffix-right').value || '_der'],
+    post_filters:   [],
+    output_columns: [],
+  };
+}
+
+// ── Create / Edit ──────────────────────────────────────────────────────────
+
+function openCreateModal() {
+  CS.editMode = false;
+  document.getElementById('modal-cross-title').innerHTML = '<i class="bi bi-plus-circle"></i> Nuevo Cruce';
+  document.getElementById('modal-cross-submit').textContent = 'Crear cruce';
+  document.getElementById('cs-name').value  = '';
+  document.getElementById('cs-desc').value  = '';
+  document.getElementById('cs-op').value    = 'left_join';
+  document.getElementById('left-alias').value  = '';
+  document.getElementById('right-alias').value = '';
+  CS.leftCols = []; CS.rightCols = [];
+  document.getElementById('join-rows').innerHTML = '';
+  joinRowCount = 0;
+  ['left','right'].forEach(s => { populateSrcSelect(s); });
+  onOpChange();
+  addJoinRow();
+  openModal('modal-cross');
+}
+
+function openEditModal() {
+  if (!CS.id || !CS.config) return;
+  CS.editMode = true;
+  document.getElementById('modal-cross-title').innerHTML = '<i class="bi bi-pencil"></i> Editar Cruce';
+  document.getElementById('modal-cross-submit').textContent = 'Guardar cambios';
+
+  const cfg = CS.config;
+  // Load name/desc from sidebar
+  const item = document.querySelector(`.cs-item[data-id="${CS.id}"]`);
+  document.getElementById('cs-name').value  = item?.querySelector('.cs-item-name')?.textContent || '';
+  document.getElementById('cs-desc').value  = '';
+  document.getElementById('cs-op').value    = cfg.operation || 'left_join';
+  document.getElementById('suffix-left').value  = (cfg.suffixes||[])[0] || '_izq';
+  document.getElementById('suffix-right').value = (cfg.suffixes||[])[1] || '_der';
+
+  const setSource = (side) => {
+    const src = cfg[side] || {};
+    document.getElementById(`${side}-type`).value  = src.type  || 'stored_dataset';
+    document.getElementById(`${side}-alias`).value = src.alias || '';
+    populateSrcSelect(side);
+    document.getElementById(`${side}-id`).value = src.id || '';
+  };
+  setSource('left'); setSource('right');
+
+  // Load columns then set join rows
+  Promise.all([
+    postJSON('/analyst/cross/api/columns/', {type: cfg.left?.type,  id: cfg.left?.id }).then(d => { if(d.success) CS.leftCols  = d.columns; }),
+    postJSON('/analyst/cross/api/columns/', {type: cfg.right?.type, id: cfg.right?.id}).then(d => { if(d.success) CS.rightCols = d.columns; }),
+  ]).then(() => {
+    document.getElementById('join-rows').innerHTML = '';
+    joinRowCount = 0;
+    const pairs = cfg.on || [];
+    if (pairs.length) pairs.forEach(p => addJoinRow(p.left, p.right));
+    else addJoinRow();
+    refreshJoinCols();
+  });
+
+  onOpChange();
+  openModal('modal-cross');
+}
+
+async function submitCross() {
+  const name = document.getElementById('cs-name').value.trim();
+  if (!name) { showNotification('El nombre es obligatorio.','error'); return; }
+  const config = collectConfig();
+  if (!config.left.id)  { showNotification('Selecciona la fuente izquierda.','error'); return; }
+  if (!config.right.id) { showNotification('Selecciona la fuente derecha.','error'); return; }
+  if (config.operation !== 'concat' && !config.on.length) {
+    showNotification('Agrega al menos un par de columnas de unión.','error'); return;
+  }
+
+  const url  = CS.editMode ? `/analyst/cross/${CS.id}/update/` : '/analyst/cross/create/';
+  const data = await postJSON(url, {
+    name, description: document.getElementById('cs-desc').value.trim(), config
+  });
+
+  if (!data.success) { showNotification(data.error,'error'); return; }
+
+  showNotification(CS.editMode ? 'Cruce actualizado.' : 'Cruce creado.', 'success');
+  closeModal('modal-cross');
+
+  if (!CS.editMode) {
+    // Add to sidebar
+    const list = document.getElementById('cs-list');
+    const div  = document.createElement('div');
+    div.className = 'cs-item';
+    div.dataset.id = data.cross.id;
+    div.onclick = () => selectCross(data.cross.id);
+    div.innerHTML = `<div class="cs-item-icon">🔀</div>
+      <div class="cs-item-body">
+        <div class="cs-item-name">${name}</div>
+        <div class="cs-item-meta">${data.cross.operation_label}</div>
+      </div>`;
+    list.prepend(div);
+    document.getElementById('cs-total').textContent =
+      String(parseInt(document.getElementById('cs-total').textContent||'0')+1);
+    selectCross(data.cross.id);
+  } else {
+    CS.config = data.cross.config;
+    loadConfigView();
+  }
+}
+
+// ── Delete ─────────────────────────────────────────────────────────────────
+
+function confirmDelete() {
+  if (!CS.id) return;
+  const item = document.querySelector(`.cs-item[data-id="${CS.id}"]`);
+  document.getElementById('del-name').textContent = item?.querySelector('.cs-item-name')?.textContent || '';
+  openModal('modal-del');
+}
+
+async function submitDelete() {
+  const data = await postJSON(`/analyst/cross/${CS.id}/delete/`, {});
+  if (!data.success) { showNotification(data.error,'error'); return; }
+  showNotification('Cruce eliminado.','success');
+  closeModal('modal-del');
+  document.querySelector(`.cs-item[data-id="${CS.id}"]`)?.remove();
+  CS.id = null;
+  document.getElementById('cs-active').style.display = 'none';
+  document.getElementById('cs-empty').style.display  = '';
+  ['tb-edit-btn','tb-delete-btn','tb-run-btn','tb-export-btn'].forEach(b => {
+    const el = document.getElementById(b); if(el) el.disabled = true;
+  });
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+
+// Populate source selects on page load (for both sides defaulting to stored_dataset)
+['left','right'].forEach(s => populateSrcSelect(s));
+addJoinRow();
+</script>
+{% endblock %}

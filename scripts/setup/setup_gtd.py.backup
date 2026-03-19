@@ -1,0 +1,694 @@
+# archivo: setup_gtd.py
+"""
+Script de configuración del sistema GTD con opciones paso a paso
+"""
+
+import os
+import sys
+import csv
+import argparse
+import django
+from datetime import datetime, time
+from decimal import Decimal
+
+# Configurar Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'panel.settings')
+django.setup()
+
+from django.contrib.auth.models import User
+from events.models import (
+    TagCategory, Tag, Classification, Status, ProjectStatus, TaskStatus,
+    InboxItem, ProjectTemplate, Event, TaskSchedule, Task, Project,
+    GTDProcessingSettings
+)
+
+# ============================================================================
+# CONSTANTES Y CONFIGURACIÓN
+# ============================================================================
+BASE_PATH = 'gtd_setup'
+DATA_FILES = {
+    'tag_categories': f'{BASE_PATH}/01_categories/tag_categories.csv',
+    'tags': f'{BASE_PATH}/01_categories/tags.csv',
+    'classifications': f'{BASE_PATH}/01_categories/classifications.csv',
+    'status_events': f'{BASE_PATH}/01_categories/status_events.csv',
+    'status_projects': f'{BASE_PATH}/01_categories/status_projects.csv',
+    'status_tasks': f'{BASE_PATH}/01_categories/status_tasks.csv',
+    'inbox_items': f'{BASE_PATH}/02_inbox/inbox_items.csv',
+    'templates': f'{BASE_PATH}/03_templates/project_templates.csv',
+    'events': f'{BASE_PATH}/03_templates/base_events.csv',
+}
+
+# ============================================================================
+# FUNCIONES DE CARGA CON VALIDACIÓN
+# ============================================================================
+
+def load_tag_categories(verbose=True, dry_run=False):
+    """Cargar categorías de tags con validación de existencia"""
+    filepath = DATA_FILES['tag_categories']
+    if not os.path.exists(filepath):
+        print(f"❌ Archivo no encontrado: {filepath}")
+        return False
+    
+    stats = {'created': 0, 'skipped': 0}
+    
+    with open(filepath, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for i, row in enumerate(reader, 1):
+            exists = TagCategory.objects.filter(name=row['name']).exists()
+            
+            if not exists and not dry_run:
+                TagCategory.objects.create(
+                    name=row['name'],
+                    description=row['description'],
+                    color=row['color'],
+                    icon=row['icon'],
+                    is_system=row['is_system'].lower() == 'true'
+                )
+                stats['created'] += 1
+                if verbose:
+                    print(f"  ✅ Creada: {row['name']}")
+            else:
+                stats['skipped'] += 1
+                if verbose and exists:
+                    print(f"  ⏭️  Existente: {row['name']}")
+    
+    print(f"📊 Categorías de Tags: {stats['created']} creadas, {stats['skipped']} existentes")
+    return True
+
+def load_tags(verbose=True, dry_run=False):
+    """Cargar tags específicos con validación"""
+    filepath = DATA_FILES['tags']
+    if not os.path.exists(filepath):
+        print(f"❌ Archivo no encontrado: {filepath}")
+        return False
+    
+    stats = {'created': 0, 'skipped': 0, 'errors': 0}
+    
+    with open(filepath, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for i, row in enumerate(reader, 1):
+            try:
+                # Verificar si el tag ya existe
+                exists = Tag.objects.filter(
+                    name=row['name'],
+                    category__name=row['category']
+                ).exists()
+                
+                # Obtener la categoría
+                category = TagCategory.objects.get(name=row['category'])
+                
+                if not exists and not dry_run:
+                    Tag.objects.create(
+                        name=row['name'],
+                        category=category,
+                        color=row['color'],
+                        description=row['description'],
+                        is_system=row['is_system'].lower() == 'true'
+                    )
+                    stats['created'] += 1
+                    if verbose:
+                        print(f"  ✅ Creado: {row['name']} ({row['category']})")
+                else:
+                    stats['skipped'] += 1
+                    if verbose and exists:
+                        print(f"  ⏭️  Existente: {row['name']}")
+                        
+            except TagCategory.DoesNotExist:
+                stats['errors'] += 1
+                print(f"  ❌ Error: Categoría no encontrada: {row['category']}")
+            except Exception as e:
+                stats['errors'] += 1
+                print(f"  ❌ Error en línea {i}: {str(e)}")
+    
+    print(f"📊 Tags: {stats['created']} creados, {stats['skipped']} existentes, {stats['errors']} errores")
+    return stats['errors'] == 0
+
+def load_classifications(verbose=True, dry_run=False):
+    """Cargar clasificaciones"""
+    filepath = DATA_FILES['classifications']
+    if not os.path.exists(filepath):
+        print(f"❌ Archivo no encontrado: {filepath}")
+        return False
+    
+    stats = {'created': 0, 'skipped': 0}
+    
+    with open(filepath, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            exists = Classification.objects.filter(nombre=row['nombre']).exists()
+            
+            if not exists and not dry_run:
+                Classification.objects.create(
+                    nombre=row['nombre'],
+                    descripcion=row['descripción']
+                )
+                stats['created'] += 1
+                if verbose:
+                    print(f"  ✅ Creada: {row['nombre']}")
+            else:
+                stats['skipped'] += 1
+    
+    print(f"📊 Clasificaciones: {stats['created']} creadas, {stats['skipped']} existentes")
+    return True
+
+def load_status(filepath, model_class, model_name, verbose=True, dry_run=False):
+    """Cargar estados genéricos"""
+    if not os.path.exists(filepath):
+        print(f"❌ Archivo no encontrado: {filepath}")
+        return False
+    
+    stats = {'created': 0, 'skipped': 0}
+    
+    with open(filepath, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            exists = model_class.objects.filter(status_name=row['status_name']).exists()
+            
+            if not exists and not dry_run:
+                model_class.objects.create(
+                    status_name=row['status_name'],
+                    icon=row['icon'],
+                    active=row['active'].lower() == 'true',
+                    color=row['color']
+                )
+                stats['created'] += 1
+                if verbose:
+                    print(f"  ✅ Creado: {row['status_name']}")
+            else:
+                stats['skipped'] += 1
+    
+    print(f"📊 {model_name}: {stats['created']} creados, {stats['skipped']} existentes")
+    return True
+
+def load_inbox_items(user, verbose=True, dry_run=False):
+    """Cargar items del inbox"""
+    filepath = DATA_FILES['inbox_items']
+    if not os.path.exists(filepath):
+        print(f"❌ Archivo no encontrado: {filepath}")
+        return False
+    
+    stats = {'created': 0, 'skipped': 0, 'errors': 0}
+    
+    with open(filepath, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for i, row in enumerate(reader, 1):
+            try:
+                # Verificar si ya existe un item similar
+                exists = InboxItem.objects.filter(
+                    title=row['title'],
+                    created_by=user
+                ).exists()
+                
+                if not exists and not dry_run:
+                    InboxItem.objects.create(
+                        title=row['title'],
+                        description=row['description'],
+                        created_by=user,
+                        gtd_category=row['gtd_category'],
+                        priority=row['priority'],
+                        action_type=row['action_type'] if row['action_type'] else None,
+                        context=row['context'],
+                        energy_required=row['energy_required'],
+                        estimated_time=int(row['estimated_time']) if row['estimated_time'] else None
+                    )
+                    stats['created'] += 1
+                    if verbose:
+                        status = "✅" if stats['created'] % 5 == 0 else "  "
+                        print(f"{status} Creado: {row['title'][:30]}...")
+                else:
+                    stats['skipped'] += 1
+                    
+            except Exception as e:
+                stats['errors'] += 1
+                print(f"  ❌ Error en línea {i}: {str(e)}")
+    
+    print(f"📊 Inbox Items: {stats['created']} creados, {stats['skipped']} existentes, {stats['errors']} errores")
+    return stats['errors'] == 0
+
+def load_project_templates(user, verbose=True, dry_run=False):
+    """Cargar plantillas de proyectos"""
+    filepath = DATA_FILES['templates']
+    if not os.path.exists(filepath):
+        print(f"❌ Archivo no encontrado: {filepath}")
+        return False
+    
+    stats = {'created': 0, 'skipped': 0, 'errors': 0}
+    
+    with open(filepath, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                exists = ProjectTemplate.objects.filter(
+                    name=row['name'],
+                    created_by=user
+                ).exists()
+                
+                if not exists and not dry_run:
+                    ProjectTemplate.objects.create(
+                        name=row['name'],
+                        description=row['description'],
+                        category=row['category'],
+                        estimated_duration=int(row['estimated_duration']),
+                        is_public=row['is_public'].lower() == 'true',
+                        created_by=user
+                    )
+                    stats['created'] += 1
+                    if verbose:
+                        print(f"  ✅ Creada: {row['name']}")
+                else:
+                    stats['skipped'] += 1
+                    
+            except Exception as e:
+                stats['errors'] += 1
+                print(f"  ❌ Error: {str(e)}")
+    
+    print(f"📊 Plantillas: {stats['created']} creadas, {stats['skipped']} existentes, {stats['errors']} errores")
+    return stats['errors'] == 0
+
+def load_base_events(user, verbose=True, dry_run=False):
+    """Cargar eventos base"""
+    filepath = DATA_FILES['events']
+    if not os.path.exists(filepath):
+        print(f"❌ Archivo no encontrado: {filepath}")
+        return False
+    
+    stats = {'created': 0, 'skipped': 0, 'errors': 0}
+    
+    # Obtener estado por defecto
+    try:
+        default_status = Status.objects.get(status_name='Created')
+    except Status.DoesNotExist:
+        print("❌ Estado 'Created' no encontrado. Ejecuta primero --step status")
+        return False
+    
+    with open(filepath, 'r', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                exists = Event.objects.filter(
+                    title=row['title'],
+                    host=user
+                ).exists()
+                
+                if not exists and not dry_run:
+                    Event.objects.create(
+                        title=row['title'],
+                        description=row['description'],
+                        event_category=row['event_category'],
+                        venue=row['venue'],
+                        max_attendees=int(row['max_attendees']),
+                        ticket_price=Decimal(row['ticket_price']),
+                        event_status=default_status,
+                        host=user,
+                        assigned_to=user
+                    )
+                    stats['created'] += 1
+                    if verbose:
+                        print(f"  ✅ Creado: {row['title']}")
+                else:
+                    stats['skipped'] += 1
+                    
+            except Exception as e:
+                stats['errors'] += 1
+                print(f"  ❌ Error: {str(e)}")
+    
+    print(f"📊 Eventos Base: {stats['created']} creados, {stats['skipped']} existentes, {stats['errors']} errores")
+    return stats['errors'] == 0
+
+def setup_gtd_settings(user, verbose=True, dry_run=False):
+    """Configurar ajustes GTD por defecto"""
+    try:
+        exists = GTDProcessingSettings.objects.filter(created_by=user).exists()
+        
+        if not exists and not dry_run:
+            GTDProcessingSettings.objects.create(
+                created_by=user,
+                auto_email_processing=True,
+                auto_call_queue=True,
+                auto_chat_routing=True,
+                processing_interval=60,
+                max_concurrent_items=5,
+                email_batch_size=10,
+                call_queue_timeout=30,
+                chat_response_timeout=300,
+                enable_bot_cx=True,
+                enable_bot_atc=True,
+                enable_human_agents=True,
+                auto_priority_assignment=True,
+                priority_threshold_high=80,
+                priority_threshold_medium=50,
+                is_active=True
+            )
+            if verbose:
+                print("✅ Configuraciones GTD creadas")
+            return True
+        else:
+            if verbose:
+                print("⏭️ Configuraciones GTD ya existen")
+            return True
+            
+    except Exception as e:
+        print(f"❌ Error configurando GTD: {str(e)}")
+        return False
+
+# ============================================================================
+# FUNCIONES POR PASO
+# ============================================================================
+
+def step_categories(args):
+    """Paso 1: Cargar categorías y tags"""
+    print("=" * 60)
+    print("PASO 1: CARGAR CATEGORÍAS Y TAGS")
+    print("=" * 60)
+    
+    success = True
+    success = load_tag_categories(args.verbose, args.dry_run) and success
+    success = load_tags(args.verbose, args.dry_run) and success
+    
+    return success
+
+def step_classifications(args):
+    """Paso 2: Cargar clasificaciones"""
+    print("\n" + "=" * 60)
+    print("PASO 2: CARGAR CLASIFICACIONES")
+    print("=" * 60)
+    
+    return load_classifications(args.verbose, args.dry_run)
+
+def step_status(args):
+    """Paso 3: Cargar estados"""
+    print("\n" + "=" * 60)
+    print("PASO 3: CARGAR ESTADOS")
+    print("=" * 60)
+    
+    success = True
+    success = load_status(DATA_FILES['status_events'], Status, "Estados Eventos", args.verbose, args.dry_run) and success
+    success = load_status(DATA_FILES['status_projects'], ProjectStatus, "Estados Proyectos", args.verbose, args.dry_run) and success
+    success = load_status(DATA_FILES['status_tasks'], TaskStatus, "Estados Tareas", args.verbose, args.dry_run) and success
+    
+    return success
+
+def step_inbox(args):
+    """Paso 4: Cargar items del inbox"""
+    print("\n" + "=" * 60)
+    print("PASO 4: CARGAR ITEMS DEL INBOX")
+    print("=" * 60)
+    
+    # Obtener usuario
+    user = get_user(args.user_id)
+    if not user:
+        return False
+    
+    return load_inbox_items(user, args.verbose, args.dry_run)
+
+def step_templates(args):
+    """Paso 5: Cargar plantillas"""
+    print("\n" + "=" * 60)
+    print("PASO 5: CARGAR PLANTILLAS")
+    print("=" * 60)
+    
+    user = get_user(args.user_id)
+    if not user:
+        return False
+    
+    success = True
+    success = load_project_templates(user, args.verbose, args.dry_run) and success
+    success = load_base_events(user, args.verbose, args.dry_run) and success
+    
+    return success
+
+def step_settings(args):
+    """Paso 6: Configurar ajustes GTD"""
+    print("\n" + "=" * 60)
+    print("PASO 6: CONFIGURAR AJUSTES GTD")
+    print("=" * 60)
+    
+    user = get_user(args.user_id)
+    if not user:
+        return False
+    
+    return setup_gtd_settings(user, args.verbose, args.dry_run)
+
+def step_all(args):
+    """Ejecutar todos los pasos"""
+    print("🚀 EJECUTANDO CONFIGURACIÓN COMPLETA DEL SISTEMA GTD")
+    print("=" * 60)
+    
+    # Verificar que existe la estructura de carpetas
+    if not os.path.exists(BASE_PATH):
+        print(f"❌ Carpeta {BASE_PATH} no encontrada")
+        print(f"   Crea la estructura de carpetas con los archivos CSV")
+        return False
+    
+    user = get_user(args.user_id)
+    if not user:
+        return False
+    
+    steps = [
+        ("Categorías y Tags", lambda: step_categories(args)),
+        ("Clasificaciones", lambda: step_classifications(args)),
+        ("Estados", lambda: step_status(args)),
+        ("Items Inbox", lambda: load_inbox_items(user, args.verbose, args.dry_run)),
+        ("Plantillas", lambda: load_project_templates(user, args.verbose, args.dry_run)),
+        ("Eventos Base", lambda: load_base_events(user, args.verbose, args.dry_run)),
+        ("Config GTD", lambda: setup_gtd_settings(user, args.verbose, args.dry_run)),
+    ]
+    
+    results = []
+    for name, func in steps:
+        print(f"\n▶️  Ejecutando: {name}")
+        print("-" * 40)
+        try:
+            success = func()
+            results.append((name, success))
+            print(f"   Resultado: {'✅ Éxito' if success else '❌ Fallo'}")
+        except Exception as e:
+            print(f"   ❌ Error: {str(e)}")
+            results.append((name, False))
+    
+    # Mostrar resumen
+    print("\n" + "=" * 60)
+    print("📊 RESUMEN DE EJECUCIÓN")
+    print("=" * 60)
+    
+    for name, success in results:
+        status = "✅" if success else "❌"
+        print(f"{status} {name}")
+    
+    total_success = sum(1 for _, success in results if success)
+    print(f"\n🎯 Completados: {total_success}/{len(results)} pasos")
+    
+    return all(success for _, success in results)
+
+# ============================================================================
+# FUNCIONES UTILITARIAS
+# ============================================================================
+
+def get_user(user_id):
+    """Obtener usuario por ID o crear uno por defecto"""
+    try:
+        return User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        print(f"❌ Usuario con ID {user_id} no encontrado")
+        
+        # Preguntar si crear usuario
+        response = input(f"¿Crear usuario con ID {user_id}? (s/n): ").lower()
+        if response == 's':
+            username = input("Username: ").strip() or f"user{user_id}"
+            email = input("Email: ").strip() or f"user{user_id}@example.com"
+            password = input("Password: ").strip() or "password123"
+            
+            try:
+                user = User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password,
+                    is_staff=True,
+                    is_superuser=(user_id == 1)
+                )
+                print(f"✅ Usuario creado: {username} (ID: {user.id})")
+                return user
+            except Exception as e:
+                print(f"❌ Error creando usuario: {str(e)}")
+                return None
+        else:
+            return None
+
+def show_stats():
+    """Mostrar estadísticas actuales del sistema"""
+    print("\n" + "=" * 60)
+    print("📈 ESTADÍSTICAS ACTUALES DEL SISTEMA")
+    print("=" * 60)
+    
+    stats = [
+        ("Usuarios", User.objects.count()),
+        ("Categorías Tags", TagCategory.objects.count()),
+        ("Tags", Tag.objects.count()),
+        ("Clasificaciones", Classification.objects.count()),
+        ("Estados Eventos", Status.objects.count()),
+        ("Estados Proyectos", ProjectStatus.objects.count()),
+        ("Estados Tareas", TaskStatus.objects.count()),
+        ("Items Inbox", InboxItem.objects.count()),
+        ("Proyectos", Project.objects.count()),
+        ("Tareas", Task.objects.count()),
+        ("Eventos", Event.objects.count()),
+        ("Plantillas", ProjectTemplate.objects.count()),
+        ("Config GTD", GTDProcessingSettings.objects.count()),
+    ]
+    
+    for name, count in stats:
+        print(f"{name:25} {count:>5}")
+    
+    print("-" * 60)
+    total = sum(count for _, count in stats)
+    print(f"{'TOTAL':25} {total:>5}")
+
+def check_structure():
+    """Verificar estructura de archivos"""
+    print("\n" + "=" * 60)
+    print("🔍 VERIFICANDO ESTRUCTURA DE ARCHIVOS")
+    print("=" * 60)
+    
+    missing = []
+    for key, filepath in DATA_FILES.items():
+        if os.path.exists(filepath):
+            size = os.path.getsize(filepath)
+            print(f"✅ {key:20} {filepath:30} ({size:,} bytes)")
+        else:
+            print(f"❌ {key:20} {filepath:30} (NO ENCONTRADO)")
+            missing.append(filepath)
+    
+    if missing:
+        print(f"\n⚠️  Faltan {len(missing)} archivos:")
+        for file in missing:
+            print(f"   - {file}")
+        return False
+    
+    print(f"\n✅ Todos los archivos encontrados")
+    return True
+
+# ============================================================================
+# INTERFAZ DE LÍNEA DE COMANDOS
+# ============================================================================
+
+def main():
+    parser = argparse.ArgumentParser(
+        description='Script de configuración del sistema GTD',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Ejemplos de uso:
+  %(prog)s --all                  # Ejecutar todos los pasos
+  %(prog)s --step inbox           # Cargar solo items del inbox
+  %(prog)s --step categories --verbose  # Ver detalles de ejecución
+  %(prog)s --step all --dry-run   # Simular sin guardar cambios
+  %(prog)s --stats                # Mostrar estadísticas
+  %(prog)s --check                # Verificar archivos
+  %(prog)s --step inbox --user-id 2  # Usar usuario específico
+        
+Pasos disponibles:
+  categories     Categorías y tags
+  classifications Clasificaciones
+  status         Estados (eventos, proyectos, tareas)
+  inbox          Items del inbox
+  templates      Plantillas y eventos base
+  settings       Configuraciones GTD
+  all            Todos los pasos anteriores
+        """
+    )
+    
+    # Opciones principales
+    parser.add_argument('--all', action='store_true', 
+                       help='Ejecutar todos los pasos de configuración')
+    
+    parser.add_argument('--step', choices=[
+        'categories', 'classifications', 'status', 'inbox', 
+        'templates', 'settings', 'all'
+    ], help='Ejecutar paso específico')
+    
+    parser.add_argument('--user-id', type=int, default=1,
+                       help='ID del usuario para los datos (default: 1)')
+    
+    # Opciones de control
+    parser.add_argument('--dry-run', action='store_true',
+                       help='Simular sin guardar cambios')
+    
+    parser.add_argument('--verbose', action='store_true',
+                       help='Mostrar detalles de ejecución')
+    
+    # Opciones informativas
+    parser.add_argument('--stats', action='store_true',
+                       help='Mostrar estadísticas del sistema')
+    
+    parser.add_argument('--check', action='store_true',
+                       help='Verificar estructura de archivos')
+    
+    parser.add_argument('--list-steps', action='store_true',
+                       help='Listar pasos disponibles')
+    
+    args = parser.parse_args()
+    
+    # Mostrar ayuda si no hay argumentos
+    if len(sys.argv) == 1:
+        parser.print_help()
+        return
+    
+    # Opciones informativas
+    if args.list_steps:
+        print("📋 PASOS DISPONIBLES:")
+        steps = [
+            ("categories", "Categorías y tags del sistema"),
+            ("classifications", "Clasificaciones generales"),
+            ("status", "Estados para eventos, proyectos y tareas"),
+            ("inbox", "Items de la bandeja de entrada GTD"),
+            ("templates", "Plantillas de proyectos y eventos base"),
+            ("settings", "Configuraciones del sistema GTD"),
+            ("all", "Todos los pasos anteriores"),
+        ]
+        for name, desc in steps:
+            print(f"  {name:20} {desc}")
+        return
+    
+    if args.check:
+        check_structure()
+        return
+    
+    if args.stats:
+        show_stats()
+        return
+    
+    # Ejecutar pasos
+    success = True
+    
+    if args.all or args.step == 'all':
+        success = step_all(args)
+    elif args.step == 'categories':
+        success = step_categories(args)
+    elif args.step == 'classifications':
+        success = step_classifications(args)
+    elif args.step == 'status':
+        success = step_status(args)
+    elif args.step == 'inbox':
+        success = step_inbox(args)
+    elif args.step == 'templates':
+        success = step_templates(args)
+    elif args.step == 'settings':
+        success = step_settings(args)
+    
+    # Mensaje final
+    print("\n" + "=" * 60)
+    if success:
+        print("🎉 CONFIGURACIÓN COMPLETADA CON ÉXITO")
+        if not args.dry_run:
+            print("\n📋 SIGUIENTES PASOS MANUALES:")
+            print("1. Ir a http://tu-sitio.com/inbox/")
+            print("2. Procesar los items del inbox")
+            print("3. Configurar programaciones recurrentes")
+            print("4. Revisar dashboard GTD")
+    else:
+        print("⚠️  CONFIGURACIÓN CON ERRORES")
+        print("   Revisa los mensajes anteriores")
+    
+    print("=" * 60)
+
+if __name__ == '__main__':
+    main()

@@ -1,0 +1,12 @@
+{% for card in cards %}
+    {% include 'board/partials/card.html' with card=card %}
+{% endfor %}
+
+{% if has_more %}
+<div hx-get="{% url 'board:load_more' board.id %}?offset={{ next_offset }}"
+     hx-trigger="revealed"
+     hx-swap="outerHTML"
+     class="htmx-indicator text-center py-4 col-span-full">
+    <i class="fas fa-spinner fa-spin text-blue-600"></i>
+</div>
+{% endif %}

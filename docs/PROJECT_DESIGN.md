@@ -1,6 +1,6 @@
 # Management360 — Diseño, Roadmap y Estado de Implementación
 
-> **Última actualización:** 2026-03-18
+> **Última actualización:** 2026-03-19
 > **Contexto:** Plataforma SaaS de Workforce Management (WFM) y Customer Experience (CX)
 > **Apps activas:** 20 | **Archivos Python+HTML:** ~710
 > **Metodología:** Scrum — sprints semanales sincronizados entre apps
@@ -66,9 +66,16 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | **BIT-2: Refactor `views.py` bitacora** | 🔴 | ✅ |
 | **BIT-3: Migraciones 0003+0004 bitacora** | 🔴 | ✅ |
 | **BIT-4: Refactor `bitacora_tags.py`** | 🟠 | ✅ |
+| **BIT-5: Auditoría templates bitacora** | 🟡 | ✅ |
+| **BIT-6: urls.py `<int:pk>` → `<uuid:pk>`** | 🟡 | ✅ |
 | **SC-0: Migración simcity_web → M360 (proxy híbrido)** | 🔴 | ✅ |
-| **BIT-5: Auditoría templates bitacora** | 🟡 | ⬜ |
-| **BIT-6: urls.py `<int:pk>` → `<uuid:pk>`** | 🟡 | ⬜ |
+| **SC-1: generate_zr_block URL+view en M360** | 🟠 | ✅ `bf037497` |
+| **SC-2: mobMoneyBtn → llamar add_money API** | 🟠 | ✅ `bf037497` |
+| **SC-3: EngineUnavailableError → HTTP 503** | 🔴 | ✅ `bf037497` |
+| **SC-4: Nav link SimCity en sidebar core** | 🟡 | ✅ `fa01b4f9` |
+| **SC-5: Slot /admin/simcity/ — GameAdmin** | 🟡 | ✅ `fa01b4f9` |
+| **SC-6: Exportar partida a analyst dataset** | 🟠 | ✅ `c0f8c47c` |
+| **SC-7: Script inicio automático** | 🟡 | ✅ `scripts/start_simcity.sh` |
 | KPI-1: UUID PK + `fecha` DateField + 5 índices + `created_by` (MySQL IF NOT EXISTS) | 🔴 | ✅ |
 | KPI-2: Cache Redis 5min `kpis:dashboard:{user}:{desde}:{hasta}`, colores fijos | 🔴 | ✅ |
 | KPI-3: `/kpis/api/` JSON + 3 funciones WFM en Report Builder analyst | 🟠 | ✅ |
@@ -76,6 +83,7 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | KPI-5: `kpis_aht_report` — agrupa por agente/supervisor/canal/servicio/semana | 🟡 | ✅ |
 | KPI-6: `StreamingHttpResponse` + filtros fecha + chunk_size=500 | 🟡 | ✅ |
 | Namespace `kpis:` + `login_required` + nav template corregido | 🔴 | ✅ |
+| Commits DeepSeek (accounts, sim, events, cv, kpis, docs, core) | 🟠 | ✅ |
 | Refactor: Unificar manejo de fechas en todas las apps | 🟡 | ⬜ |
 
 ---
@@ -89,8 +97,8 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | BOT-3: Pipeline de procesamiento de campañas outbound | 🟠 |
 | BOT-4: Dashboard de rendimiento de bots | 🟠 |
 | BOT-5: Reglas de distribución basadas en skills | 🟡 |
-| SC-1: Nav link en core dashboard para simcity | 🟡 |
-| SC-2: Exportar partida simcity a dataset analyst | 🟠 |
+| SC-8: Tests básicos del proxy simcity | 🟡 |
+| SC-9: KPIs urbanos (población, energía) → app kpis | 🟠 |
 
 ---
 
@@ -120,15 +128,15 @@ Management360 es una plataforma integral de Workforce Management que combina:
 
     analyst ──┬──> sim (ETL source + dashboard widgets)
               ├──> events (análisis de proyectos/tareas)
-              ├──> simcity (exportar datos de partidas — pendiente)
+              ├──> simcity (recibe exports de partidas ✅ SC-6)
               └──> kpis (reportes avanzados de llamadas)
 
     sim ──────┬──> analyst (datos para reportes)
               └──> events (creación de tareas desde training?)
 
     simcity ──┬──> proot:8001 (micropolisengine — engine externo)
-              ├──> analyst (exportar partida como dataset — pendiente)
-              └──> kpis (KPIs urbanos — pendiente)
+              ├──> analyst (exportar partida como dataset ✅ SC-6)
+              └──> kpis (KPIs urbanos — ⬜ SC-9)
 
     events ───┬──> chat (notificaciones de tareas)
               └──> rooms (salas para proyectos)
@@ -169,9 +177,6 @@ class User(AbstractUser):
     updated_at = models.DateTimeField(auto_now=True)
 ```
 
-> Heredado de `AbstractUser`: `username`, `email`, `first_name`, `last_name`,
-> `is_staff`, `is_active`, `date_joined`, `last_login`, `groups`, `user_permissions`.
-
 ---
 
 ## Estado de Documentación por App
@@ -201,53 +206,17 @@ class User(AbstractUser):
 
 ---
 
-## Estructura de `docs/`
-
-```
-docs/
-├── PROJECT_DESIGN.md
-├── PROJECT_DEV_REFERENCE.md
-├── plan_gestion_proyectos.md
-├── architecture/
-│   └── README-JS-ARCHITECTURE.md
-├── chat/
-│   └── CHAT_COMMANDS_EXAMPLES.md
-├── courses/
-│   └── COURSE_EDITOR_OPTIMIZATIONS.md
-├── events/
-│   ├── CX_EMAIL_PROCESSING_README.md
-│   └── README-SCHEDULING-SYSTEM.md
-├── faq/
-│   └── gtd_inbox_processing_guide.md
-├── guides/
-│   └── MEDIA_UPLOAD_FIX_README.md
-└── rooms/
-    ├── NAVIGATION_TEST_ZONE_README.md
-    └── README_NAVIGATION.md
-```
-
----
-
 ## Incidentes Registrados
 
 ### INC-001 — 2026-03-17: `accounts_user` inexistente en BD
 **Síntoma:** `500 Internal Server Error` en cualquier URL autenticada.
-```
-django.db.utils.ProgrammingError: (1146, "Table 'projects.accounts_user' doesn't exist")
-```
-**Causa:** `accounts/migrations/` nunca fue commiteada. Al recrear la BD, Django no pudo
-regenerar las tablas de `accounts`. La tabla `auth_user` (Django default) existía pero
-el proyecto usa `AUTH_USER_MODEL = 'accounts.User'`.
-
-**Resolución:**
-1. `python manage.py makemigrations accounts` → `0001_initial.py`
-2. INSERT manual en `django_migrations` (fake) por `InconsistentMigrationHistory`
-3. SQL manual en dbshell para crear tablas físicas
-4. Usuarios restaurados desde `backup_cv_users.json` (hashes intactos)
-
+**Causa:** `accounts/migrations/` nunca fue commiteada.
+**Resolución:** `makemigrations accounts` + INSERT manual en `django_migrations` + SQL directo.
 **Prevención:** `accounts/migrations/` commiteada. `.gitignore` corregido (commit `2ea63279`).
 
-**Estado BD actual:** 141+ tablas. `auth_user` (legacy Django) coexiste con `accounts_user` — a limpiar eventualmente.
+### INC-002 — 2026-03-18: `Duplicate column name created_at` en kpis.0002
+**Síntoma:** Error al aplicar migración 0002 de kpis.
+**Resolución:** `RunSQL IF NOT EXISTS` + `SeparateDatabaseAndState`.
 
 ---
 
@@ -259,70 +228,59 @@ el proyecto usa `AUTH_USER_MODEL = 'accounts.User'`.
 - **`timedelta`:** importar desde `datetime`, NO desde `django.utils.timezone`
 - **`events` usa `host`**, **`rooms` usa `owner`** — no son errores
 - **`accounts/migrations/`** debe estar en git — nunca ignorar carpetas migrations
-- **`.gitignore`:** regla `*/migrations/*` primero, excepciones `!app/migrations/**` después
 - **`accounts.User`** tiene campos extra: `phone`, `avatar`, `created_at`, `updated_at`
-- **`simcity`** requiere proot Ubuntu corriendo en :8001 — sin él, todos los endpoints del juego fallan
+- **`simcity`** requiere proot Ubuntu corriendo en :8001 — sin él todos los endpoints dan 503
 - **`micropolisengine`** solo disponible en `/root/micropolis/venv` (proot) — nunca importar en M360/Termux
-- **`simcity.Game`** tiene `engine_game_id` (FK lógica al SQLite de proot) — puede ser `None` si el engine no respondió al crear
+- **`proot-distro login ubuntu -- <cmd>`** es el método correcto para ejecutar en proot desde Termux
+- **`simcity` arranque:** aliases `engine` y `m360` en `~/.zshrc` — dos terminales Termux
+- **`bitacora.CategoriaChoices`** es módulo-level — NO `BitacoraEntry.CategoriaChoices`
+- **`bitacora` templates** usan `categoria_choices` del contexto — NO `entry.CATEGORIA_CHOICES`
 
 ---
 
-## 🔄 Handoff — Sesión 2026-03-18
+## 🔄 Handoff — Sesión 2026-03-19
 
-### Commits pusheados (sesión completa)
+### Commits de esta sesión
 
 | Hash | Descripción |
 |------|-------------|
-| `2f326224` | fix(accounts): migrations faltantes — INC-001 |
-| `720aff10` | refactor(bitacora): modelos, vistas, tags, docs |
-| `6f060e90` | docs(project): PROJECT_DESIGN + DEV_REFERENCE |
-| `9683cd41` | fix(bitacora): migraciones 0003+0004 force-add |
-| `2ea63279` | fix(.gitignore): lógica de migraciones corregida |
-| `a9f6ccf4` | feat(simcity): app migrada desde simcity_web — proxy híbrido Termux/proot |
-| _(pendiente)_ | docs(simcity): DESIGN + DEV_REFERENCE |
-| _(pendiente)_ | docs(project): PROJECT_DESIGN + DEV_REFERENCE actualizados |
-
-### Trabajo de DeepSeek — SIN commitear (~300 archivos)
-
-| Área | Cambios |
-|------|---------|
-| `accounts/models.py` | User custom: phone, avatar, created_at, updated_at |
-| `sim` | SIM-7a ACD completo — migraciones 0005+0006 aplicadas |
-| `events` | 6 bugs corregidos en forms/views |
-| `cv` | Admin con campos incorrectos corregido |
-| `kpis` | Migración con dependencia incorrecta corregida |
-| `docs/` | READMEs reorganizados en subcarpetas |
-| ~58 archivos más | FKs actualizadas a `settings.AUTH_USER_MODEL` en todo el proyecto |
-
-> ⚠️ TODO el trabajo de DeepSeek está en la rama local sin commitear.
-> INC-002 (2026-03-18): `Duplicate column name created_at` en kpis.0002 — resuelto con `RunSQL IF NOT EXISTS` + `SeparateDatabaseAndState`.
-> Hacer commits progresivos por app antes de la próxima sesión de desarrollo.
+| `19578101` | docs: remove obsolete root READMEs, update project docs |
+| `93414566` | accounts: minor fixes (forms, views, tests) |
+| `b439d8a8` | events: refactor views into modules, clean old views, update urls/templates |
+| `7e564670` | cv: refactor templates (remove legacy edit pages), update views/forms/urls |
+| _(kpis)_ | kpis: refactor models, views, urls; remove upload_csv template |
+| _(bitacora)_ | bitacora: update dev docs, forms, templates (Sprint 7 refactor) |
+| _(sim)_ | sim: add sim app (initial) |
+| _(chore)_ | chore: remove debug/test scripts, update staticfiles + requirements |
+| `2b84db3c` | core/chat/rooms/courses: minor updates across apps |
+| `fbf2c544` | bitacora: BIT-6 — change `<int:pk>` to `<uuid:pk>` in urls.py |
+| `e16ab499` | bitacora: BIT-5 — fix entry.autor→created_by, mood raw→get_mood_display in entry_detail |
+| _(list)_ | bitacora: BIT-5 — fix CATEGORIA_CHOICES context + mood display in entry_list |
+| _(dashboard)_ | bitacora: BIT-5 — fix get_categoria_choices in dashboard |
+| _(views)_ | bitacora: BIT-5 — fix CategoriaChoices import in views.py |
+| _(docs)_ | bitacora: update design and dev reference docs (Sprint 7 close) |
 
 ### Pendiente próxima sesión
 
-1. **Commits pendientes** — hacer commits por app (accounts, sim, events, cv, kpis, docs)
-2. **BIT-5** — auditoría de 6 templates de bitacora
-3. **BIT-6** — `urls.py` `<int:pk>` → `<uuid:pk>`
-4. **Sprint 8** — app `bots`: motor de asignación + integración sim
-5. **simcity bugs SC-1/SC-2/SC-3** — ver SIMCITY_DEV_REFERENCE.md
+1. **`git push`** — 15+ commits locales sin pushear
+2. **Sprint 8** — app `bots`: motor de asignación + integración sim
+3. **Sprint 7 KPIs** — revisión de métricas / cierre formal
+4. **SC-8** — tests básicos del proxy simcity
+5. **BIT-17** — navegación prev/next filtrar por `created_by`+`is_active`
 
 ### Comandos para arrancar próxima sesión
 
 ```bash
-# PRIMERO — levantar engine simcity en proot
-ubuntu
-cd /root/micropolis/simcity_web && source /root/micropolis/venv/bin/activate
-python manage.py runserver 0.0.0.0:8001 &
+# Terminal 1 — engine simcity
+engine   # alias: ubuntu + activate + runserver 0.0.0.0:8001
 
-# LUEGO — M360 en Termux
-cd ~/projects/Management360 && source venv/bin/activate
+# Terminal 2 — M360
+m360     # alias: cd M360 + activate + runserver
 
-# Ver qué hay sin commitear por app
-git diff --stat HEAD | grep "\.py" | head -30
+# Push pendiente
+git push origin main
 
-# Mapa actualizado
-bash scripts/m360_map.sh
-
-# Templates bitacora
-ls bitacora/templates/bitacora/
+# Ver estado
+git log --oneline -15
+git status --short
 ```

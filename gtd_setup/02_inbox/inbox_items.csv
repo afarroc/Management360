@@ -1,0 +1,38 @@
+title,description,gtd_category,priority,action_type,context,energy_required,estimated_time
+Ropa,Gestión de vestimenta personal,no_accionable,media,archivar,@casa,media,60
+Piso,Mantenimiento del hogar,no_accionable,media,archivar,@casa,media,90
+Patio,Cuidado del jardín,no_accionable,media,archivar,@casa,media,120
+Alimento,Gestión de alimentación,no_accionable,media,archivar,@casa,media,45
+Educación,Aprendizaje continuo,accionable,media,proyecto,@computadora,alta,180
+Ocupación,Tareas laborales,accionable,alta,proyecto,@computadora,alta,240
+Profesión,Desarrollo profesional,accionable,media,proyecto,@computadora,alta,300
+Físico / Salud,Cuidado de salud,accionable,alta,proyecto,@salud,media,60
+Descanso,Recuperación y sueño,accionable,media,hacer,@casa,baja,480
+Noticias,Mantenerse informado,no_accionable,baja,archivar,@computadora,baja,30
+Arte,Expresión creativa,accionable,media,pasatiempo,@creatividad,media,120
+Familia,Relaciones familiares,accionable,media,hacer,@familia,media,180
+Amistad,Relaciones sociales,accionable,media,hacer,@social,media,120
+Creencias,Valores personales,no_accionable,baja,archivar,@personal,media,60
+Configurar sistema de tareas GTD,Implementar método GTD,accionable,alta,proyecto,@computadora,alta,240
+Planificar proyectos anuales 2024,Definir objetivos anuales,accionable,alta,proyecto,@planificación,alta,180
+Establecer metas trimestrales,Definir metas trimestrales,accionable,alta,proyecto,@planificación,alta,120
+Programar tiempo para pasatiempos,Agendar horas recreativas,accionable,media,hacer,@casa,media,60
+Aprender comandos básicos de Termux,Configurar Termux,accionable,alta,proyecto,@computadora,media,90
+Rutina de ejercicios diaria,Rutina de ejercicio,accionable,alta,hacer,@salud,media,30
+Lavar ropa,Lavandería semanal,accionable,media,hacer,@casa,media,120
+Proyecto de carpintería inicial,Proyecto de carpintería,accionable,media,proyecto,@taller,media,180
+Regar plantas,Mantenimiento de plantas,accionable,baja,hacer,@casa,baja,15
+Ducha nocturna,Ducha antes de dormir,accionable,media,hacer,@casa,baja,20
+Preparar almuerzo,Preparar comida,accionable,media,hacer,@casa,media,60
+Ejercicio físico diario,Actividad física diaria,accionable,alta,hacer,@salud,media,45
+Revisión inbox diaria,Revisar inbox diario,accionable,alta,hacer,@planificación,media,15
+Planificación semanal,Planificar semana,accionable,alta,proyecto,@planificación,alta,60
+Compras semanales,Ir al supermercado,accionable,media,hacer,@fuera,media,90
+Tiempo de lectura,Leer 30 minutos,accionable,media,hacer,@lectura,baja,30
+Llamar a familia,Llamar a familiares,accionable,media,hacer,@teléfono,media,30
+Organizar mesa de trabajo,Organizar taller,accionable,media,hacer,@taller,media,60
+Aprender nueva habilidad,Aprender algo nuevo,accionable,media,proyecto,@computadora,alta,120
+Revisión mensual,Evaluar progreso mensual,accionable,alta,proyecto,@planificación,alta,90
+Tiempo creativo,Actividades creativas,accionable,media,hacer,@creatividad,media,120
+Socializar,Actividades sociales,accionable,media,hacer,@social,media,180
+Descanso activo,Relajación sin pantallas,accionable,media,hacer,@descanso,baja,60
