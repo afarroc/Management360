@@ -163,7 +163,7 @@
 
                     <h6>Filtrar por categoría:</h6>
                     <div class="d-flex flex-wrap gap-1 mb-3">
-                        {% for value, label in entry.get_categoria_choices %}
+                        {% for value, label in categoria_choices %}
                         <a href="{% url 'bitacora:list' %}?categoria={{ value }}" 
                            class="badge bg-light text-dark border">
                             {{ label }}
