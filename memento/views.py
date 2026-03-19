@@ -7,7 +7,9 @@ from django.utils import timezone
 from datetime import datetime, date
 from django.http import Http404
 from dateutil.relativedelta import relativedelta
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.db import IntegrityError  # <-- Add this import
 from django.contrib import messages
 from .models import MementoConfig

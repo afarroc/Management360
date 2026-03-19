@@ -5,7 +5,9 @@ Incluye usuarios genéricos, instancias de bots, coordinación y gestión de lea
 
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from django.core.exceptions import ValidationError
 import uuid
 import json

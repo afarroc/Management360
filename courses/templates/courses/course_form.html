@@ -10,7 +10,7 @@
     --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
     --shadow-light: 0 4px 20px rgba(0,0,0,0.08);
-    --shadow-medium: 0 6px 25px rgba(245, 158, 11, 0.3);
+    --shadow-medium: 0 6px 25px rgba(102, 126, 234, 0.3);
     --border-radius: 15px;
     --transition-fast: all 0.3s ease;
 }
@@ -140,6 +140,7 @@
     font-size: 1rem;
     transition: var(--transition-fast);
     background: white;
+    width: 100%;
 }
 
 .form-control:focus {
@@ -151,6 +152,15 @@
 textarea.form-control {
     min-height: 120px;
     resize: vertical;
+}
+
+select.form-control {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 1rem;
+    padding-right: 2.5rem;
 }
 
 /* Campos específicos */
@@ -269,6 +279,9 @@ textarea.form-control {
     font-weight: 500;
     color: #2d3748;
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .switch-input {
@@ -314,6 +327,7 @@ textarea.form-control {
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
+    margin-top: 2rem;
 }
 
 .btn-action {
@@ -411,6 +425,28 @@ textarea.form-control {
     display: flex;
 }
 
+/* Error styles */
+.invalid-feedback {
+    display: block;
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.is-invalid {
+    border-color: #dc3545 !important;
+}
+
+.is-invalid:focus {
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1) !important;
+}
+
+/* Character counter */
+.char-counter {
+    font-size: 0.875rem;
+    transition: var(--transition-fast);
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .editor-body {
@@ -482,6 +518,20 @@ textarea.form-control {
                         </p>
                     </div>
 
+                    <!-- Mostrar errores del formulario si existen -->
+                    {% if form.errors %}
+                    <div class="alert alert-danger m-4">
+                        <strong>Por favor corrija los siguientes errores:</strong>
+                        <ul class="mb-0 mt-2">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li><strong>{{ field|title }}:</strong> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
                     <!-- Formulario -->
                     <form method="post" enctype="multipart/form-data" id="course-form" novalidate>
                         {% csrf_token %}
@@ -500,13 +550,18 @@ textarea.form-control {
                                     <div class="col-lg-8">
                                         <div class="form-group">
                                             <label for="{{ form.title.id_for_label }}" class="form-label">
-                                                <i class="fas fa-heading"></i>Título del Curso *
+                                                <i class="fas fa-heading"></i> Título del Curso *
                                             </label>
-                                            {{ form.title }}
+                                            <input type="text" 
+                                                   name="{{ form.title.name }}"
+                                                   id="{{ form.title.id_for_label }}"
+                                                   class="form-control {% if form.title.errors %}is-invalid{% endif %}"
+                                                   value="{{ form.title.value|default:'' }}"
+                                                   required>
                                             {% if form.title.errors %}
-                                                <div class="text-danger mt-1">
+                                                <div class="invalid-feedback">
                                                     {% for error in form.title.errors %}
-                                                        <small>{{ error }}</small>
+                                                        {{ error }}
                                                     {% endfor %}
                                                 </div>
                                             {% endif %}
@@ -515,13 +570,23 @@ textarea.form-control {
                                     <div class="col-lg-4">
                                         <div class="form-group">
                                             <label for="{{ form.category.id_for_label }}" class="form-label">
-                                                <i class="fas fa-tags"></i>Categoría
+                                                <i class="fas fa-tags"></i> Categoría
                                             </label>
-                                            {{ form.category }}
+                                            <select name="{{ form.category.name }}"
+                                                    id="{{ form.category.id_for_label }}"
+                                                    class="form-control {% if form.category.errors %}is-invalid{% endif %}">
+                                                <option value="">Seleccione una categoría</option>
+                                                {% for choice in form.category.field.queryset %}
+                                                    <option value="{{ choice.pk }}" 
+                                                            {% if form.category.value|stringformat:"s" == choice.pk|stringformat:"s" %}selected{% endif %}>
+                                                        {{ choice.name }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
                                             {% if form.category.errors %}
-                                                <div class="text-danger mt-1">
+                                                <div class="invalid-feedback">
                                                     {% for error in form.category.errors %}
-                                                        <small>{{ error }}</small>
+                                                        {{ error }}
                                                     {% endfor %}
                                                 </div>
                                             {% endif %}
@@ -531,16 +596,21 @@ textarea.form-control {
 
                                 <div class="form-group">
                                     <label for="{{ form.short_description.id_for_label }}" class="form-label">
-                                        <i class="fas fa-quote-left"></i>Descripción Corta *
+                                        <i class="fas fa-quote-left"></i> Descripción Corta *
                                     </label>
-                                    {{ form.short_description }}
+                                    <textarea name="{{ form.short_description.name }}"
+                                              id="{{ form.short_description.id_for_label }}"
+                                              class="form-control {% if form.short_description.errors %}is-invalid{% endif %}"
+                                              rows="3"
+                                              maxlength="300"
+                                              required>{{ form.short_description.value|default:'' }}</textarea>
                                     <small class="form-text text-muted">
                                         Una breve descripción que aparecerá en las tarjetas de curso (máx. 300 caracteres)
                                     </small>
                                     {% if form.short_description.errors %}
-                                        <div class="text-danger mt-1">
+                                        <div class="invalid-feedback">
                                             {% for error in form.short_description.errors %}
-                                                <small>{{ error }}</small>
+                                                {{ error }}
                                             {% endfor %}
                                         </div>
                                     {% endif %}
@@ -560,13 +630,22 @@ textarea.form-control {
                                     <div class="col-md-4">
                                         <div class="form-group">
                                             <label for="{{ form.level.id_for_label }}" class="form-label">
-                                                <i class="fas fa-chart-line"></i>Nivel de Dificultad
+                                                <i class="fas fa-chart-line"></i> Nivel de Dificultad
                                             </label>
-                                            {{ form.level }}
+                                            <select name="{{ form.level.name }}"
+                                                    id="{{ form.level.id_for_label }}"
+                                                    class="form-control {% if form.level.errors %}is-invalid{% endif %}">
+                                                {% for value, label in form.level.field.choices %}
+                                                    <option value="{{ value }}" 
+                                                            {% if form.level.value == value %}selected{% endif %}>
+                                                        {{ label }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
                                             {% if form.level.errors %}
-                                                <div class="text-danger mt-1">
+                                                <div class="invalid-feedback">
                                                     {% for error in form.level.errors %}
-                                                        <small>{{ error }}</small>
+                                                        {{ error }}
                                                     {% endfor %}
                                                 </div>
                                             {% endif %}
@@ -575,14 +654,20 @@ textarea.form-control {
                                     <div class="col-md-4">
                                         <div class="form-group price-input">
                                             <label for="{{ form.price.id_for_label }}" class="form-label">
-                                                <i class="fas fa-dollar-sign"></i>Precio
+                                                <i class="fas fa-dollar-sign"></i> Precio
                                             </label>
                                             <span class="price-symbol">$</span>
-                                            {{ form.price }}
+                                            <input type="number" 
+                                                   name="{{ form.price.name }}"
+                                                   id="{{ form.price.id_for_label }}"
+                                                   class="form-control {% if form.price.errors %}is-invalid{% endif %}"
+                                                   value="{{ form.price.value|default:'0.00' }}"
+                                                   step="0.01"
+                                                   min="0">
                                             {% if form.price.errors %}
-                                                <div class="text-danger mt-1">
+                                                <div class="invalid-feedback">
                                                     {% for error in form.price.errors %}
-                                                        <small>{{ error }}</small>
+                                                        {{ error }}
                                                     {% endfor %}
                                                 </div>
                                             {% endif %}
@@ -591,14 +676,20 @@ textarea.form-control {
                                     <div class="col-md-4">
                                         <div class="form-group duration-input">
                                             <label for="{{ form.duration_hours.id_for_label }}" class="form-label">
-                                                <i class="fas fa-clock"></i>Duración Total
+                                                <i class="fas fa-clock"></i> Duración Total
                                             </label>
-                                            {{ form.duration_hours }}
+                                            <input type="number" 
+                                                   name="{{ form.duration_hours.name }}"
+                                                   id="{{ form.duration_hours.id_for_label }}"
+                                                   class="form-control {% if form.duration_hours.errors %}is-invalid{% endif %}"
+                                                   value="{{ form.duration_hours.value|default:'' }}"
+                                                   min="1"
+                                                   required>
                                             <span class="duration-unit">horas</span>
                                             {% if form.duration_hours.errors %}
-                                                <div class="text-danger mt-1">
+                                                <div class="invalid-feedback">
                                                     {% for error in form.duration_hours.errors %}
-                                                        <small>{{ error }}</small>
+                                                        {{ error }}
                                                     {% endfor %}
                                                 </div>
                                             {% endif %}
@@ -618,16 +709,20 @@ textarea.form-control {
 
                                 <div class="form-group">
                                     <label for="{{ form.description.id_for_label }}" class="form-label">
-                                        <i class="fas fa-align-left"></i>Descripción Completa *
+                                        <i class="fas fa-align-left"></i> Descripción Completa *
                                     </label>
-                                    {{ form.description }}
+                                    <textarea name="{{ form.description.name }}"
+                                              id="{{ form.description.id_for_label }}"
+                                              class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                                              rows="6"
+                                              required>{{ form.description.value|default:'' }}</textarea>
                                     <small class="form-text text-muted">
                                         Describe detalladamente el contenido del curso, objetivos de aprendizaje y beneficios para los estudiantes
                                     </small>
                                     {% if form.description.errors %}
-                                        <div class="text-danger mt-1">
+                                        <div class="invalid-feedback">
                                             {% for error in form.description.errors %}
-                                                <small>{{ error }}</small>
+                                                {{ error }}
                                             {% endfor %}
                                         </div>
                                     {% endif %}
@@ -647,7 +742,7 @@ textarea.form-control {
                                     <div class="col-lg-6">
                                         <div class="form-group">
                                             <label class="form-label">
-                                                <i class="fas fa-camera"></i>Imagen del Curso
+                                                <i class="fas fa-camera"></i> Imagen del Curso
                                             </label>
                                             <div class="thumbnail-upload" onclick="document.getElementById('id_thumbnail').click()">
                                                 <div class="upload-icon">
@@ -655,13 +750,21 @@ textarea.form-control {
                                                 </div>
                                                 <div class="upload-text">Haz clic para seleccionar una imagen</div>
                                                 <div class="upload-hint">Formatos: JPG, PNG, GIF (máx. 5MB)</div>
-                                                {{ form.thumbnail }}
+                                                <input type="file" 
+                                                       name="{{ form.thumbnail.name }}"
+                                                       id="id_thumbnail"
+                                                       class="d-none"
+                                                       accept="image/jpeg,image/png,image/gif">
                                             </div>
-                                            <div id="thumbnail-preview" class="thumbnail-preview"></div>
+                                            <div id="thumbnail-preview" class="thumbnail-preview">
+                                                {% if form.thumbnail.value %}
+                                                    <img src="{{ form.thumbnail.value.url }}" alt="Preview">
+                                                {% endif %}
+                                            </div>
                                             {% if form.thumbnail.errors %}
-                                                <div class="text-danger mt-1">
+                                                <div class="invalid-feedback d-block">
                                                     {% for error in form.thumbnail.errors %}
-                                                        <small>{{ error }}</small>
+                                                        {{ error }}
                                                     {% endfor %}
                                                 </div>
                                             {% endif %}
@@ -670,10 +773,14 @@ textarea.form-control {
                                     <div class="col-lg-6">
                                         <div class="form-group">
                                             <label class="form-label">
-                                                <i class="fas fa-toggle-on"></i>Opciones de Publicación
+                                                <i class="fas fa-toggle-on"></i> Opciones de Publicación
                                             </label>
                                             <div class="switch-container">
-                                                {{ form.is_published }}
+                                                <input type="checkbox" 
+                                                       name="{{ form.is_published.name }}"
+                                                       id="{{ form.is_published.id_for_label }}"
+                                                       class="switch-input"
+                                                       {% if form.is_published.value %}checked{% endif %}>
                                                 <label class="switch-label" for="{{ form.is_published.id_for_label }}">
                                                     <i class="fas fa-globe-americas me-1"></i>Curso Publicado
                                                 </label>
@@ -685,7 +792,11 @@ textarea.form-control {
 
                                         <div class="form-group mt-3">
                                             <div class="switch-container">
-                                                {{ form.is_featured }}
+                                                <input type="checkbox" 
+                                                       name="{{ form.is_featured.name }}"
+                                                       id="{{ form.is_featured.id_for_label }}"
+                                                       class="switch-input"
+                                                       {% if form.is_featured.value %}checked{% endif %}>
                                                 <label class="switch-label" for="{{ form.is_featured.id_for_label }}">
                                                     <i class="fas fa-star me-1"></i>Curso Destacado
                                                 </label>
@@ -700,7 +811,7 @@ textarea.form-control {
 
                             <!-- Botones de Acción -->
                             <div class="action-buttons">
-                                <button type="submit" class="btn-action btn-save" id="save-btn">
+                                <button type="submit" class="btn-action btn-save" id="save-btn" name="save">
                                     <i class="fas fa-save"></i>
                                     <span>Guardar Cambios</span>
                                 </button>
@@ -736,44 +847,35 @@ textarea.form-control {
 {% block extra_js %}
 <script>
 // Variables globales
-let autoSaveTimeout;
 let isDirty = false;
 
 // Inicialización cuando el DOM está listo
 document.addEventListener('DOMContentLoaded', function() {
     initializeForm();
     initializeThumbnailUpload();
-    initializeAutoSave();
+    initializeCharacterCounter();
 });
 
-// Inicializar funcionalidades del formulario
+// Inicializar funcionalidades del formulario - VERSIÓN SIMPLIFICADA
 function initializeForm() {
     const form = document.getElementById('course-form');
-    const saveBtn = document.getElementById('save-btn');
 
-    // Validación en tiempo real
-    form.addEventListener('input', function(e) {
-        isDirty = true;
-        validateField(e.target);
+    // Quitamos toda la validación personalizada que interfería
+    // y simplemente dejamos que el navegador maneje el envío
+    
+    // Marcar como sucio cuando cambian campos
+    form.querySelectorAll('input, select, textarea').forEach(field => {
+        field.addEventListener('change', function() {
+            isDirty = true;
+        });
+        field.addEventListener('input', function() {
+            isDirty = true;
+        });
     });
 
-    // Manejar envío del formulario
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        if (validateForm()) {
-            showLoading();
-            form.submit();
-        }
-    });
-
-    // Marcar como sucio cuando cambian selects
-    form.querySelectorAll('select').forEach(select => {
-        select.addEventListener('change', () => isDirty = true);
-    });
-
-    // Marcar como sucio cuando cambian checkboxes
-    form.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.addEventListener('change', () => isDirty = true);
+    // Mostrar loading al enviar
+    form.addEventListener('submit', function() {
+        showLoading();
     });
 }
 
@@ -805,78 +907,39 @@ function initializeThumbnailUpload() {
     }
 }
 
-// Inicializar auto-guardado
-function initializeAutoSave() {
-    // Auto-guardado cada 30 segundos si hay cambios
-    setInterval(() => {
-        if (isDirty) {
-            autoSave();
-        }
-    }, 30000);
+// Inicializar contador de caracteres
+function initializeCharacterCounter() {
+    const shortDesc = document.getElementById('{{ form.short_description.id_for_label }}');
+    if (shortDesc) {
+        updateCharacterCounter(shortDesc);
+        shortDesc.addEventListener('input', function() {
+            updateCharacterCounter(this);
+        });
+    }
 }
 
-// Funciones de validación
-function validateField(field) {
-    const value = field.value.trim();
-    const isRequired = field.hasAttribute('required');
+function updateCharacterCounter(field) {
+    const maxLength = 300;
+    const currentLength = field.value.length;
 
-    // Remover clases de error previas
-    field.classList.remove('is-invalid');
-    let errorElement = field.parentNode.querySelector('.invalid-feedback');
-    if (errorElement) {
-        errorElement.remove();
+    // Crear o actualizar contador
+    let counter = field.parentNode.querySelector('.char-counter');
+    if (!counter) {
+        counter = document.createElement('small');
+        counter.className = 'char-counter form-text mt-1';
+        field.after(counter);
     }
 
-    // Validaciones específicas
-    if (field.name === 'title' && value.length > 0 && value.length < 5) {
-        showFieldError(field, 'El título debe tener al menos 5 caracteres');
-        return false;
+    counter.textContent = `${currentLength}/${maxLength} caracteres`;
+
+    // Cambiar color según proximidad al límite
+    if (currentLength > maxLength * 0.9) {
+        counter.className = 'char-counter form-text text-danger mt-1';
+    } else if (currentLength > maxLength * 0.8) {
+        counter.className = 'char-counter form-text text-warning mt-1';
+    } else {
+        counter.className = 'char-counter form-text text-muted mt-1';
     }
-
-    if (field.name === 'price' && value !== '' && (isNaN(value) || parseFloat(value) < 0)) {
-        showFieldError(field, 'El precio debe ser un número positivo');
-        return false;
-    }
-
-    if (field.name === 'duration_hours' && value !== '' && (isNaN(value) || parseInt(value) < 1)) {
-        showFieldError(field, 'La duración debe ser al menos 1 hora');
-        return false;
-    }
-
-    if (field.name === 'short_description' && value.length > 300) {
-        showFieldError(field, 'La descripción corta no puede exceder 300 caracteres');
-        return false;
-    }
-
-    return true;
-}
-
-function validateForm() {
-    let isValid = true;
-    const requiredFields = document.querySelectorAll('[required]');
-
-    requiredFields.forEach(field => {
-        if (!field.value.trim()) {
-            showFieldError(field, 'Este campo es obligatorio');
-            isValid = false;
-        } else if (!validateField(field)) {
-            isValid = false;
-        }
-    });
-
-    return isValid;
-}
-
-function showFieldError(field, message) {
-    field.classList.add('is-invalid');
-
-    let errorElement = field.parentNode.querySelector('.invalid-feedback');
-    if (!errorElement) {
-        errorElement = document.createElement('div');
-        errorElement.className = 'invalid-feedback';
-        field.parentNode.appendChild(errorElement);
-    }
-    errorElement.textContent = message;
 }
 
 // Funciones de subida de archivos
@@ -928,15 +991,7 @@ function showImagePreview(src) {
         document.querySelector('.thumbnail-upload').after(preview);
     }
 
-    preview.innerHTML = `
-        <div class="alert alert-success">
-            <i class="fas fa-check-circle me-2"></i>
-            <strong>Imagen seleccionada correctamente</strong>
-            <div class="mt-2">
-                <img src="${src}" class="img-fluid rounded" style="max-height: 150px;">
-            </div>
-        </div>
-    `;
+    preview.innerHTML = `<img src="${src}" class="img-fluid rounded" style="max-height: 150px;">`;
 }
 
 // Funciones de drag and drop
@@ -953,58 +1008,21 @@ function unhighlight() {
     document.querySelector('.thumbnail-upload').classList.remove('dragover');
 }
 
-// Auto-guardado
-function autoSave() {
-    // Aquí iría la lógica de auto-guardado vía AJAX
-    // Por ahora solo mostramos el indicador
-    showAutoSaveIndicator();
-    isDirty = false;
-}
-
-function showAutoSaveIndicator() {
-    const indicator = document.getElementById('autosave-indicator');
-    indicator.classList.add('show');
-
-    setTimeout(() => {
-        indicator.classList.remove('show');
-    }, 3000);
-}
-
 // Loading states
 function showLoading() {
     document.getElementById('loading-overlay').style.display = 'flex';
 }
 
-// Contador de caracteres para descripción corta
-document.getElementById('id_short_description')?.addEventListener('input', function(e) {
-    const maxLength = 300;
-    const currentLength = e.target.value.length;
-
-    // Crear o actualizar contador
-    let counter = e.target.parentNode.querySelector('.char-counter');
-    if (!counter) {
-        counter = document.createElement('small');
-        counter.className = 'char-counter form-text text-muted mt-1';
-        e.target.after(counter);
-    }
-
-    counter.textContent = `${currentLength}/${maxLength} caracteres`;
-
-    // Cambiar color según proximidad al límite
-    if (currentLength > maxLength * 0.9) {
-        counter.className = 'char-counter form-text text-danger mt-1';
-    } else if (currentLength > maxLength * 0.8) {
-        counter.className = 'char-counter form-text text-warning mt-1';
-    } else {
-        counter.className = 'char-counter form-text text-muted mt-1';
-    }
-});
+function hideLoading() {
+    document.getElementById('loading-overlay').style.display = 'none';
+}
 
 // Prevenir pérdida de cambios al salir de la página
 window.addEventListener('beforeunload', function(e) {
     if (isDirty) {
         e.preventDefault();
         e.returnValue = '¿Estás seguro de que quieres salir? Los cambios no guardados se perderán.';
+        return e.returnValue;
     }
 });
 </script>

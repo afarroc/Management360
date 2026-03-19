@@ -1,5 +1,7 @@
 from django.test import TestCase, RequestFactory
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 from datetime import date, timedelta
 from .models import MementoConfig
 from .views import memento, calculate_memento_data

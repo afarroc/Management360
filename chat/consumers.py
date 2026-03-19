@@ -290,7 +290,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
         """Create notifications for room members using hybrid system (cache + database fallback)"""
         from .models import HardcodedNotificationManager
         from rooms.models import Room, RoomMember
-        from django.contrib.auth.models import User
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
 
         try:
             # Get room object
@@ -308,7 +310,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             # If no members found, try to add all users to the room automatically
             if room_members.count() == 0:
                 logger.warning(f"No members found for room {room.name}, adding all users automatically")
-                from django.contrib.auth.models import User
+                from django.contrib.auth import get_user_model
+
+                User = get_user_model()
                 users = User.objects.all()
                 for user in users:
                     if user != sender:

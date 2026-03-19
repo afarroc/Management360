@@ -18,17 +18,14 @@ class NotificationManager {
     init() {
         if (this.isInitialized) return;
 
-        console.log('Initializing notification system...');
         this.loadNotifications();
         this.setupPeriodicRefresh();
         this.bindEvents();
 
         this.isInitialized = true;
-        console.log('Notification system initialized successfully');
 
         // Force an immediate refresh after 2 seconds to catch any missed notifications
         setTimeout(() => {
-            console.log('Performing initial notification refresh...');
             this.loadNotifications();
         }, 2000);
     }
@@ -38,7 +35,6 @@ class NotificationManager {
      */
     async loadNotifications() {
         try {
-            console.log('Loading notifications from:', `${this.baseUrl}/unread/`);
             const response = await fetch(`${this.baseUrl}/unread/`, {
                 method: 'GET',
                 headers: {
@@ -48,7 +44,6 @@ class NotificationManager {
                 credentials: 'same-origin'
             });
 
-            console.log('Notification API response status:', response.status);
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -62,9 +57,6 @@ class NotificationManager {
                 throw new Error('Invalid JSON response from server');
             }
 
-            console.log('Notification data received:', data);
-            console.log('Total unread count:', data.total_unread);
-            console.log('Notifications array length:', data.notifications ? data.notifications.length : 'undefined');
 
             // Validate response data
             if (typeof data !== 'object' || data === null) {
@@ -73,16 +65,13 @@ class NotificationManager {
 
             // Ensure total_unread is a valid number
             const totalUnread = typeof data.total_unread === 'number' ? data.total_unread : 0;
-            console.log('Validated total unread:', totalUnread);
 
             // Only update if count has changed to avoid unnecessary DOM updates
             if (totalUnread !== this.lastTotalUnread) {
-                console.log('Count changed, updating badge and notifications');
                 this.updateBadge(totalUnread);
                 this.displayNotifications(data.notifications || []);
                 this.lastTotalUnread = totalUnread;
             } else {
-                console.log('No change in notification count, skipping update');
             }
 
         } catch (error) {
@@ -137,13 +126,10 @@ class NotificationManager {
      * Update notification badge
      */
     updateBadge(count) {
-        console.log('Updating notification badge with count:', count, '(previous:', this.lastTotalUnread, ')');
 
         const badge = document.getElementById('header-notification-badge');
         const markAllBtn = document.getElementById('header-mark-all-read-btn');
 
-        console.log('Badge element found:', !!badge);
-        console.log('Mark all button found:', !!markAllBtn);
 
         if (!badge) {
             console.error('Notification badge element not found! Available elements:', document.querySelectorAll('[id*="notification"]'));
@@ -158,16 +144,12 @@ class NotificationManager {
             badge.style.display = 'block';
             if (markAllBtn) {
                 markAllBtn.style.display = 'block';
-                console.log('Mark all button shown');
             }
-            console.log('Badge updated to show:', badge.textContent);
         } else {
             badge.style.display = 'none';
             if (markAllBtn) {
                 markAllBtn.style.display = 'none';
-                console.log('Mark all button hidden');
             }
-            console.log('Badge hidden');
         }
     }
 
@@ -178,7 +160,6 @@ class NotificationManager {
         const container = document.getElementById('header-notifications-list');
 
         if (!container) {
-            console.warn('Notification container not found');
             return;
         }
 
@@ -230,10 +211,10 @@ class NotificationManager {
      * Setup periodic refresh
      */
     setupPeriodicRefresh() {
-        // Refresh every 1 second for ultra-fast responsiveness
+        // Refresh every 30 seconds
         this.intervalId = setInterval(() => {
             this.loadNotifications();
-        }, 1000);
+        }, 30000);
     }
 
     /**
@@ -257,7 +238,6 @@ class NotificationManager {
                 try {
                     const success = await this.markAsRead([]); // Empty array marks all as read
                     if (success) {
-                        console.log('All notifications marked as read');
                     }
                 } catch (error) {
                     console.error('Error marking all notifications as read:', error);
@@ -265,7 +245,6 @@ class NotificationManager {
                 }
             });
         } else {
-            console.warn('Mark all button not found');
         }
 
         // Listen for new messages to update counter immediately
@@ -278,7 +257,6 @@ class NotificationManager {
     setupWebSocketListener() {
         // Listen for chat messages and update counter immediately
         document.addEventListener('chatMessageReceived', () => {
-            console.log('New chat message received, updating notifications immediately...');
             // Update immediately when a new message is received
             this.forceRefresh();
         });
@@ -287,7 +265,6 @@ class NotificationManager {
         document.addEventListener('websocketMessage', (event) => {
             const data = event.detail;
             if (data.type === 'chat_message' || data.type === 'message') {
-                console.log('WebSocket message received, updating notifications...');
                 this.forceRefresh();
             }
         });
@@ -295,20 +272,17 @@ class NotificationManager {
         // Listen for storage events (in case multiple tabs are open)
         window.addEventListener('storage', (event) => {
             if (event.key === 'chat_new_message') {
-                console.log('Storage event detected, updating notifications...');
                 this.forceRefresh();
             }
         });
 
         // Listen for widget events
         document.addEventListener('messagesMarkedAsRead', (event) => {
-            console.log('Widget marked messages as read, updating notifications...');
             this.forceRefresh();
         });
 
         // Listen for new messages from widget
         document.addEventListener('widgetNewMessage', (event) => {
-            console.log('New message from widget, updating notifications...');
             this.forceRefresh();
         });
 
@@ -316,7 +290,6 @@ class NotificationManager {
         document.addEventListener('roomViewed', (event) => {
             const roomId = event.detail?.roomId;
             if (roomId) {
-                console.log(`Room ${roomId} viewed, marking messages as read...`);
                 // Mark messages as read for this room
                 this.markRoomMessagesAsRead(roomId);
             }
@@ -327,7 +300,6 @@ class NotificationManager {
      * Force immediate refresh of notifications
      */
     forceRefresh() {
-        console.log('Forcing immediate notification refresh...');
         // Clear any pending refresh
         if (this.refreshTimeout) {
             clearTimeout(this.refreshTimeout);
@@ -341,7 +313,6 @@ class NotificationManager {
      */
     async markRoomMessagesAsRead(roomId) {
         try {
-            console.log(`Marking messages as read for room ${roomId}...`);
             const response = await fetch('/chat/api/chat/reset-unread/', {
                 method: 'POST',
                 headers: {
@@ -353,7 +324,6 @@ class NotificationManager {
             });
 
             if (response.ok) {
-                console.log(`Messages marked as read for room ${roomId}`);
                 // Refresh notifications after marking as read
                 setTimeout(() => this.loadNotifications(), 500);
             } else {
@@ -436,17 +406,6 @@ class NotificationManager {
      * Debug function to check notification system status
      */
     debug() {
-        console.log('=== NOTIFICATION SYSTEM DEBUG ===');
-        console.log('Is initialized:', this.isInitialized);
-        console.log('Base URL:', this.baseUrl);
-        console.log('Interval ID:', this.intervalId);
-        console.log('Last total unread:', this.lastTotalUnread);
-        console.log('Badge element:', document.getElementById('header-notification-badge'));
-        console.log('Notifications list element:', document.getElementById('header-notifications-list'));
-        console.log('Mark all button:', document.getElementById('header-mark-all-read-btn'));
-        console.log('CSRF Token available:', !!this.getCSRFToken());
-        console.log('Current user authenticated:', this.checkAuthentication());
-        console.log('==================================');
     }
 
     /**
@@ -454,7 +413,6 @@ class NotificationManager {
      */
     async testCreateNotification() {
         try {
-            console.log('Creating test notification...');
             const response = await fetch(`${this.baseUrl}/test-create/`, {
                 method: 'POST',
                 headers: {
@@ -470,7 +428,6 @@ class NotificationManager {
 
             if (response.ok) {
                 const result = await response.json();
-                console.log('Test notification created:', result);
                 // Refresh notifications after creating test
                 setTimeout(() => this.loadNotifications(), 1000);
             } else {
@@ -502,12 +459,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             document.querySelector('meta[name="user-authenticated"][content="true"]') ||
                             (window.django && window.django.user && window.django.user.is_authenticated);
 
-    console.log('Notification system check - isAuthenticated:', isAuthenticated);
-    console.log('Body attributes:', document.body.attributes);
-    console.log('Body classes:', document.body.classList);
 
     if (isAuthenticated) {
-        console.log('Initializing notification system...');
         const notificationManager = new NotificationManager();
         notificationManager.init();
 
@@ -521,7 +474,6 @@ document.addEventListener('DOMContentLoaded', function() {
             notificationManager.destroy();
         });
     } else {
-        console.log('User not authenticated, skipping notification initialization');
     }
 });
 
