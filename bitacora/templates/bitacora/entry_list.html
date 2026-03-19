@@ -75,7 +75,7 @@
                                 </span>
                                 <select name="categoria" class="form-select">
                                     <option value="">Todas las categorías</option>
-                                    {% for value, label in entry.CATEGORIA_CHOICES %}
+                                    {% for value, label in categoria_choices %}
                                     <option value="{{ value }}" 
                                             {% if request.GET.categoria == value %}selected{% endif %}>
                                         {{ label }}
@@ -192,7 +192,7 @@
                         Categorías Rápidas
                     </h5>
                     <div class="d-grid gap-2">
-                        {% for value, label in entry.CATEGORIA_CHOICES|slice:":6" %}
+                        {% for value, label in categoria_choices|slice:":6" %}
                         <a href="{% url 'bitacora:list' %}?categoria={{ value }}" 
                            class="btn btn-outline-secondary text-start {% if request.GET.categoria == value %}active{% endif %}">
                             {% if value == 'personal' %}<i class="bi bi-person me-2"></i>{% endif %}
@@ -204,7 +204,7 @@
                             {{ label }}
                         </a>
                         {% endfor %}
-                        {% if entry.CATEGORIA_CHOICES|length > 6 %}
+                        {% if categoria_choices|length > 6 %}
                         <div class="text-center mt-2">
                             <a href="#" class="small text-primary" data-bs-toggle="collapse" data-bs-target="#moreCategories">
                                 <i class="bi bi-chevron-down me-1"></i> Más categorías
@@ -212,7 +212,7 @@
                         </div>
                         <div class="collapse mt-2" id="moreCategories">
                             <div class="d-grid gap-2">
-                                {% for value, label in entry.CATEGORIA_CHOICES|slice:"6:" %}
+                                {% for value, label in categoria_choices|slice:"6:" %}
                                 <a href="{% url 'bitacora:list' %}?categoria={{ value }}" 
                                    class="btn btn-outline-secondary btn-sm text-start">
                                     {{ label }}
@@ -423,9 +423,9 @@
                                             {{ entry.contenido|striptags|truncatechars:150 }}
                                         </p>
                                         <div class="d-flex flex-wrap gap-1 align-items-center">
-                                            {% if entry.mood %}
+                                            {% if entry.get_mood_display %}
                                             <span class="badge bg-info">
-                                                <i class="bi bi-emoji-smile me-1"></i>{{ entry.mood }}
+                                                <i class="bi bi-emoji-smile me-1"></i>{{ entry.get_mood_display }}
                                             </span>
                                             {% endif %}
                                             {% for tag in entry.tags.all|slice:":3" %}

@@ -120,7 +120,8 @@ class BitacoraListView(LoginRequiredMixin, ListView):
             ).order_by('-created_at')[:3]
         except Exception:
             context['active_tasks'] = []
-
+        
+        context['categoria_choices'] = BitacoraEntry.CategoriaChoices.choices
         return context
 
 
