@@ -98,3 +98,17 @@ db.sqlite3
 # ================================
 *.log
 logs/
+# ================================
+# Cache y backups internos
+# ================================
+.django_cache/
+.backup_*/
+*.backup
+backup_*.json
+**/migrations/__pycache__/
+**/migrations/*.pyc
+
+# Archivos temporales
+0
+_fix_git_ignore.py
+gtd_config.yaml
