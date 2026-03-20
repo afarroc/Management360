@@ -1,7 +1,7 @@
 # Mapa de Contexto — App `bots`
 
-> Generado por `m360_map.sh`  |  2026-03-19 02:51:48
-> Ruta: `/data/data/com.termux/files/home/projects/Management360/bots`  |  Total archivos: **15**
+> Generado por `m360_map.sh`  |  2026-03-19 14:17:42
+> Ruta: `/data/data/com.termux/files/home/projects/Management360/bots`  |  Total archivos: **19**
 
 ---
 
@@ -15,7 +15,7 @@
 | 4 | 🛡 `admin` | 1 |
 | 5 | 📄 `management` | 5 |
 | 6 | 🧪 `tests` | 1 |
-| 7 | 📄 `other` | 5 |
+| 7 | 📄 `other` | 9 |
 
 ---
 
@@ -26,13 +26,13 @@
 
 | Archivo | Líneas | Ruta relativa |
 |---------|--------|---------------|
-| `views.py` | 378 | `views.py` |
+| `views.py` | 382 | `views.py` |
 
 ### MODELS (1 archivos)
 
 | Archivo | Líneas | Ruta relativa |
 |---------|--------|---------------|
-| `models.py` | 693 | `models.py` |
+| `models.py` | 737 | `models.py` |
 
 ### URLS (1 archivos)
 
@@ -53,7 +53,7 @@
 | `__init__.py` | 0 | `management/__init__.py` |
 | `__init__.py` | 0 | `management/commands/__init__.py` |
 | `run_bots.py` | 341 | `management/commands/run_bots.py` |
-| `setup_bots.py` | 187 | `management/commands/setup_bots.py` |
+| `setup_bots.py` | 188 | `management/commands/setup_bots.py` |
 | `setup_leads_demo.py` | 215 | `management/commands/setup_leads_demo.py` |
 
 ### TESTS (1 archivos)
@@ -62,15 +62,19 @@
 |---------|--------|---------------|
 | `tests.py` | 3 | `tests.py` |
 
-### OTHER (5 archivos)
+### OTHER (9 archivos)
 
 | Archivo | Líneas | Ruta relativa |
 |---------|--------|---------------|
+| `BOTS_CONTEXT.md` | 157 | `BOTS_CONTEXT.md` |
+| `BOTS_DESIGN.md` | 158 | `BOTS_DESIGN.md` |
+| `BOTS_DEV_REFERENCE.md` | 842 | `BOTS_DEV_REFERENCE.md` |
+| `BOTS_HANDOFF.md` | 197 | `BOTS_HANDOFF.md` |
 | `__init__.py` | 0 | `__init__.py` |
 | `apps.py` | 6 | `apps.py` |
 | `gtd_processor.py` | 386 | `gtd_processor.py` |
-| `lead_distributor.py` | 390 | `lead_distributor.py` |
-| `utils.py` | 339 | `utils.py` |
+| `lead_distributor.py` | 394 | `lead_distributor.py` |
+| `utils.py` | 341 | `utils.py` |
 
 ---
 
@@ -85,6 +89,10 @@ bots/
 │   │   ├── setup_bots.py
 │   │   └── setup_leads_demo.py
 │   └── __init__.py
+├── BOTS_CONTEXT.md
+├── BOTS_DESIGN.md
+├── BOTS_DEV_REFERENCE.md
+├── BOTS_HANDOFF.md
 ├── __init__.py
 ├── admin.py
 ├── apps.py
@@ -123,16 +131,16 @@ Fuente: `urls.py`  |  namespace: `bots`
 
 **`models.py`**
 
-- línea 15: `class GenericUser(models.Model):`
-- línea 34: `class BotCoordinator(models.Model):`
-- línea 90: `class BotInstance(models.Model):`
-- línea 210: `class BotTaskAssignment(models.Model):`
-- línea 279: `class ResourceLock(models.Model):`
-- línea 347: `class BotCommunication(models.Model):`
-- línea 394: `class BotLog(models.Model):`
+- línea 13: `class GenericUser(models.Model):`
+- línea 32: `class BotCoordinator(models.Model):`
+- línea 88: `class BotInstance(models.Model):`
+- línea 208: `class BotTaskAssignment(models.Model):`
+- línea 277: `class ResourceLock(models.Model):`
+- línea 345: `class BotCommunication(models.Model):`
+- línea 392: `class BotLog(models.Model):`
 - línea 444: `class LeadCampaign(models.Model):`
 - línea 483: `class Lead(models.Model):`
-- línea 594: `class LeadDistributionRule(models.Model):`
+- línea 638: `class LeadDistributionRule(models.Model):`
 
 
 ---
@@ -142,6 +150,7 @@ Fuente: `urls.py`  |  namespace: `bots`
 | Archivo | Estado |
 |---------|--------|
 | `0001_initial` | aplicada |
+| `0002_alter_botlog_category_alter_lead_status` | aplicada |
 
 ---
 

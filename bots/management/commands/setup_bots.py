@@ -5,11 +5,12 @@ Crea usuarios genéricos, bots y configuraciones iniciales
 
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
+from django.db import transaction, models, connection
+from django.db.models.signals import post_save
+from bots.models import GenericUser, BotInstance, BotCoordinator
 
 User = get_user_model()
-from django.db import transaction, models
-from bots.models import GenericUser, BotInstance, BotCoordinator
-import uuid
+
 
 class Command(BaseCommand):
     help = 'Inicializa el sistema multi-bot con usuarios y configuraciones'
@@ -32,77 +33,92 @@ class Command(BaseCommand):
         bots_count = options['bots_count']
 
         try:
-            with transaction.atomic():
-                if reset:
-                    self.stdout.write(self.style.WARNING('Reiniciando sistema de bots...'))
+            if reset:
+                self.stdout.write(self.style.WARNING('Reiniciando sistema de bots...'))
+                with transaction.atomic():
                     self._reset_system()
-        
-                self.stdout.write(self.style.SUCCESS('Inicializando sistema multi-bot...'))
 
-                # Crear coordinador
-                coordinator = self._create_coordinator()
+            self.stdout.write(self.style.SUCCESS('Inicializando sistema multi-bot...'))
 
-                # Crear usuarios genéricos y bots
-                for i in range(bots_count):
-                    self._create_bot_user_and_instance(i + 1)
+            self._create_coordinator()
 
-                # Mostrar resumen
-                self._show_system_status()
+            for i in range(bots_count):
+                self._create_bot_user_and_instance(i + 1)
 
-                self.stdout.write(self.style.SUCCESS('Sistema multi-bot inicializado correctamente!'))
-                self.stdout.write(self.style.SUCCESS('Ejecuta: python manage.py run_bots'))
+            self._show_system_status()
+
+            self.stdout.write(self.style.SUCCESS('Sistema multi-bot inicializado correctamente!'))
+            self.stdout.write(self.style.SUCCESS('Ejecuta: python manage.py run_bots'))
 
         except Exception as e:
             raise CommandError(f'Error inicializando bots: {str(e)}')
 
     def _reset_system(self):
-        """Reinicia completamente el sistema"""
         BotInstance.objects.all().delete()
         GenericUser.objects.all().delete()
         BotCoordinator.objects.all().delete()
-
-        # Eliminar usuarios bot (opcional - solo si tienen un patrón específico)
-        bot_users = User.objects.filter(username__startswith='bot_user_')
-        for user in bot_users:
-            user.delete()
-
+        User.objects.filter(username__startswith='bot_user_').delete()
         self.stdout.write('Sistema reiniciado')
 
     def _create_coordinator(self):
-        """Crea o obtiene el coordinador principal"""
         coordinator, created = BotCoordinator.objects.get_or_create(
             defaults={'name': 'Main Bot Coordinator'}
         )
-
-        if created:
-            self.stdout.write('Coordinador creado')
-        else:
-            self.stdout.write('Coordinador existente actualizado')
-
+        self.stdout.write('Coordinador creado' if created else 'Coordinador existente')
         return coordinator
 
+    def _disconnect_credit_signal(self):
+        """
+        Desconecta create_credit_account de events antes de crear usuarios bot.
+        Ese signal falla con FK constraint en MariaDB (CreditAccount no aplica a bots).
+        Un error de FK en MariaDB deja la conexión en estado corrupto para el resto
+        de la sesión, incluso si se captura en Python.
+        """
+        try:
+            from events.templatetags.signals import create_credit_account
+            post_save.disconnect(create_credit_account, sender=User)
+            return create_credit_account
+        except (ImportError, AttributeError):
+            return None
+
+    def _reconnect_credit_signal(self, receiver_fn):
+        if receiver_fn is not None:
+            post_save.connect(receiver_fn, sender=User)
+
     def _create_bot_user_and_instance(self, bot_number):
-        """Crea un usuario genérico y su bot correspondiente"""
-        # Crear usuario Django
         username = f'bot_user_{bot_number}'
-        user, user_created = User.objects.get_or_create(
-            username=username,
-            defaults={
-                'email': f'bot{bot_number}@system.local',
-                'first_name': f'Bot',
-                'last_name': f'FTE {bot_number}',
-                'is_staff': False,
-                'is_superuser': False,
-            }
-        )
 
-        if user_created:
-            # Establecer contraseña por defecto
-            user.set_password('bot_password_123')
-            user.save()
-            self.stdout.write(f'Usuario {username} creado')
+        # --- 1. Usuario Django ---
+        # Signal desconectado para evitar error FK de CreditAccount
+        credit_signal = self._disconnect_credit_signal()
+        try:
+            user, user_created = User.objects.get_or_create(
+                username=username,
+                defaults={
+                    'email': f'bot{bot_number}@system.local',
+                    'first_name': 'Bot',
+                    'last_name': f'FTE {bot_number}',
+                    'is_staff': False,
+                    'is_superuser': False,
+                }
+            )
+            if user_created:
+                user.set_password('bot_password_123')
+                user.save()
+                self.stdout.write(f'Usuario {username} creado')
+            else:
+                self.stdout.write(f'Usuario {username} ya existe')
+        finally:
+            self._reconnect_credit_signal(credit_signal)
 
-        # Crear GenericUser
+        # --- Forzar conexión fresca antes de GenericUser ---
+        # Motivo: si esta sesión de terminal tuvo errores de FK previos (intentos
+        # anteriores de setup_bots), la conexión MariaDB queda en estado corrupto.
+        # connection.close() hace que Django abra una conexión limpia en el
+        # siguiente query, garantizando que el FK user_id se resuelve correctamente.
+        connection.close()
+
+        # --- 2. GenericUser ---
         generic_user, gu_created = GenericUser.objects.get_or_create(
             user=user,
             defaults={
@@ -115,11 +131,10 @@ class Command(BaseCommand):
                 ]
             }
         )
-
         if gu_created:
             self.stdout.write(f'GenericUser para {username} creado')
 
-        # Crear BotInstance
+        # --- 3. BotInstance ---
         bot_name = f'Bot_FTE_{bot_number}'
         specialization = self._get_specialization_for_bot(bot_number)
 
@@ -128,18 +143,17 @@ class Command(BaseCommand):
             defaults={
                 'generic_user': generic_user,
                 'specialization': specialization,
-                'processing_speed': 'balanced',
-                'risk_tolerance': 60,
-                'communication_style': 'professional',
                 'max_concurrent_tasks': 3,
                 'priority_level': bot_number,
-                'gtd_expertise_level': 85,
-                'auto_process_under_2min': True,
-                'auto_delegate_when_overloaded': True,
-                'auto_create_projects': True,
+                # BOT-BUG-21: el default del modelo (09:00–18:00 UTC) deja los bots
+                # fuera de horario toda la tarde en producción local (UTC-5/UTC-6).
+                # is_working_hours() compara en UTC del servidor, así que se usan
+                # 00:00–23:59 para que los bots estén siempre operativos.
+                # TODO: implementar soporte real de timezone por bot (deuda técnica).
+                'working_hours_start': '00:00',
+                'working_hours_end': '23:59',
             }
         )
-
         if bot_created:
             self.stdout.write(f'Bot {bot_name} creado ({specialization})')
         else:
@@ -148,21 +162,16 @@ class Command(BaseCommand):
         return bot
 
     def _get_specialization_for_bot(self, bot_number):
-        """Asigna especialización basada en el número del bot"""
         specializations = [
-            'gtd_processor',      # Bot 1: Especialista en GTD
-            'project_manager',    # Bot 2: Gestor de proyectos
-            'task_executor',      # Bot 3: Ejecutor de tareas
-            'calendar_optimizer', # Bot 4: Optimizador de calendario
-            'communication_handler' # Bot 5: Manejador de comunicación
+            'gtd_processor',
+            'project_manager',
+            'task_executor',
+            'calendar_optimizer',
+            'communication_handler',
         ]
-
-        # Repetir especializaciones si hay más bots que especializaciones
-        index = (bot_number - 1) % len(specializations)
-        return specializations[index]
+        return specializations[(bot_number - 1) % len(specializations)]
 
     def _show_system_status(self):
-        """Muestra el estado actual del sistema"""
         total_bots = BotInstance.objects.count()
         active_bots = BotInstance.objects.filter(is_active=True).count()
         generic_users = GenericUser.objects.count()
@@ -172,7 +181,6 @@ class Command(BaseCommand):
         self.stdout.write(f'   Bots activos: {active_bots}')
         self.stdout.write(f'   Usuarios genéricos: {generic_users}')
 
-        # Mostrar especializaciones
         specializations = BotInstance.objects.values('specialization').annotate(
             count=models.Count('id')
         ).order_by('specialization')
@@ -181,7 +189,6 @@ class Command(BaseCommand):
         for spec in specializations:
             self.stdout.write(f'   • {spec["specialization"]}: {spec["count"]}')
 
-        # Mostrar coordinador
         coordinator = BotCoordinator.objects.first()
         if coordinator:
             self.stdout.write(f'\nCoordinador: {coordinator.name}')

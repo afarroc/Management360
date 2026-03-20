@@ -3,18 +3,16 @@ Modelos para el sistema multi-bot FTE
 Incluye usuarios genéricos, instancias de bots, coordinación y gestión de leads
 """
 
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
+from django.conf import settings
 from django.core.exceptions import ValidationError
 import uuid
 import json
 
 class GenericUser(models.Model):
     """Usuario genérico para bots - permite que múltiples bots compartan identidad"""
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='generic_user_profile')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='generic_user_profile')
     is_bot_user = models.BooleanField(default=False, help_text="Indica si este usuario es para un bot")
     role_description = models.CharField(max_length=200, blank=True, help_text="Descripción del rol del usuario")
     is_available = models.BooleanField(default=True, help_text="Si el usuario está disponible")
@@ -402,7 +400,9 @@ class BotLog(models.Model):
         ('communication', 'Comunicación'),
         ('performance', 'Rendimiento'),
         ('lead', 'Lead'),
-        ('coordination', 'Coordinación')
+        ('lead_distribution', 'Distribución de Leads'),
+        ('gtd', 'GTD'),
+        ('coordination', 'Coordinación'),
     ], default='system')
 
     level = models.CharField(max_length=20, choices=[
@@ -504,7 +504,8 @@ class Lead(models.Model):
         ('qualified', 'Calificado'),
         ('converted', 'Convertido'),
         ('rejected', 'Rechazado'),
-        ('follow_up', 'Seguimiento')
+        ('follow_up', 'Seguimiento'),
+        ('skipped', 'Omitido'),
     ], default='new')
 
     priority = models.CharField(max_length=20, choices=[
@@ -530,47 +531,90 @@ class Lead(models.Model):
 
     def assign_to_bot(self, bot_instance):
         """Asignar lead a un bot específico"""
-        self.assigned_bot = bot_instance
-        self.assigned_at = timezone.now()
-        self.status = 'assigned'
-        self.save()
+        with transaction.atomic():
+            self.assigned_bot = bot_instance
+            self.assigned_at = timezone.now()
+            self.status = 'assigned'
+            self.save()
 
-        # Crear InboxItem para que el bot lo procese
-        self._create_inbox_item_for_bot()
+            # Crear InboxItem para que el bot lo procese
+            self._create_inbox_item_for_bot()
 
     def _create_inbox_item_for_bot(self):
-        """Crear InboxItem en el inbox del bot para procesamiento GTD"""
+        """
+        Crear InboxItem en el inbox del bot para procesamiento GTD.
+
+        NOTA TÉCNICA — EVENTS-BUG-FK:
+        Las FKs de events_inboxitem.created_by_id apuntan a auth_user en la DB,
+        pero AUTH_USER_MODEL = 'accounts.User' (accounts_user). Los usuarios bot
+        viven en accounts_user, por lo que InboxItem.objects.create() falla con
+        IntegrityError FK constraint.
+        Fix pendiente: migración en app events para actualizar FKs a accounts_user.
+        Mientras tanto, la creación de InboxItem es tolerante a fallos — el lead
+        queda asignado y logueado aunque el InboxItem no pueda crearse.
+        """
         from events.models import InboxItem
 
-        inbox_item = InboxItem.objects.create(
-            title=f"Lead: {self.name}",
-            description=f"Procesar lead {self.name} ({self.company}) - {self.email}",
-            host=self.assigned_bot.generic_user.user,
-            priority=self.priority,
-            context="lead_processing",
-            custom_data={
-                'lead_id': self.id,
-                'lead_name': self.name,
-                'lead_email': self.email,
-                'lead_company': self.company,
-                'campaign': self.campaign.name,
-                'source': self.source
-            }
-        )
+        inbox_item = None
+        inbox_err_msg = None
+        # Savepoint propio: si InboxItem falla (EVENTS-BUG-FK), el rollback
+        # afecta solo a este bloque y no envenena la transaction.atomic()
+        # exterior de assign_to_bot.
+        try:
+            with transaction.atomic():
+                inbox_item = InboxItem.objects.create(
+                    title=f"Lead: {self.name}",
+                    description=(
+                        f"Procesar lead {self.name} ({self.company}) - {self.email}\n"
+                        f"Campaña: {self.campaign.name} | Fuente: {self.source} | "
+                        f"Lead ID: {self.id}"
+                    ),
+                    created_by=self.assigned_bot.generic_user.user,
+                    priority=self.priority,
+                    context="lead_processing",
+                )
+        except Exception as inbox_err:
+            # EVENTS-BUG-FK: savepoint revertido limpiamente, transacción exterior sana.
+            inbox_err_msg = str(inbox_err)
 
-        # Log de la asignación
+        if inbox_err_msg:
+            BotLog.objects.create(
+                bot_instance=self.assigned_bot,
+                category='error',
+                level='warning',
+                message=f'InboxItem no creado para lead {self.name} (EVENTS-BUG-FK)',
+                details={
+                    'lead_id': self.id,
+                    'error': inbox_err_msg,
+                    'note': 'FK de events_inboxitem apunta a auth_user, no a accounts_user'
+                },
+                related_object_type='lead',
+                related_object_id=self.id
+            )
+
+        # Log de la asignación (siempre, independiente del InboxItem)
         BotLog.objects.create(
             bot_instance=self.assigned_bot,
-            category='lead',
+            category='lead_distribution',
             message=f'Lead asignado: {self.name}',
             details={
                 'lead_id': self.id,
-                'inbox_item_id': inbox_item.id,
+                'inbox_item_id': inbox_item.id if inbox_item else None,
                 'campaign': self.campaign.name
             },
             related_object_type='lead',
             related_object_id=self.id
         )
+
+        # Encolar tarea para que run_bots la recoja (solo si InboxItem existe)
+        if inbox_item:
+            from .utils import get_bot_coordinator
+            get_bot_coordinator().assign_task_to_bot({
+                'type': 'process_inbox',
+                'object_id': inbox_item.id,
+                'priority': 5,
+                'reason': f'Lead asignado: {self.name}'
+            })
 
     def mark_converted(self, value=0):
         """Marcar lead como convertido"""

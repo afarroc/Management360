@@ -221,7 +221,8 @@ def trigger_distribution(request, campaign_pk):
     campaign = get_object_or_404(LeadCampaign, pk=campaign_pk)
 
     distributor = get_lead_distributor(campaign)
-    result = distributor.distribute_leads()
+    # force=True: disparo manual — debe funcionar aunque auto_distribute=False
+    result = distributor.distribute_leads(force=True)
 
     if result['success']:
         messages.success(request, f'Se distribuyeron {result["distributed"]} leads')
@@ -342,6 +343,7 @@ def lead_export(request):
 
 # API Endpoints para AJAX
 
+@login_required
 def api_campaign_stats(request, campaign_pk):
     """API para obtener estadísticas de campaña en tiempo real"""
     campaign = get_object_or_404(LeadCampaign, pk=campaign_pk)
@@ -365,6 +367,7 @@ def api_campaign_stats(request, campaign_pk):
         'last_updated': timezone.now().isoformat()
     })
 
+@login_required
 def api_trigger_distribution(request, campaign_pk):
     """API para disparar distribución desde JavaScript"""
     if request.method != 'POST':
@@ -373,6 +376,156 @@ def api_trigger_distribution(request, campaign_pk):
     campaign = get_object_or_404(LeadCampaign, pk=campaign_pk)
 
     distributor = get_lead_distributor(campaign)
-    result = distributor.distribute_leads()
+    # force=True: disparo manual vía API — debe funcionar aunque auto_distribute=False
+    result = distributor.distribute_leads(force=True)
 
     return JsonResponse(result)
+"""
+BOT-4 — Dashboard de rendimiento de bots
+Agregar al final de bots/views.py (después de api_trigger_distribution)
+"""
+
+# ---------------------------------------------------------------------------
+# BOT-4: Dashboard + API de estado
+# ---------------------------------------------------------------------------
+
+@login_required
+def bot_dashboard(request):
+    """
+    Vista principal del dashboard de bots.
+    Muestra estado, métricas, logs recientes y distribución de leads por campaña.
+    """
+    from .models import BotLog, BotCoordinator, LeadCampaign, Lead
+    from django.db.models import Count, Q
+    from .utils import get_bot_coordinator
+
+    coordinator_service = get_bot_coordinator()
+
+    # --- Bots activos ---
+    bots = (
+        BotInstance.objects
+        .filter(is_active=True)
+        .prefetch_related('logs')
+        .order_by('-priority_level', 'name')
+    )
+
+    # Métricas + últimos 10 logs por bot
+    bots_data = []
+    for bot in bots:
+        metrics = bot.get_performance_metrics()
+        recent_logs = (
+            bot.logs
+            .order_by('-created_at')[:10]
+        )
+        bots_data.append({
+            'bot': bot,
+            'metrics': metrics,
+            'recent_logs': list(recent_logs),
+        })
+
+    # --- Carga del sistema ---
+    try:
+        coordinator_model = BotCoordinator.objects.first()
+        system_load = coordinator_model.get_system_load() if coordinator_model else 0.0
+    except Exception:
+        system_load = 0.0
+
+    queue_status = coordinator_service.task_queue.get_queue_status()
+
+    # --- Distribución de leads activos por campaña ---
+    campaigns_stats = (
+        LeadCampaign.objects
+        .filter(is_active=True)
+        .annotate(
+            leads_new=Count('leads', filter=Q(leads__status='new')),
+            leads_assigned=Count('leads', filter=Q(leads__status='assigned')),
+            leads_in_progress=Count('leads', filter=Q(leads__status='in_progress')),
+            leads_converted=Count('leads', filter=Q(leads__status='converted')),
+        )
+        .order_by('-created_at')
+    )
+
+    context = {
+        'page_title': 'Dashboard de Bots',
+        'bots_data': bots_data,
+        'system_load': system_load,
+        'system_load_pct': round(system_load * 100, 1),
+        'queue_status': queue_status,
+        'campaigns_stats': campaigns_stats,
+        'total_active_bots': bots.filter(current_status__in=['idle', 'working']).count(),
+        'total_working_bots': bots.filter(current_status='working').count(),
+        'total_error_bots': bots.filter(current_status='error').count(),
+    }
+
+    return render(request, 'bots/bot_dashboard.html', context)
+
+
+@login_required
+def api_bot_status(request):
+    """
+    API JSON para HTMX poll (GET /bots/api/status/).
+    Devuelve estado de todos los bots, carga del sistema y estado de colas.
+    """
+    from .models import BotLog, BotCoordinator, Lead
+    from django.db.models import Count, Q
+    from .utils import get_bot_coordinator
+
+    try:
+        coordinator_service = get_bot_coordinator()
+
+        bots = BotInstance.objects.filter(is_active=True).order_by('-priority_level', 'name')
+
+        bots_payload = []
+        for bot in bots:
+            metrics = bot.get_performance_metrics()
+            # Últimos 3 logs para el widget compacto
+            recent_logs = list(
+                bot.logs
+                .order_by('-created_at')
+                .values('level', 'message', 'created_at', 'category')[:3]
+            )
+            # Serializar datetimes
+            for log in recent_logs:
+                log['created_at'] = log['created_at'].isoformat()
+
+            bots_payload.append({
+                'id': bot.id,
+                'name': bot.name,
+                'specialization': bot.specialization,
+                'current_status': bot.current_status,
+                'status_message': bot.status_message,
+                'tasks_completed_today': bot.tasks_completed_today,
+                'error_count': bot.error_count,
+                'is_working_hours': bot.is_working_hours(),
+                'metrics': metrics,
+                'recent_logs': recent_logs,
+            })
+
+        try:
+            coordinator_model = BotCoordinator.objects.first()
+            system_load = coordinator_model.get_system_load() if coordinator_model else 0.0
+        except Exception:
+            system_load = 0.0
+
+        queue_status = coordinator_service.task_queue.get_queue_status()
+
+        # Resumen de leads activos
+        lead_summary = Lead.objects.aggregate(
+            total=Count('id'),
+            new=Count('id', filter=Q(status='new')),
+            assigned=Count('id', filter=Q(status='assigned')),
+            in_progress=Count('id', filter=Q(status='in_progress')),
+        )
+
+        return JsonResponse({
+            'success': True,
+            'bots': bots_payload,
+            'system_load': round(system_load, 3),
+            'system_load_pct': round(system_load * 100, 1),
+            'queue_status': queue_status,
+            'lead_summary': lead_summary,
+            'timestamp': timezone.now().isoformat(),
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
