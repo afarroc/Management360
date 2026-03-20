@@ -14,18 +14,18 @@
                         {{ title }}
                     </h3>
                     <div class="card-tools">
-                        <a href="{% url 'project_templates' %}" class="btn btn-secondary btn-sm">
+                        <a href="{% url 'events:project_templates' %}" class="btn btn-secondary btn-sm">
                             <i class="bi bi-arrow-left me-1"></i>
                             Volver a Plantillas
                         </a>
                         {% if can_edit %}
-                            <a href="{% url 'edit_project_template' template.id %}" class="btn btn-warning btn-sm">
+                            <a href="{% url 'events:edit_project_template' template.id %}" class="btn btn-warning btn-sm">
                                 <i class="bi bi-pencil me-1"></i>
                                 Editar
                             </a>
                         {% endif %}
                         {% if can_use %}
-                            <a href="{% url 'use_project_template' template.id %}" class="btn btn-success btn-sm">
+                            <a href="{% url 'events:use_project_template' template.id %}" class="btn btn-success btn-sm">
                                 <i class="bi bi-play-circle me-1"></i>
                                 Usar Plantilla
                             </a>
@@ -169,13 +169,13 @@
                                 <div class="card-body">
                                     <div class="d-grid gap-2">
                                         {% if can_use %}
-                                            <a href="{% url 'use_project_template' template.id %}" class="btn btn-success">
+                                            <a href="{% url 'events:use_project_template' template.id %}" class="btn btn-success">
                                                 <i class="bi bi-play-circle me-1"></i>
                                                 Usar Esta Plantilla
                                             </a>
                                         {% endif %}
                                         {% if can_edit %}
-                                            <a href="{% url 'edit_project_template' template.id %}" class="btn btn-outline-warning">
+                                            <a href="{% url 'events:edit_project_template' template.id %}" class="btn btn-outline-warning">
                                                 <i class="bi bi-pencil me-1"></i>
                                                 Editar Plantilla
                                             </a>

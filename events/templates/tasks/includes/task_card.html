@@ -12,7 +12,7 @@
                 
                 <!-- Ver Detalle -->
                 <li>
-                    <a class="dropdown-item" href="{% url 'task_panel_with_id' task_data.task.id %}">
+                    <a class="dropdown-item" href="{% url 'events:task_panel_with_id' task_data.task.id %}">
                         <i class="bi bi-eye-fill me-2"></i>Ver Detalle
                     </a>
                 </li>
@@ -21,19 +21,19 @@
                 
                 <!-- Gestión de Tarea -->
                 <li>
-                    <a class="dropdown-item" href="{% url 'task_edit' task_data.task.id %}">
+                    <a class="dropdown-item" href="{% url 'events:task_edit' task_data.task.id %}">
                         <i class="bi bi-pencil-square me-2"></i>Editar Tarea
                     </a>
                 </li>
                 
                 <li>
-                    <a class="dropdown-item" href="{% url 'task_dependencies' task_data.task.id %}">
+                    <a class="dropdown-item" href="{% url 'events:task_dependencies' task_data.task.id %}">
                         <i class="bi bi-diagram-3 me-2"></i>Dependencias
                     </a>
                 </li>
                 
                 <li>
-                    <a class="dropdown-item" href="{% url 'task_dependency_graph' task_data.task.id %}">
+                    <a class="dropdown-item" href="{% url 'events:task_dependency_graph' task_data.task.id %}">
                         <i class="bi bi-graph-up me-2"></i>Grafo de Dependencias
                     </a>
                 </li>
@@ -46,13 +46,13 @@
                 </li>
                 
                 <li>
-                    <a class="dropdown-item" href="{% url 'create_task_schedule' %}?task_id={{ task_data.task.id }}">
+                    <a class="dropdown-item" href="{% url 'events:create_task_schedule' %}?task_id={{ task_data.task.id }}">
                         <i class="bi bi-calendar-plus me-2"></i>Crear Programación
                     </a>
                 </li>
                 
                 <li>
-                    <a class="dropdown-item" href="{% url 'planning_task' %}?task_id={{ task_data.task.id }}">
+                    <a class="dropdown-item" href="{% url 'events:planning_task' %}?task_id={{ task_data.task.id }}">
                         <i class="bi bi-calendar-check me-2"></i>Planificar
                     </a>
                 </li>
@@ -67,7 +67,7 @@
                 {% for status in task_statuses|slice:":5" %}
                 <li>
                     <form id="status-quick-{{ task_data.task.id }}-{{ status.id }}" 
-                          action="{% url 'change_task_status' task_data.task.id %}" 
+                          action="{% url 'events:change_task_status' task_data.task.id %}" 
                           method="POST"
                           class="d-inline">
                         {% csrf_token %}
@@ -83,7 +83,7 @@
                 
                 {% if task_statuses.count > 5 %}
                 <li>
-                    <a class="dropdown-item text-muted" href="{% url 'task_panel_with_id' task_data.task.id %}#status">
+                    <a class="dropdown-item text-muted" href="{% url 'events:task_panel_with_id' task_data.task.id %}#status">
                         <i class="bi bi-three-dots me-2"></i>Más estados...
                     </a>
                 </li>
@@ -97,22 +97,22 @@
                 </li>
                 
                 <li>
-                    <a class="dropdown-item" href="{% url 'move_task_eisenhower' task_data.task.id 'urgent-important' %}">
+                    <a class="dropdown-item" href="{% url 'events:move_task_eisenhower' task_data.task.id 'urgent-important' %}">
                         <i class="bi bi-arrow-up-right-circle me-2 text-danger"></i>Urgente e Importante
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item" href="{% url 'move_task_eisenhower' task_data.task.id 'not-urgent-important' %}">
+                    <a class="dropdown-item" href="{% url 'events:move_task_eisenhower' task_data.task.id 'not-urgent-important' %}">
                         <i class="bi bi-arrow-right-circle me-2 text-warning"></i>No Urgente pero Importante
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item" href="{% url 'move_task_eisenhower' task_data.task.id 'urgent-not-important' %}">
+                    <a class="dropdown-item" href="{% url 'events:move_task_eisenhower' task_data.task.id 'urgent-not-important' %}">
                         <i class="bi bi-arrow-up-circle me-2 text-info"></i>Urgente pero No Importante
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item" href="{% url 'move_task_eisenhower' task_data.task.id 'not-urgent-not-important' %}">
+                    <a class="dropdown-item" href="{% url 'events:move_task_eisenhower' task_data.task.id 'not-urgent-not-important' %}">
                         <i class="bi bi-arrow-down-circle me-2 text-secondary"></i>No Urgente ni Importante
                     </a>
                 </li>
@@ -121,7 +121,7 @@
                 
                 <!-- Recordatorios -->
                 <li>
-                    <a class="dropdown-item" href="{% url 'create_reminder' %}?task={{ task_data.task.id }}">
+                    <a class="dropdown-item" href="{% url 'events:create_reminder' %}?task={{ task_data.task.id }}">
                         <i class="bi bi-bell-fill me-2"></i>Crear Recordatorio
                     </a>
                 </li>
@@ -135,14 +135,14 @@
                 </li>
                 
                 <li>
-                    <a class="dropdown-item" href="{% url 'task_activate' task_data.task.id %}">
+                    <a class="dropdown-item" href="{% url 'events:task_activate' task_data.task.id %}">
                         <i class="bi bi-toggle-on me-2"></i>Activar/Desactivar
                     </a>
                 </li>
                 
                 <li>
                     <form id="delete-form-{{ task_data.task.id }}" 
-                          action="{% url 'task_delete' task_data.task.id %}" 
+                          action="{% url 'events:task_delete' task_data.task.id %}" 
                           method="POST"
                           onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta tarea?\n\nEsta acción no se puede deshacer.');">
                         {% csrf_token %}
@@ -163,7 +163,7 @@
                 </li>
                 
                 <li>
-                    <a class="dropdown-item" href="{% url 'tasks' %}?export=single&id={{ task_data.task.id }}">
+                    <a class="dropdown-item" href="{% url 'events:tasks' %}?export=single&id={{ task_data.task.id }}">
                         <i class="bi bi-download me-2"></i>Exportar Tarea
                     </a>
                 </li>
@@ -172,7 +172,7 @@
 
         <div class="card-body">
             <h5 class="card-title">
-                <a href="{% url 'task_panel_with_id' task_data.task.id %}">{{ task_data.task.title }}</a> 
+                <a href="{% url 'events:task_panel_with_id' task_data.task.id %}">{{ task_data.task.title }}</a> 
                 {% if task_data.task.important %}
                 <span class="badge bg-danger ms-2" title="Alta Prioridad">
                     <i class="bi bi-exclamation-triangle-fill"></i>
@@ -202,7 +202,7 @@
             <div class="card-text mt-2">
                 <p class="card-text mb-1">{{ task_data.task.description|linebreaksbr|truncatechars:150 }}</p>
                 {% if task_data.task.description|length > 150 %}
-                <a href="{% url 'task_panel_with_id' task_data.task.id %}" class="small">Ver más</a>
+                <a href="{% url 'events:task_panel_with_id' task_data.task.id %}" class="small">Ver más</a>
                 {% endif %}
             </div>
 
@@ -222,7 +222,7 @@
             <div class="mt-2">
                 <span class="badge bg-light text-dark">
                     <i class="bi bi-calendar-event me-1"></i>
-                    <a href="{% url 'event_panel_with_id' task_data.task.event_id %}" class="text-decoration-none">
+                    <a href="{% url 'events:event_panel_with_id' task_data.task.event_id %}" class="text-decoration-none">
                         {{ task_data.task.event.title|truncatechars:30 }}
                     </a>
                 </span>
@@ -233,7 +233,7 @@
             <div class="mt-1">
                 <span class="badge bg-light text-dark">
                     <i class="bi bi-diagram-3 me-1"></i>
-                    <a href="{% url 'project_panel_with_id' task_data.task.project_id %}" class="text-decoration-none">
+                    <a href="{% url 'events:project_panel_with_id' task_data.task.project_id %}" class="text-decoration-none">
                         {{ task_data.task.project.title|truncatechars:30 }}
                     </a>
                 </span>
@@ -256,7 +256,7 @@
 
             <!-- Quick Status Change -->
             <form id="form-{{ task_data.task.id }}" 
-                  action="{% url 'change_task_status' task_data.task.id %}" 
+                  action="{% url 'events:change_task_status' task_data.task.id %}" 
                   method="POST"
                   class="mt-3">
                 {% csrf_token %}
@@ -289,7 +289,7 @@
 
 <script>
 function copyTaskLink(taskId) {
-    const url = window.location.origin + "{% url 'task_panel_with_id' 0 %}".replace('0', taskId);
+    const url = window.location.origin + "{% url 'events:task_panel_with_id' 0 %}".replace('0', taskId);
     navigator.clipboard.writeText(url).then(function() {
         alert('Enlace copiado al portapapeles');
     }, function() {

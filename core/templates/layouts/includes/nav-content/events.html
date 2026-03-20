@@ -2,18 +2,18 @@
      OPTIMIZED EVENTS SECTION
      ======================================================= -->
 <li class="nav-item">
-    <a class="nav-link collapsed" data-bs-target="#events-nav" data-bs-toggle="collapse" href="{% url 'events' %}">
+    <a class="nav-link collapsed" data-bs-target="#events-nav" data-bs-toggle="collapse" href="{% url 'events:events' %}">
         <i class="bi bi-calendar-event"></i><span>Events</span><i class="bi bi-chevron-down ms-auto"></i>
     </a>
     <ul id="events-nav" class="nav-content collapse" data-bs-parent="#sidebar-nav">
         <!-- Main Views -->
         <li>
-            <a href="{% url 'events' %}">
+            <a href="{% url 'events:events' %}">
                 <i class="bi bi-list-ul"></i><span>All Events</span>
             </a>
         </li>
         <li>
-            <a href="{% url 'event_panel' %}">
+            <a href="{% url 'events:event_panel' %}">
                 <i class="bi bi-speedometer2"></i><span>Event Panel</span>
             </a>
         </li>
@@ -26,17 +26,17 @@
             </a>
             <ul id="event-actions-nav" class="nav-content collapse" data-bs-parent="#events-nav">
                 <li>
-                    <a href="{% url 'event_create' %}">
+                    <a href="{% url 'events:event_create' %}">
                         <i class="bi bi-plus-circle"></i><span>Create Event</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'event_panel' %}">
+                    <a href="{% url 'events:event_panel' %}">
                         <i class="bi bi-pencil"></i><span>Edit Event</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'event_assign_no_id' %}">
+                    <a href="{% url 'events:event_assign_no_id' %}">
                         <i class="bi bi-person-plus"></i><span>Assign Attendees</span>
                     </a>
                 </li>
@@ -50,12 +50,12 @@
             </a>
             <ul id="event-reports-nav" class="nav-content collapse" data-bs-parent="#events-nav">
                 <li>
-                    <a href="{% url 'event_history_no_id' %}">
+                    <a href="{% url 'events:event_history_no_id' %}">
                         <i class="bi bi-clock-history"></i><span>Event History</span>
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'event_export' %}">
+                    <a href="{% url 'events:event_export' %}">
                         <i class="bi bi-download"></i><span>Export Events</span>
                     </a>
                 </li>

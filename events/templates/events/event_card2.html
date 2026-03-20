@@ -41,7 +41,7 @@
 			{% endif %}
 			</p>
 
-				<form id="form-{{ event.id }}" action="{% url 'change_event_status' event.id %}" method="POST">
+				<form id="form-{{ event.id }}" action="{% url 'events:change_event_status' event.id %}" method="POST">
 					{% csrf_token %}
 					<div class="form-floating mb-3">
 	

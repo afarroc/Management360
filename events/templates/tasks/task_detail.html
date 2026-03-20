@@ -17,7 +17,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Inicio</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'tasks' %}">Tareas</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'events:tasks' %}">Tareas</a></li>
             <li class="breadcrumb-item active">{{ task.title|truncatechars:30 }}</li>
         </ol>
     </nav>
@@ -94,7 +94,7 @@
                                 {% if task.project %}
                                 <li class="mb-2">
                                     <strong>Proyecto:</strong><br>
-                                    <a href="{% url 'projects_with_id' task.project.id %}" class="text-decoration-none">
+                                    <a href="{% url 'events:projects_with_id' task.project.id %}" class="text-decoration-none">
                                         {{ task.project.title }}
                                     </a>
                                     <span class="badge bg-light text-dark ms-2">
@@ -106,7 +106,7 @@
                                 {% if task.event %}
                                 <li class="mb-2">
                                     <strong>Evento:</strong><br>
-                                    <a href="{% url 'event_detail' task.event.id %}" class="text-decoration-none">
+                                    <a href="{% url 'events:event_detail' task.event.id %}" class="text-decoration-none">
                                         {{ task.event.title }}
                                     </a>
                                     <span class="badge bg-light text-dark ms-2">
@@ -151,20 +151,20 @@
                 <div class="card-footer bg-transparent">
                     <div class="d-flex justify-content-between">
                         <div class="btn-group">
-                            <a href="{% url 'task_edit' task.id %}" class="btn btn-primary">
+                            <a href="{% url 'events:task_edit' task.id %}" class="btn btn-primary">
                                 <i class="bi bi-pencil me-1"></i> Editar
                             </a>
-                            <a href="{% url 'tasks' %}" class="btn btn-outline-secondary">
+                            <a href="{% url 'events:tasks' %}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left me-1"></i> Volver a la lista
                             </a>
                         </div>
                         <div class="btn-group">
                             {% if task.project %}
-                            <a href="{% url 'kanban_project' task.project.id %}" class="btn btn-info">
+                            <a href="{% url 'events:kanban_project' task.project.id %}" class="btn btn-info">
                                 <i class="bi bi-kanban me-1"></i> Ver Kanban
                             </a>
                             {% endif %}
-                            <a href="{% url 'task_dependency_graph' task.id %}" class="btn btn-secondary">
+                            <a href="{% url 'events:task_dependency_graph' task.id %}" class="btn btn-secondary">
                                 <i class="bi bi-diagram-3 me-1"></i> Dependencias
                             </a>
                         </div>
@@ -329,7 +329,7 @@ function deleteTask(taskId, taskTitle) {
         .then(response => response.text())
         .then(data => {
             alert('Tarea eliminada exitosamente');
-            window.location.href = "{% url 'tasks' %}";
+            window.location.href = "{% url 'events:tasks' %}";
         })
         .catch(error => {
             alert('Error al eliminar: ' + error);

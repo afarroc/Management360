@@ -19,7 +19,7 @@
                             </h4>
                             <small class="opacity-75">Gestiona tus tareas automatizadas</small>
                         </div>
-                        <a href="{% url 'create_task_schedule' %}" class="btn btn-light btn-sm">
+                        <a href="{% url 'events:create_task_schedule' %}" class="btn btn-light btn-sm">
                             <i class="bi bi-plus-circle me-1"></i>
                             Nueva Programación
                         </a>
@@ -158,17 +158,17 @@
                                                 <i class="bi bi-three-dots"></i>
                                             </button>
                                             <ul class="dropdown-menu">
-                                                <li><a class="dropdown-item" href="{% url 'task_schedule_detail' item.schedule.id %}">
+                                                <li><a class="dropdown-item" href="{% url 'events:task_schedule_detail' item.schedule.id %}">
                                                     <i class="bi bi-eye me-2"></i>Ver Detalles
                                                 </a></li>
-                                                <li><a class="dropdown-item" href="{% url 'edit_task_schedule' item.schedule.id %}">
+                                                <li><a class="dropdown-item" href="{% url 'events:edit_task_schedule' item.schedule.id %}">
                                                     <i class="bi bi-pencil me-2"></i>Editar
                                                 </a></li>
-                                                <li><a class="dropdown-item" href="{% url 'generate_schedule_occurrences' item.schedule.id %}">
+                                                <li><a class="dropdown-item" href="{% url 'events:generate_schedule_occurrences' item.schedule.id %}">
                                                     <i class="bi bi-play me-2"></i>Generar Ocurrencias
                                                 </a></li>
                                                 <li><hr class="dropdown-divider"></li>
-                                                <li><a class="dropdown-item text-danger" href="{% url 'delete_task_schedule' item.schedule.id %}">
+                                                <li><a class="dropdown-item text-danger" href="{% url 'events:delete_task_schedule' item.schedule.id %}">
                                                     <i class="bi bi-trash me-2"></i>Eliminar
                                                 </a></li>
                                             </ul>
@@ -254,17 +254,17 @@
                                             Creada: {{ item.schedule.created_at|date:"d/m/Y" }}
                                         </small>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{% url 'task_schedule_detail' item.schedule.id %}"
+                                            <a href="{% url 'events:task_schedule_detail' item.schedule.id %}"
                                                class="btn btn-outline-info btn-sm"
                                                title="Ver detalles">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="{% url 'edit_task_schedule' item.schedule.id %}"
+                                            <a href="{% url 'events:edit_task_schedule' item.schedule.id %}"
                                                class="btn btn-outline-warning btn-sm"
                                                title="Editar">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            <a href="{% url 'generate_schedule_occurrences' item.schedule.id %}"
+                                            <a href="{% url 'events:generate_schedule_occurrences' item.schedule.id %}"
                                                class="btn btn-outline-success btn-sm"
                                                title="Generar ocurrencias">
                                                 <i class="bi bi-play"></i>
@@ -286,7 +286,7 @@
                             <p class="text-muted mb-4">
                                 Crea tu primera programación para automatizar tareas recurrentes y mejorar tu productividad.
                             </p>
-                            <a href="{% url 'create_task_schedule' %}" class="btn btn-primary btn-lg">
+                            <a href="{% url 'events:create_task_schedule' %}" class="btn btn-primary btn-lg">
                                 <i class="bi bi-plus-circle me-2"></i>
                                 Crear Primera Programación
                             </a>

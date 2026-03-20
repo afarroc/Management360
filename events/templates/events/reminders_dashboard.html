@@ -11,7 +11,7 @@
                         <i class="bi bi-bell me-2"></i>{{ title }}
                     </h3>
                     <div>
-                        <a href="{% url 'create_reminder' %}" class="btn btn-primary btn-sm">
+                        <a href="{% url 'events:create_reminder' %}" class="btn btn-primary btn-sm">
                             <i class="bi bi-plus-circle me-1"></i>Crear Recordatorio
                         </a>
                         <button class="btn btn-outline-secondary btn-sm" onclick="refreshReminders()">
@@ -138,7 +138,7 @@
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
-                                                    <a href="{% url 'edit_reminder' reminder.id %}" class="btn btn-outline-primary">
+                                                    <a href="{% url 'events:edit_reminder' reminder.id %}" class="btn btn-outline-primary">
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
                                                     <button class="btn btn-outline-success" onclick="markAsSent({{ reminder.id }})">

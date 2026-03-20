@@ -19,11 +19,11 @@
                             <small class="opacity-75">Revisa los cambios antes de guardarlos</small>
                         </div>
                         <div class="btn-group">
-                            <a href="{% url 'edit_task_schedule' original_schedule.id %}" class="btn btn-light btn-sm">
+                            <a href="{% url 'events:edit_task_schedule' original_schedule.id %}" class="btn btn-light btn-sm">
                                 <i class="bi bi-arrow-left me-1"></i>
                                 Volver a Editar
                             </a>
-                            <a href="{% url 'task_schedule_detail' original_schedule.id %}" class="btn btn-outline-light btn-sm">
+                            <a href="{% url 'events:task_schedule_detail' original_schedule.id %}" class="btn btn-outline-light btn-sm">
                                 <i class="bi bi-info-circle me-1"></i>
                                 Ver Detalle
                             </a>
@@ -274,7 +274,7 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="d-grid">
-                                <a href="{% url 'edit_task_schedule' original_schedule.id %}" class="btn btn-outline-secondary btn-lg">
+                                <a href="{% url 'events:edit_task_schedule' original_schedule.id %}" class="btn btn-outline-secondary btn-lg">
                                     <i class="bi bi-arrow-left me-2"></i>
                                     Volver a Editar
                                 </a>
@@ -283,7 +283,7 @@
                         <div class="col-md-6">
                             {% if changes_detected %}
                             <div class="d-grid">
-                                <form method="post" action="{% url 'edit_task_schedule' original_schedule.id %}">
+                                <form method="post" action="{% url 'events:edit_task_schedule' original_schedule.id %}">
                                     {% csrf_token %}
                                     {% for key, value in form_data.items %}
                                         {% if key != 'csrfmiddlewaretoken' %}

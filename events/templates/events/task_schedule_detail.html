@@ -13,13 +13,13 @@
                         <i class="fas fa-calendar-alt"></i> Programación: {{ schedule.task.title }}
                     </h3>
                     <div class="card-tools">
-                        <a href="{% url 'edit_task_schedule' schedule.id %}" class="btn btn-warning btn-sm">
+                        <a href="{% url 'events:edit_task_schedule' schedule.id %}" class="btn btn-warning btn-sm">
                             <i class="fas fa-edit"></i> Editar
                         </a>
-                        <a href="{% url 'generate_schedule_occurrences' schedule.id %}" class="btn btn-success btn-sm">
+                        <a href="{% url 'events:generate_schedule_occurrences' schedule.id %}" class="btn btn-success btn-sm">
                             <i class="fas fa-play"></i> Generar Ocurrencias
                         </a>
-                        <a href="{% url 'task_schedules' %}" class="btn btn-secondary btn-sm">
+                        <a href="{% url 'events:task_schedules' %}" class="btn btn-secondary btn-sm">
                             <i class="fas fa-arrow-left"></i> Volver
                         </a>
                     </div>
@@ -152,13 +152,13 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{% url 'generate_schedule_occurrences' schedule.id %}" class="btn btn-success">
+                        <a href="{% url 'events:generate_schedule_occurrences' schedule.id %}" class="btn btn-success">
                             <i class="fas fa-play"></i> Generar Ocurrencias
                         </a>
-                        <a href="{% url 'edit_task_schedule' schedule.id %}" class="btn btn-warning">
+                        <a href="{% url 'events:edit_task_schedule' schedule.id %}" class="btn btn-warning">
                             <i class="fas fa-edit"></i> Editar Programación
                         </a>
-                        <a href="{% url 'delete_task_schedule' schedule.id %}" class="btn btn-danger"
+                        <a href="{% url 'events:delete_task_schedule' schedule.id %}" class="btn btn-danger"
                            onclick="return confirm('¿Estás seguro de que quieres eliminar esta programación?')">
                             <i class="fas fa-trash"></i> Eliminar Programación
                         </a>

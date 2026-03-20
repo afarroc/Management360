@@ -21,7 +21,7 @@
                 <a href="{% url 'index' %}"><i class="bi bi-house-door me-1"></i>Home</a>
             </li>
             <li class="breadcrumb-item">
-                <a href="{% url 'event_panel' %}">Eventos</a>
+                <a href="{% url 'events:event_panel' %}">Eventos</a>
             </li>
             <li class="breadcrumb-item active">{{ title }}</li>
         </ol>
@@ -137,13 +137,13 @@
                         </div>
                         <div class="card-body">
                             <div class="d-grid gap-2">
-                                <a href="{% url 'event_detail' event.id %}" class="btn btn-outline-primary">
+                                <a href="{% url 'events:event_detail' event.id %}" class="btn btn-outline-primary">
                                     <i class="bi bi-eye me-2"></i>Ver detalle
                                 </a>
-                                <a href="{% url 'event_assign' event.id %}" class="btn btn-outline-info">
+                                <a href="{% url 'events:event_assign' event.id %}" class="btn btn-outline-info">
                                     <i class="bi bi-link me-2"></i>Asignar recursos
                                 </a>
-                                <a href="{% url 'event_panel' %}" class="btn btn-outline-secondary">
+                                <a href="{% url 'events:event_panel' %}" class="btn btn-outline-secondary">
                                     <i class="bi bi-arrow-left me-2"></i>Volver al panel
                                 </a>
                             </div>

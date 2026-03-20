@@ -4,7 +4,7 @@
 <div class="container mt-5">
     <h1 class="text-center">Lista de Clasificaciones</h1>
     <div class="mt-3">
-        <a href="{% url 'create_classification' %}" class="btn btn-success">Crear nueva clasificación</a>
+        <a href="{% url 'events:create_classification' %}" class="btn btn-success">Crear nueva clasificación</a>
     </div>
     <p></p>
     <div class="row justify-content-center">
@@ -14,8 +14,8 @@
                     <div class="card-body">
                         <h5 class="card-title">[{{ classification.id }}] {{ classification.nombre }}</h5>
                         <p class="card-text">{{ classification.descripcion }}</p>
-                        <a href="{% url 'edit_classification' classification.id %}" class="btn btn-primary">Editar</a>
-                        <a href="{% url 'delete_classification' classification.id %}" class="btn btn-danger">Eliminar</a>
+                        <a href="{% url 'events:edit_classification' classification.id %}" class="btn btn-primary">Editar</a>
+                        <a href="{% url 'events:delete_classification' classification.id %}" class="btn btn-danger">Eliminar</a>
                     </div>
                 </div>
             </div>

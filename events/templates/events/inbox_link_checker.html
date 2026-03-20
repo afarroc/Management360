@@ -17,7 +17,7 @@
                     <p class="text-muted mb-0">Verifica y corrige enlaces entre items del inbox y objetos creados</p>
                 </div>
                 <div>
-                    <a href="{% url 'inbox_admin_dashboard' %}" class="btn btn-outline-secondary">
+                    <a href="{% url 'events:inbox_admin_dashboard' %}" class="btn btn-outline-secondary">
                         <i class="bi bi-arrow-left me-1"></i>
                         Volver al Admin
                     </a>
@@ -92,7 +92,7 @@
                                     <td>{{ issue.issue }}</td>
                                     <td>{{ issue.action_needed }}</td>
                                     <td>
-                                        <a href="{% url 'process_inbox_item' issue.item_id %}" class="btn btn-sm btn-outline-primary">
+                                        <a href="{% url 'events:process_inbox_item' issue.item_id %}" class="btn btn-sm btn-outline-primary">
                                             <i class="bi bi-pencil"></i> Revisar
                                         </a>
                                     </td>

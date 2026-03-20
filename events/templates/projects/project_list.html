@@ -13,7 +13,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'events:projects' %}">Projects Dashboard</a></li>
             <li class="breadcrumb-item active">{{title}}</li>
         </ol>
     </nav>
@@ -58,16 +58,16 @@
                                             <tbody>
                                                 {% for project in projects %}
                                                 <tr>
-                                                    <td><a href="{% url 'project_panel_with_id' project.id %}">{{ project.id }} </a></td>
-                                                    <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{project.description}}" href="{% url 'project_panel_with_id' project.id %}">{{ project.title }}</a></td>
+                                                    <td><a href="{% url 'events:project_panel_with_id' project.id %}">{{ project.id }} </a></td>
+                                                    <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{project.description}}" href="{% url 'events:project_panel_with_id' project.id %}">{{ project.title }}</a></td>
                                                     <td>{{ project.assigned_to.username }}</td>
                                                     <td>{{ project.project_status.status_name }}</td>
                                                     <td>
-                                                        <a href="{% url 'project_edit' project.id %}" class="btn btn-primary">
+                                                        <a href="{% url 'events:project_edit' project.id %}" class="btn btn-primary">
                                                             <i class="bi bi-pencil-fill"></i>
                                                         </a>
                                                         <!-- Formulario de eliminación -->
-                                                        <form method="post" action="{% url 'project_delete' project.id %}" style="display: inline;">
+                                                        <form method="post" action="{% url 'events:project_delete' project.id %}" style="display: inline;">
                                                             {% csrf_token %}
                                                             <button type="submit" class="btn btn-danger">
                                                                 <i class="bi bi-trash-fill"></i>

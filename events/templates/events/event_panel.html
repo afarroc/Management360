@@ -32,7 +32,7 @@
                     </a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'events' %}" class="breadcrumb-link">
+                    <a href="{% url 'events:events' %}" class="breadcrumb-link">
                         Eventos
                     </a>
                 </li>
@@ -131,13 +131,13 @@
                                 <i class="bi bi-gear-fill me-2"></i>Gestión de Eventos
                             </h5>
                             <div class="d-flex flex-wrap gap-2">
-                                <a href="{% url 'event_create' %}" class="btn btn-success">
+                                <a href="{% url 'events:event_create' %}" class="btn btn-success">
                                     <i class="bi bi-plus-circle me-2"></i>Crear Evento
                                 </a>
-                                <a href="{% url 'events' %}" class="btn btn-outline-primary">
+                                <a href="{% url 'events:events' %}" class="btn btn-outline-primary">
                                     <i class="bi bi-eye me-2"></i>Ver Dashboard
                                 </a>
-                                <a href="{% url 'event_export' %}" class="btn btn-outline-secondary">
+                                <a href="{% url 'events:event_export' %}" class="btn btn-outline-secondary">
                                     <i class="bi bi-download me-2"></i>Exportar CSV
                                 </a>
                             </div>
@@ -203,7 +203,7 @@
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle me-2"></i>
                         Este evento no tiene proyectos ni tareas asociadas.
-                        <a href="{% url 'event_assign' event_data.event.id %}" class="alert-link">
+                        <a href="{% url 'events:event_assign' event_data.event.id %}" class="alert-link">
                             Asignar ahora
                         </a>
                     </div>
@@ -259,18 +259,18 @@
                         </div>
                         <div class="card-body">
                             <div class="d-grid gap-2">
-                                <a href="{% url 'event_edit' event_data.event.id %}" class="btn btn-warning">
+                                <a href="{% url 'events:event_edit' event_data.event.id %}" class="btn btn-warning">
                                     <i class="bi bi-pencil me-2"></i>Editar Evento
                                 </a>
-                                <a href="{% url 'event_assign' event_data.event.id %}" class="btn btn-info">
+                                <a href="{% url 'events:event_assign' event_data.event.id %}" class="btn btn-info">
                                     <i class="bi bi-link me-2"></i>Asignar Proyectos/Tareas
                                 </a>
-                                <a href="{% url 'event_panel' %}" class="btn btn-outline-secondary">
+                                <a href="{% url 'events:event_panel' %}" class="btn btn-outline-secondary">
                                     <i class="bi bi-arrow-left me-2"></i>Volver al Panel
                                 </a>
                                 {% if user.is_superuser %}
                                 <hr class="my-1">
-                                <form method="post" action="{% url 'event_delete' event_data.event.id %}" 
+                                <form method="post" action="{% url 'events:event_delete' event_data.event.id %}" 
                                       onsubmit="return confirm('¿Eliminar este evento permanentemente?');">
                                     {% csrf_token %}
                                     <button type="submit" class="btn btn-outline-danger w-100">
@@ -295,16 +295,16 @@
                         </div>
                         <div class="card-body">
                             <div class="d-grid gap-2">
-                                <a href="{% url 'event_create' %}" class="btn btn-success">
+                                <a href="{% url 'events:event_create' %}" class="btn btn-success">
                                     <i class="bi bi-plus-circle me-2"></i>Nuevo Evento
                                 </a>
-                                <a href="{% url 'event_export' %}" class="btn btn-outline-primary">
+                                <a href="{% url 'events:event_export' %}" class="btn btn-outline-primary">
                                     <i class="bi bi-download me-2"></i>Exportar Eventos
                                 </a>
-                                <a href="{% url 'events' %}" class="btn btn-outline-secondary">
+                                <a href="{% url 'events:events' %}" class="btn btn-outline-secondary">
                                     <i class="bi bi-table me-2"></i>Vista Dashboard
                                 </a>
-                                <a href="{% url 'inbox' %}" class="btn btn-outline-info">
+                                <a href="{% url 'events:inbox' %}" class="btn btn-outline-info">
                                     <i class="bi bi-inbox me-2"></i>Ir al Inbox
                                 </a>
                             </div>

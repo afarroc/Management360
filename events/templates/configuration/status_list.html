@@ -6,7 +6,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'status_create' %}">Status</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'events:status_create' %}">Status</a></li>
             <li class="breadcrumb-item active">{{title}}</li>
         </ol>
     </nav>
@@ -32,8 +32,8 @@
                     <p class="card-text">{{ status.icon }}</p>
                     <p class="card-text">{{ status.active }}</p>
                     <p class="card-text">{{ status.color }}</p>
-                    <a href="{% url 'status_edit' model_id status.id %}" class="btn btn-primary">Editar</a>
-                    <a href="{% url 'status_delete' model_id status.id %}" class="btn btn-danger">Eliminar</a>
+                    <a href="{% url 'events:status_edit' model_id status.id %}" class="btn btn-primary">Editar</a>
+                    <a href="{% url 'events:status_delete' model_id status.id %}" class="btn btn-danger">Eliminar</a>
                 </div>
                 <div class="card-footer"></div>
             </div>

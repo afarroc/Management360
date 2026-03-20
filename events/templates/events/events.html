@@ -31,7 +31,7 @@
                     </a>
                 </li>
                 <li class="breadcrumb-item">
-                    <a href="{% url 'events' %}" class="breadcrumb-link">
+                    <a href="{% url 'events:events' %}" class="breadcrumb-link">
                         Eventos
                     </a>
                 </li>
@@ -109,16 +109,16 @@
                         </div>
                         <div class="card-body">
                             <div class="d-grid gap-2">
-                                <a href="{% url 'event_create' %}" class="btn btn-success">
+                                <a href="{% url 'events:event_create' %}" class="btn btn-success">
                                     <i class="bi bi-plus-circle me-2"></i>Nuevo Evento
                                 </a>
-                                <a href="{% url 'event_export' %}" class="btn btn-outline-primary">
+                                <a href="{% url 'events:event_export' %}" class="btn btn-outline-primary">
                                     <i class="bi bi-download me-2"></i>Exportar Eventos
                                 </a>
-                                <a href="{% url 'event_panel' %}" class="btn btn-outline-secondary">
+                                <a href="{% url 'events:event_panel' %}" class="btn btn-outline-secondary">
                                     <i class="bi bi-grid-3x3-gap me-2"></i>Panel de Eventos
                                 </a>
-                                <a href="{% url 'inbox' %}" class="btn btn-outline-info">
+                                <a href="{% url 'events:inbox' %}" class="btn btn-outline-info">
                                     <i class="bi bi-inbox me-2"></i>Ir al Inbox
                                 </a>
                             </div>

@@ -93,13 +93,13 @@
                                     <h5 class="card-title mt-3">Events</h5>
                                     <p class="card-text">Manage events, create new events, and track event progress.</p>
                                     <div class="d-grid gap-2">
-                                        <a href="{% url 'events' %}" class="btn btn-primary btn-sm">
+                                        <a href="{% url 'events:events' %}" class="btn btn-primary btn-sm">
                                             <i class="bi bi-eye me-1"></i> View Events
                                         </a>
-                                        <a href="{% url 'event_create' %}" class="btn btn-success btn-sm">
+                                        <a href="{% url 'events:event_create' %}" class="btn btn-success btn-sm">
                                             <i class="bi bi-plus-circle me-1"></i> Create Event
                                         </a>
-                                        <a href="{% url 'event_panel' %}" class="btn btn-info btn-sm">
+                                        <a href="{% url 'events:event_panel' %}" class="btn btn-info btn-sm">
                                             <i class="bi bi-gear me-1"></i> Manage Events
                                         </a>
                                     </div>
@@ -115,13 +115,13 @@
                                     <h5 class="card-title mt-3">Projects</h5>
                                     <p class="card-text">Organize and manage projects, assign tasks, and track progress.</p>
                                     <div class="d-grid gap-2">
-                                        <a href="{% url 'projects' %}" class="btn btn-warning btn-sm">
+                                        <a href="{% url 'events:projects' %}" class="btn btn-warning btn-sm">
                                             <i class="bi bi-eye me-1"></i> View Projects
                                         </a>
-                                        <a href="{% url 'project_create' %}" class="btn btn-success btn-sm">
+                                        <a href="{% url 'events:project_create' %}" class="btn btn-success btn-sm">
                                             <i class="bi bi-plus-circle me-1"></i> Create Project
                                         </a>
-                                        <a href="{% url 'project_panel' %}" class="btn btn-info btn-sm">
+                                        <a href="{% url 'events:project_panel' %}" class="btn btn-info btn-sm">
                                             <i class="bi bi-gear me-1"></i> Manage Projects
                                         </a>
                                     </div>
@@ -137,13 +137,13 @@
                                     <h5 class="card-title mt-3">Tasks</h5>
                                     <p class="card-text">Create and manage tasks, assign to projects, and track completion.</p>
                                     <div class="d-grid gap-2">
-                                        <a href="{% url 'tasks' %}" class="btn btn-success btn-sm">
+                                        <a href="{% url 'events:tasks' %}" class="btn btn-success btn-sm">
                                             <i class="bi bi-eye me-1"></i> View Tasks
                                         </a>
-                                        <a href="{% url 'task_create' %}" class="btn btn-success btn-sm">
+                                        <a href="{% url 'events:task_create' %}" class="btn btn-success btn-sm">
                                             <i class="bi bi-plus-circle me-1"></i> Create Task
                                         </a>
-                                        <a href="{% url 'task_panel' %}" class="btn btn-info btn-sm">
+                                        <a href="{% url 'events:task_panel' %}" class="btn btn-info btn-sm">
                                             <i class="bi bi-gear me-1"></i> Manage Tasks
                                         </a>
                                     </div>
@@ -193,12 +193,12 @@
                             <h6>Configuration</h6>
                             <ul class="list-unstyled">
                                 <li class="mb-2">
-                                    <a href="{% url 'status' %}" class="text-decoration-none">
+                                    <a href="{% url 'events:status' %}" class="text-decoration-none">
                                         <i class="bi bi-tag me-2"></i> Manage Statuses
                                     </a>
                                 </li>
                                 <li class="mb-2">
-                                    <a href="{% url 'classification_list' %}" class="text-decoration-none">
+                                    <a href="{% url 'events:classification_list' %}" class="text-decoration-none">
                                         <i class="bi bi-tags me-2"></i> Manage Classifications
                                     </a>
                                 </li>
@@ -208,12 +208,12 @@
                             <h6>Reports & Analytics</h6>
                             <ul class="list-unstyled">
                                 <li class="mb-2">
-                                    <a href="{% url 'events' %}" class="text-decoration-none">
+                                    <a href="{% url 'events:events' %}" class="text-decoration-none">
                                         <i class="bi bi-bar-chart me-2"></i> View All Events
                                     </a>
                                 </li>
                                 <li class="mb-2">
-                                    <a href="{% url 'tasks' %}" class="text-decoration-none">
+                                    <a href="{% url 'events:tasks' %}" class="text-decoration-none">
                                         <i class="bi bi-calendar-week me-2"></i> Task Planning
                                     </a>
                                 </li>

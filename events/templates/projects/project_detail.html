@@ -274,16 +274,16 @@
             <nav>
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{% url 'index' %}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'events:projects' %}">Projects</a></li>
                     <li class="breadcrumb-item active">{{ project.title|truncatechars:40 }}</li>
                 </ol>
             </nav>
         </div>
         <div class="d-flex gap-2">
-            <a href="{% url 'project_edit' project.id %}" class="btn btn-outline-primary btn-sm">
+            <a href="{% url 'events:project_edit' project.id %}" class="btn btn-outline-primary btn-sm">
                 <i class="bi bi-pencil"></i> Edit
             </a>
-            <a href="{% url 'task_create_with_project' project.id %}" class="btn btn-success btn-sm">
+            <a href="{% url 'events:task_create_with_project' project.id %}" class="btn btn-success btn-sm">
                 <i class="bi bi-plus-circle"></i> Add Task
             </a>
             <div class="dropdown">
@@ -292,10 +292,10 @@
                     <i class="bi bi-gear"></i> Options
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{% url 'projects' %}">
+                    <li><a class="dropdown-item" href="{% url 'events:projects' %}">
                         <i class="bi bi-arrow-left me-2"></i>Back to Projects
                     </a></li>
-                    <li><a class="dropdown-item" href="{% url 'project_panel_with_id' project.id %}">
+                    <li><a class="dropdown-item" href="{% url 'events:project_panel_with_id' project.id %}">
                         <i class="bi bi-eye me-2"></i>View in Panel
                     </a></li>
                     <li><hr class="dropdown-divider"></li>
@@ -542,7 +542,7 @@
                                                 <th>Event:</th>
                                                 <td>
                                                     {% if project.event %}
-                                                    <a href="{% url 'event_detail' project.event.id %}" class="text-decoration-none">
+                                                    <a href="{% url 'events:event_detail' project.event.id %}" class="text-decoration-none">
                                                         <i class="bi bi-calendar-event me-1"></i>
                                                         {{ project.event.title }}
                                                     </a>
@@ -618,7 +618,7 @@
                         <div class="tab-pane fade" id="tasks" role="tabpanel">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h6 class="fw-bold text-primary mb-0">Project Tasks ({{ tasks|length }})</h6>
-                                <a href="{% url 'task_create_with_project' project.id %}" class="btn btn-primary btn-sm">
+                                <a href="{% url 'events:task_create_with_project' project.id %}" class="btn btn-primary btn-sm">
                                     <i class="bi bi-plus-circle me-1"></i> Add Task
                                 </a>
                             </div>
@@ -637,10 +637,10 @@
                                                         <i class="bi bi-three-dots"></i>
                                                     </button>
                                                     <ul class="dropdown-menu">
-                                                        <li><a class="dropdown-item" href="{% url 'task_detail' task.id %}">
+                                                        <li><a class="dropdown-item" href="{% url 'events:task_detail' task.id %}">
                                                             <i class="bi bi-eye me-2"></i>View
                                                         </a></li>
-                                                        <li><a class="dropdown-item" href="{% url 'task_edit' task.id %}">
+                                                        <li><a class="dropdown-item" href="{% url 'events:task_edit' task.id %}">
                                                             <i class="bi bi-pencil me-2"></i>Edit
                                                         </a></li>
                                                         <li><hr class="dropdown-divider"></li>
@@ -685,7 +685,7 @@
                                 <i class="bi bi-list-check display-1 text-muted mb-3"></i>
                                 <h6 class="text-muted">No tasks found</h6>
                                 <p class="text-muted small mb-4">This project doesn't have any tasks yet.</p>
-                                <a href="{% url 'task_create_with_project' project.id %}" class="btn btn-primary">
+                                <a href="{% url 'events:task_create_with_project' project.id %}" class="btn btn-primary">
                                     <i class="bi bi-plus-circle me-1"></i>Create First Task
                                 </a>
                             </div>
@@ -742,16 +742,16 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{% url 'task_create_with_project' project.id %}" class="btn btn-success">
+                        <a href="{% url 'events:task_create_with_project' project.id %}" class="btn btn-success">
                             <i class="bi bi-plus-circle me-2"></i>Add Task
                         </a>
-                        <a href="{% url 'project_edit' project.id %}" class="btn btn-primary">
+                        <a href="{% url 'events:project_edit' project.id %}" class="btn btn-primary">
                             <i class="bi bi-pencil me-2"></i>Edit Project
                         </a>
-                        <a href="{% url 'tasks' %}?project_id={{ project.id }}" class="btn btn-info">
+                        <a href="{% url 'events:tasks' %}?project_id={{ project.id }}" class="btn btn-info">
                             <i class="bi bi-list-task me-2"></i>View All Tasks
                         </a>
-                        <a href="{% url 'projects' %}" class="btn btn-outline-secondary">
+                        <a href="{% url 'events:projects' %}" class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-left me-2"></i>Back to Projects
                         </a>
                     </div>
@@ -954,19 +954,19 @@ document.addEventListener('DOMContentLoaded', function() {
         // Ctrl/Cmd + E to edit project
         if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
             e.preventDefault();
-            window.location.href = "{% url 'project_edit' project.id %}";
+            window.location.href = "{% url 'events:project_edit' project.id %}";
         }
         
         // Ctrl/Cmd + T to add task
         if ((e.ctrlKey || e.metaKey) && e.key === 't') {
             e.preventDefault();
-            window.location.href = "{% url 'task_create_with_project' project.id %}";
+            window.location.href = "{% url 'events:task_create_with_project' project.id %}";
         }
         
         // Ctrl/Cmd + B to go back
         if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
             e.preventDefault();
-            window.location.href = "{% url 'projects' %}";
+            window.location.href = "{% url 'events:projects' %}";
         }
     });
 

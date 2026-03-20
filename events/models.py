@@ -4,6 +4,7 @@ from django.db import models
 from django.core.validators import FileExtensionValidator
 from django.contrib.auth.models import User
 from django.utils import timezone
+from decimal import Decimal
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 
@@ -564,10 +565,6 @@ class EventAttendee(models.Model):
 
 
 
-from django.db import models
-from django.contrib.auth.models import User
-from decimal import Decimal
-
 class CreditAccount(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
@@ -589,19 +586,6 @@ class CreditAccount(models.Model):
         self.balance -= amount
         self.save()
 
-
-class Room(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-
-    def __str__(self):
-        return self.name
-
-class Message(models.Model):
-    room = models.ForeignKey(Room, on_delete=models.CASCADE)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    message = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
 
 # Dependencias entre tareas
 class TaskDependency(models.Model):
@@ -734,17 +718,6 @@ class InboxItem(models.Model):
     # Campos para seguimiento de actividad
     last_activity = models.DateTimeField(auto_now=True)
     view_count = models.PositiveIntegerField(default=0, help_text="Número de veces que ha sido visto")
-
-    # NUEVOS CAMPOS GTD MEJORADOS
-    # Nivel de energía requerido para ejecutar la tarea
-    energy_required = models.CharField(max_length=20, choices=[
-        ('baja', 'Baja Energía'),
-        ('media', 'Media Energía'),
-        ('alta', 'Alta Energía')
-    ], default='media', help_text="Nivel de energía mental requerido")
-
-    # Tiempo estimado en minutos
-    estimated_time = models.IntegerField(blank=True, null=True, help_text="Tiempo estimado en minutos")
 
     # Sistema "Waiting For" - para tareas que esperan respuesta externa
     waiting_for = models.TextField(blank=True, help_text="¿Qué se está esperando? (ej: respuesta de cliente)")

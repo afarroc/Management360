@@ -337,7 +337,7 @@
             {% if project %}
                 <p class="text-muted mb-0">
                     <i class="bi bi-folder me-1"></i>
-                    Proyecto: <a href="{% url 'projects_with_id' project.id %}" class="text-decoration-none">{{ project.title }}</a>
+                    Proyecto: <a href="{% url 'events:projects_with_id' project.id %}" class="text-decoration-none">{{ project.title }}</a>
                 </p>
             {% endif %}
         </div>
@@ -347,7 +347,7 @@
                 <i class="bi bi-funnel me-1"></i>
                 Filtros
             </button>
-            <a href="{% url 'unified_dashboard' %}" class="btn btn-outline-primary">
+            <a href="{% url 'events:unified_dashboard' %}" class="btn btn-outline-primary">
                 <i class="bi bi-speedometer2 me-1"></i>
                 Dashboard
             </a>
@@ -400,17 +400,17 @@
                     {% if task_data.task.project %}
                     <div class="task-project">
                         <i class="bi bi-folder me-1"></i>
-                        <a href="{% url 'projects_with_id' task_data.task.project.id %}">{{ task_data.task.project.title|truncatechars:30 }}</a>
+                        <a href="{% url 'events:projects_with_id' task_data.task.project.id %}">{{ task_data.task.project.title|truncatechars:30 }}</a>
                     </div>
                     {% endif %}
 
                     <!-- Task Actions -->
                     <div class="task-actions">
                         <div class="d-flex gap-1">
-                            <a href="{% url 'tasks_with_id' task_data.task.id %}" class="btn btn-sm btn-outline-primary btn-task-action">
+                            <a href="{% url 'events:tasks_with_id' task_data.task.id %}" class="btn btn-sm btn-outline-primary btn-task-action">
                                 <i class="bi bi-eye"></i>
                             </a>
-                            <a href="{% url 'task_edit' task_data.task.id %}" class="btn btn-sm btn-outline-secondary btn-task-action">
+                            <a href="{% url 'events:task_edit' task_data.task.id %}" class="btn btn-sm btn-outline-secondary btn-task-action">
                                 <i class="bi bi-pencil"></i>
                             </a>
                         </div>
