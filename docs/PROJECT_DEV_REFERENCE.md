@@ -1,7 +1,7 @@
 # Referencia de Desarrollo — Proyecto Management360
 
 > **Audiencia:** Desarrolladores del proyecto y asistentes de IA (Claude, Copilot, etc.)
-> **Actualizado:** 2026-03-19 (Sesión Analista Doc — lote 2) | **Apps:** 20 | **Archivos Python+HTML:** ~710
+> **Actualizado:** 2026-03-20 (Sesión Analista Doc — lote 4: help, api, panel — documentación 20/20 ✅) | **Apps:** 20 | **Archivos Python+HTML:** ~710
 
 ---
 
@@ -41,26 +41,27 @@
 |-----|-----------|-----------|-------|
 | `accounts` | `accounts` | 11 | Autenticación, Perfiles — `app_name` en include externo |
 | `analyst` | `analyst` | 99 | Plataforma de datos (5 fases, SIM-4 integrado) |
-| `api` | `api` | 4 | API REST pública |
+| `api` | `—` ⚠️ | 4 | Enrutamiento puro — lógica real en `panel/views.py`. Sin `app_name` (bug #111) |
 | `bitacora` | `bitacora` | 9 | Bitácora personal GTD |
-| `board` | `board` | 8 | Kanban board |
-| `bots` | `bots` | 11 | Automatizaciones, bots |
-| `campaigns` | `campaigns` | 6 | Campañas, outreach |
+| `board` | `board` ✅ | 8 | Kanban board — HTMX + WebSocket (sin activar) |
+| `bots` | `bots` ✅ | 13 | Automatizaciones, bots, leads |
+| `campaigns` | `campaigns` ✅ | 6 | Campañas outbound, contactos, discador |
 | `chat` | `chat` ✅ | 40 | Chat en tiempo real + Asistente IA (Ollama) |
 | `core` | `—` ⚠️ | 16 | Dashboard, URL-map, layouts globales |
 | `courses` | `courses` ✅ | 59 | Cursos, lecciones, CMS, lecciones independientes |
-| `cv` | `cv` | 14 | Curriculum Vitae dinámico |
+| `cv` | `cv` ✅ | 14 | Curriculum Vitae dinámico |
 | `events` | `—` ⚠️ | 145 | Eventos, Proyectos, Tareas (app principal) |
-| `help` | `help` | 10 | Centro de ayuda, tickets |
-| `kpis` | `kpis` ✅ | 4 | KPIs, AHT Dashboard, CallRecord |
+| `help` | `help` ✅ | 10 | CMS de ayuda — artículos, FAQs, videos, guías. Integración con `courses` |
+| `kpis` | `kpis` ✅ | 5 | KPIs, AHT Dashboard, CallRecord |
 | `memento` | `—` ⚠️ | 6 | Visualización de mortalidad (Memento Mori) |
-| `panel` | `panel` | 27 | Panel de configuración del proyecto |
-| `passgen` | `passgen` | 2 | Generador de contraseñas |
+| `panel` | `—` | 8 | Paquete de configuración del proyecto (settings, urls raíz, storage, middleware) |
+| `passgen` | `—` ⚠️ | 2 | Generador de contraseñas — namespace no declarado |
 | `rooms` | `rooms` ✅ | 53 | Salas virtuales, mundo virtual 3D, Centrifugo |
 | `sim` | `sim` | 48 | Simulador WFM — SIM-1→SIM-7a completo |
 | `simcity` | `simcity` | 14 | Simulador urbano — proxy proot:8001 |
 
 > ⚠️ `core`, `events` y `memento` no declaran `app_name` en su `urls.py` — el namespace viene del `include()` en el urls raíz. Frágil si se cambia el include.
+> ⚠️ `passgen` y `api` no declaran `app_name` — sin namespace. Bugs #95 y #111.
 
 ### Convenciones de nomenclatura
 
@@ -107,6 +108,10 @@ User = get_user_model()
 
 # INCORRECTO — nunca usar esto
 from django.contrib.auth.models import User
+
+# INCORRECTO — get_user_model() a nivel de módulo en models.py (board)
+User = get_user_model()
+owner = models.ForeignKey(User, ...)  # debe ser settings.AUTH_USER_MODEL
 ```
 
 ### Views
@@ -146,9 +151,11 @@ fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrf() }, body: ... })
 # CORRECTO
 from bitacora.models import CategoriaChoices, MoodChoices
 from courses.models import CourseLevelChoices, LessonTypeChoices
+from kpis.models import SERVICIO_CHOICES, CANAL_CHOICES
 
 # INCORRECTO
 BitacoraEntry.CategoriaChoices   # AttributeError
+CallRecord.SERVICIO_CHOICES      # AttributeError — son module-level
 ```
 
 ---
@@ -169,6 +176,14 @@ La convención general es `created_by`. Estas apps rompen la convención — **s
 | `chat` | `Conversation`, `CommandLog`, `AssistantConfiguration` | `user` | Sin convención |
 | `memento` | `MementoConfig` | `user` | Sin convención |
 | `bitacora` | `BitacoraEntry` | `created_by` ✅ | Sí cumple la convención |
+| `board` | `Board` | `owner` | Propietario del tablero — NO `created_by` |
+| `board` | `Activity` | `user` | Log de actividad — NO `created_by` |
+| `cv` | `Curriculum` | `user` (OneToOne) | Propietario implícito — NO `created_by` |
+| `campaigns` | Todos | — | Sin propietario — datos globales de contact center |
+| `kpis` | `CallRecord` | `created_by` (null=True, SET_NULL) | ✅ Convención pero `null=True` intencional |
+| `help` | `HelpArticle`, `VideoTutorial` | `author` | NO `created_by` |
+| `help` | `HelpFeedback`, `HelpSearchLog` | `user` | NO `created_by` — feedback/telemetría |
+| `help` | `HelpCategory`, `FAQ`, `QuickStartGuide` | — | Sin propietario explícito |
 
 ### Resumen de acceso seguro por app
 
@@ -190,6 +205,14 @@ block = get_object_or_404(ContentBlock, slug=slug)
 # memento
 get_object_or_404(MementoConfig, pk=pk, user=request.user)
 
+# board
+get_object_or_404(Board, pk=pk, owner=request.user)
+get_object_or_404(Card, pk=pk, board__owner=request.user)
+
+# cv
+get_object_or_404(Curriculum, user=request.user)
+get_object_or_404(Document, id=pk, cv__user=request.user)
+
 # todo lo demás (estándar)
 get_object_or_404(MyModel, pk=pk, created_by=request.user)
 ```
@@ -210,6 +233,7 @@ get_object_or_404(MyModel, pk=pk, created_by=request.user)
 | **simcity** | `Game` | `created_at` / `updated_at` (DateTimeField) | `order_by('-created_at')` |
 | **memento** | `MementoConfig` | `updated_at` (DateTimeField) | `order_by('-updated_at')` |
 | **rooms** | `Room` | `bumped_at` (DateTimeField) | `order_by('-bumped_at')` — actualiza al recibir msg |
+| **campaigns** | `ProviderRawData` | `upload_date` (default=timezone.now) | `order_by('-upload_date')` |
 
 ### ⚠️ `timedelta` NO es parte de `django.utils.timezone`
 
@@ -280,6 +304,11 @@ Está explícitamente prohibido en vistas con datos de usuario. Violaciones **ac
 | CORE-SEC-1 | `core` | Exposición de arquitectura | `url_map_view` sin `@login_required` |
 | CORE-SEC-2 | `core` | Exposición de datos | `search_view` sin `@login_required` |
 | ROOMS-SEC-1 | `rooms` | Múltiples vistas sin auth | `room_detail`, `room_list`, `room_3d_view`, `room_comments` |
+| BOARD-SEC-1 | `board` | IDOR | `BoardDetailView` sin verificación de propietario — Bug #84 |
+| CV-SEC-1 | `cv` | Reverse sin namespace | `reverse('project_detail')` en `CorporateDataMixin` → posible `NoReverseMatch` — Bug #76 |
+| PANEL-SEC-1 | `panel` | Sin autenticación | `RedisTestView` sin `@login_required` — accesible públicamente — Bug #117 |
+| HELP-SEC-1 | `help` | Sin autenticación | `article_feedback_stats` sin `@login_required` — solo verifica `is_staff` manualmente — Bug #102 |
+| PANEL-SEC-2 | `panel` | Endpoint roto | `get_connection_token` no retorna respuesta — Bug #114 |
 
 ---
 
@@ -351,6 +380,7 @@ def tick(request, game_id):
 |---------|-----|-----------|-----|
 | **Django Channels** | `chat` | WebSocket (ASGI) | Chat en tiempo real, notificaciones push |
 | **Centrifugo** | `rooms` | HTTP broadcast | Mensajes de sala, eventos join/leave |
+| **Django Channels** | `board` | WebSocket (ASGI) | Movimiento de cards — ⚠️ no activado aún |
 
 ### Centrifugo (rooms)
 
@@ -363,8 +393,6 @@ CENTRIFUGO_BROADCAST_MODE    = 'api'  # 'api' | 'outbox' | 'cdc' | 'api_cdc'
 CENTRIFUGU_OUTBOX_PARTITIONS = 16    # ⚠️ typo con doble U — verificar en settings real
 ```
 
-`CentrifugoMixin` en `rooms/views.py` es heredado por `MessageListCreateAPIView`, `JoinRoomView`, `LeaveRoomView`. Usa `transaction.on_commit` en modo `api` y modelos `Outbox`/`CDC` en modos outbox/cdc.
-
 ### Django Channels (chat)
 
 WebSocket consumer en `chat/consumers.py`. Routing en `chat/routing.py`:
@@ -373,6 +401,16 @@ ws/chat/<str:room_name>/    → ChatConsumer
 ws/notifications/           → NotificationConsumer
 ```
 Requiere Daphne corriendo como servidor ASGI + Redis como channel layer.
+
+### Django Channels (board) — pendiente activar
+
+`board/consumers.py` tiene `BoardConsumer` implementado pero sin URL WebSocket. Para activar:
+```python
+# project/routing.py
+re_path(r'ws/board/(?P<board_id>\d+)/$', BoardConsumer.as_asgi()),
+```
+
+Requiere `BOARD_CONFIG = {'CARDS_PER_PAGE': 20}` en settings (ver Bug #85).
 
 ### Ollama — Asistente IA (chat)
 
@@ -555,6 +593,7 @@ Bootstrap 5 + HTMX en todas las apps.
 **Excepciones:**
 - `simcity` — JS vanilla + Canvas 2D + CSS custom. No agregar Bootstrap al template del juego.
 - `rooms` (entorno 3D) — Three.js en `room_3d_interactive.html`. No mezclar con el layout global de Bootstrap.
+- `board` — CSS propio (`board.css`). HTMX para CRUD de cards sin recarga.
 
 ---
 
@@ -563,7 +602,7 @@ Bootstrap 5 + HTMX en todas las apps.
 | App | Tests | Cobertura | Tipo |
 |-----|-------|-----------|------|
 | sim | 157 | 100% | Unitarios |
-| analyst | 34/50 | 68% | Unitarios |
+| analyst | 34/50 | 68% | ⚠️ **Stub (3 líneas) — los tests no existen (INC-004)** |
 | accounts | 212 líneas | — | Unitarios (tests.py) |
 | core | 249 líneas | — | Performance (test_performance.py) |
 | memento | 68 líneas | — | Unitarios (tests.py) |
@@ -597,13 +636,16 @@ CENTRIFUGO_HTTP_API_ENDPOINT=http://...
 CENTRIFUGO_HTTP_API_KEY=...
 CENTRIFUGO_BROADCAST_MODE=api
 OLLAMA_API_URL=http://localhost:11434  # pendiente mover desde hardcode en ollama_api.py
+BOARD_CONFIG={"CARDS_PER_PAGE": 20}   # requerido por board/htmx_views.py — Bug #85
 ```
+
+⚠️ **Nunca pegar output de `.env` en chats** — INC-003.
 
 ---
 
 ## 19. Migraciones
 
-### Estado actual (2026-03-19)
+### Estado actual (2026-03-20)
 
 | App | Última migración | Notas |
 |-----|-----------------|-------|
@@ -611,12 +653,16 @@ OLLAMA_API_URL=http://localhost:11434  # pendiente mover desde hardcode en ollam
 | bitacora | 0004_uuid_primary_keys | UUID pk en entry + attachment |
 | sim | 0006_rename_... | SIM-7a ACD multi-agente completo |
 | simcity | 0001_initial | Game con created_by + engine_game_id |
-| events | 0003_alter_... | — |
+| events | 0004_fix_fk_auth_user_to_accounts_user | FKs → accounts_user (Sprint 8) |
 | kpis | 0002_refactor_callrecord | UUID + fecha DateField + 5 índices (IF NOT EXISTS) |
+| bots | 0002_alter_botlog_category_alter_lead_status | choices corregidos Sprint 8 |
 | chat | 0001_initial | — |
 | rooms | 0001_initial | — |
 | courses | 0001_initial | — |
 | memento | 0007_alter_mementoconfig_death_date | death_date alterado 6 veces |
+| cv | 0001_initial | — |
+| board | 0001_initial | — |
+| campaigns | 0001_initial | — |
 
 ### Orden de dependencias
 
@@ -625,6 +671,7 @@ OLLAMA_API_URL=http://localhost:11434  # pendiente mover desde hardcode en ollam
 3. `cv` — antes que `courses` (import directo en courses/models.py)
 4. `events`, `analyst`, `sim`, `courses`, `simcity`
 5. `chat`, `rooms`, `bitacora`, `bots`, `memento`
+6. `board`, `campaigns`, `kpis`, `passgen`, `help`, `api`, `panel` — independientes
 
 ### ⚠️ REGLA: Nunca ignorar migrations/ en .gitignore
 
@@ -638,7 +685,9 @@ OLLAMA_API_URL=http://localhost:11434  # pendiente mover desde hardcode en ollam
 | `APP_DEV_REFERENCE.md` | Manual técnico para devs y Claude |
 | `APP_DESIGN.md` | Diseño, fases, roadmap |
 
-Apps con documentación completa (11/20): `analyst`, `sim`, `bitacora`, `simcity`, `events`, `accounts`, `core`, `memento`, `chat`, `rooms`, `courses`.
+**Apps con documentación completa (20/20) ✅:** `analyst`, `sim`, `bitacora`, `simcity`, `events`, `accounts`, `core`, `memento`, `chat`, `rooms`, `courses`, `bots`, `kpis`, `cv`, `board`, `campaigns`, `passgen`, `help`, `api`, `panel`.
+
+**Sprint 7.5 documentación: COMPLETO** — 120 bugs registrados (#1–#120).
 
 ---
 
@@ -716,3 +765,56 @@ Apps con documentación completa (11/20): `analyst`, `sim`, `bitacora`, `simcity
 | 65 | ⬜ | courses | `LessonAttachment.get_file_size_display()` retorna string literal `.1f` |
 | 66 | ⬜ | courses | `Review.save()` y signal `update_course_rating` duplican recálculo |
 | 67 | ⬜ | courses | Switch de 20 tipos duplicado entre `create_content_block` y `edit_content_block` |
+| 68 | ⬜ | kpis | `UploadCSVForm` importada en views.py pero sin vista de upload — import muerto |
+| 69 | ⬜ | kpis | `SERVICE_CHOICES` en forms.py difiere de `SERVICIO_CHOICES` en models.py — datos generados inconsistentes |
+| 70 | ⬜ | kpis | forms.py con doble bloque de imports — legacy no limpiado |
+| 71 | ⬜ | kpis | `aht_por_semana` ordena por semana ISO sin año — ambigüedad cross-year |
+| 72 | ⬜ | kpis | `cache.delete_pattern()` silencioso si backend no lo soporta |
+| 73 | ⬜ | cv | `from django.contrib.auth.models import User` importado sin uso en models.py |
+| 74 | ⬜ | cv | Sin UUID PK en ningún modelo |
+| 75 | ⬜ | cv | `EventManager/ProjectManager/TaskManager` importados a nivel de módulo — si `events.management` falla, cv no carga |
+| 76 | ⬜ | cv | `reverse('project_detail', ...)` sin namespace en `CorporateDataMixin` — probable `NoReverseMatch` |
+| 77 | ⬜ | cv | `pk_url_kwarg = 'user_id'` en `PublicCurriculumView` superfluo |
+| 78 | ⬜ | cv | `get_upload_path()` enruta archivos CSV/xlsx al path `images/` — semánticamente incorrecto |
+| 79 | ⬜ | cv | `ImageForm` acepta `.gif` pero `Image` model valida solo jpg/jpeg/png/bmp |
+| 80 | ⬜ | cv | Wizard de edición sin pasos para Language ni Certification |
+| 81 | ⬜ | board | Sin UUID PK en los 3 modelos |
+| 82 | ⬜ | board | `Board.owner` en vez de `created_by` — violación de convención |
+| 83 | ⬜ | board | `Activity.user` en vez de `created_by` — violación de convención |
+| 84 | ⬜ | board | `BoardDetailView` sin verificación de propietario — IDOR activo |
+| 85 | ⬜ | board | `settings.BOARD_CONFIG['CARDS_PER_PAGE']` — KeyError si no está definido en settings |
+| 86 | ⬜ | board | `BoardConsumer` sin URL WebSocket registrada — tiempo real no activado |
+| 87 | ⬜ | board | Sin vistas de edición ni eliminación de `Board` — CRUD incompleto |
+| 88 | ⬜ | board | `Activity.target_id` es IntegerField — incompatible con modelos UUID |
+| 89 | ⬜ | board | `get_user_model()` a nivel de módulo en models.py — usar `settings.AUTH_USER_MODEL` |
+| 90 | ⬜ | campaigns | Sin `created_by` en ningún modelo — diseño global intencional |
+| 91 | ⬜ | campaigns | `ContactRecord` y `DiscadorLoad` sin UUID PK |
+| 92 | ⬜ | campaigns | `upload_date`/`load_date` con `default=timezone.now` en vez de `auto_now_add` |
+| 93 | ⬜ | campaigns | `hasattr(campaign, 'discador_load')` patrón frágil para OneToOne reverse |
+| 94 | ⬜ | campaigns | `contacts[:50]` hardcodeado en `campaign_detail` — sin paginación |
+| 95 | ⬜ | passgen | Sin `app_name` en `urls.py` — namespace no declarado |
+| 96 | ⬜ | passgen | `password_help` da `AttributeError: CATEGORIES` — vista siempre da 500 |
+| 97 | ⬜ | passgen | `PasswordForm.length` y `exclude_ambiguous` definidos pero nunca leídos |
+| 98 | ⬜ | passgen | `MIN_ENTROPY=60` bloquea 5 de 7 patrones predefinidos — solo `strong` y `secure` funcionan |
+| 99 | ⬜ | passgen | `generate_password` y `password_help` sin `@login_required` — acceso público |
+| **100** | ⬜ | help | `get_user_model()` a nivel de módulo en `models.py` — usar `settings.AUTH_USER_MODEL` en FKs |
+| **101** | ⬜ | help | `from courses.models import Course, Lesson, ContentBlock, CourseCategory` a nivel de módulo — `CourseCategory` sin uso; si `courses` falla, `help` no carga |
+| **102** | ⬜ | help | `article_feedback_stats` sin `@login_required` — verifica `is_staff` manualmente pero accesible por anónimos |
+| **103** | ⬜ | help | `search_help` evalúa `count()` dos veces sobre los mismos querysets — doble hit a BD |
+| **104** | ⬜ | help | `submit_feedback` llama `article.save()` sin `update_fields` — sobreescribe todos los campos del artículo |
+| **105** | ⬜ | help | `QuickStartGuide.mark_completed(user)` — parámetro `user` ignorado, `UserGuideProgress` no implementado |
+| **106** | ⬜ | help | `HelpArticle.get_related_articles()` filtra solo por categoría — docstring dice "por categoría y tags" pero ignora tags |
+| **107** | ⬜ | help | 3 templates faltantes: `faq_list.html`, `video_tutorials.html`, `quick_start.html` — **TemplateDoesNotExist en runtime** |
+| **108** | ⬜ | help | Sin UUID PK en ningún modelo — todos AutoField int |
+| **109** | ⬜ | help | `author`/`user` en vez de `created_by` — excepción al estándar del proyecto |
+| **110** | ⬜ | help | `search_help` — busca log por texto de query para actualizar stats — race condition con búsquedas simultáneas del mismo término |
+| **111** | ⬜ | api | Sin `app_name` en `urls.py` — sin namespace |
+| **112** | ⬜ | api | 4 endpoints registrados dos veces — en `panel/urls.py` directamente Y via `include('api.urls')` |
+| **113** | ⬜ | api | `api/token/connection/` y `api/token/subscription/` no incluidos en `api/urls.py` — inconsistencia |
+| **114** | 🔴 | panel | `get_connection_token` no tiene `return` — devuelve `None`, endpoint de Centrifugo inaccesible |
+| **115** | ⬜ | panel | `DatabaseSelectorMiddleware` referencia `postgres_online` y `sqlite` no definidos en `DATABASES` — KeyError por request |
+| **116** | ⬜ | panel | `storages.py` tiene ~30 `print()` ejecutándose en producción — spam en logs |
+| **117** | ⬜ | panel | `RedisTestView` sin `@login_required` — accesible públicamente en `/redis-test/` |
+| **118** | ⬜ | panel | `from django.utils import timezone` a nivel global en `settings.py` — solo usado en `TINYMCE_DEFAULT_CONFIG` |
+| **119** | ⬜ | panel | `AUTH_USER_MODEL = 'accounts.User'` definido dos veces al final de `settings.py` |
+| **120** | ⬜ | panel | `INSTALLED_APPS += ['django_htmx']` al final del archivo — frágil, debería estar en el bloque principal |

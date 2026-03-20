@@ -1,6 +1,6 @@
 # Management360 — Diseño, Roadmap y Estado de Implementación
 
-> **Última actualización:** 2026-03-19 (Sesión Manager — integración handoff doc lote 2)
+> **Última actualización:** 2026-03-20 (Sesión Analista Doc — lote 4: help, api, panel — documentación 20/20 ✅)
 > **Contexto:** Plataforma SaaS de Workforce Management (WFM) y Customer Experience (CX)
 > **Apps activas:** 20 | **Archivos Python+HTML:** ~710
 > **Metodología:** Scrum — sprints semanales sincronizados entre apps
@@ -19,8 +19,10 @@ Management360 es una plataforma integral de Workforce Management que combina:
 - **Aprendizaje** (app `courses`) - Sistema de cursos y lecciones
 - **Métricas de Contacto** (app `kpis`) - CallRecord, AHT, SL, abandono
 - **Automatización** (app `bots`) - Bots y asignación de leads
+- **Campañas Outbound** (app `campaigns`) - Leads, contactos, discador
 - **Perfil Profesional** (app `cv`) - Currículum dinámico
 - **GTD Personal** (apps `bitacora`, `board`, `memento`) - Productividad personal
+- **Utilidades** (apps `passgen`, `api`, `panel`, `help`) - Herramientas de soporte
 
 ### Stack Tecnológico Unificado
 
@@ -29,7 +31,7 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | Backend | Django 5.1.7 (Python 3.13) |
 | Base de datos | MariaDB 12.2.2 (principal) + Redis 7 (cache/sesiones) |
 | Frontend | Bootstrap 5, HTMX (interactividad parcial), Chart.js 4.4.1 |
-| Tiempo real | Django Channels + Daphne 4.2.1 (ASGI) — app `chat` |
+| Tiempo real | Django Channels + Daphne 4.2.1 (ASGI) — app `chat` + `board` (pendiente activar) |
 | Tiempo real (rooms) | Centrifugo (CentrifugoMixin, Outbox, CDC) — app `rooms` |
 | IA local | Ollama (localhost:11434) — app `chat`, subsistema asistente |
 | Procesamiento de datos | pandas, numpy, openpyxl |
@@ -53,7 +55,7 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | **Fase 5** | Simulador WFM (sim) SIM-1→SIM-7a completo (ACD multi-agente) | S5 | ✅ |
 | **Fase 6** | Sistema de aprendizaje (courses) | S6 | ✅ |
 | **Fase 7** | Métricas de contacto (kpis) + estabilización bitacora + simcity | S7 | ✅ |
-| **Fase 8** | Automatización y bots (bots) | S8 | ⬜ |
+| **Fase 8** | Automatización y bots (bots) | S8 | ✅ BOT-1/BOT-4/BOT-AUDIT |
 | **Fase 9** | Optimización y escalado | S9 | ⬜ |
 
 ---
@@ -85,14 +87,12 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | KPI-5: `kpis_aht_report` — agrupa por agente/supervisor/canal/servicio/semana | 🟡 | ✅ |
 | KPI-6: `StreamingHttpResponse` + filtros fecha + chunk_size=500 | 🟡 | ✅ |
 | Namespace `kpis:` + `login_required` + nav template corregido | 🔴 | ✅ |
-| Commits DeepSeek (accounts, sim, events, cv, kpis, docs, core) | 🟠 | ✅ |
-| Refactor: Unificar manejo de fechas en todas las apps | 🟡 | ⬜ |
 
 ---
 
-## Sprint 7.5 — Documentación (completado ✅)
+## Sprint 7.5 — Documentación ✅ COMPLETO
 
-### Objetivo: Documentar 11 apps del proyecto
+### Objetivo: Documentar apps del proyecto
 
 | App | DEV_REFERENCE | DESIGN | CONTEXT | Sesión |
 |-----|:---:|:---:|:---:|--------|
@@ -107,122 +107,110 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | `chat` | ✅ | ✅ | ✅ auto | Lote 2 (2026-03-19) |
 | `rooms` | ✅ | ✅ | ✅ auto | Lote 2 (2026-03-19) |
 | `courses` | ✅ | ✅ | ✅ auto | Lote 2 (2026-03-19) |
+| `bots` | ✅ | ✅ | ✅ auto | Lote 3 (2026-03-20) |
+| `kpis` | ✅ | ✅ | ✅ auto | Lote 3 (2026-03-20) |
+| `cv` | ✅ | ✅ | ✅ auto | Lote 3 (2026-03-20) |
+| `board` | ✅ | ✅ | ✅ auto | Lote 3 (2026-03-20) |
+| `campaigns` | ✅ | ✅ | ✅ auto | Lote 3 (2026-03-20) |
+| `passgen` | ✅ | ✅ | ✅ auto | Lote 3 (2026-03-20) |
+| `help` | ✅ | ✅ | ✅ auto | **Lote 4 (2026-03-20)** |
+| `api` | ✅ | ✅ | ✅ auto | **Lote 4 (2026-03-20)** |
+| `panel` | ✅ | ✅ | ✅ auto | **Lote 4 (2026-03-20)** |
 
-**Bugs críticos descubiertos durante la documentación:** 32 (ver tabla Sprint 8 abajo)
+**Bugs críticos descubiertos durante documentación (lotes 1-4):** 120 registrados (#1–#120).
+**Progreso: 20 / 20 apps (100%) ✅**
 
 ---
 
-## Sprint 8 — Planificado ⬜
+## Sprint 8 — Completado ✅ (mínimo exitoso)
 
-### Objetivo: Automatización y bots (app `bots`) + resolución de bugs críticos
+### Objetivo: Activar y conectar el sistema `bots`
 
-> ⚠️ **Precondición obligatoria:** resolver todos los bugs 🔴 antes de arrancar tareas BOT.
+| Tarea | Prioridad | Estado |
+|-------|-----------|--------|
+| BOT-AUDIT: Auditoría + documentación `bots` | 🔴 | ✅ |
+| BOT-1: Motor de asignación de leads | 🔴 | ✅ Pipeline Lead→GTD verificado end-to-end |
+| BOT-4: Dashboard de rendimiento de bots | 🟠 | ✅ HTMX poll 30s |
+| EVENTS-BUG-FK: FKs events → accounts_user | 🔴 | ✅ migración 0004 |
+| BOT-2: Integración bots ↔ sim | 🔴 | ⬜ Pasa a Sprint 9 |
+| BOT-3: Pipeline campañas outbound / custom_rules | 🟠 | ⬜ Pasa a Sprint 9 |
+| BOT-5: Reglas distribución por skills | 🟡 | ⬜ Pasa a Sprint 9 |
 
----
-
-### Pre-Sprint 8 — Bugs críticos a resolver (32 bugs)
+### Pre-Sprint 8 — Bugs críticos (estado final)
 
 #### Seguridad 🔴
 
 | ID | App | Descripción | Fix |
 |----|-----|-------------|-----|
-| ACC-B4 / #36 | `accounts` | Contraseña `"DefaultPassword123"` hardcodeada en `reset_to_default_password` | `get_random_string(12)` o variable de entorno |
-| ACC-B3 / #37 | `accounts` | Open redirect en `login_view` — `next` sin validar | `url_has_allowed_host_and_scheme(next_url, request.get_host())` |
-| MEM-B3 / #46 | `memento` | IDOR en `MementoConfigUpdateView` — sin filtro de propietario | `get_queryset().filter(user=request.user)` |
-| CORE-SEC-1 / #43 | `core` | `url_map_view` sin `@login_required` — expone arquitectura | Agregar `@login_required` |
-| CORE-SEC-2 / #43 | `core` | `search_view` sin `@login_required` — expone datos | Agregar `@login_required` |
-| ROOMS-SEC-1 / #60 | `rooms` | `room_detail`, `room_list`, `room_comments` sin `@login_required` | Agregar decorador |
-| CHAT-SEC-1 / #53 | `chat` | 20+ endpoints POST con `@csrf_exempt` | Eliminar `@csrf_exempt`, usar cookie CSRF estándar |
-| CORE-SEC-3 / #42 | `core` | `refresh_dashboard_data` con `@csrf_exempt` en POST autenticado | Eliminar `@csrf_exempt` |
+| ACC-B4 / #36 | `accounts` | Contraseña `"DefaultPassword123"` hardcodeada | `get_random_string(12)` |
+| ACC-B3 / #37 | `accounts` | Open redirect — `next` sin validar | `url_has_allowed_host_and_scheme()` |
+| MEM-B3 / #46 | `memento` | IDOR en `MementoConfigUpdateView` | `filter(user=request.user)` |
+| CORE-SEC-1 / #43 | `core` | `url_map_view` sin `@login_required` | Agregar decorador |
+| CORE-SEC-2 / #43 | `core` | `search_view` sin `@login_required` | Agregar decorador |
+| ROOMS-SEC-1 / #60 | `rooms` | Vistas sin `@login_required` | Agregar decorador |
+| CHAT-SEC-1 / #53 | `chat` | 20+ endpoints con `@csrf_exempt` | Eliminar, usar cookie CSRF |
+| CORE-SEC-3 / #42 | `core` | `refresh_dashboard_data` con `@csrf_exempt` | Eliminar |
+| BOARD-SEC-1 / #84 | `board` | `BoardDetailView` sin verificar propietario — IDOR | `get_queryset(owner=user)` |
 
-#### Runtime — rompen en ejecución 🔴
+#### Runtime 🔴
 
 | ID | App | Descripción | Fix |
 |----|-----|-------------|-----|
-| ROOMS-B5 / #56 | `rooms` | `room_comments` llama `room.comments.create(text=...)` — campo incorrecto | `Comment.objects.create(room=room, user=request.user, comment=...)` |
-| ROOMS-B10 / #57 | `rooms` | `navigate_room` llama `entrance.face.opposite()` — `str` no tiene ese método | Dict `{'NORTH':'SOUTH','EAST':'WEST',...}` |
-| ROOMS-B9 / #58 | `rooms` | `calculate_new_position` retorna `None` para EAST/WEST | Agregar ramas faltantes |
-| ROOMS-B11/12/13 / #59 | `rooms` | 3 ViewSets ordenan por `-created_at` en `EntranceExit`, `Portal`, `RoomConnection` — campo inexistente | Agregar `created_at` a los 3 modelos o cambiar ordering |
-| CRS-B2 / #63 | `courses` | `standalone_lessons_list` en URL duplicada — vista inaccesible | Mover a `/courses/lessons/` |
-| CRS-B4 / #64 | `courses` | `mark_lesson_complete` falla con `AttributeError` en lecciones independientes (`module=None`) | Verificar `lesson.module` antes de acceder |
-| CHAT-B10 / #52 | `chat` | Template `edit_assistant_configuration.html` inexistente → 500 | Crear template o redirigir |
-| ACC-B5 / #38 | `accounts` | `app_name` no declarado en `urls.py` — namespace `accounts:` frágil | Declarar `app_name = 'accounts'` en `urls.py` |
-| ACC-B6 / #40 | `accounts` | Import muerto `file_tree_view` de analyst en `views.py` | Eliminar import |
-| MEM-B4 / #47 | `memento` | `MinValueValidator(timezone.now().date())` congelado en tiempo de carga del módulo | Usar `MinValueValidator` dinámico o validar en `clean()` |
-| MEM-B5 / #48 | `memento` | `build_memento_context()` sin rama `else` para frecuencia inválida | Agregar rama `else` con valor por defecto |
-| MEM-B6 / #49 | `memento` | `LogoutView` propio en `/memento/logout/` — duplica `accounts:logout` | Eliminar, redirigir a `accounts:logout` |
-| CORE-B4 / #44 | `core` | `Article.get_absolute_url()` hace reverse de URL inexistente → `NoReverseMatch` | Corregir name de URL o crear la vista |
-
-#### Funcionalidad falsa en producción 🟠
-
-| ID | App | Descripción | Acción |
-|----|-----|-------------|--------|
-| CHAT-B1 / #50 | `chat` | `HardcodedNotificationManager` — notificaciones siempre falsas, `mark_as_read` no persiste. **Es la causa raíz del Bug global #5.** | Conectar con `rooms.Notification` (modelo real ya existe) |
-| CORE-B3 / #41 | `core` | `upcoming_events` filtra por `created_at__gte=now()` en lugar de `start_date` — siempre vacío | Cambiar a `start_date__gte=timezone.now()` |
-| ACC-B7 / #39 | `accounts` | `email` sin `unique=True` en modelo — validación solo en form | Agregar `unique=True` + migración |
-
-#### Código duplicado silencioso 🟠
-
-| ID | App | Funciones duplicadas | Impacto |
-|----|-----|---------------------|---------|
-| CHAT-B2 / #51 | `chat` | `room_admin`, `reset_unread_count_api`, `room_notifications_api`, `mark_notifications_read_api`, `last_room_api` — 5 defs dobles | Python usa la segunda; primera es código muerto con lógica diferente |
-| ROOMS-B14 / #61 | `rooms` | `portal_list`, `portal_detail` — 2 defs dobles | Ídem |
-
-#### Deuda técnica 🟡
-
-| ID | App | Descripción | Acción |
-|----|-----|-------------|--------|
-| CHAT-B3 / #54 | `chat` | `moderate_message()` con `['badword1', 'badword2']` — placeholder | Implementar o desactivar |
-| CHAT-B4 / #55 | `chat` | URL Ollama hardcodeada en `ollama_api.py` | Mover a `settings.OLLAMA_API_URL` |
-| ROOMS-B15 / #62 | `rooms` | `CENTRIFUGU_OUTBOX_PARTITIONS` — typo doble U en settings key | Verificar en `settings.py` real y corregir si aplica |
-| CRS-B5 / #65 | `courses` | `LessonAttachment.get_file_size_display()` retorna string literal `.1f` | Formatear correctamente |
-| CRS-B6 / #66 | `courses` | `Review.save()` y signal duplican recálculo de rating | Eliminar una de las dos |
-| CRS-B7 / #67 | `courses` | Switch de 20 tipos duplicado entre `create_content_block` y `edit_content_block` | Extraer a función compartida |
-| CORE-B5 / #45 | `core` | `'home'` e `'index'` apuntan al mismo path — redundante | Documentar; nunca eliminar `'index'` |
-
----
-
-### Tareas Sprint 8 — App `bots`
-
-| Tarea | Prioridad |
-|-------|-----------|
-| BOT-0: Verificar arquitectura frontend de `bots` — solo existe `bot_dashboard.html` | 🔴 |
-| BOT-1: Documentar `bots` (CONTEXT + DEV_REFERENCE + DESIGN) antes de codear | 🔴 |
-| BOT-2: Mejorar motor de asignación de leads en `bots` | 🔴 |
-| BOT-3: Integrar bots con eventos de `sim` | 🔴 |
-| BOT-4: Pipeline de procesamiento de campañas outbound | 🟠 |
-| BOT-5: Dashboard de rendimiento de bots | 🟠 |
-| BOT-6: Reglas de distribución basadas en skills | 🟡 |
-| SC-8: Tests básicos del proxy simcity | 🟡 |
-| SC-9: KPIs urbanos (población, energía) → app kpis | 🟠 |
-
-### Pendientes técnicos heredados (pre-Sprint 8)
-
-| ID | App | Descripción |
-|----|-----|-------------|
-| SIM-7e | `sim` | Agentes simulados perfilados |
-| SIM-6b | `sim` | GTR Interactivo con sliders |
-| BIT-17 | `bitacora` | Nav prev/next — filtrar por `created_by`+`is_active` |
-| BIT-18 | `bitacora` | TinyMCE CDN usa `no-api-key` — registrar en tiny.cloud |
+| ROOMS-B5 / #56 | `rooms` | `room_comments` campo `text` inexistente | `Comment.objects.create(comment=...)` |
+| ROOMS-B10 / #57 | `rooms` | `navigate_room` — `str.opposite()` | Dict de opuestos |
+| ROOMS-B9 / #58 | `rooms` | `calculate_new_position` EAST/WEST retorna None | Agregar ramas |
+| ROOMS-B11-13 / #59 | `rooms` | 3 ViewSets ordenan por `-created_at` inexistente | Agregar campo o cambiar ordering |
+| CRS-B2 / #63 | `courses` | `standalone_lessons_list` inaccesible | Mover URL |
+| CRS-B4 / #64 | `courses` | `mark_lesson_complete` falla en lecciones independientes | Guard `module is None` |
+| CHAT-B10 / #52 | `chat` | Template `edit_assistant_configuration.html` inexistente | Crear template |
+| PASSGEN-96 / #96 | `passgen` | `password_help` — `AttributeError: CATEGORIES` | Definir `self.CATEGORIES` |
+| PASSGEN-98 / #98 | `passgen` | 5/7 patrones predefinidos fallan por `MIN_ENTROPY=60` | Bajar umbral |
+| BOARD-85 / #85 | `board` | `settings.BOARD_CONFIG` — KeyError si no definido | Agregar a settings |
+| CV-76 / #76 | `cv` | `reverse('project_detail')` sin namespace | Corregir con `events:` |
+| CV-75 / #75 | `cv` | Imports de managers a nivel de módulo en views.py | Mover a lazy imports |
 
 ---
 
 ## Sprint 9 — Planificado ⬜
 
-| Tarea | Prioridad |
-|-------|-----------|
-| SCA-1: Implementar Celery para tareas asíncronas | 🔴 |
-| SCA-2: Particionamiento de tablas grandes | 🔴 |
-| SCA-3: Estrategia de archivado para datos históricos | 🟠 |
-| SCA-4: Read replicas para reportes pesados | 🟠 |
-| SCA-5: Migración a S3 para archivos media | 🟡 |
-| SCA-6: Optimización de queries N+1 en todas las apps | 🟡 |
-| REFACTOR-1: Dividir `chat/views.py` (2017 líneas) en módulos | 🟠 |
-| REFACTOR-2: Dividir `rooms/views.py` (2858 líneas) en módulos | 🟠 |
-| REFACTOR-3: Dividir `courses/views.py` (2309 líneas) — monolito descubierto en auditoría | 🟠 |
-| REFACTOR-4: Dividir `cv/views.py` (873 líneas) | 🟡 |
-| NEW-T1: Crear tests reales para `analyst` — los 34 documentados no existen (INC-004) | 🟠 |
-| NEW-T3: Agregar regla de seguridad al README — nunca pegar output de `.env` en chats | 🟡 |
+### Objetivo: Optimización, estabilización de bugs heredados, completar bots
+
+| ID | Tarea | Prioridad |
+|----|-------|-----------|
+| **EVENTS-SIG** | Guard `create_credit_account` para usuarios bot | 🔴 |
+| **EVENTS-SIG-2** | Fix reverse query GenericFK en signal de events | 🟠 |
+| **BOT-BUG-19** | Persistir BotTaskQueue en DB (`status='queued'`) | 🟠 |
+| **BOT-2** | Integrar bots ↔ sim (ACDAgentSlot) | 🟠 |
+| **BOT-3** | Pipeline `ContactRecord → Lead` + `DiscadorLoad → LeadCampaign` | 🟠 |
+| **BOT-5** | Reglas de distribución por skills | 🟡 |
+| SCA-1 | Implementar Celery para tareas asíncronas | 🔴 |
+| SCA-2 | Particionamiento de tablas grandes | 🔴 |
+| REFACTOR-1 | Dividir `chat/views.py` (2017 líneas) en módulos | 🟠 |
+| REFACTOR-2 | Dividir `rooms/views.py` (2858 líneas) en módulos | 🟠 |
+| REFACTOR-3 | Dividir `courses/views.py` (2309 líneas) en módulos | 🟠 |
+| NEW-T1 | Crear tests reales para `analyst` (INC-004) | 🟠 |
+| KPI-7 | Unificar `SERVICE_CHOICES` en `kpis/forms.py` (Bug #69) | 🟠 |
+| KPI-8 | Implementar vista de upload CSV en `kpis` (Bug #68) | 🟠 |
+| CV-1 | Fix `reverse()` sin namespace en `CorporateDataMixin` (Bug #76) | 🔴 |
+| CV-2 | Imports lazy de `events.management.*` en `cv/views.py` (Bug #75) | 🔴 |
+| BOARD-1 | Fix IDOR en `BoardDetailView` (Bug #84) | 🔴 |
+| BOARD-2 | Agregar `BOARD_CONFIG` en settings (Bug #85) | 🔴 |
+| BOARD-3 | CRUD completo de Board (editar/eliminar) | 🟠 |
+| CMP-1 | Fix `hasattr` → `try/except` en `campaign_detail` (Bug #93) | 🟠 |
+| PG-1 | Fix `CATEGORIES` en `PasswordGenerator` (Bug #96) | 🔴 |
+| PG-2 | Fix `MIN_ENTROPY` en `passgen` (Bug #98) | 🔴 |
+| SIM-7e | Agentes simulados perfilados en ACD | 🔴 |
+| BIT-17 | Nav prev/next filtrar por `created_by`+`is_active` | 🟡 |
+| SC-8 | Tests básicos del proxy simcity | 🟡 |
+| ~~DOC-FINAL~~ | ~~Documentar `help`, `api`, `panel`~~ | ✅ Completado lote 4 |
+
+### Pendientes técnicos heredados
+
+| ID | App | Descripción |
+|----|-----|-------------|
+| SIM-6b | `sim` | GTR Interactivo con sliders |
+| BIT-18 | `bitacora` | TinyMCE CDN usa `no-api-key` |
+| ResourceLock | `bots` | `acquire_lock()` usa `timezone.timedelta` |
 
 ---
 
@@ -230,78 +218,74 @@ Management360 es una plataforma integral de Workforce Management que combina:
 
 ### Matriz de Dependencias
 
-    accounts ──┬──> events (propietario de proyectos/tareas)
-               ├──> analyst (creador de datasets)
-               ├──> sim (creador de cuentas)
-               ├──> simcity (propietario de partidas)
-               ├──> courses (tutor de cursos)
-               └──> cv (propietario del CV)
+```
+accounts ──┬──> events (propietario de proyectos/tareas)
+           ├──> analyst (creador de datasets)
+           ├──> sim (creador de cuentas)
+           ├──> simcity (propietario de partidas)
+           ├──> courses (tutor de cursos)
+           ├──> cv (propietario del CV)
+           └──> bots (via GenericUser OneToOne)
 
-    analyst ──┬──> sim (ETL source + dashboard widgets)
-              ├──> events (análisis de proyectos/tareas)
-              ├──> simcity (recibe exports de partidas ✅ SC-6)
-              └──> kpis (reportes avanzados de llamadas)
+analyst ───┬──> sim (ETL source + dashboard widgets)
+           ├──> events (análisis de proyectos/tareas)
+           ├──> simcity (recibe exports de partidas ✅ SC-6)
+           └──> kpis (reportes avanzados de llamadas)
 
-    sim ──────┬──> analyst (datos para reportes)
-              └──> events (creación de tareas desde training?)
+sim ───────┬──> analyst (datos para reportes)
+           └──> bots (BOT-2 — ACDAgentSlot, pendiente)
 
-    simcity ──┬──> proot:8001 (micropolisengine — engine externo)
-              ├──> analyst (exportar partida como dataset ✅ SC-6)
-              └──> kpis (KPIs urbanos — ⬜ SC-9)
+simcity ───┬──> proot:8001 (micropolisengine — engine externo)
+           ├──> analyst (exportar partida ✅ SC-6)
+           └──> kpis (KPIs urbanos — ⬜ SC-9)
 
-    events ───┬──> chat (notificaciones de tareas)
-              └──> rooms (salas para proyectos)
+events ────┬──> chat (notificaciones de tareas)
+           ├──> rooms (salas para proyectos)
+           └──> bots (InboxItem ✅ EVENTS-BUG-FK resuelto)
 
-    kpis ─────┬──> analyst (datasets de métricas)
-              └──> sim (comparación con simulaciones)
+bots ──────┬──> events (InboxItem, Task, Project ✅)
+           ├──> accounts (GenericUser OneToOne ✅)
+           └──> campaigns (BOT-3 ⬜ — ContactRecord → Lead)
 
-    courses ──┬──> cv   (import directo en models.py — dependencia CRÍTICA)
-              ├──> analyst (análisis de progreso — pendiente formalizar)
-              └──> cv (certificaciones — pendiente formalizar)
+campaigns ──> bots (BOT-3 ⬜ — pipeline pendiente)
 
-    bitacora ─┬──> events (related_event, related_task, related_project)
-              ├──> rooms (related_room)
-              ├──> events.Tag (tags M2M)
-              └──> courses.ContentBlock (structured_content)
+kpis ──────┬──> analyst (datasets de métricas)
+           └──> sim (comparación con simulaciones)
 
-    core ─────┬──> events (import directo de Event, Project, Task, Status en utils.py — SI events falla, core no carga)
-              └──> ← todas las apps (provee layouts/templates globales)
+courses ───┬──> cv (import directo en models.py — CRÍTICO)
+           └──> analyst (análisis de progreso — pendiente)
 
-    chat ─────┬──> rooms (consume Room, Message, MessageRead, RoomMember)
-              └──> rooms.Notification (⬜ pendiente CHAT-B1 / Bug global #5)
+cv ────────┬──> accounts (User OneToOne)
+           └──> events (managers importados en views — Bug #75)
 
-    rooms ────┬──> chat.UserPresence (FK a rooms.Room)
-              └──> chat.MessageReaction (FK a rooms.Message)
+core ──────┬──> events (import directo — si events falla, core no carga)
+           └──> ← todas las apps (provee layouts/templates globales)
+
+chat ──────┬──> rooms (consume Room, Message, RoomMember)
+           └──> rooms.Notification (⬜ pendiente CHAT-B1 / Bug #5)
+
+board ─────> (sin dependencias externas — app independiente)
+bitacora ──> events + rooms + courses (relaciones opcionales)
+```
 
 ### Convenciones de Nombres de Campos
 
 | Concepto | Campo estándar | Tipo | Notas |
 |----------|----------------|------|-------|
-| PK pública | `id` | `UUIDField(primary_key=True)` | Todas las apps excepto `events` (int) y `simcity` (AutoField int) |
-| Usuario creador | `created_by` | `ForeignKey(User)` | Convención general |
+| PK pública | `id` | `UUIDField(primary_key=True)` | Todas excepto `events` (int), `simcity` (AutoField), `bots` (AutoField), `board` (AutoField), `cv` (AutoField) |
+| Usuario creador | `created_by` | `ForeignKey(User)` | Convención general — excepciones en §3 de DEV_REFERENCE |
 | Timestamps | `created_at` / `updated_at` | `DateTimeField` | auto_now_add / auto_now |
 | Soft delete | `is_active` | `BooleanField(default=True)` | Donde aplica |
 
-> **Excepciones confirmadas en auditoría (NO cambiar):**
-> - `events` usa `host` para Project/Task/Event
-> - `events` usa PKs int (AutoField)
-> - `rooms` usa `owner` + `creator` para Room — `owner` es el propietario real
-> - `bitacora` usa `fecha_creacion`/`fecha_actualizacion` (en español)
-> - `simcity.Game` usa `AutoField` (int) como PK — heredado del engine original
-> - `courses` usa `tutor` (Course), `author` (Lesson standalone / ContentBlock), `student` (Enrollment)
-> - `chat` usa `user` en Conversation, CommandLog, AssistantConfiguration
-> - `memento` usa `user` en MementoConfig
-
 ### Sistemas de tiempo real coexistentes
 
-> **⚠️ Dos sistemas distintos — no son intercambiables:**
+> **⚠️ Dos sistemas activos — no son intercambiables:**
 
 | Sistema | App | Uso |
 |---------|-----|-----|
 | Django Channels (WebSocket) | `chat` | Chat en tiempo real, notificaciones push |
 | Centrifugo (HTTP broadcast) | `rooms` | Broadcast de mensajes y eventos de sala |
-
-Centrifugo requiere en settings: `CENTRIFUGO_HTTP_API_ENDPOINT`, `CENTRIFUGO_HTTP_API_KEY`, `CENTRIFUGO_BROADCAST_MODE`, `CENTRIFUGU_OUTBOX_PARTITIONS` (⚠️ typo con doble U — verificar consistencia en `settings.py` real).
+| Django Channels (WebSocket) | `board` | Movimiento de cards — ⚠️ infraestructura lista, sin activar |
 
 ---
 
@@ -320,32 +304,22 @@ Centrifugo requiere en settings: `CENTRIFUGO_HTTP_API_ENDPOINT`, `CENTRIFUGO_HTT
 | chat | ✅ auto | ✅ | ✅ | ❌ sin tests | — |
 | rooms | ✅ auto | ✅ | ✅ | ❌ sin tests | — |
 | courses | ✅ auto | ✅ | ✅ | ❌ sin tests | — |
-| kpis | ⬜ | 🔵 parcial | ⬜ | ❌ sin tests | — |
-| bots | ⬜ | ⬜ | ⬜ | ⚠️ stub (3L) | ❌ 0% |
-| board | ⬜ | ⬜ | ⬜ | ⚠️ stub (3L) | ❌ 0% |
-| cv | ⬜ | ⬜ | ⬜ | ❌ sin tests | — |
-| campaigns | ⬜ | ⬜ | ⬜ | ❌ sin tests | — |
-| help | ⬜ | ⬜ | ⬜ | ⚠️ stub (3L) | ❌ 0% |
-| passgen | ⬜ | ⬜ | ⬜ | ❌ sin tests | — |
-| api | ⬜ | ⬜ | ⬜ | ❌ sin tests | — |
-| panel | ⬜ | ⬜ | ⬜ | ⚠️ existe | — |
+| bots | ✅ auto | ✅ | ✅ | ⚠️ stub (3L) | ❌ 0% |
+| kpis | ✅ auto | ✅ | ✅ | ❌ sin tests | — |
+| cv | ✅ auto | ✅ | ✅ | ❌ sin tests | — |
+| board | ✅ auto | ✅ | ✅ | ⚠️ stub (3L) | ❌ 0% |
+| campaigns | ✅ auto | ✅ | ✅ | ❌ sin tests | — |
+| passgen | ✅ auto | ✅ | ✅ | ❌ sin tests | — |
+| help | ✅ auto | ✅ | ✅ | ⚠️ stub | ❌ 0% |
+| api | ✅ auto | ✅ | ✅ | ❌ sin tests | — |
+| panel | ✅ auto | ✅ | ✅ | ✅ test_urls.py | — |
 
-**Progreso doc:** 11 / 20 apps documentadas (55%)
-**Cobertura real de tests:** 5 / 20 apps con tests funcionales (25%) — `sim`, `events`, `accounts`, `core`, `memento`
+**Progreso doc: 20 / 20 apps documentadas (100%) ✅**
+**Cobertura real de tests: 6 / 20 apps con tests funcionales (30%)** — `sim`, `events`, `accounts`, `core`, `memento`, `panel`
 
-### Apps pendientes — próximas sesiones de documentación
+### Apps pendientes — próxima sesión de documentación
 
-| App | Complejidad | Prioridad | Notas |
-|-----|-------------|-----------|-------|
-| `kpis` | Baja | 🔴 | DEV_REFERENCE parcial ya existe — completar |
-| `bots` | Alta | 🔴 | Target Sprint 8 — documentar ANTES de codear |
-| `cv` | Media | 🟠 | Dependencia de `courses` — documentar pronto |
-| `board` | Baja | 🟡 | Kanban simple, 3 modelos |
-| `campaigns` | Baja | 🟡 | 3 modelos, 6 endpoints |
-| `help` | Media | 🟡 | 7 modelos, 10 endpoints |
-| `api` | Baja | 🟢 | 0 modelos, 4 endpoints |
-| `passgen` | Muy baja | 🟢 | 0 modelos, 2 endpoints |
-| `panel` | Baja | 🟢 | 0 modelos, 28 endpoints |
+**Ninguna — documentación 20/20 completa ✅**
 
 ---
 
@@ -363,15 +337,14 @@ Centrifugo requiere en settings: `CENTRIFUGO_HTTP_API_ENDPOINT`, `CENTRIFUGO_HTT
 
 ### INC-003 — 2026-03-20: API key expuesta en output de terminal
 **Síntoma:** Output de `sed -n '95,110p' .env` pegado en chat incluyó `ANTHROPIC_API_KEY` en texto plano.
-**Causa:** Bloque de comandos bash (`export SHELL=...`, `export ANTHROPIC_API_KEY=...`) estaba incrustado en el `.env` a partir de la línea 99, causando además 3 warnings de `python-dotenv` al arrancar.
-**Resolución:** Key revocada en `console.anthropic.com`. Nueva key generada. Bloque bash eliminado del `.env`.
-**Prevención:** Nunca pegar output de `.env` directamente en chats. Revisar `.env` antes de ejecutar `sed` o `cat`. El `.env` confirmado como nunca commiteado a git (`.gitignore` correcto).
+**Causa:** Bloque de comandos bash estaba incrustado en el `.env`.
+**Resolución:** Key revocada. Nueva key generada. Bloque bash eliminado del `.env`.
+**Prevención:** Nunca pegar output de `.env` directamente en chats.
 
 ### INC-004 — 2026-03-20: Tests de `analyst` inexistentes
-**Síntoma:** Auditoría reveló que `analyst/tests.py` tiene 3 líneas (stub). El documento indicaba 34/50 tests al 68%.
-**Causa:** Los tests fueron eliminados o nunca migrados al refactorizar la app.
+**Síntoma:** `analyst/tests.py` tiene 3 líneas (stub). El documento indicaba 34/50 tests al 68%.
 **Resolución:** Pendiente — crear tests reales (NEW-T1, Sprint 9).
-**Impacto:** La cobertura real del proyecto es 25% (5/20 apps), no la estimada previamente.
+**Impacto:** Cobertura real del proyecto es 25% (5/20 apps).
 
 ---
 
@@ -381,78 +354,125 @@ Centrifugo requiere en settings: `CENTRIFUGO_HTTP_API_ENDPOINT`, `CENTRIFUGO_HTT
 - **CSRF en JS:** siempre `csrf()` desde cookie, nunca `CSRF_TOKEN` hardcoded
 - **Respuestas JSON:** siempre `{"success": true/false, ...}`
 - **`timedelta`:** importar desde `datetime`, NO desde `django.utils.timezone`
-- **`events` usa `host`**, **`rooms` usa `owner`** — no son errores
+- **`events` usa `host`**, **`rooms` usa `owner`**, **`board` usa `owner`** — no son errores
 - **`accounts/migrations/`** debe estar en git — nunca ignorar carpetas migrations
 - **`accounts.User`** tiene campos extra: `phone`, `avatar`, `created_at`, `updated_at`
 - **`simcity`** requiere proot Ubuntu corriendo en :8001 — sin él todos los endpoints dan 503
 - **`micropolisengine`** solo disponible en `/root/micropolis/venv` (proot) — nunca importar en M360/Termux
-- **`proot-distro login ubuntu -- <cmd>`** es el método correcto para ejecutar en proot desde Termux
-- **`simcity` arranque:** aliases `engine` y `m360` en `~/.zshrc` — dos terminales Termux
 - **`bitacora.CategoriaChoices`** es módulo-level — NO `BitacoraEntry.CategoriaChoices`
-- **`bitacora` templates** usan `categoria_choices` del contexto — NO `entry.CATEGORIA_CHOICES`
 - **`core` importa directamente de `events`** — si events falla, core no carga
 - **`courses` importa directamente de `cv`** — si cv falla, courses no carga
-- **`upcoming_events` en `core`** filtra por `created_at__gte=now()` (bug #41) — no refleja eventos futuros reales
-- **`chat.HardcodedNotificationManager`** es un stub — todas las notificaciones son falsas. El modelo real es `rooms.Notification` (bug global #5 / #50)
-- **Ollama debe estar en :11434** para que el asistente de chat funcione — URL hardcodeada en `ollama_api.py` (bug #55)
-- **`rooms.navigate_room`** está roto — `entrance.face.opposite()` lanza `AttributeError` (bug #57)
-- **`rooms.room_comments`** está roto — campo `text` no existe, lanza `TypeError` (bug #56)
-- **`courses.standalone_lessons_list`** es inaccesible — URL duplicada con `content_manager` (bug #63)
-- **`courses.mark_lesson_complete`** falla con lecciones independientes (`module=None`) (bug #64)
-- **`memento.MementoConfigUpdateView`** sin filtro de propietario — IDOR activo (bug #46)
-- **`accounts.reset_to_default_password`** tiene contraseña hardcodeada `"DefaultPassword123"` (bug #36)
-- **`chat/views.py`** tiene 5 funciones duplicadas — Python usa la segunda definición (bug #51)
-- **`rooms/views.py`** tiene 2 funciones duplicadas — ídem (bug #61)
-- **`courses` no puede cargar si `cv` falla** — `from cv.models import Curriculum` en línea 9 de `courses/models.py`
+- **`cv.views` importa managers de `events` a nivel de módulo** — si events.management falla, cv no carga (bug #75)
+- **`chat.HardcodedNotificationManager`** es un stub — todas las notificaciones son falsas (bug #5/#50)
+- **`passgen` solo funciona con patrones `strong` y `secure`** — los demás fallan por MIN_ENTROPY=60 (bug #98)
+- **`passgen.password_help`** siempre da 500 — `CATEGORIES` no definido (bug #96)
+- **`board.BoardDetailView`** sin verificación de propietario — IDOR activo (bug #84)
+- **`board` requiere `settings.BOARD_CONFIG`** — KeyError si no está definido (bug #85)
+- **`campaigns`** son datos globales — sin `created_by`, todos los usuarios ven todo (diseño intencional)
+- **`kpis.CallRecord.created_by`** es `null=True, SET_NULL` — intencional para preservar métricas históricas
+- **`board.cards.all()`** ya viene ordenado por `['-is_pinned', '-created_at']`
+- **`cv.skills_list`** — el related_name es `skills_list`, NO `skills`
+- **`bots` PK int** en todos los modelos — FKs desde otras apps deben usar int
+- **`events.InboxItem` usa `created_by`** (no `host`) — los bots pueden crear InboxItems
+- **Pipeline bots verificado end-to-end:** Lead → InboxItem → BotTaskAssignment → GTDProcessor → Task
+- **`help` tiene 3 templates faltantes** — `faq_list`, `video_tutorials`, `quick_start` dan 500 al visitarlos (bug #107)
+- **`help` depende de `courses` en import de módulo** — si `courses` falla, `help` no carga (bug #101)
+- **`help.author`/`help.user`** en vez de `created_by` — es la convención de esta app
+- **`api/views.py` está vacío** — toda la lógica de `/api/*` vive en `panel/views.py`
+- **Rutas `/api/*` están duplicadas** — registradas en `panel/urls.py` directamente Y via `include('api.urls')` (bug #112)
+- **`panel.get_connection_token` no retorna nada** — endpoint Centrifugo inaccesible (bug #114)
+- **`panel.DatabaseSelectorMiddleware`** referencia `postgres_online` y `sqlite` no definidos — activo pero sin efecto útil (bug #115)
+- **`panel.RemoteMediaStorage`** requiere `192.168.18.51:8000` activo para uploads — en offline todos los uploads fallan
+- **`BOARD_CONFIG`** ya definido en `settings.py` con `CARDS_PER_PAGE: 12` (fix bug #85)
+- **`CENTRIFUGO_TOKEN_SECRET`** debe estar en `.env` — requerido por `rooms` y `panel/views.get_subscription_token`
+- **`panel/tests/test_urls.py`** existe (58L) — única app con tests de resolución de URLs
 
 ---
 
-## 🔄 Handoff — Sesión 2026-03-19 (Manager — integración doc lote 2)
+## 🔄 Handoff — Sesión 2026-03-20 (Analista Doc — lote 3)
 
 ### Completado esta sesión
-- Integrado handoff del analista doc lote 2 (6 apps documentadas)
-- Actualizado estado de documentación: 11/20 apps (55%)
-- Expandida tabla de bugs pre-Sprint 8: de 11 a 32 bugs registrados
-- Actualizadas notas para Claude con hallazgos de la sesión de documentación
-- Agregadas tareas de refactor monolitos (chat/rooms views.py) al Sprint 9
-- **Auditoría de estado de apps** ejecutada con scripts en vivo (2026-03-20):
-  - Confirmada cobertura real de tests: 25% (5/20 apps) — no 68% como documentado
-  - Tests de `analyst` son stub (3L) — los 34 tests documentados no existen → INC-004
-  - `courses/views.py` descubierto como monolito de 2309 líneas → REFACTOR-3
-  - `bots` tiene solo 1 template → BOT-0 agregado al Sprint 8
-  - `cv/views.py` 873 líneas → REFACTOR-4
-  - API key expuesta en output de terminal → revocada → INC-003
-  - `.env` tenía bloque bash incrustado → corregido → warnings de dotenv resueltos
-  - 13/20 apps con `app_name` declarado correctamente en urls.py
+
+- Revisado estado de `bots` (Sprint 8 cerrado, documentación completa)
+- Generada documentación completa para **6 apps**: `kpis`, `cv`, `board`, `campaigns`, `passgen`
+- Registrados **32 bugs nuevos** (#68–#99)
+- Actualizado `PROJECT_DEV_REFERENCE.md` — bugs #68–#99 integrados
+- Actualizado `PROJECT_DESIGN.md` — doc 17/20 (85%), Sprint 8 cerrado, Sprint 9 planificado
+- Documentación global: **17/20 apps (85%)** — sube desde 55% (inicio de sesión)
+
+### Hallazgos críticos de esta sesión
+
+- **`passgen` más rota de lo esperado** — 5/7 patrones fallan, `password_help` da 500 siempre. Fixes son de 1–3 líneas.
+- **`board` IDOR activo** — `BoardDetailView` sin verificación de propietario (Bug #84).
+- **`cv` imports frágiles** — managers de `events` importados a nivel de módulo (Bug #75/#76).
+- **`board.BOARD_CONFIG`** — KeyError potencial si no está en settings (Bug #85).
 
 ### Próximos pasos — rol Dev
 
-1. `git push` — commits locales sin pushear
-2. Bugs 🔴 de seguridad: ACC-B4, ACC-B3, MEM-B3, ROOMS-SEC-1, CORE-SEC-1/2 — **resolver antes de arrancar Sprint 8**
-3. Bugs 🔴 de runtime: ROOMS-B5/B10/B9/B11-13, CRS-B2/B4, CHAT-B10 — **resolver antes de arrancar Sprint 8**
-4. Sprint 8 task BOT-1: documentar `bots` primero, luego codear
+1. **Fixes inmediatos `passgen`** (3 líneas cada uno):
+   - `self.CATEGORIES = {...}` en `PasswordGenerator.__init__` (Bug #96)
+   - `self.MIN_ENTROPY = 20` en `PasswordGenerator.__init__` (Bug #98)
+   - `app_name = 'passgen'` en `urls.py` (Bug #95)
+2. **Fix IDOR `board`** — `get_queryset(owner=request.user)` en `BoardDetailView` (Bug #84)
+3. **Fix imports `cv`** — mover imports de managers a lazy en `get_context_data` (Bug #75)
+4. Verificar `BOARD_CONFIG` en `settings.py` (Bug #85)
+5. Bugs de seguridad heredados: ACC-B4, ACC-B3, MEM-B3, ROOMS-SEC-1, CORE-SEC-1/2
 
 ### Próximos pasos — rol Analista Doc
 
-1. Generar CONTEXT.md de `kpis`, `bots`, `cv` con `bash scripts/m360_map.sh app ./nombre_app`
-2. Documentar `kpis` (completar DEV_REFERENCE parcial)
-3. Documentar `bots` (alta prioridad — target Sprint 8)
-4. Documentar `cv` (dependencia de `courses`)
-5. Verificar `CENTRIFUGU_OUTBOX_PARTITIONS` en `settings.py` real antes de documentar `rooms`
+**Ninguno — documentación 20/20 completada ✅**
 
-### Comandos para arrancar próxima sesión de código
+### Comandos para arrancar próxima sesión
 
 ```bash
 # Terminal 1 — engine simcity
-engine   # alias: ubuntu + activate + runserver 0.0.0.0:8001
+engine
 
 # Terminal 2 — M360
-m360     # alias: cd M360 + activate + runserver
+m360
 
-# Push pendiente
+# Push documentación lote 4
+git add help/ api/ panel/ docs/
+git add PROJECT_DEV_REFERENCE.md PROJECT_DESIGN.md TEAM_ROLES.md
+git commit -m "docs: documentación completa lote 4 (help, api, panel) — 20/20 apps, bugs #100-#120"
 git push origin main
-
-# Ver estado
-git log --oneline -15
-git status --short
 ```
+
+---
+
+## 🔄 Handoff — Sesión 2026-03-20 (Analista Doc — lote 4)
+
+### Completado esta sesión
+
+- Generada documentación completa para **3 apps**: `help`, `api`, `panel`
+- Registrados **21 bugs nuevos** (#100–#120)
+- Actualizado `PROJECT_DEV_REFERENCE.md` — bugs #100–#120 integrados, app table actualizada, sección 20 a 20/20
+- Actualizado `PROJECT_DESIGN.md` — doc 20/20, Sprint 7.5 cerrado, Sprint 9 DOC-FINAL marcado ✅
+- Actualizado `TEAM_ROLES.md` — Sprint 8 completo, asignaciones Sprint 9
+- **Documentación global: 20/20 apps (100%)** — Sprint 7.5 oficialmente cerrado
+
+### Hallazgos críticos de esta sesión
+
+- **`panel.get_connection_token` roto** — no retorna respuesta. Fix: 2 líneas (Bug #114)
+- **`help` tiene 3 templates faltantes** — `faq_list`, `video_tutorials`, `quick_start` crashean en runtime (Bug #107)
+- **`api` es un placeholder vacío** — requiere decisión de arquitectura: consolidar en `panel` o completar migración (Bug #112)
+- **`panel.DatabaseSelectorMiddleware`** activo pero referencia BDs inexistentes — candidato a desactivar (Bug #115)
+- **`panel.RemoteMediaStorage`** tiene ~30 `print()` activos en producción (Bug #116)
+
+### Próximos pasos — rol Dev
+
+1. **Fix inmediato `panel`** — completar `get_connection_token` con `jwt.encode()` + `return JsonResponse({'token': token})` (Bug #114, ~2 líneas)
+2. **Crear 3 templates `help`** — `faq_list.html`, `video_tutorials.html`, `quick_start.html` (Bug #107, ~1.5h)
+3. **Decisión arquitectura `api`** — Opción A (eliminar `include`) o Opción B (migrar vistas) (Bug #112)
+4. **Limpiar `DatabaseSelectorMiddleware`** — quitar `postgres_online`/`sqlite` del `db_order` (Bug #115, 1 línea)
+5. Bugs críticos heredados Sprint 8: #84 (IDOR board), #96/#98 (passgen), #75/#76 (cv)
+
+### Estado final del proyecto
+
+| Métrica | Valor |
+|---------|-------|
+| Apps documentadas | 20 / 20 (100%) ✅ |
+| Bugs registrados | #1 – #120 (120 total) |
+| Bugs críticos 🔴 activos | #84, #96, #98, #107, #114 |
+| Apps con tests funcionales | 6 / 20 (30%) |
+| Sprint activo | Sprint 9 |
