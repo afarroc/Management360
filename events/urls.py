@@ -3,6 +3,8 @@ from django.urls import path, include
 from .views import *  # Esto importa TODAS las vistas directamente
 from .setup_views import SetupView
 
+app_name = 'events'  # EV-1: namespace declarado
+
 urlpatterns = [
     # ============================================================================
     # CONFIGURACIÓN Y SETUP
@@ -136,6 +138,7 @@ urlpatterns = [
     path('inbox/api/classification-history/<int:item_id>/', get_classification_history, name='get_classification_history'),
     path('inbox/classify/<int:item_id>/', classify_inbox_item_ajax, name='classify_inbox_item_ajax'),
     path('inbox/api/consensus/<int:item_id>/', get_consensus_api, name='get_consensus_api'),
+
     # ============================================================================
     # HERRAMIENTAS DE PRODUCTIVIDAD
     # ============================================================================

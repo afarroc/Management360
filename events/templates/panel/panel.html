@@ -60,7 +60,7 @@ td {
 <div class="mainf">
     <div class="topf">
         <div class="container">
-            <form method="POST" action="{% url 'events' %}">
+            <form method="POST" action="{% url 'events:events' %}">
                 {% csrf_token %}
                 <label for="cerrado">Omitir Cerrados</label>
                 <input type="checkbox" name="cerrado" value="true" {% if request.session.filtered_cerrado %}checked{% endif %}>

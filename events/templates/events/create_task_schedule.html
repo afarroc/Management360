@@ -18,7 +18,7 @@
                             </h4>
                             <small class="opacity-75">Configura una tarea para que se repita automáticamente</small>
                         </div>
-                        <a href="{% url 'task_schedules' %}" class="btn btn-light btn-sm">
+                        <a href="{% url 'events:task_schedules' %}" class="btn btn-light btn-sm">
                             <i class="bi bi-arrow-left me-1"></i>
                             Volver a Programaciones
                         </a>
@@ -420,7 +420,7 @@
                                 Todos los campos marcados con <span class="text-danger">*</span> son obligatorios
                             </div>
                             <div class="btn-group">
-                                <a href="{% url 'task_schedules' %}" class="btn btn-outline-secondary">
+                                <a href="{% url 'events:task_schedules' %}" class="btn btn-outline-secondary">
                                     <i class="bi bi-x-circle me-1"></i>
                                     Cancelar
                                 </a>

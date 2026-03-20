@@ -74,14 +74,14 @@
                             
                             <!-- Botones de acción -->
                             <div class="d-grid gap-2 mt-4">
-                                <a href="{% url 'event_edit' event.id %}" class="btn btn-warning">
+                                <a href="{% url 'events:event_edit' event.id %}" class="btn btn-warning">
                                     <i class="bi bi-pencil"></i> Editar Evento
                                 </a>
-                                <a href="{% url 'event_assign' event.id %}" class="btn btn-info">
+                                <a href="{% url 'events:event_assign' event.id %}" class="btn btn-info">
                                     <i class="bi bi-link"></i> Asignar Recursos
                                 </a>
                                 {% if not is_completed %}
-                                <form method="POST" action="{% url 'event_status_change' event.id %}" class="d-inline">
+                                <form method="POST" action="{% url 'events:event_status_change' event.id %}" class="d-inline">
                                     {% csrf_token %}
                                     <input type="hidden" name="new_status_id" value="{{ completed_status_id }}">
                                     <button type="submit" class="btn btn-success w-100">
@@ -199,7 +199,7 @@
                                         <small class="text-muted">
                                             <i class="bi bi-person"></i> {{ project.host.username }}
                                         </small>
-                                        <a href="{% url 'project_detail' project.id %}" class="btn btn-sm btn-outline-primary">
+                                        <a href="{% url 'events:project_detail' project.id %}" class="btn btn-sm btn-outline-primary">
                                             Ver Detalles
                                         </a>
                                     </div>
@@ -211,7 +211,7 @@
                     {% else %}
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i> No hay proyectos asociados a este evento.
-                        <a href="{% url 'event_assign' event.id %}" class="alert-link">Asignar proyectos</a>
+                        <a href="{% url 'events:event_assign' event.id %}" class="alert-link">Asignar proyectos</a>
                     </div>
                     {% endif %}
                 </div>
@@ -243,7 +243,7 @@
                                     <td>{{ task.assigned_to.username|default:"No asignado" }}</td>
                                     <td>
                                         {% if task.project %}
-                                        <a href="{% url 'project_detail' task.project.id %}" class="text-decoration-none">
+                                        <a href="{% url 'events:project_detail' task.project.id %}" class="text-decoration-none">
                                             {{ task.project.title|truncatechars:30 }}
                                         </a>
                                         {% else %}
@@ -258,7 +258,7 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{% url 'tasks_with_id' task.id %}" class="btn btn-sm btn-outline-info">
+                                        <a href="{% url 'events:tasks_with_id' task.id %}" class="btn btn-sm btn-outline-info">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                     </td>
@@ -270,7 +270,7 @@
                     {% else %}
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i> No hay tareas asociadas a este evento.
-                        <a href="{% url 'event_assign' event.id %}" class="alert-link">Asignar tareas</a>
+                        <a href="{% url 'events:event_assign' event.id %}" class="alert-link">Asignar tareas</a>
                     </div>
                     {% endif %}
                 </div>

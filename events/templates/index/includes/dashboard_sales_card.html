@@ -18,7 +18,7 @@
         </div>
         <div class="card-body">
             <h5 class="card-title">
-                <a class="dropdown-item" href="{% url 'event_panel' %}">Events
+                <a class="dropdown-item" href="{% url 'events:event_panel' %}">Events
                   <span> | {{ events.start_date|date:"d.m" }} - {{ events.end_date|date:"d.m" }}</span>
                 </a>
             </h5>
@@ -66,7 +66,7 @@
         </div>
         <div class="card-body">
             <h5 class="card-title">
-                <a class="dropdown-item" href="{% url 'project_panel' %}">Projects
+                <a class="dropdown-item" href="{% url 'events:project_panel' %}">Projects
                   <span> | {{ projects.start_date|date:"d.m" }} - {{ projects.end_date|date:"d.m" }}</span>
                 </a>
             </h5>
@@ -114,7 +114,7 @@
         </div>
         <div class="card-body">
             <h5 class="card-title">
-                <a class="dropdown-item" href="{% url 'task_panel' %}">Tasks
+                <a class="dropdown-item" href="{% url 'events:task_panel' %}">Tasks
                   <span> | {{ tasks.start_date|date:"d.m" }} - {{ tasks.end_date|date:"d.m" }}</span>
                 </a>
             </h5>

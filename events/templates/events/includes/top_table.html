@@ -42,7 +42,7 @@
                     {% endif %}
                 </span>
                 {% if events|length > 10 %}
-                <a href="{% url 'event_panel' %}" class="btn btn-sm btn-outline-primary">
+                <a href="{% url 'events:event_panel' %}" class="btn btn-sm btn-outline-primary">
                     Ver todos <i class="bi bi-arrow-right ms-1"></i>
                 </a>
                 {% endif %}
@@ -65,7 +65,7 @@
                             {% for event_data in events %}
                             <tr>
                                 <th scope="row">
-                                    <a href="{% url 'event_panel_with_id' event_data.event.id %}" 
+                                    <a href="{% url 'events:event_panel_with_id' event_data.event.id %}" 
                                        class="fw-semibold text-primary text-decoration-none">
                                         #{{ event_data.event.id }}
                                     </a>
@@ -110,26 +110,26 @@
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm">
                                             <li>
                                                 <a class="dropdown-item" 
-                                                   href="{% url 'event_detail' event_data.event.id %}">
+                                                   href="{% url 'events:event_detail' event_data.event.id %}">
                                                     <i class="bi bi-eye me-2"></i>Ver detalle
                                                 </a>
                                             </li>
                                             <li>
                                                 <a class="dropdown-item" 
-                                                   href="{% url 'event_edit' event_data.event.id %}">
+                                                   href="{% url 'events:event_edit' event_data.event.id %}">
                                                     <i class="bi bi-pencil me-2"></i>Editar
                                                 </a>
                                             </li>
                                             <li>
                                                 <a class="dropdown-item" 
-                                                   href="{% url 'event_assign' event_data.event.id %}">
+                                                   href="{% url 'events:event_assign' event_data.event.id %}">
                                                     <i class="bi bi-link me-2"></i>Asignar
                                                 </a>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
                                                 <form method="post" 
-                                                      action="{% url 'event_delete' event_data.event.id %}"
+                                                      action="{% url 'events:event_delete' event_data.event.id %}"
                                                       style="display: inline;">
                                                     {% csrf_token %}
                                                     <button type="submit" 
@@ -159,7 +159,7 @@
                                         {% endif %}
                                     </p>
                                     <div class="d-flex gap-2 justify-content-center">
-                                        <a href="{% url 'event_create' %}" class="btn btn-primary">
+                                        <a href="{% url 'events:event_create' %}" class="btn btn-primary">
                                             <i class="bi bi-plus-circle me-2"></i>Nuevo Evento
                                         </a>
                                         {% if request.GET.date %}

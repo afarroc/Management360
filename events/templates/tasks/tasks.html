@@ -17,7 +17,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'tasks' %}">Tareas</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'events:tasks' %}">Tareas</a></li>
             <li class="breadcrumb-item active">Listado</li>
         </ol>
     </nav>
@@ -56,10 +56,10 @@
                             <span class="badge bg-primary ms-2">{{ tasks|length|default:tasks_data|length }}</span>
                         </h5>
                         <div class="btn-group" role="group">
-                            <a href="{% url 'task_create' %}" class="btn btn-primary">
+                            <a href="{% url 'events:task_create' %}" class="btn btn-primary">
                                 <i class="bi bi-plus-circle me-1"></i> Nueva Tarea
                             </a>
-                            <a href="{% url 'task_panel' %}" class="btn btn-outline-primary">
+                            <a href="{% url 'events:task_panel' %}" class="btn btn-outline-primary">
                                 <i class="bi bi-kanban me-1"></i> Panel de Tareas
                             </a>
                         </div>

@@ -202,7 +202,7 @@
             <nav>
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{% url 'index' %}"><i class="bi bi-house-door"></i></a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'projects' %}">Projects</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'events:projects' %}">Projects</a></li>
                     <li class="breadcrumb-item active">{{ title }}</li>
                 </ol>
             </nav>
@@ -214,7 +214,7 @@
             <button type="button" class="btn btn-outline-secondary btn-sm" id="exportBtn">
                 <i class="bi bi-download"></i> Export
             </button>
-            <a href="{% url 'project_create' %}" class="btn btn-success btn-sm">
+            <a href="{% url 'events:project_create' %}" class="btn btn-success btn-sm">
                 <i class="bi bi-plus-circle"></i> Create Project
             </a>
         </div>
@@ -364,7 +364,7 @@
                         <div class="card-body">
                             <div class="row g-2">
                                 <div class="col-md-3">
-                                    <a href="{% url 'project_create' %}" class="btn btn-success w-100">
+                                    <a href="{% url 'events:project_create' %}" class="btn btn-success w-100">
                                         <i class="bi bi-plus-circle me-1"></i>
                                         <span class="d-block">Create Project</span>
                                     </a>
@@ -428,12 +428,12 @@
                                             <li><hr class="dropdown-divider"></li>
                                             <li><h6 class="dropdown-header">Actions</h6></li>
                                             <li>
-                                                <a class="dropdown-item" href="{% url 'project_export' %}">
+                                                <a class="dropdown-item" href="{% url 'events:project_export' %}">
                                                     <i class="bi bi-download me-2"></i> Export Projects
                                                 </a>
                                             </li>
                                             <li>
-                                                <a class="dropdown-item" href="{% url 'project_create' %}">
+                                                <a class="dropdown-item" href="{% url 'events:project_create' %}">
                                                     <i class="bi bi-plus-circle me-2"></i> Create Project
                                                 </a>
                                             </li>
@@ -455,7 +455,7 @@
                                     <div class="text-center py-4">
                                         <i class="bi bi-folder display-1 text-muted mb-3"></i>
                                         <h5 class="text-muted">No projects found</h5>
-                                        <a href="{% url 'project_create' %}" class="btn btn-primary btn-sm mt-2">
+                                        <a href="{% url 'events:project_create' %}" class="btn btn-primary btn-sm mt-2">
                                             Create Your First Project
                                         </a>
                                     </div>
@@ -555,11 +555,11 @@
                                     </div>
                                     <div class="card-footer bg-transparent">
                                         <div class="d-flex justify-content-between">
-                                            <a href="{% url 'project_panel_with_id' project_data.project.id %}" 
+                                            <a href="{% url 'events:project_panel_with_id' project_data.project.id %}" 
                                                class="btn btn-sm btn-outline-primary">
                                                 <i class="bi bi-eye"></i> View
                                             </a>
-                                            <a href="{% url 'project_edit' project_data.project.id %}" 
+                                            <a href="{% url 'events:project_edit' project_data.project.id %}" 
                                                class="btn btn-sm btn-outline-secondary">
                                                 <i class="bi bi-pencil"></i> Edit
                                             </a>
@@ -603,7 +603,7 @@
                                             {{ project_data.completion_rate|floatformat:0 }}% complete
                                         </small>
                                         
-                                        <a href="{% url 'project_panel_with_id' project_data.project.id %}" 
+                                        <a href="{% url 'events:project_panel_with_id' project_data.project.id %}" 
                                            class="btn btn-sm btn-outline-primary w-100">
                                             <i class="bi bi-box-arrow-in-right"></i> Open
                                         </a>
@@ -648,7 +648,7 @@
                                 <i class="bi bi-folder display-1 text-muted mb-3"></i>
                                 <h4 class="text-muted">No Projects Found</h4>
                                 <p class="text-muted mb-4">Get started by creating your first project or adjusting your filters.</p>
-                                <a href="{% url 'project_create' %}" class="btn btn-primary">
+                                <a href="{% url 'events:project_create' %}" class="btn btn-primary">
                                     <i class="bi bi-plus-circle me-1"></i> Create First Project
                                 </a>
                             </div>
@@ -780,7 +780,7 @@
                     </div>
                     {% if projects_data|length > 5 %}
                     <div class="text-center mt-2">
-                        <a href="{% url 'projects' %}" class="btn btn-sm btn-outline-primary">
+                        <a href="{% url 'events:projects' %}" class="btn btn-sm btn-outline-primary">
                             <i class="bi bi-eye me-1"></i>View All Projects
                         </a>
                     </div>
@@ -1089,7 +1089,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (exportProjectsBtn) {
         exportProjectsBtn.addEventListener('click', function() {
-            window.location.href = "{% url 'project_export' %}";
+            window.location.href = "{% url 'events:project_export' %}";
         });
     }
 

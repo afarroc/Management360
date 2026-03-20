@@ -39,14 +39,14 @@
                     {% for data in tasks_data %}
                     <tr>
                         <td class="fw-bold">
-                            <a href="{% url 'task_panel_with_id' data.task.id %}">{{data.task.title|truncatechars:30}}</a>
+                            <a href="{% url 'events:task_panel_with_id' data.task.id %}">{{data.task.title|truncatechars:30}}</a>
                             {% if data.task.important %}
                             <i class="bi bi-star-fill text-warning ms-1" title="High Priority"></i>
                             {% endif %}
                         </td>
                         <td>
                             {% if data.task.project %}
-                            <a href="{% url 'project_panel_with_id' data.task.project.id %}">{{data.task.project.title|truncatechars:20}}</a>
+                            <a href="{% url 'events:project_panel_with_id' data.task.project.id %}">{{data.task.project.title|truncatechars:20}}</a>
                             <br><small class="text-muted">{{data.task.project.project_status.status_name}}</small>
                             {% else %}
                             <span class="text-muted">-</span>
@@ -54,7 +54,7 @@
                         </td>
                         <td>
                             {% if data.task.event %}
-                            <a href="{% url 'event_panel_with_id' data.task.event.id %}">{{data.task.event.title|truncatechars:20}}</a>
+                            <a href="{% url 'events:event_panel_with_id' data.task.event.id %}">{{data.task.event.title|truncatechars:20}}</a>
                             <br><small class="text-muted">{{data.task.event.event_status.status_name}}</small>
                             {% else %}
                             <span class="text-muted">-</span>
@@ -133,7 +133,7 @@
                         </td>
                         <td><small class="text-muted">{{data.task.created_at|date:"M d, H:i"}}</small></td>
                         <td><small class="text-muted">{{data.task.updated_at|date:"M d, H:i"}}</small></td>
-                        <td><a href="{% url 'task_panel_with_id' data.task.id %}" class="fw-bold text-primary">${{data.task.ticket_price}}</a></td>
+                        <td><a href="{% url 'events:task_panel_with_id' data.task.id %}" class="fw-bold text-primary">${{data.task.ticket_price}}</a></td>
                         <td>
                             <div class="form-check form-switch">
                                 <input class="form-check-input task-activate-switch"

@@ -17,7 +17,7 @@
                 <i class="bi bi-clock me-1"></i>{{ item.created_at|date:"d/m/Y H:i" }}
             </small>
             <div class="btn-group btn-group-sm">
-                <a href="{% url 'process_inbox_item' item.id %}" 
+                <a href="{% url 'events:process_inbox_item' item.id %}" 
                    class="btn btn-outline-{{ type|yesno:'primary,success,info' }} btn-sm">
                     <i class="bi bi-gear me-1"></i>
                     {% if type == 'pendiente' %}Categorizar{% else %}Procesar{% endif %}

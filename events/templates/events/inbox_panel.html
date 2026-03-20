@@ -8,7 +8,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'panel' %}">Panel</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'events:panel' %}">Panel</a></li>
             <li class="breadcrumb-item active">{{title}}</li>
         </ol>
     </nav>
@@ -113,7 +113,7 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{% url 'process_inbox_item' item.id %}"
+                                            <a href="{% url 'events:process_inbox_item' item.id %}"
                                                class="btn btn-outline-primary btn-sm"
                                                title="Procesar item">
                                                 <i class="bi bi-gear"></i>
@@ -138,7 +138,7 @@
                                     <td colspan="10" class="text-center py-4">
                                         <i class="bi bi-inbox display-4 text-muted"></i>
                                         <p class="mt-2 text-muted">No hay items del inbox para mostrar</p>
-                                        <a href="{% url 'inbox' %}" class="btn btn-primary">
+                                        <a href="{% url 'events:inbox' %}" class="btn btn-primary">
                                             <i class="bi bi-plus-circle me-2"></i>
                                             Ir al Inbox Principal
                                         </a>
@@ -154,7 +154,7 @@
                     <div class="mt-3">
                         <small class="text-muted">
                             Mostrando primeros 50 items.
-                            <a href="{% url 'inbox' %}">Ver todos los items</a>
+                            <a href="{% url 'events:inbox' %}">Ver todos los items</a>
                         </small>
                     </div>
                     {% endif %}

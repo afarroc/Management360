@@ -148,7 +148,7 @@
             </div>
             <h6 class="text-muted mb-3">No hay proyectos activos</h6>
             <p class="text-muted small mb-4">Los proyectos que te sean asignados aparecerán aquí.</p>
-            <a href="{% url 'projects' %}" class="btn btn-primary">
+            <a href="{% url 'events:projects' %}" class="btn btn-primary">
                 <i class="bi bi-search me-2"></i>Explorar proyectos
             </a>
         </div>
@@ -158,7 +158,7 @@
     <!-- View All Link -->
     {% if active_projects|length > 0 %}
     <div class="text-center mt-4">
-        <a href="{% url 'projects' %}" class="btn btn-outline-primary btn-sm">
+        <a href="{% url 'events:projects' %}" class="btn btn-outline-primary btn-sm">
             <i class="bi bi-arrow-right-circle me-1"></i>
             Ver todos los proyectos
         </a>

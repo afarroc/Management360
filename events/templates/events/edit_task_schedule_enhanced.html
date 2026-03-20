@@ -52,10 +52,10 @@
 
                             <!-- Action Buttons -->
                             <div class="btn-group">
-                                <a href="{% url 'task_schedule_detail' schedule.id %}" class="btn btn-dark btn-sm" title="Ver detalles">
+                                <a href="{% url 'events:task_schedule_detail' schedule.id %}" class="btn btn-dark btn-sm" title="Ver detalles">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{% url 'task_schedules' %}" class="btn btn-outline-dark btn-sm" title="Ver todas">
+                                <a href="{% url 'events:task_schedules' %}" class="btn btn-outline-dark btn-sm" title="Ver todas">
                                     <i class="bi bi-list"></i>
                                 </a>
                                 <button class="btn btn-outline-dark btn-sm" id="fullscreen-btn" title="Pantalla completa">
@@ -373,7 +373,7 @@
                                         Todos los campos marcados con <span class="text-danger">*</span> son obligatorios
                                     </div>
                                     <div class="btn-group">
-                                        <a href="{% url 'task_schedule_detail' schedule.id %}" class="btn btn-outline-secondary">
+                                        <a href="{% url 'events:task_schedule_detail' schedule.id %}" class="btn btn-outline-secondary">
                                             <i class="bi bi-x-circle me-1"></i>
                                             Cancelar
                                         </a>
@@ -619,15 +619,15 @@
                         </div>
                         <div class="card-body">
                             <div class="d-grid gap-2">
-                                <a href="{% url 'generate_schedule_occurrences' schedule.id %}" class="btn btn-outline-primary btn-sm">
+                                <a href="{% url 'events:generate_schedule_occurrences' schedule.id %}" class="btn btn-outline-primary btn-sm">
                                     <i class="bi bi-play-circle me-1"></i>
                                     Generar Ocurrencias
                                 </a>
-                                <a href="{% url 'task_schedule_detail' schedule.id %}" class="btn btn-outline-info btn-sm">
+                                <a href="{% url 'events:task_schedule_detail' schedule.id %}" class="btn btn-outline-info btn-sm">
                                     <i class="bi bi-info-circle me-1"></i>
                                     Ver Detalles
                                 </a>
-                                <a href="{% url 'delete_task_schedule' schedule.id %}" class="btn btn-outline-danger btn-sm">
+                                <a href="{% url 'events:delete_task_schedule' schedule.id %}" class="btn btn-outline-danger btn-sm">
                                     <i class="bi bi-trash me-1"></i>
                                     Eliminar Programación
                                 </a>

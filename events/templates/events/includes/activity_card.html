@@ -36,7 +36,7 @@
                        style="color: {{ item.status.color|default:'#6c757d' }}; font-size: 0.8rem;"></i>
                     <div class="flex-grow-1">
                         <div class="activity-content">
-                            <a href="{% url 'event_panel_with_id' item.event.id %}" 
+                            <a href="{% url 'events:event_panel_with_id' item.event.id %}" 
                                class="fw-semibold text-decoration-none text-dark">
                                 {{ item.event.title|truncatechars:40 }}
                             </a>

@@ -56,15 +56,15 @@
                 <tbody>
                     {% for task in tasks %}
                     <tr>
-                        <td><a href="{% url 'tasks_with_id' task.id %}">{{ task.id }} </a></td>
-                        <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{task.description}}" href="{% url 'tasks_with_id' task.id %}">{{ task.title }}</a></td>
+                        <td><a href="{% url 'events:tasks_with_id' task.id %}">{{ task.id }} </a></td>
+                        <td><a data-bs-toggle="tooltip" data-bs-placement="top" data-bs-original-title="{{task.description}}" href="{% url 'events:tasks_with_id' task.id %}">{{ task.title }}</a></td>
                         <td>{{ tasks.host.username }}</td>
                         <td>
-                            <a href="{% url 'task_edit' task.id %}" class="btn btn-primary">
+                            <a href="{% url 'events:task_edit' task.id %}" class="btn btn-primary">
                                 <i class="bi bi-pencil-fill"></i>
                             </a>
                             <!-- Formulario de eliminación -->
-                            <form method="post" action="{% url 'task_delete' task.id %}" style="display: inline;">
+                            <form method="post" action="{% url 'events:task_delete' task.id %}" style="display: inline;">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-danger">
                                     <i class="bi bi-trash-fill"></i>

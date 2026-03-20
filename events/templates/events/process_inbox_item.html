@@ -34,13 +34,13 @@
                 </div>
                 <div class="col-12 col-md-6">
                     <div class="d-flex flex-wrap gap-2 justify-content-start justify-content-md-end">
-                        <a href="{% url 'inbox' %}" class="btn btn-outline-secondary btn-sm">
+                        <a href="{% url 'events:inbox' %}" class="btn btn-outline-secondary btn-sm">
                             <i class="bi bi-arrow-left me-1"></i>Inbox
                         </a>
-                        <a href="{% url 'inbox_admin_dashboard' %}" class="btn btn-outline-info btn-sm">
+                        <a href="{% url 'events:inbox_admin_dashboard' %}" class="btn btn-outline-info btn-sm">
                             <i class="bi bi-shield-check me-1"></i>Admin
                         </a>
-                        <a href="{% url 'unified_dashboard' %}" class="btn btn-outline-primary btn-sm">
+                        <a href="{% url 'events:unified_dashboard' %}" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-speedometer2 me-1"></i>Dashboard
                         </a>
                     </div>
@@ -148,7 +148,7 @@
                             <h6 class="mb-0"><i class="bi bi-tags me-2"></i>Clasificación GTD</h6>
                         </div>
                         <div class="card-body">
-                            <form id="classificationForm" method="post" action="{% url 'classify_inbox_item_ajax' inbox_item.id %}">
+                            <form id="classificationForm" method="post" action="{% url 'events:classify_inbox_item_ajax' inbox_item.id %}">
                                 {% csrf_token %}
                                 <div class="mb-3">
                                     <label class="form-label fw-bold">Categoría GTD:</label>
@@ -437,7 +437,7 @@
             <div class="alert alert-warning">
                 <h5><i class="bi bi-exclamation-triangle me-2"></i>Item no encontrado</h5>
                 <p>El item del inbox que intentas procesar no existe o no tienes permisos para accederlo.</p>
-                <a href="{% url 'inbox' %}" class="btn btn-warning"><i class="bi bi-arrow-left me-1"></i>Volver al Inbox</a>
+                <a href="{% url 'events:inbox' %}" class="btn btn-warning"><i class="bi bi-arrow-left me-1"></i>Volver al Inbox</a>
             </div>
         </div>
     </div>

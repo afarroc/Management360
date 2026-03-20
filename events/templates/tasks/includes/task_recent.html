@@ -33,8 +33,8 @@
                 <tbody>
                     {% for task in recent_tasks %}
                     <tr>
-                        <th scope="row"><a href="{% url 'task_panel_with_id' task.id %}">{{ task.id }}</a></th>
-                        <td><a href="{% url 'task_panel_with_id' task.id %}" class="text-primary">{{ task.title|truncatechars:30 }}</a></td>
+                        <th scope="row"><a href="{% url 'events:task_panel_with_id' task.id %}">{{ task.id }}</a></th>
+                        <td><a href="{% url 'events:task_panel_with_id' task.id %}" class="text-primary">{{ task.title|truncatechars:30 }}</a></td>
                         <td>{{ task.assigned_to.get_full_name|default:task.assigned_to.username|title }}</td>
                         <td>{{ task.updated_at|date:"d-M H:i" }}</td>
                         <td>

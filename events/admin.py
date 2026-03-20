@@ -31,7 +31,7 @@ from .models import (
     GTDProcessingSettings,
     
     # Utility models
-    Room, Message, CreditAccount, Reminder
+    CreditAccount, Reminder
 )
 
 # Configure logger
@@ -2060,68 +2060,3 @@ class CreditAccountAdmin(admin.ModelAdmin):
         logger.info(f"User {request.user} reset balance for {updated} accounts")
     reset_balance.short_description = 'Reset balance to zero'
 
-
-@admin.register(Room)
-class RoomAdmin(admin.ModelAdmin):
-    list_display = ('name', 'description', 'message_count', 'last_message')
-    search_fields = ('name', 'description')
-    list_per_page = 25
-    
-    fieldsets = (
-        (None, {
-            'fields': ('name', 'description')
-        }),
-    )
-
-    def message_count(self, obj):
-        """Get count of messages in room"""
-        return obj.message_set.count()
-    message_count.short_description = 'Messages'
-
-    def last_message(self, obj):
-        """Get last message in room"""
-        last = obj.message_set.order_by('-timestamp').first()
-        if last:
-            return f"{last.user.username}: {last.message[:50]}..."
-        return "No messages"
-    last_message.short_description = 'Last Message'
-
-
-@admin.register(Message)
-class MessageAdmin(admin.ModelAdmin):
-    list_display = ('room_link', 'user_link', 'timestamp', 'message_preview')
-    list_filter = ('timestamp', 'room', 'user')
-    search_fields = ('message', 'user__username', 'room__name')
-    date_hierarchy = 'timestamp'
-    readonly_fields = ('timestamp',)
-    list_per_page = 50
-    list_select_related = ('room', 'user')
-    
-    fieldsets = (
-        (None, {
-            'fields': ('room', 'user', 'message', 'timestamp')
-        }),
-    )
-
-    def room_link(self, obj):
-        """Link to room"""
-        return format_html('<a href="{}">{}</a>',
-                         reverse('admin:events_room_change', args=[obj.room.id]),
-                         obj.room.name)
-    room_link.short_description = 'Room'
-
-    def user_link(self, obj):
-        """Link to user"""
-        return format_html('<a href="{}">{}</a>',
-                         reverse('admin:auth_user_change', args=[obj.user.id]),
-                         obj.user.username)
-    user_link.short_description = 'User'
-
-    def message_preview(self, obj):
-        """Get truncated message preview"""
-        return obj.message[:75] + '...' if len(obj.message) > 75 else obj.message
-    message_preview.short_description = 'Message'
-
-    def has_add_permission(self, request):
-        """Prevent manual message addition"""
-        return False

@@ -993,7 +993,7 @@
                             </button>
                         </div>
                     </div>
-                    <a href="{% url 'unified_dashboard' %}" class="btn btn-outline-light">
+                    <a href="{% url 'events:unified_dashboard' %}" class="btn btn-outline-light">
                         <i class="bi bi-speedometer2 me-1"></i>
                         Dashboard
                     </a>
@@ -1184,12 +1184,12 @@
                                 {{ task_data.task.updated_at|date:"d/m/Y H:i" }}
                             </small>
                             <div class="task-buttons">
-                                <a href="{% url 'tasks_with_id' task_data.task.id %}"
+                                <a href="{% url 'events:tasks_with_id' task_data.task.id %}"
                                    class="btn-task-action btn btn-sm btn-outline-primary"
                                    title="Ver">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{% url 'task_edit' task_data.task.id %}"
+                                <a href="{% url 'events:task_edit' task_data.task.id %}"
                                    class="btn-task-action btn btn-sm btn-outline-secondary"
                                    title="Editar">
                                     <i class="bi bi-pencil"></i>

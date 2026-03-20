@@ -116,15 +116,6 @@ class EditClassificationForm(forms.ModelForm):
         self.fields['descripcion'].label = "Descripción de la Tipificación"
 
 
-from django import forms
-from .models import Room
-
-class RoomForm(forms.ModelForm):
-    class Meta:
-        model = Room
-        fields = ('name', 'description')
-
-
 # Formularios para plantillas de proyectos
 class ProjectTemplateForm(forms.ModelForm):
     class Meta:

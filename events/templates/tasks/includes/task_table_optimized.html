@@ -42,7 +42,7 @@
                         </div>
                         <div class="flex-grow-1">
                             <h6 class="mb-0">
-                                <a href="{% url 'task_panel_with_id' data.task.id %}" 
+                                <a href="{% url 'events:task_panel_with_id' data.task.id %}" 
                                    class="text-dark text-decoration-none task-title">
                                     {{ data.task.title|truncatechars:40 }}
                                 </a>
@@ -63,7 +63,7 @@
                 <td class="project-cell" data-project-id="{{ data.task.project.id|default:'' }}">
                     {% if data.task.project %}
                     <div class="d-flex flex-column">
-                        <a href="{% url 'project_panel_with_id' data.task.project.id %}" 
+                        <a href="{% url 'events:project_panel_with_id' data.task.project.id %}" 
                            class="badge bg-light text-dark text-decoration-none mb-1 project-link"
                            title="{{ data.task.project.title }}">
                             {{ data.task.project.title|truncatechars:15 }}
@@ -112,7 +112,7 @@
                 <!-- Event -->
                 <td class="event-cell">
                     {% if data.task.event %}
-                    <a href="{% url 'event_panel_with_id' data.task.event.id %}" 
+                    <a href="{% url 'events:event_panel_with_id' data.task.event.id %}" 
                        class="badge bg-light text-dark text-decoration-none event-link"
                        title="{{ data.task.event.title }}">
                         {{ data.task.event.title|truncatechars:15 }}
@@ -241,14 +241,14 @@
                                 <input class="form-check-input task-status-switch" 
                                        type="checkbox"
                                        data-task-id="{{ data.task.id }}"
-                                       data-status-url="{% url 'task_change_status_ajax' %}"
+                                       data-status-url="{% url 'events:task_change_status_ajax' %}"
                                        {% if data.task.task_status.status_name == 'In Progress' %}checked{% endif %}
                                        {% if data.task.task_status.status_name == 'Completed' %}disabled{% endif %}
                                        title="Toggle In Progress/To Do">
                                 <label class="form-check-label small ms-2 text-muted">Active</label>
                             </div>
                             
-                            <a href="{% url 'task_panel_with_id' data.task.id %}" 
+                            <a href="{% url 'events:task_panel_with_id' data.task.id %}" 
                                class="btn btn-outline-primary btn-sm view-task-btn" title="View" style="padding: 0.15rem 0.3rem;">
                                 <i class="bi bi-eye"></i>
                             </a>
@@ -263,7 +263,7 @@
                                     <input class="form-check-input task-complete-checkbox" 
                                            type="checkbox"
                                            data-task-id="{{ data.task.id }}"
-                                           data-status-url="{% url 'task_change_status_ajax' %}"
+                                           data-status-url="{% url 'events:task_change_status_ajax' %}"
                                            id="completeCheck{{ data.task.id }}">
                                     <label class="form-check-label small" for="completeCheck{{ data.task.id }}" 
                                            title="Mark as Completed">
@@ -317,7 +317,7 @@
                 <td colspan="9" class="text-center py-4">
                     <i class="bi bi-list-check display-1 text-muted mb-3"></i>
                     <h5 class="text-muted">No tasks found</h5>
-                    <a href="{% url 'task_create' %}" class="btn btn-primary btn-sm mt-2">
+                    <a href="{% url 'events:task_create' %}" class="btn btn-primary btn-sm mt-2">
                         Create Your First Task
                     </a>
                 </td>

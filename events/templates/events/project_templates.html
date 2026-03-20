@@ -14,7 +14,7 @@
                         {{ title }}
                     </h3>
                     <div class="card-tools">
-                        <a href="{% url 'create_project_template' %}" class="btn btn-primary btn-sm">
+                        <a href="{% url 'events:create_project_template' %}" class="btn btn-primary btn-sm">
                             <i class="bi bi-plus-circle me-1"></i>
                             Nueva Plantilla
                         </a>
@@ -84,12 +84,12 @@
                                         </div>
                                         <div class="card-footer">
                                             <div class="d-flex gap-2">
-                                                <a href="{% url 'project_template_detail' template.id %}"
+                                                <a href="{% url 'events:project_template_detail' template.id %}"
                                                    class="btn btn-outline-primary btn-sm">
                                                     <i class="bi bi-eye me-1"></i>
                                                     Ver
                                                 </a>
-                                                <a href="{% url 'use_project_template' template.id %}"
+                                                <a href="{% url 'events:use_project_template' template.id %}"
                                                    class="btn btn-success btn-sm">
                                                     <i class="bi bi-play-circle me-1"></i>
                                                     Usar
@@ -147,22 +147,22 @@
                                         </div>
                                         <div class="card-footer">
                                             <div class="d-flex gap-2">
-                                                <a href="{% url 'project_template_detail' template.id %}"
+                                                <a href="{% url 'events:project_template_detail' template.id %}"
                                                    class="btn btn-outline-primary btn-sm">
                                                     <i class="bi bi-eye me-1"></i>
                                                     Ver
                                                 </a>
-                                                <a href="{% url 'edit_project_template' template.id %}"
+                                                <a href="{% url 'events:edit_project_template' template.id %}"
                                                    class="btn btn-outline-warning btn-sm">
                                                     <i class="bi bi-pencil me-1"></i>
                                                     Editar
                                                 </a>
-                                                <a href="{% url 'use_project_template' template.id %}"
+                                                <a href="{% url 'events:use_project_template' template.id %}"
                                                    class="btn btn-success btn-sm">
                                                     <i class="bi bi-play-circle me-1"></i>
                                                     Usar
                                                 </a>
-                                                <a href="{% url 'delete_project_template' template.id %}"
+                                                <a href="{% url 'events:delete_project_template' template.id %}"
                                                    class="btn btn-outline-danger btn-sm"
                                                    onclick="return confirm('¿Eliminar plantilla?')">
                                                     <i class="bi bi-trash me-1"></i>
@@ -188,7 +188,7 @@
                                     Crea tu primera plantilla de proyecto para reutilizar en futuros proyectos.
                                 {% endif %}
                             </p>
-                            <a href="{% url 'create_project_template' %}" class="btn btn-primary">
+                            <a href="{% url 'events:create_project_template' %}" class="btn btn-primary">
                                 <i class="bi bi-plus-circle me-1"></i>
                                 Crear Primera Plantilla
                             </a>

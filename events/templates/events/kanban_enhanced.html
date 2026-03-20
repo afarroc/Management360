@@ -43,7 +43,7 @@
                             <i class="bi bi-funnel me-1"></i>
                             Filtros
                         </button>
-                        <a href="{% url 'unified_dashboard' %}" class="btn btn-outline-info">
+                        <a href="{% url 'events:unified_dashboard' %}" class="btn btn-outline-info">
                             <i class="bi bi-speedometer2 me-1"></i>
                             Dashboard
                         </a>
@@ -216,11 +216,11 @@
                                 {{ task_data.task.updated_at|date:"d/m/Y H:i" }}
                             </div>
                             <div class="card-actions">
-                                <a href="{% url 'tasks_with_id' task_data.task.id %}"
+                                <a href="{% url 'events:tasks_with_id' task_data.task.id %}"
                                    class="btn-icon" title="Ver">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{% url 'task_edit' task_data.task.id %}"
+                                <a href="{% url 'events:task_edit' task_data.task.id %}"
                                    class="btn-icon" title="Editar">
                                     <i class="bi bi-pencil"></i>
                                 </a>
@@ -264,7 +264,7 @@
                                     <br>
                                     <small class="text-muted">{{ project.updated_at|date:"d/m/Y" }}</small>
                                 </div>
-                                <a href="{% url 'projects_with_id' project.id %}" class="item-action">
+                                <a href="{% url 'events:projects_with_id' project.id %}" class="item-action">
                                     Ver
                                 </a>
                             </div>
@@ -299,7 +299,7 @@
                                     <br>
                                     <small class="text-muted">{{ event.updated_at|date:"d/m/Y" }}</small>
                                 </div>
-                                <a href="{% url 'event_detail' event.id %}" class="item-action">
+                                <a href="{% url 'events:event_detail' event.id %}" class="item-action">
                                     Ver
                                 </a>
                             </div>
@@ -332,7 +332,7 @@
                             <div class="row g-3">
                                 <!-- Inbox GTD -->
                                 <div class="col-md-3">
-                                    <div class="gtd-tool-card" data-url="{% url 'inbox' %}" onclick="navigateToGTDTool(this)">
+                                    <div class="gtd-tool-card" data-url="{% url 'events:inbox' %}" onclick="navigateToGTDTool(this)">
                                         <div class="tool-icon">
                                             <i class="bi bi-inbox-fill"></i>
                                         </div>
@@ -348,7 +348,7 @@
 
                                 <!-- Matriz Eisenhower -->
                                 <div class="col-md-3">
-                                    <div class="gtd-tool-card" data-url="{% url 'eisenhower_matrix' %}" onclick="navigateToGTDTool(this)">
+                                    <div class="gtd-tool-card" data-url="{% url 'events:eisenhower_matrix' %}" onclick="navigateToGTDTool(this)">
                                         <div class="tool-icon">
                                             <i class="bi bi-grid-3x3-gap"></i>
                                         </div>
@@ -380,7 +380,7 @@
 
                                 <!-- Plantillas -->
                                 <div class="col-md-3">
-                                    <div class="gtd-tool-card" data-url="{% url 'project_templates' %}" onclick="navigateToGTDTool(this)">
+                                    <div class="gtd-tool-card" data-url="{% url 'events:project_templates' %}" onclick="navigateToGTDTool(this)">
                                         <div class="tool-icon">
                                             <i class="bi bi-file-earmark-plus"></i>
                                         </div>

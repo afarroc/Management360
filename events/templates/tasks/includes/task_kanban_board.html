@@ -83,7 +83,7 @@
                             
                             <!-- Actions -->
                             <div class="mt-3 d-flex gap-1">
-                                <a href="{% url 'task_panel_with_id' data.task.id %}" 
+                                <a href="{% url 'events:task_panel_with_id' data.task.id %}" 
                                    class="btn btn-sm btn-outline-primary flex-grow-1">
                                     <i class="bi bi-eye"></i> View
                                 </a>
@@ -91,7 +91,7 @@
                                     <input class="form-check-input task-status-switch" 
                                            type="checkbox"
                                            data-task-id="{{ data.task.id }}"
-                                           data-status-url="{% url 'task_change_status_ajax' %}"
+                                           data-status-url="{% url 'events:task_change_status_ajax' %}"
                                            {% if data.task.task_status.status_name == 'In Progress' %}checked{% endif %}
                                            {% if data.task.task_status.status_name == 'Completed' %}disabled{% endif %}>
                                 </div>
@@ -109,7 +109,7 @@
             
             <!-- Add Task Button -->
             <div class="card-footer bg-transparent">
-                <a href="{% url 'task_create' %}?status={{ status_group.grouper.id }}" 
+                <a href="{% url 'events:task_create' %}?status={{ status_group.grouper.id }}" 
                    class="btn btn-sm btn-outline-secondary w-100">
                     <i class="bi bi-plus"></i> Add Task
                 </a>

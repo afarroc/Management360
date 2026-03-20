@@ -7,7 +7,7 @@
     <nav>
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="{% url 'index' %}">Home</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'panel' %}">Panel</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'events:panel' %}">Panel</a></li>
             <li class="breadcrumb-item active">{{title}}</li>
         </ol>
     </nav>
@@ -144,7 +144,7 @@
                                 <i class="bi bi-search me-2"></i>
                                 Filtrar
                             </button>
-                            <a href="{% url 'inbox_admin_dashboard' %}" class="btn btn-secondary ms-2">
+                            <a href="{% url 'events:inbox_admin_dashboard' %}" class="btn btn-secondary ms-2">
                                 <i class="bi bi-x-circle me-2"></i>
                                 Limpiar
                             </a>
@@ -231,12 +231,12 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm">
-                                            <a href="{% url 'inbox_item_detail_admin' item.id %}"
+                                            <a href="{% url 'events:inbox_item_detail_admin' item.id %}"
                                                class="btn btn-outline-info btn-sm"
                                                title="Ver detalles">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="{% url 'process_inbox_item' item.id %}"
+                                            <a href="{% url 'events:process_inbox_item' item.id %}"
                                                class="btn btn-outline-primary btn-sm"
                                                title="Procesar item">
                                                 <i class="bi bi-gear"></i>
@@ -256,7 +256,7 @@
                                     <td colspan="9" class="text-center py-4">
                                         <i class="bi bi-inbox display-4 text-muted"></i>
                                         <p class="mt-2 text-muted">No hay items del inbox que coincidan con los filtros</p>
-                                        <a href="{% url 'inbox' %}" class="btn btn-primary">
+                                        <a href="{% url 'events:inbox' %}" class="btn btn-primary">
                                             <i class="bi bi-plus-circle me-2"></i>
                                             Ir al Inbox Principal
                                         </a>
@@ -338,11 +338,11 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a href="{% url 'inbox' %}" class="btn btn-outline-primary btn-sm">
+                        <a href="{% url 'events:inbox' %}" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-plus-circle me-2"></i>
                             Nuevo Item
                         </a>
-                        <a href="{% url 'inbox_management_panel' %}" class="btn btn-outline-info btn-sm">
+                        <a href="{% url 'events:inbox_management_panel' %}" class="btn btn-outline-info btn-sm">
                             <i class="bi bi-gear me-2"></i>
                             Panel de Gestión
                         </a>

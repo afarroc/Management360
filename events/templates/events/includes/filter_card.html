@@ -30,7 +30,7 @@
                         class="text-muted small pt-2 ps-1">Hoy</span>
                 </div><br>
                 <div class="container">
-                    <form method="POST" action="{% url 'events' %}" class="row g-3">
+                    <form method="POST" action="{% url 'events:events' %}" class="row g-3">
                         {% csrf_token %}
                         <div class="col-auto">
                           <label for="status" class="visually-hidden">Estado:</label>
