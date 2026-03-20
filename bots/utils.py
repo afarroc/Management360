@@ -55,8 +55,10 @@ class BotTaskQueue:
         Returns:
             dict or None: Datos de la tarea o None si no hay tareas disponibles
         """
-        # Verificar si el bot puede tomar tareas
-        if not bot_instance.can_take_task('any'):
+        # Verificar disponibilidad básica del bot.
+        # La compatibilidad de especialización la valida _can_assign_to_bot()
+        # por tarea, así los bots especializados sí reciben sus tareas.
+        if not bot_instance.is_active or not bot_instance.is_working_hours():
             return None
 
         # Buscar tarea en orden de prioridad
@@ -244,9 +246,9 @@ class BotCoordinatorService:
             if error:
                 assignment.fail_task(error)
                 assignment.bot_instance.error_count += 1
+                assignment.bot_instance.save(update_fields=['error_count'])
             else:
-                assignment.complete_task(result_data)
-                assignment.bot_instance.tasks_completed_today += 1
+                assignment.complete_task(result_data)  # ya incrementa tasks_completed_today
 
             assignment.bot_instance.update_status('idle')
 

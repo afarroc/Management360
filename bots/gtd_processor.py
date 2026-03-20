@@ -3,14 +3,59 @@ Procesador GTD (Getting Things Done) para bots
 Implementa la metodología completa de GTD para procesamiento automático de items
 """
 
+from datetime import timedelta                           # convención del proyecto
 from django.utils import timezone
 from django.db import transaction
-from events.models import InboxItem, Task, Project, Event, Reminder, TaskSchedule
+from django.contrib.contenttypes.models import ContentType
+from events.models import (
+    InboxItem, Task, Project, Event, Reminder,
+    TaskSchedule, TaskStatus, ProjectStatus,
+)
 from .models import BotInstance, BotLog
 from .utils import get_bot_coordinator
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Helpers internos al módulo
+# ---------------------------------------------------------------------------
+
+def _get_default_task_status():
+    """
+    Retorna el primer TaskStatus activo disponible.
+    Se usa como fallback cuando el procesador crea tareas sin estado explícito.
+    """
+    status = TaskStatus.objects.filter(active=True).first()
+    if status is None:
+        status = TaskStatus.objects.first()
+    if status is None:
+        raise RuntimeError(
+            "No hay ningún TaskStatus en la DB. "
+            "Ejecuta el setup inicial o crea al menos un estado de tarea."
+        )
+    return status
+
+
+def _get_default_project_status():
+    """
+    Retorna el primer ProjectStatus activo disponible.
+    """
+    status = ProjectStatus.objects.filter(active=True).first()
+    if status is None:
+        status = ProjectStatus.objects.first()
+    if status is None:
+        raise RuntimeError(
+            "No hay ningún ProjectStatus en la DB. "
+            "Ejecuta el setup inicial o crea al menos un estado de proyecto."
+        )
+    return status
+
+
+# ---------------------------------------------------------------------------
+# Procesador GTD
+# ---------------------------------------------------------------------------
 
 class GTDProcessor:
     """Procesador GTD que implementa la metodología completa"""
@@ -50,7 +95,11 @@ class GTDProcessor:
             inbox_item.processed_at = timezone.now()
             inbox_item.save()
 
-            self._log_gtd_phase(inbox_item, 'engage', f'Procesamiento completado: {result["action"]}')
+            # BUG-FIX #2: result puede ser {'success': False, 'error': ...}
+            # cuando _convert_to_task/_convert_to_project fallan internamente.
+            # Usar .get() con fallback en vez de acceso directo.
+            action_label = result.get('action', 'error' if not result.get('success') else 'unknown')
+            self._log_gtd_phase(inbox_item, 'engage', f'Procesamiento completado: {action_label}')
 
             return result
 
@@ -66,7 +115,6 @@ class GTDProcessor:
         Returns:
             bool: True si es actionable
         """
-        # Análisis de palabras clave
         actionable_keywords = [
             'hacer', 'llamar', 'escribir', 'reunión', 'entregar', 'completar',
             'revisar', 'actualizar', 'crear', 'organizar', 'planificar'
@@ -80,18 +128,15 @@ class GTDProcessor:
         title_lower = item.title.lower()
         description_lower = (item.description or '').lower()
 
-        # Contar palabras clave
         actionable_score = sum(1 for keyword in actionable_keywords
                              if keyword in title_lower or keyword in description_lower)
         non_actionable_score = sum(1 for keyword in non_actionable_keywords
                                  if keyword in title_lower or keyword in description_lower)
 
-        # Factores adicionales
         has_due_date = bool(item.due_date)
         has_time_estimate = bool(item.estimated_time)
         has_context = bool(item.context)
 
-        # Cálculo de score final
         score = actionable_score - non_actionable_score
         if has_due_date: score += 2
         if has_time_estimate: score += 1
@@ -108,7 +153,6 @@ class GTDProcessor:
         """
         Procesa un item actionable aplicando la regla de 2 minutos
         """
-        # Regla de 2 minutos: si toma menos de 2 minutos, hacerlo ahora
         if item.estimated_time and item.estimated_time <= 2:
             return self._do_it_now(item)
         else:
@@ -119,10 +163,7 @@ class GTDProcessor:
         Ejecuta la tarea inmediatamente (regla de 2 minutos)
         """
         try:
-            # Simular ejecución inmediata
-            # En un caso real, aquí iría la lógica específica
             success = self._execute_quick_task(item)
-
             if success:
                 self._log_gtd_phase(item, 'engage', 'Ejecutado inmediatamente (regla 2 min)')
                 return {
@@ -131,7 +172,6 @@ class GTDProcessor:
                     'method': '2_minute_rule'
                 }
             else:
-                # Si no se puede ejecutar inmediatamente, delegar
                 return self._delegate_or_schedule(item)
 
         except Exception as e:
@@ -142,21 +182,16 @@ class GTDProcessor:
         """
         Decide si delegar o convertir en proyecto/tarea
         """
-        # Análisis de complejidad
         is_complex = self._analyze_complexity(item)
-
         if is_complex:
-            # Es un proyecto - crear proyecto con subtareas
             return self._convert_to_project(item)
         else:
-            # Es una tarea simple - crear tarea
             return self._convert_to_task(item)
 
     def _process_non_actionable(self, item):
         """
         Procesa un item no actionable
         """
-        # Decisiones para items no actionable
         if self._should_delete(item):
             return self._delete_item(item)
         elif self._should_incubate(item):
@@ -170,28 +205,32 @@ class GTDProcessor:
         """
         try:
             with transaction.atomic():
-                # Crear tarea
+                # BUG-FIX #1: task_status es NOT NULL — obtener el primer estado activo
+                task_status = _get_default_task_status()
+
+                # BUG-FIX #3 y #4: usar ContentType.objects.get_for_model()
+                #                   no pasar created_at (auto_now_add)
                 task = Task.objects.create(
                     title=item.title,
                     description=item.description or '',
                     host=self.bot.generic_user.user,
                     assigned_to=self._determine_best_assignee(item),
-                    created_at=item.created_at,
-                    important=item.priority == 'alta'
+                    task_status=task_status,
+                    important=item.priority == 'alta',
                 )
 
-                # Crear recordatorio si tiene due_date
+                # Recordatorio si tiene due_date
                 if item.due_date:
                     Reminder.objects.create(
                         title=f"Recordatorio: {item.title}",
-                        description=f"Tarea: {item.description}",
+                        description=f"Tarea: {item.description or ''}",
                         remind_at=item.due_date,
                         task=task,
-                        created_by=self.bot.generic_user.user
+                        created_by=self.bot.generic_user.user,
                     )
 
-                # Actualizar inbox item
-                item.processed_to_content_type = Task.get_content_type()
+                # BUG-FIX #3: ContentType.objects.get_for_model() en vez de Task.get_content_type()
+                item.processed_to_content_type = ContentType.objects.get_for_model(Task)
                 item.processed_to_object_id = task.id
                 item.save()
 
@@ -201,12 +240,12 @@ class GTDProcessor:
                     'success': True,
                     'action': 'converted_to_task',
                     'task_id': task.id,
-                    'method': 'single_task'
+                    'method': 'single_task',
                 }
 
         except Exception as e:
             logger.error(f"Error convirtiendo a task: {str(e)}")
-            return {'success': False, 'error': str(e)}
+            return {'success': False, 'action': 'error', 'error': str(e)}
 
     def _convert_to_project(self, item):
         """
@@ -214,16 +253,19 @@ class GTDProcessor:
         """
         try:
             with transaction.atomic():
-                # Crear proyecto
+                # BUG-FIX #1: project_status es NOT NULL — obtener el primer estado activo
+                project_status = _get_default_project_status()
+                task_status = _get_default_task_status()
+
+                # BUG-FIX #4: no pasar created_at (auto_now_add)
                 project = Project.objects.create(
                     title=item.title,
                     description=item.description or '',
                     host=self.bot.generic_user.user,
                     assigned_to=self._determine_best_assignee(item),
-                    created_at=item.created_at
+                    project_status=project_status,
                 )
 
-                # Generar subtareas automáticamente
                 subtasks = self._break_down_into_subtasks(item)
                 created_tasks = []
 
@@ -234,12 +276,13 @@ class GTDProcessor:
                         project=project,
                         host=self.bot.generic_user.user,
                         assigned_to=subtask_data.get('assignee', self._determine_best_assignee(item)),
-                        important=subtask_data.get('important', False)
+                        task_status=task_status,
+                        important=subtask_data.get('important', False),
                     )
                     created_tasks.append(task)
 
-                # Actualizar inbox item
-                item.processed_to_content_type = Project.get_content_type()
+                # BUG-FIX #3: ContentType.objects.get_for_model()
+                item.processed_to_content_type = ContentType.objects.get_for_model(Project)
                 item.processed_to_object_id = project.id
                 item.save()
 
@@ -251,12 +294,12 @@ class GTDProcessor:
                     'action': 'converted_to_project',
                     'project_id': project.id,
                     'tasks_created': len(created_tasks),
-                    'method': 'project_with_subtasks'
+                    'method': 'project_with_subtasks',
                 }
 
         except Exception as e:
             logger.error(f"Error convirtiendo a project: {str(e)}")
-            return {'success': False, 'error': str(e)}
+            return {'success': False, 'action': 'error', 'error': str(e)}
 
     def _analyze_complexity(self, item):
         """
@@ -270,8 +313,7 @@ class GTDProcessor:
         text = (item.title + ' ' + (item.description or '')).lower()
         complexity_score = sum(1 for indicator in complexity_indicators if indicator in text)
 
-        # Factores adicionales
-        if item.estimated_time and item.estimated_time > 60:  # Más de 1 hora
+        if item.estimated_time and item.estimated_time > 60:
             complexity_score += 2
 
         return complexity_score >= 2
@@ -280,79 +322,66 @@ class GTDProcessor:
         """
         Descompone un item complejo en subtareas manejables
         """
-        # Lógica simplificada - en producción usaría IA más avanzada
-        subtasks = []
-
         if 'reunión' in item.title.lower():
-            subtasks = [
-                {'title': 'Preparar agenda', 'description': 'Definir puntos a tratar'},
-                {'title': 'Enviar invitaciones', 'description': 'Notificar participantes'},
-                {'title': 'Preparar materiales', 'description': 'Documentos y presentaciones'},
-                {'title': 'Realizar reunión', 'description': 'Conducir la reunión'},
-                {'title': 'Seguimiento', 'description': 'Acciones posteriores'}
+            return [
+                {'title': 'Preparar agenda',      'description': 'Definir puntos a tratar'},
+                {'title': 'Enviar invitaciones',   'description': 'Notificar participantes'},
+                {'title': 'Preparar materiales',   'description': 'Documentos y presentaciones'},
+                {'title': 'Realizar reunión',      'description': 'Conducir la reunión'},
+                {'title': 'Seguimiento',           'description': 'Acciones posteriores'},
             ]
         elif 'proyecto' in item.title.lower():
-            subtasks = [
-                {'title': 'Definir alcance', 'description': 'Establecer límites del proyecto'},
+            return [
+                {'title': 'Definir alcance',      'description': 'Establecer límites del proyecto'},
                 {'title': 'Identificar recursos', 'description': 'Personal, herramientas, presupuesto'},
-                {'title': 'Crear plan', 'description': 'Cronograma y milestones'},
-                {'title': 'Ejecutar', 'description': 'Implementar el plan'},
-                {'title': 'Evaluar resultados', 'description': 'Revisar y ajustar'}
+                {'title': 'Crear plan',            'description': 'Cronograma y milestones'},
+                {'title': 'Ejecutar',              'description': 'Implementar el plan'},
+                {'title': 'Evaluar resultados',    'description': 'Revisar y ajustar'},
             ]
         else:
-            # Descomposición genérica
-            subtasks = [
-                {'title': 'Investigar', 'description': 'Reunir información necesaria'},
-                {'title': 'Planificar', 'description': 'Definir pasos a seguir'},
-                {'title': 'Ejecutar', 'description': 'Realizar el trabajo'},
-                {'title': 'Verificar', 'description': 'Comprobar resultados'}
+            return [
+                {'title': 'Investigar',  'description': 'Reunir información necesaria'},
+                {'title': 'Planificar',  'description': 'Definir pasos a seguir'},
+                {'title': 'Ejecutar',    'description': 'Realizar el trabajo'},
+                {'title': 'Verificar',   'description': 'Comprobar resultados'},
             ]
-
-        return subtasks
 
     def _determine_best_assignee(self, item):
         """
         Determina el mejor usuario para asignar la tarea
         """
-        # Lógica simplificada - en producción consideraría expertise, carga de trabajo, etc.
-        return self.bot.generic_user.user  # Por ahora asigna al bot mismo
+        return self.bot.generic_user.user
 
     def _execute_quick_task(self, item):
         """
         Ejecuta una tarea rápida (regla de 2 minutos)
         """
-        # Simular ejecución - en producción tendría lógica específica
         logger.info(f"Ejecutando tarea rápida: {item.title}")
         return True
 
     def _should_delete(self, item):
-        """Determina si un item debe eliminarse"""
         delete_keywords = ['spam', 'basura', 'eliminar', 'borrar']
         text = (item.title + ' ' + (item.description or '')).lower()
         return any(keyword in text for keyword in delete_keywords)
 
     def _should_incubate(self, item):
-        """Determina si un item debe incubarse"""
         incubate_keywords = ['algún día', 'tal vez', 'futuro', 'idea']
         text = (item.title + ' ' + (item.description or '')).lower()
         return any(keyword in text for keyword in incubate_keywords)
 
     def _delete_item(self, item):
-        """Elimina un item (trash)"""
         item.delete()
         self._log_gtd_phase(item, 'organize', 'Eliminado (trash)')
         return {'success': True, 'action': 'deleted', 'method': 'trash'}
 
     def _incubate_item(self, item):
-        """Incuba un item para revisión futura"""
-        # Establecer fecha de revisión futura (ej: 30 días)
-        item.next_review_date = timezone.now() + timezone.timedelta(days=30)
+        # BUG-FIX #5: timezone.timedelta → timedelta (import from datetime)
+        item.next_review_date = timezone.now() + timedelta(days=30)
         item.save()
         self._log_gtd_phase(item, 'organize', 'Incubado para revisión futura')
         return {'success': True, 'action': 'incubated', 'method': 'someday_maybe'}
 
     def _file_for_reference(self, item):
-        """Archiva como referencia"""
         item.gtd_category = 'no_accionable'
         item.action_type = 'archivar'
         item.save()
@@ -360,27 +389,26 @@ class GTDProcessor:
         return {'success': True, 'action': 'archived', 'method': 'reference'}
 
     def _log_gtd_phase(self, inbox_item, phase, message):
-        """Registra una fase del proceso GTD"""
         BotLog.objects.create(
             bot_instance=self.bot,
             category='gtd',
             message=f'GTD {phase}: {message}',
             details={'inbox_item_id': inbox_item.id, 'phase': phase},
             related_object_type='inbox_item',
-            related_object_id=inbox_item.id
+            related_object_id=inbox_item.id,
         )
 
     def _log_error(self, inbox_item, error_message):
-        """Registra un error en el procesamiento"""
         BotLog.objects.create(
             bot_instance=self.bot,
             category='error',
-            log_level='error',
+            level='error',
             message=f'Error procesando InboxItem {inbox_item.id}: {error_message}',
             details={'inbox_item_id': inbox_item.id, 'error': error_message},
             related_object_type='inbox_item',
-            related_object_id=inbox_item.id
+            related_object_id=inbox_item.id,
         )
+
 
 def get_gtd_processor(bot_instance):
     """Factory function para obtener un procesador GTD"""

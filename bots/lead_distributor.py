@@ -20,13 +20,17 @@ class LeadDistributor:
         self.campaign = campaign
         self.coordinator = get_bot_coordinator()
 
-    def distribute_leads(self, leads_queryset=None, batch_size=None):
+    def distribute_leads(self, leads_queryset=None, batch_size=None, force=False):
         """
-        Distribuir leads automáticamente según la estrategia de la campaña
+        Distribuir leads según la estrategia de la campaña.
 
         Args:
             leads_queryset: Queryset de leads a distribuir (opcional)
             batch_size: Tamaño del lote (opcional, usa configuración de campaña)
+            force: Si True, ignora auto_distribute. Usar en disparos manuales
+                   (trigger_distribution, api_trigger_distribution) para permitir
+                   que un operador fuerce la distribución aunque el pipeline
+                   automático esté desactivado en la campaña.
 
         Returns:
             dict: Resultado de la distribución
@@ -34,7 +38,7 @@ class LeadDistributor:
         if not self.campaign.is_active:
             return {'success': False, 'error': 'Campaña inactiva'}
 
-        if not self.campaign.auto_distribute:
+        if not force and not self.campaign.auto_distribute:
             return {'success': False, 'error': 'Distribución automática desactivada'}
 
         # Obtener leads a distribuir

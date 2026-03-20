@@ -17,48 +17,71 @@ Soy el Manager del proyecto **Management360**, una plataforma SaaS de Workforce 
 
 ---
 
-## Estado del Proyecto (2026-03-19)
+## Estado del Proyecto (2026-03-20)
 
-**Sprint 7.5 completado.** Sprints 8 y 9 planificados.
+**Sprint 7.5 completado. Auditoría de apps ejecutada. Sprint 8 bloqueado por bugs críticos.**
 
 | Fase | Estado |
 |------|--------|
 | Fases 1–7 (core, events, chat, rooms, analyst, sim, courses, kpis, bitacora, simcity) | ✅ |
-| Fase 8 — `bots` | ⬜ Sprint 8 |
+| Fase 8 — `bots` | ⬜ Bloqueada — 32 bugs críticos pendientes |
 | Fase 9 — Optimización y escalado | ⬜ Sprint 9 |
 
 **Pendientes del último handoff:**
 - `git push` a origin/main
+- **32 bugs críticos** pre-Sprint 8 (seguridad + runtime) — ver PROJECT_DESIGN.md
+- BOT-0: verificar arquitectura frontend de `bots` (solo existe 1 template)
 - SIM-7e: agentes simulados perfilados
 - SIM-6b: GTR Interactivo con sliders
-- Sprint 8: BOT-1 motor de asignación de leads
 - BIT-17: nav prev/next en bitacora
+- BIT-18: registrar TinyMCE API key
 
 ---
 
 ## Apps con Documentación
 
-| App | CONTEXT | DEV_REF | DESIGN |
-|-----|---------|---------|--------|
-| analyst | ✅ | ✅ | ✅ |
-| sim | ✅ | ✅ | ✅ |
-| bitacora | ✅ | ✅ | ✅ |
-| simcity | ✅ | ✅ | ✅ |
-| **events** | ✅ auto | ✅ nuevo | ✅ nuevo |
-| kpis | ✅ | 🔵 parcial | ⬜ |
-| resto (14 apps) | ⬜ | ⬜ | ⬜ |
+| App | CONTEXT | DEV_REF | DESIGN | Tests reales |
+|-----|---------|---------|--------|:------------:|
+| analyst | ✅ | ✅ | ✅ | ❌ stub |
+| sim | ✅ | ✅ | ✅ | ✅ 100% |
+| bitacora | ✅ | ✅ | ✅ | ❌ stub |
+| simcity | ✅ | ✅ | ✅ | ❌ stub |
+| events | ✅ | ✅ | ✅ | ✅ 9 archivos |
+| accounts | ✅ | ✅ | ✅ | ✅ 212L |
+| core | ✅ | ✅ | ✅ | ✅ perf |
+| memento | ✅ | ✅ | ✅ | ✅ 68L |
+| chat | ✅ | ✅ | ✅ | ❌ |
+| rooms | ✅ | ✅ | ✅ | ❌ |
+| courses | ✅ | ✅ | ✅ | ❌ |
+| kpis | ⬜ | 🔵 parcial | ⬜ | ❌ |
+| bots | ⬜ | ⬜ | ⬜ | ❌ stub |
+| resto (7 apps) | ⬜ | ⬜ | ⬜ | ❌ |
+
+**Cobertura real de tests: 25% (5/20 apps)**
 
 ---
 
 ## Convenciones Críticas del Proyecto
 
 - **PK estándar:** `UUIDField` — EXCEPTO `events` (int) y `simcity` (AutoField int)
-- **Propietario estándar:** `created_by` — EXCEPTO `events` (usa `host`)
+- **Propietario estándar:** `created_by` — EXCEPTO `events` (usa `host`), `rooms` (usa `owner`), `courses` (usa `tutor`/`author`/`student`), `chat` y `memento` (usan `user`)
 - **Respuestas JSON:** siempre `{"success": true/false, ...}`
 - **CSRF en JS:** siempre desde cookie, nunca hardcoded
-- **Namespaces:** declarar `app_name` en todos los `urls.py`
+- **Namespaces:** 13/20 apps con `app_name` declarado — `accounts`, `core`, `events`, `memento` son frágiles
 - **`accounts/migrations/`** siempre en git — nunca ignorar
 - **`timedelta`** desde `datetime`, no desde `django.utils.timezone`
+- **`.env`** nunca pegar en chats ni en output de terminal — confirmado fuera de git
+
+---
+
+## Alertas activas
+
+| Severidad | ID | Descripción |
+|-----------|----|-------------|
+| 🔴 | INC-003 | API key expuesta en terminal (2026-03-20) — **resuelta**: key revocada, `.env` corregido |
+| 🔴 | INC-004 | Tests de `analyst` son stub — los 34 documentados no existen |
+| 🔴 | 32 bugs | Seguridad + runtime bloquean Sprint 8 — ver PROJECT_DESIGN.md |
+| 🟠 | REFACTOR | Monolitos: `rooms` 2858L, `courses` 2309L, `chat` 2017L, `cv` 873L |
 
 ---
 
@@ -83,12 +106,14 @@ Actúa como mi **asistente de Project Management**. En esta sesión puedo pedirt
 
 Adjunto en esta sesión (o disponibles bajo petición):
 - `PROJECT_CONTEXT.md` — mapa completo de las 20 apps
-- `PROJECT_DESIGN.md` — roadmap, sprints, incidentes
+- `PROJECT_DESIGN.md` — roadmap, sprints, incidentes *(actualizado 2026-03-20)*
 - `PROJECT_DEV_REFERENCE.md` — convenciones técnicas globales
+- `AUDIT_APP_STATE_20260320.md` — auditoría de estado real de apps
+- `TASK_ASSIGNMENTS_S8.md` — asignación de tareas pre-Sprint 8 y Sprint 8
 - `TEAM_ROLES.md` — estructura del equipo
 
 ---
 
 ## Primera acción de esta sesión
 
-[DESCRIBE AQUÍ QUÉ NECESITAS — ejemplo: "Planificar Sprint 8 en detalle" / "Revisar el estado de documentación y asignar prioridades" / "Decidir arquitectura para X"]
+[DESCRIBE AQUÍ QUÉ NECESITAS — ejemplo: "Arrancar los bugs críticos de seguridad" / "Planificar Sprint 8 en detalle" / "Sesión de documentación: kpis + bots" / "Revisar el estado post-bugfix"]

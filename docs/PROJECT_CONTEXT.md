@@ -1,8 +1,8 @@
 # Mapa del Proyecto — Management360
 
-> Generado por `m360_map.sh`  |  2026-03-18 21:23:35
+> Generado por `m360_map.sh`  |  2026-03-20 09:48:45
 > Raíz: `/data/data/com.termux/files/home/projects/Management360`
-> Apps: **20**  |  Archivos Python+HTML: **709**
+> Apps: **20**  |  Archivos Python+HTML: **710**
 
 ---
 
@@ -15,7 +15,7 @@
 | `api` | `—` | 6 | 00 | 4 | API REST publica |
 | `bitacora` | `bitacora` | 17 | 4 | 9 | Bitacora personal GTD |
 | `board` | `board` | 15 | 3 | 8 | Kanban board |
-| `bots` | `bots` | 15 | 10 | 11 | Automatizaciones, bots |
+| `bots` | `bots` | 16 | 10 | 13 | Automatizaciones, bots |
 | `campaigns` | `campaigns` | 6 | 3 | 6 | Campanas, outreach |
 | `chat` | `chat` | 27 | 6 | 40 | Chat en tiempo real, rooms, mensajes |
 | `core` | `—` | 44 | 1 | 16 | Dashboard, URL-map, Home |
@@ -64,15 +64,15 @@ Management360/
     ├── sim/
     ├── simcity/
     ├── staticfiles/
-    ├── ANALYST_CONTEXT.md
-    ├── BITACORA_CONTEXT.md
-    ├── BOARD_CONTEXT.md
+    ├── ACCOUNTS_CONTEXT.md
+    ├── CHAT_CONTEXT.md
     ├── CORE_CONTEXT.md
-    ├── MANAGEMENT360_CONTEXT.md
-    ├── PROJECT_CONTEXT.md
+    ├── COURSES_CONTEXT.md
+    ├── CV_CONTEXT.md
+    ├── KPIS_CONTEXT.md
+    ├── MEMENTO_CONTEXT.md
     ├── README.md
-    ├── SIMCITY_CONTEXT.md
-    ├── SIM_CONTEXT.md
+    ├── ROOMS_CONTEXT.md
     ├── _fix_git_ignore.py
     ├── build.sh
     ├── create_gtd_structure.sh
@@ -236,6 +236,8 @@ list` |
 
 | Pattern | Name |
 |---------|------|
+| `/bots/dashboard/` | `bot_dashboard` |
+| `/bots/api/status/` | `api_bot_status` |
 | `/bots/campaigns/` | `campaign_list` |
 | `/bots/campaigns/create/` | `campaign_create` |
 | `/bots/campaigns/<int:pk>/` | `campaign_detail` |
@@ -787,16 +789,16 @@ list` |
 
 ### `bots`
 
-- L15: `class GenericUser(models.Model):`
-- L34: `class BotCoordinator(models.Model):`
-- L90: `class BotInstance(models.Model):`
-- L210: `class BotTaskAssignment(models.Model):`
-- L279: `class ResourceLock(models.Model):`
-- L347: `class BotCommunication(models.Model):`
-- L394: `class BotLog(models.Model):`
+- L13: `class GenericUser(models.Model):`
+- L32: `class BotCoordinator(models.Model):`
+- L88: `class BotInstance(models.Model):`
+- L208: `class BotTaskAssignment(models.Model):`
+- L277: `class ResourceLock(models.Model):`
+- L345: `class BotCommunication(models.Model):`
+- L392: `class BotLog(models.Model):`
 - L444: `class LeadCampaign(models.Model):`
 - L483: `class Lead(models.Model):`
-- L594: `class LeadDistributionRule(models.Model):`
+- L638: `class LeadDistributionRule(models.Model):`
 
 ### `campaigns`
 
