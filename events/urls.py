@@ -2,7 +2,7 @@
 from django.urls import path, include
 from .views import *  # Esto importa TODAS las vistas directamente
 from .setup_views import SetupView
-
+from .views.ai_assistant import inbox_ai_summary, inbox_ai_chat
 app_name = 'events'  # EV-1: namespace declarado
 
 urlpatterns = [
@@ -138,6 +138,10 @@ urlpatterns = [
     path('inbox/api/classification-history/<int:item_id>/', get_classification_history, name='get_classification_history'),
     path('inbox/classify/<int:item_id>/', classify_inbox_item_ajax, name='classify_inbox_item_ajax'),
     path('inbox/api/consensus/<int:item_id>/', get_consensus_api, name='get_consensus_api'),
+
+    # Asistente IA GTD
+    path('inbox/ai/summary/', inbox_ai_summary, name='inbox_ai_summary'),
+    path('inbox/ai/chat/',    inbox_ai_chat,    name='inbox_ai_chat'),
 
     # ============================================================================
     # HERRAMIENTAS DE PRODUCTIVIDAD
