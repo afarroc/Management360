@@ -1,7 +1,7 @@
 # Equipo de Análisis — Management360
 
-> **Actualizado:** 2026-03-19 (sesión Manager tarde)
-> **Proyecto:** Management360 — Django 5.1 / 20 apps / ~710 archivos
+> **Actualizado:** 2026-03-20 (sesión Analista Doc — lote 3: kpis, cv, board, campaigns, passgen)
+> **Proyecto:** Management360 — Django 5.1.7 / 20 apps / ~710 archivos
 > **Metodología:** Sprints semanales | Sesiones Claude especializadas por rol
 
 ---
@@ -91,66 +91,97 @@ No mezclar roles en la misma sesión.
 
 **Prompt:** `docs/team/prompts/PROMPT_ANALYST_DOC.md`
 **Contexto a cargar:** `PROJECT_DEV_REFERENCE.md` + `PROJECT_DESIGN.md` + fuentes de la app
-**Referencia de formato:** `EVENTS_DEV_REFERENCE.md` + `EVENTS_DESIGN.md`
+**Referencia de formato:** `KPIS_DEV_REFERENCE.md` · `CV_DEV_REFERENCE.md` · `BOARD_DEV_REFERENCE.md`
 
 ---
 
-## Asignaciones — Sprint 8 (2026-03-19 →)
+## Asignaciones — Sprint 9 (activo)
 
-### Activas
+### Dev — Pasan de Sprint 8
 
 | App | Tarea | Rol | Estado |
 |-----|-------|-----|--------|
-| `bots` | BOT-AUDIT: auditoría + documentación | 📝 Analista Doc | ⬜ **PRÓXIMA SESIÓN** |
-| `bots` | BOT-1: motor asignación de leads | 🔬 Analista Dev | ⬜ Espera BOT-AUDIT |
-| `bots` | BOT-2: integración con sim | 🔬 Analista Dev | ⬜ Espera BOT-1 |
-| `bots` | BOT-3: pipeline campañas outbound | 🔬 Analista Dev | ⬜ Espera BOT-1 |
-| `bots` | BOT-4: dashboard rendimiento | 🔬 Analista Dev | ⬜ Espera BOT-1+2 |
-| `bots` | BOT-5: reglas por skills | 🔬 Analista Dev | ⬜ Espera BOT-1 |
-| `sim` | SIM-7e: agentes simulados perfilados | 🔬 Analista Dev | ⬜ Sesión separada |
+| `bots` | BOT-2: integración bots ↔ sim | 🔬 Analista Dev | ⬜ Espera sesión |
+| `bots` | BOT-3: pipeline campañas outbound | 🔬 Analista Dev | ⬜ Espera BOT-2 |
+| `bots` | BOT-5: reglas distribución por skills | 🔬 Analista Dev | ⬜ Espera BOT-1 |
+| `sim` | SIM-7e: agentes simulados perfilados en ACD | 🔬 Analista Dev | ⬜ Sesión separada |
 | `sim` | SIM-6b: GTR Interactivo sliders | 🔬 Analista Dev | ⬜ Sesión separada |
-| `bitacora` | BIT-17: nav prev/next por created_by | 🔬 Analista Dev | ⬜ Sesión separada |
+| `bitacora` | BIT-17: nav prev/next filtrar por created_by+is_active | 🔬 Analista Dev | ⬜ Sesión separada |
+
+### Dev — Fixes críticos heredados (bugs #36–#99)
+
+| Bug | App | Descripción | Prioridad |
+|-----|-----|-------------|-----------|
+| #84 | `board` | IDOR — `BoardDetailView` sin verificar propietario | 🔴 |
+| #96 | `passgen` | `password_help` siempre 500 — `CATEGORIES` no definido | 🔴 |
+| #98 | `passgen` | `MIN_ENTROPY=60` bloquea 5/7 patrones | 🔴 |
+| #85 | `board` | `BOARD_CONFIG` no definido en settings — KeyError | 🔴 |
+| #75 | `cv` | Managers de `events` importados a nivel de módulo | 🔴 |
+| #76 | `cv` | `reverse('project_detail')` sin namespace — NoReverseMatch | 🔴 |
+| #95 | `passgen` | Sin `app_name` en urls.py | 🟡 |
+| #97 | `passgen` | `PasswordForm.length` y `exclude_ambiguous` nunca leídos | 🟠 |
+
+### QA — Pendiente
+
+| App | Tarea | Rol | Estado |
+|-----|-------|-----|--------|
 | `simcity` | SC-8: tests básicos proxy | 🧪 Analista QA | ⬜ Paralelo |
+| `chat` | Tests — 0 cobertura actual | 🧪 Analista QA | ⬜ |
+| `rooms` | Tests — 0 cobertura actual | 🧪 Analista QA | ⬜ |
+| `courses` | Tests — 0 cobertura actual | 🧪 Analista QA | ⬜ |
+| `analyst` | Tests reales — stub 3 líneas (INC-004) | 🧪 Analista QA | ⬜ |
 
-### Documentación pendiente (Tier 1 — críticas)
+### Doc — Última tanda (3 apps pendientes)
 
-| App | Rol | Estado |
-|-----|-----|--------|
-| `chat` | 📝 Analista Doc | ⬜ |
-| `rooms` | 📝 Analista Doc | ⬜ |
-
-### Documentación pendiente (Tier 2)
-
-| App | Rol | Estado |
-|-----|-----|--------|
-| `courses` | 📝 Analista Doc | ⬜ |
-| `cv` | 📝 Analista Doc | ⬜ |
-| `core` | 📝 Analista Doc | ⬜ |
-| `accounts` | 🧪 Analista QA | ⬜ |
-
-### Documentación pendiente (Tier 3 — infraestructura)
-
-| App | Rol | Estado |
-|-----|-----|--------|
-| `panel` | 📝 Analista Doc | ⬜ |
-| `campaigns` | 📝 Analista Doc | ⬜ |
-| `help` | 📝 Analista Doc | ⬜ |
-| `memento` | 📝 Analista Doc | ⬜ |
-| `passgen` | 📝 Analista Doc | ⬜ |
-| `api` | 📝 Analista Doc | ⬜ |
-| `board` | 📝 Analista Doc | ⬜ |
+| App | Complejidad | Rol | Estado |
+|-----|-------------|-----|--------|
+| `help` | 🟠 Media — 7 modelos, 10 endpoints | 📝 Analista Doc | ⬜ **PRÓXIMA SESIÓN** |
+| `api` | 🟢 Baja — 0 modelos, 4 endpoints | 📝 Analista Doc | ⬜ **PRÓXIMA SESIÓN** |
+| `panel` | 🟡 Media — 0 modelos, 28 endpoints | 📝 Analista Doc | ⬜ **PRÓXIMA SESIÓN** |
 
 ---
 
-## Documentación Completada
+## Documentación Completada — 17 / 20 apps (85%)
 
-| App | DEV_REFERENCE | DESIGN | Sesión |
-|-----|--------------|--------|--------|
-| `analyst` | ✅ | ✅ | Anterior |
-| `sim` | ✅ | ✅ | Anterior |
-| `bitacora` | ✅ | ✅ | Anterior |
-| `simcity` | ✅ | ✅ | Anterior |
-| `events` | ✅ | ✅ | 2026-03-19 tarde |
+| App | DEV_REFERENCE | DESIGN | Sesión | Bugs registrados |
+|-----|:---:|:---:|--------|-----------------|
+| `analyst` | ✅ | ✅ | Lote 1 | — |
+| `sim` | ✅ | ✅ | Lote 1 | — |
+| `bitacora` | ✅ | ✅ | Lote 1 | — |
+| `simcity` | ✅ | ✅ | Lote 1 | — |
+| `events` | ✅ | ✅ | Lote 1 | — |
+| `accounts` | ✅ | ✅ | Lote 2 (2026-03-19) | #36, #37 |
+| `core` | ✅ | ✅ | Lote 2 (2026-03-19) | #42, #43 |
+| `memento` | ✅ | ✅ | Lote 2 (2026-03-19) | #46 |
+| `chat` | ✅ | ✅ | Lote 2 (2026-03-19) | #50–#55 |
+| `rooms` | ✅ | ✅ | Lote 2 (2026-03-19) | #56–#67 |
+| `courses` | ✅ | ✅ | Lote 2 (2026-03-19) | — |
+| `bots` | ✅ revisado | ✅ revisado | Lote 3 (2026-03-20) — Sprint 8 audit | — |
+| `kpis` | ✅ | ✅ | Lote 3 (2026-03-20) | #68–#72 |
+| `cv` | ✅ | ✅ | Lote 3 (2026-03-20) | #73–#80 |
+| `board` | ✅ | ✅ | Lote 3 (2026-03-20) | #81–#89 |
+| `campaigns` | ✅ | ✅ | Lote 3 (2026-03-20) | #90–#94 |
+| `passgen` | ✅ | ✅ | Lote 3 (2026-03-20) | #95–#99 |
+| `help` | ⬜ | ⬜ | Pendiente lote 4 | — |
+| `api` | ⬜ | ⬜ | Pendiente lote 4 | — |
+| `panel` | ⬜ | ⬜ | Pendiente lote 4 | — |
+
+**Bugs registrados globales: #1–#99 (99 bugs). Próximos desde #100.**
+
+---
+
+## Sprint 8 — Completado ✅ (2026-03-19 → 2026-03-20)
+
+| Tarea | Estado |
+|-------|--------|
+| BOT-AUDIT: auditoría + documentación `bots` | ✅ |
+| BOT-1: motor de asignación de leads | ✅ Pipeline Lead→GTD verificado end-to-end |
+| BOT-4: dashboard de rendimiento de bots | ✅ HTMX poll 30s |
+| EVENTS-BUG-FK: FKs events → accounts_user | ✅ migración 0004 |
+| BOT-2: integración bots ↔ sim | ⏭️ Pasa a Sprint 9 |
+| BOT-3: pipeline campañas outbound | ⏭️ Pasa a Sprint 9 |
+| BOT-5: reglas distribución por skills | ⏭️ Pasa a Sprint 9 |
+| DOC Sprint 7.5: lote 3 (kpis, cv, board, campaigns, passgen) | ✅ |
 
 ---
 
@@ -159,10 +190,10 @@ No mezclar roles en la misma sesión.
 1. **Una sesión = un rol = un foco** — no mezclar
 2. **Siempre cargar el contexto completo** al inicio de sesión (ver prompts)
 3. **Siempre terminar con un handoff** — qué se hizo, qué queda pendiente
-4. **Los bugs se registran siempre** — aunque no se resuelvan en la sesión
+4. **Los bugs se registran siempre** — aunque no se resuelvan en la sesión — numeración desde #100
 5. **El Manager aprueba** cambios de arquitectura o que afecten múltiples apps
-6. **BOT-AUDIT primero** — no desarrollar en `bots` sin auditoría previa
-7. **Commits atómicos** — un commit por tarea, mensaje descriptivo
+6. **Commits atómicos** — un commit por tarea, mensaje descriptivo
+7. **Documentar antes de desarrollar** — no tocar una app sin su DEV_REFERENCE
 
 ---
 
@@ -173,9 +204,20 @@ No mezclar roles en la misma sesión.
 | Backend | Django 5.1.7 (Python 3.13) |
 | DB | MariaDB 12.2.2 + Redis 7 |
 | Frontend | Bootstrap 5 + HTMX + Chart.js 4.4.1 |
-| RT | Django Channels + Daphne 4.2.1 |
+| RT (chat) | Django Channels + Daphne 4.2.1 |
+| RT (rooms) | Centrifugo (CentrifugoMixin, Outbox, CDC) |
+| RT (board) | Django Channels — infraestructura lista, sin activar (bug #86) |
+| IA local | Ollama (localhost:11434) — app `chat` |
 | Entorno dev | Termux / Android 15 / Lineage OS 22.2 |
 | Repo | GitHub — branch main |
-| PK estándar | UUIDField (excepto `events` int y `simcity` AutoField) |
-| Propietario estándar | `created_by` (excepto `events`: host, `rooms`: owner) |
-| Respuesta JSON | `{"success": true/false, ...}` siempre |
+
+### Excepciones de convención (tabla consolidada)
+
+| Convención | Estándar | Excepciones |
+|------------|----------|-------------|
+| PK | `UUIDField` | `events` (int), `simcity`/`bots`/`board`/`cv` (AutoField int), `campaigns` mixto |
+| Propietario | `created_by` | `events` → `host`; `rooms` → `owner`/`creator`; `courses` → `tutor`/`author`; `chat`/`memento` → `user`; `board` → `owner`; `cv` → `user` OneToOne; `campaigns` → sin propietario (global) |
+| Timestamps | `created_at`/`updated_at` | `bitacora` en español; `board.Activity` → `timestamp`; `campaigns` → `upload_date`/`load_date` |
+| Namespace `app_name` | declarado en urls.py | `core`, `events`, `memento` (include externo); `passgen` (bug #95) |
+| Respuesta JSON | `{"success": true/false}` | — |
+| `@csrf_exempt` | PROHIBIDO en POST con datos | `chat` (20+ endpoints bug #53), `core` (bug #42) |
