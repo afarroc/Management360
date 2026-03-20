@@ -1,7 +1,7 @@
 # Mapa de Contexto — App `core`
 
-> Generado por `m360_map.sh`  |  2026-03-18 15:36:34
-> Ruta: `/data/data/com.termux/files/home/projects/Management360/core`  |  Total archivos: **44**
+> Generado por `m360_map.sh`  |  2026-03-19 18:15:43
+> Ruta: `/data/data/com.termux/files/home/projects/Management360/core`  |  Total archivos: **45**
 
 ---
 
@@ -15,7 +15,7 @@
 | 4 | 🔗 `urls` | 1 |
 | 5 | 🛡 `admin` | 1 |
 | 6 | 🧪 `tests` | 1 |
-| 7 | 📄 `other` | 3 |
+| 7 | 📄 `other` | 4 |
 
 ---
 
@@ -64,7 +64,7 @@
 | `projects.html` | 61 | `templates/layouts/includes/nav-content/projects.html` |
 | `rooms.html` | 36 | `templates/layouts/includes/nav-content/rooms.html` |
 | `tasks.html` | 74 | `templates/layouts/includes/nav-content/tasks.html` |
-| `tools.html` | 2 | `templates/layouts/includes/nav-content/tools.html` |
+| `tools.html` | 6 | `templates/layouts/includes/nav-content/tools.html` |
 | `mask.html` | 44 | `templates/layouts/mask.html` |
 | `sidebar.html` | 92 | `templates/layouts/sidebar.html` |
 | `search.html` | 137 | `templates/search/search.html` |
@@ -93,10 +93,11 @@
 |---------|--------|---------------|
 | `test_performance.py` | 249 | `tests/test_performance.py` |
 
-### OTHER (3 archivos)
+### OTHER (4 archivos)
 
 | Archivo | Líneas | Ruta relativa |
 |---------|--------|---------------|
+| `CORE_CONTEXT.md` | 225 | `CORE_CONTEXT.md` |
 | `__init__.py` | 16 | `__init__.py` |
 | `apps.py` | 13 | `apps.py` |
 | `utils.py` | 379 | `utils.py` |
@@ -159,6 +160,7 @@ core/
 │       └── search.html
 ├── tests
 │   └── test_performance.py
+├── CORE_CONTEXT.md
 ├── __init__.py
 ├── admin.py
 ├── apps.py
