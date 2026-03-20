@@ -1,7 +1,7 @@
 # Referencia de Desarrollo — App `sim`
 
 > **Audiencia:** Desarrolladores del proyecto y asistentes de IA (Claude, Copilot, etc.)
-> **Actualizado:** 2026-03-18 | **Archivos cubiertos:** 24 / 24
+> **Actualizado:** 2026-03-19 | **Archivos cubiertos:** 24 / 24
 > **Proyecto:** Management360 · Django app
 
 ---
@@ -1067,8 +1067,15 @@ BATCH = 2000   # batch de escritura a BD
 | 3 | ✅ Corregido | `gtr.html` | `openConfigModal()` duplicada por str_replace parcial. Corregido. |
 | 4 | ✅ Corregido | `gtr_engine.py` | `expected_vol` podía ser negativo → `random.gauss(neg, neg*0.10)` producía error. Corregido con `max(0.0, expected_vol)` y `max(0.1, ...)` en sigma. |
 | 5 | ⬜ Pendiente | `test_gtr_engine.py` | Tests no cubren los 7 nuevos tipos de evento SIM-6b ni los overrides en generadores. |
-| 6 | ⬜ Pendiente | `sim/views/acd.py` | `_generate_acd_interactions()` usa `account.config.get(canal, {})` — falla si config no tiene clave canal. Agregar fallback. |
-| 7 | ⬜ Pendiente | `acd_agent.html` | Nivel `advanced` no implementado — `doAction('transfer')` con `to_slot_id` no renderiza selector de agentes en pantalla básica. |
+| 6 | ✅ Corregido | `views/acd.py` | `_generate_acd_interactions()` usaba `account.config.get(canal, {})` — fallaba si `config` era `None`. Corregido con `(config or {}).get(canal, {})` + fallbacks de skill por canal (`GENERAL` / `OUTBOUND` / `DIGITAL`). |
+| 7 | ⬜ Pendiente | `acd_agent.html` | Nivel `advanced` no implementado — `doAction('transfer')` con `to_slot_id` no renderiza selector de agentes. Target SIM-7c. |
+| 8 | ✅ Corregido | `views/acd.py` | `_get_tipificaciones()` sin rama `digital` → retornaba `[]` sin caer al fallback. Agregada rama digital (`tipificaciones_bxi` + `tipificaciones_app`) + fallback activado solo si lista vacía. |
+| 9 | ✅ Corregido | `views/acd.py` | Indentación rota en `acd_agent_poll` — bloque `available_slots` flotaba fuera del cuerpo de la función (0 spaces vs 4). |
+| 10 | ✅ Corregido | `views/acd.py` | `get_user_model()` importado inline en 2 funciones distintas. Movido al tope del archivo. |
+| 11 | ✅ Corregido | `views/gtr.py` | `gtr_panel()` no pasaba `DEFAULT_THRESHOLDS_OUTBOUND` al template — inputs de umbral outbound renderizaban vacíos. |
+| 12 | ✅ Corregido | `gtr.html` | `csrf()` leía desde `[name=csrfmiddlewaretoken]` — cambiado a cookie (convención del proyecto). |
+| 13 | ✅ Corregido | `gtr.html` | `<div id="gtr-root">` duplicado envolviendo el modal — ID inválido + CSS scoped roto. Modal movido dentro del `#gtr-root` existente. |
+| 14 | ✅ Corregido | `gtr.html` | `.events-panel` sin `background`/`border`/`border-radius` — panel sin marco visual. Estilos agregados. |
 
 ---
 

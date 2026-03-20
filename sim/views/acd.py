@@ -41,6 +41,9 @@ from sim.models import (
     ACDSession, ACDAgentSlot, ACDInteraction, ACDAgentAction,
 )
 from sim import gtr_engine as engine
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 logger = logging.getLogger(__name__)
 
@@ -202,11 +205,20 @@ def _generate_acd_interactions(session: ACDSession, n: int = 5) -> list:
     from sim.generators.base import weighted_choice, synthetic_lead_id
 
     try:
-        cfg = session.account.config.get(session.canal, {})
+        account_config = session.account.config or {}
+        cfg = account_config.get(session.canal, {})
     except Exception:
         cfg = {}
 
-    skills_cfg = cfg.get('skills', {'GENERAL': {'weight': 1.0}})
+    # Fallbacks por canal para que skill sea siempre coherente con la cuenta
+    if session.canal == 'inbound':
+        default_skills = {'GENERAL': {'weight': 1.0}}
+    elif session.canal == 'outbound':
+        default_skills = {'OUTBOUND': {'weight': 1.0}}
+    else:  # digital
+        default_skills = {'DIGITAL': {'weight': 1.0}}
+
+    skills_cfg = cfg.get('skills', default_skills)
     skill_weights = {k: v.get('weight', 1.0) for k, v in skills_cfg.items()}
 
     interactions = []
@@ -314,8 +326,6 @@ def acd_panel(request):
     ).order_by('name')
     profiles  = SimAgentProfile.objects.all().order_by('tier', 'canal', 'name')
 
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
     users = User.objects.filter(is_active=True).order_by('username')
 
     return render(request, 'sim/acd_trainner.html', {
@@ -527,9 +537,6 @@ def acd_slot_add(request, session_id):
         user_id    = body.get('user_id')
         profile_id = body.get('profile_id')
 
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-
         slot = ACDAgentSlot.objects.create(
             session      = session,
             slot_number  = next_num,
@@ -645,9 +652,7 @@ def acd_agent_poll(request, slot_id):
         if gtr_sess:
             h, m = gtr_sess.sim_time()
             gtr_time = f"{h:02d}:{m:02d}"
-
-
-# Slots disponibles para transfer/conference (nivel avanzado)
+    # Slots disponibles para transfer/conference (nivel avanzado)
     available_slots = []
     if slot.level == 'advanced':
         qs_slots = ACDAgentSlot.objects.filter(
@@ -807,15 +812,25 @@ def acd_agent_action(request, slot_id):
 def _get_tipificaciones(session: ACDSession) -> list:
     """Retorna lista de tipificaciones configuradas en la cuenta."""
     try:
-        cfg = session.account.config.get(session.canal, {})
+        account_config = session.account.config or {}
+        cfg = account_config.get(session.canal, {})
         if session.canal == 'inbound':
             skills = cfg.get('skills', {})
             tipifs = set()
             for skill_data in skills.values():
                 tipifs.update(skill_data.get('tipificaciones', {}).keys())
-            return sorted(tipifs)
+            if tipifs:
+                return sorted(tipifs)
         elif session.canal == 'outbound':
-            return sorted(cfg.get('tipif_contacto', {}).keys())
+            tipifs = sorted(cfg.get('tipif_contacto', {}).keys())
+            if tipifs:
+                return tipifs
+        elif session.canal == 'digital':
+            tipifs = set()
+            tipifs.update(cfg.get('tipificaciones_bxi', {}).keys())
+            tipifs.update(cfg.get('tipificaciones_app', {}).keys())
+            if tipifs:
+                return sorted(tipifs)
     except Exception:
         pass
     return ['Atendida', 'Venta', 'No interesado', 'Agenda', 'Corta llamada', 'Transferir']

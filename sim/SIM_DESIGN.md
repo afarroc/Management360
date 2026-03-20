@@ -2,7 +2,7 @@
 ## Diseño, Fases e Implementación
 
 > **Inicio:** 2026-03-15
-> **Última actualización:** 2026-03-17
+> **Última actualización:** 2026-03-19
 > **Contexto:** App Django independiente dentro de Management360.
 > Genera datos de contact center realistas para análisis, training y demo.
 > Calibrada con datos reales de operaciones bancarias y telco (2018-2020).
@@ -36,7 +36,7 @@ de datos que producen sistemas como Genesys, ININ, PureCloud o VICIdial.
 | **SIM-4b** | Dashboard widgets fuente `sim` | S2 | ✅ |
 | **SIM-5** | Training Mode (escenarios + sesiones + score) | S2 | ✅ |
 | **SIM-6a** | Persistencia GTR en BD + SimAgentProfile | S3 | ✅ |
-| **SIM-6b** | GTR Interactivo (controles en tiempo real) | S3 | ⬜ |
+| **SIM-6b** | GTR Interactivo (controles en tiempo real) | S3 | ✅ |
 | **SIM-7a** | ACD Session + enrutamiento multi-agente | S4 | ✅ |
 | **SIM-7b** | Pantalla agente OJT básico + intermedio | S4 | ✅ |
 | **SIM-7c** | Pantalla agente avanzado + multi-skill | S5 | ⬜ |
@@ -70,14 +70,14 @@ de datos que producen sistemas como Genesys, ININ, PureCloud o VICIdial.
 | Migración 0002_add_training | ✅ |
 | Bug fix: `started_at` → `fecha` + `hora_inicio` | ✅ |
 
-### Sprint 3 — En curso 🔵
+### Sprint 3 — Completado ✅
 | Tarea | Prioridad | Estado |
 |-------|-----------|--------|
 | SIM-6a: `persist_session()` — GTR → BD bulk_create | 🔴 | ✅ |
 | SIM-6a: `SimAgentProfile` modelo + migración 0003 | 🔴 | ✅ |
 | SIM-6a: `seed_agent_profiles` command — presets tier | 🔴 | ✅ |
-| SIM-6b: GTR Interactivo — controles flujo (vol, AHT, ACW) | 🟠 | ⬜ |
-| SIM-6b: GTR Interactivo — gestión agentes (break, skill) | 🟠 | ⬜ |
+| SIM-6b: GTR Interactivo — controles flujo (vol, AHT, ACW) | 🟠 | ✅ |
+| SIM-6b: GTR Interactivo — gestión agentes (break, skill) | 🟠 | ✅ |
 | Sidebar nav Training Mode | 🟡 | ⬜ |
 
 ### Sprint 4 — Completado ✅
@@ -111,8 +111,8 @@ de datos que producen sistemas como Genesys, ININ, PureCloud o VICIdial.
 |----|----------|-----------|----------|--------|
 | B-01 | Como trainer, quiero que GTR persista en BD para analizar después | 🔴 | M | S3 ✅ |
 | B-02 | Como trainer, quiero perfiles conductuales (top/alto/medio/bajo) reutilizables | 🔴 | M | S3 ✅ |
-| B-03 | Como analista, quiero controlar flujo GTR en tiempo real (vol, AHT, ACW, hold) | 🟠 | L | S3 |
-| B-04 | Como trainer, quiero gestionar agentes GTR en tiempo real (break, skill, ausencia) | 🟠 | L | S3 |
+| B-03 ✅ | Como analista, quiero controlar flujo GTR en tiempo real (vol, AHT, ACW, hold) | 🟠 | L | S3 |
+| B-04 ✅ | Como trainer, quiero gestionar agentes GTR en tiempo real (break, skill, ausencia) | 🟠 | L | S3 |
 | B-05 ✅ | Como trainer, quiero crear sesión ACD multi-agente con slots reales y simulados | 🔴 | XL | S4 |
 | B-06 ✅ | Como OJT básico, quiero ver y gestionar mis llamadas con botones predeterminados | 🔴 | L | S4 |
 | B-07 ✅ | Como OJT intermedio, quiero tipificar con inputs ACD y timer de ACW | 🟠 | L | S4 |
@@ -682,30 +682,47 @@ python manage.py test sim.tests.test_generators sim.tests.test_gtr_engine -v 2
 | `started_at` inexistente | `dashboard.py`, `etl_manager.py` | Corregido a `fecha__gte/lte` y `order_by('fecha','hora_inicio')` |
 | `@keyframes` en `<script>` | `training.html` | Movido al bloque `<style>` |
 | `openConfigModal` undefined | `gtr.html` | Función duplicada por str_replace — corregido |
+| `expected_vol` negativo | `gtr_engine.py` | Corregido con `max(0.0, ...)` |
+| `_generate_acd_interactions` sin fallback | `views/acd.py` | `config or {}` + fallbacks de skill por canal |
+| `_get_tipificaciones` sin rama digital | `views/acd.py` | Agregada rama digital + fallback universal si lista vacía |
+| Indentación rota `available_slots` | `views/acd.py` | Bloque flotante corregido a 4 spaces dentro de `acd_agent_poll` |
+| `get_user_model()` inline duplicado | `views/acd.py` | Movido al tope del archivo |
+| `DEFAULT_THRESHOLDS_OUTBOUND` ausente | `views/gtr.py` | Agregado al contexto de `gtr_panel` |
+| `csrf()` desde input hidden | `gtr.html` | Cambiado a cookie — convención del proyecto |
+| `#gtr-root` duplicado en modal | `gtr.html` | Modal movido dentro del scope correcto de `#gtr-root` |
+| `.events-panel` sin estilos visuales | `gtr.html` | Agregado `background`, `border`, `border-radius`, `padding` |
 
 ---
 
-## 🔄 Handoff — Cambio de sesión
+## 🔄 Handoff — Sesión 2026-03-19
 
-> Estado: SIM-1 a SIM-6a completas. Sprint 3 continúa con SIM-6b.
+### Completado esta sesión
 
-### Archivos para próxima sesión
+- `views/acd.py`: bugs #6, B (indentación), D (imports), E (`_get_tipificaciones` digital) — 4 fixes
+- `views/gtr.py` + `gtr.html`: SIM-6b completo — 4 fixes (thresholds outbound, csrf, DOM, CSS)
+- **SIM-6b marcado ✅** — feature estaba implementado en engine y frontend, faltaban correcciones de integración
+
+### Estado actual
+
+- **Sprint 3:** ✅ Completo (SIM-6a + SIM-6b)
+- **Sprint 4:** ✅ Completo
+- **Sprint 5:** ⬜ Planificado — SIM-7c, SIM-7e, evaluación OJT
+
+### Próxima sesión — Sprint 5
+
+Para SIM-7e (agentes perfilados en ACD) y SIM-7c (pantalla agente avanzado):
 
 ```bash
-bash m360_map.sh app ./sim        # SIM_CONTEXT.md
-bash m360_map.sh app ./analyst    # ANALYST_CONTEXT.md
-# Adjuntar SIM_DESIGN.md + ANALYST_PLATFORM_DESIGN.md
+cat sim/models.py | termux-clipboard-set          # SimAgentProfile + ACDAgentSlot
+cat sim/views/acd.py | termux-clipboard-set        # motor ACD actualizado
+cat sim/templates/sim/acd_agent.html | termux-clipboard-set
+cat sim/templates/sim/acd_trainner.html | termux-clipboard-set
 ```
 
-Para SIM-6b (GTR Interactivo):
-```bash
-cat sim/gtr_engine.py | termux-clipboard-set
-cat sim/templates/sim/gtr.html | termux-clipboard-set
-```
-
-### Comandos post-deploy SIM-6a
+### Commits pendientes
 
 ```bash
-python manage.py migrate sim
-python manage.py seed_agent_profiles
+git add sim/views/acd.py sim/views/gtr.py sim/templates/sim/gtr.html
+git commit -m "sim: SIM-6b fixes + acd.py bug fixes (config fallback, tipif digital, indent, imports)"
+git push origin main
 ```

@@ -46,7 +46,8 @@ def gtr_panel(request):
             {'value': 15, 'label': '15× (1 min → 15 min sim) — recomendado'},
             {'value': 60, 'label': '60× (1 min → 1 hora sim) — demo rápido'},
         ],
-        'default_thresholds': engine.DEFAULT_THRESHOLDS,
+        'default_thresholds':          engine.DEFAULT_THRESHOLDS,
+        'default_thresholds_outbound': engine.DEFAULT_THRESHOLDS_OUTBOUND,
     })
 
 
