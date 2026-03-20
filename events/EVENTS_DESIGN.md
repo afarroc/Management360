@@ -1,8 +1,8 @@
 # Diseño y Roadmap — App `events`
 
-> **Actualizado:** 2026-03-19  
-> **Estado:** Funcional en producción — sin documentación previa  
-> **Sprint actual:** 7.5 completado | Próximo: Sprint 8
+> **Actualizado:** 2026-03-20  
+> **Estado:** Funcional en producción  
+> **Sprint actual:** 8 completado | Próximo: Sprint 9
 
 ---
 
@@ -50,8 +50,9 @@
 | Reminders | ✅ Completo | email/push/both, bulk |
 | Project Templates | ✅ Completo | use_template, TemplateTask |
 | CreditAccount | ✅ Modelo completo | integración parcial |
-| **Tests** | ⬜ 0% | Sin tests — deuda técnica crítica |
-| **Documentación** | ✅ Esta sesión | Primera documentación formal |
+| **Namespace URLs** | ✅ Sprint 8 | `app_name = 'events'` declarado, ~520 url tags actualizados |
+| **Tests** | ✅ Sprint 8 | 28 tests base — CRUD Project, Task, InboxItem |
+| **Limpieza legacy** | ✅ Sprint 8 | Room/Message eliminados de models/admin/forms |
 
 ---
 
@@ -91,31 +92,32 @@ accounts ──→ events  (host de Project/Task/Event)
 
 ## Roadmap
 
-### Deuda técnica inmediata (pre-Sprint 8)
+### ✅ Sprint 8 completado — Deuda técnica inmediata
+
+| ID | Tarea | Resultado |
+|----|-------|-----------|
+| EV-1 | Declarar `app_name = 'events'` en urls.py | ✅ Hecho — ~520 url tags actualizados en 112 templates |
+| EV-3 | Remover `Room`/`Message` legacy de models.py | ✅ Hecho — también limpiado de admin.py y forms.py |
+| EV-4 | Tests base: CRUD Project + Task + InboxItem | ✅ Hecho — 28 tests en `events/tests/test_models.py` |
+| EV-2 | Fix N+1 en dashboard de proyectos | ⏭ Movido a Sprint 9 |
+
+### Sprint 9 — Optimización
 
 | ID | Tarea | Prioridad |
 |----|-------|-----------|
-| EV-1 | Declarar `app_name = 'events'` en urls.py | 🔴 |
-| EV-2 | Fix N+1 en dashboard de proyectos | 🟠 |
-| EV-3 | Remover `Room`/`Message` legacy de models.py | 🟡 |
-| EV-4 | Tests base: CRUD Project + Task + InboxItem | 🔴 |
+| EV-2 | Fix N+1 en `projects_views.py` (`select_related`/`prefetch_related`) | 🔴 |
+| EV-OPT-1 | Migrar PKs int → UUID | 🟠 |
+| EV-OPT-2 | select_related/prefetch_related en vistas de lista | 🔴 |
+| EV-OPT-3 | Unificar dos CBV de TaskSchedule edit | 🟡 |
+| EV-OPT-4 | Audit y limpieza de `_old_scripts/` | 🟡 |
 
-### Sprint 8 — Integración con `bots`
+### Sprint 10 — Integración con `bots`
 
 | ID | Tarea | Prioridad |
 |----|-------|-----------|
 | EV-BOT-1 | Conectar `bot_views.py` con app `bots` real | 🔴 |
 | EV-BOT-2 | InboxItem → trigger bot assignment via `bots` | 🟠 |
 | EV-BOT-3 | GTDProcessingSettings → conectar con `bots.BotCoordinator` | 🟠 |
-
-### Sprint 9 — Optimización
-
-| ID | Tarea | Prioridad |
-|----|-------|-----------|
-| EV-OPT-1 | Migrar PKs int → UUID | 🟠 |
-| EV-OPT-2 | select_related/prefetch_related en vistas de lista | 🔴 |
-| EV-OPT-3 | Unificar dos CBV de TaskSchedule edit | 🟡 |
-| EV-OPT-4 | Audit y limpieza de `_old_scripts/` | 🟡 |
 
 ---
 
@@ -124,6 +126,8 @@ accounts ──→ events  (host de Project/Task/Event)
 - **PKs son int** — NO uuid. Usar `<int:project_id>` en urls, no `<uuid:...>`
 - **`host`** es el propietario — NO usar `created_by` para Project/Task/Event
 - **`InboxItem`** sí usa `created_by` — es la excepción
-- **Namespace no declarado** — evitar `{% url 'events:...' %}` hasta que se declare
+- **Namespace declarado** — usar `{% url 'events:nombre' %}` en todos los templates
 - **`related_name='managed_projets'`** — typo histórico, no corregir sin migración
 - **`_old_scripts/`** — ignorar para cualquier análisis o referencia de código
+- **`Room`/`Message`** — eliminados de `events`. Los modelos reales viven en `rooms` y `chat`
+- **`from django.contrib.auth.models import User`** — deuda técnica en models.py, no replicar

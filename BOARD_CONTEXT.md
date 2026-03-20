@@ -1,7 +1,7 @@
 # Mapa de Contexto — App `board`
 
-> Generado por `m360_map.sh`  |  2026-03-18 00:06:33
-> Ruta: `/data/data/com.termux/files/home/projects/Management360/board`  |  Total archivos: **16**
+> Generado por `m360_map.sh`  |  2026-03-20 09:53:32
+> Ruta: `/data/data/com.termux/files/home/projects/Management360/board`  |  Total archivos: **17**
 
 ---
 
@@ -16,7 +16,7 @@
 | 5 | 🛡 `admin` | 1 |
 | 6 | 📦 `static` | 1 |
 | 7 | 🧪 `tests` | 1 |
-| 8 | 📄 `other` | 3 |
+| 8 | 📄 `other` | 4 |
 
 ---
 
@@ -71,10 +71,11 @@
 |---------|--------|---------------|
 | `tests.py` | 3 | `tests.py` |
 
-### OTHER (3 archivos)
+### OTHER (4 archivos)
 
 | Archivo | Líneas | Ruta relativa |
 |---------|--------|---------------|
+| `BOARD_CONTEXT.md` | 159 | `BOARD_CONTEXT.md` |
 | `__init__.py` | 0 | `__init__.py` |
 | `apps.py` | 6 | `apps.py` |
 | `consumers.py` | 46 | `consumers.py` |
@@ -98,6 +99,7 @@ board/
 │       ├── board_detail.html
 │       ├── board_form.html
 │       └── board_list.html
+├── BOARD_CONTEXT.md
 ├── __init__.py
 ├── admin.py
 ├── apps.py
