@@ -195,6 +195,80 @@
                     </div>
                 </div>
             </div>
+<!-- 
+  DIFF PARA: events/templates/events/inbox.html
+  
+  CAMBIO 1: En el bloque "COLUMNA LATERAL (3)", añadir DESPUÉS del card "Resumen GTD"
+  (después de la línea </div> que cierra ese card, antes del </div> de col-lg-3)
+  
+  CAMBIO 2: En el bloque extra_js, añadir el script del asistente.
+  
+  ── CAMBIO 1 — pegar después del card "Resumen GTD" ─────────────────────────
+-->
+
+            <!-- Panel Asistente IA GTD -->
+            <div class="card shadow-sm mt-3" id="ai-assistant-panel">
+                <div class="card-header bg-primary text-white py-2 d-flex align-items-center justify-content-between">
+                    <h6 class="mb-0">
+                        <i class="bi bi-robot me-2"></i>Asistente GTD
+                    </h6>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-light py-0 px-1"
+                            id="ai-refresh-btn"
+                            title="Analizar estado actual"
+                            onclick="aiLoadSummary()">
+                        <i class="bi bi-arrow-clockwise" id="ai-refresh-icon"></i>
+                    </button>
+                </div>
+                <div class="card-body p-2">
+
+                    <!-- Zona de análisis automático -->
+                    <div id="ai-analysis-zone" class="mb-2">
+                        <div class="text-muted small text-center py-2" id="ai-placeholder">
+                            <i class="bi bi-lightbulb me-1"></i>
+                            <a href="#" class="text-decoration-none" onclick="aiLoadSummary(); return false;">
+                                Analizar mi GTD ahora
+                            </a>
+                        </div>
+                        <div id="ai-analysis-content" class="d-none">
+                            <div id="ai-analysis-text" class="small" style="white-space:pre-wrap;max-height:180px;overflow-y:auto;"></div>
+                            <div class="text-end mt-1">
+                                <span id="ai-source-badge" class="badge bg-secondary" style="font-size:0.65rem;"></span>
+                            </div>
+                        </div>
+                        <div id="ai-loading" class="text-center py-2 d-none">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                            <span class="small ms-1 text-muted">Analizando…</span>
+                        </div>
+                    </div>
+
+                    <hr class="my-2">
+
+                    <!-- Chat -->
+                    <div id="ai-chat-history"
+                         style="max-height:200px;overflow-y:auto;font-size:0.82rem;"
+                         class="mb-2">
+                    </div>
+
+                    <div class="input-group input-group-sm">
+                        <input type="text"
+                               id="ai-chat-input"
+                               class="form-control"
+                               placeholder="Pregúntame algo…"
+                               maxlength="300"
+                               onkeydown="if(event.key==='Enter'){aiSendMessage();return false;}">
+                        <button class="btn btn-primary btn-sm"
+                                type="button"
+                                id="ai-send-btn"
+                                onclick="aiSendMessage()">
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </div>
+                    <div class="text-muted" style="font-size:0.65rem;margin-top:3px;">
+                        Powered by Ollama · datos en tiempo real
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -279,5 +353,132 @@
 {% endblock %}
 
 {% block extra_js %}
+
+
+<script>
+// ── GTD AI Assistant ──────────────────────────────────────────────────────────
+
+const AI_SUMMARY_URL = "{% url 'events:inbox_ai_summary' %}";
+const AI_CHAT_URL    = "{% url 'events:inbox_ai_chat' %}";
+
+function csrf() {
+    return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+}
+
+// Renderiza un mensaje en el historial de chat
+function _appendChat(role, text) {
+    const zone = document.getElementById('ai-chat-history');
+    const isUser = role === 'user';
+    const div = document.createElement('div');
+    div.className = `d-flex ${isUser ? 'justify-content-end' : 'justify-content-start'} mb-1`;
+    div.innerHTML = `
+        <div class="px-2 py-1 rounded small ${isUser ? 'bg-primary text-white' : 'bg-light text-dark'}"
+             style="max-width:90%;white-space:pre-wrap;">
+            ${_escapeHtml(text)}
+        </div>`;
+    zone.appendChild(div);
+    zone.scrollTop = zone.scrollHeight;
+}
+
+function _escapeHtml(text) {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+function _setLoading(on) {
+    document.getElementById('ai-loading').classList.toggle('d-none', !on);
+    document.getElementById('ai-placeholder').classList.toggle('d-none', on);
+    const icon = document.getElementById('ai-refresh-icon');
+    icon.className = on ? 'bi bi-arrow-clockwise spin' : 'bi bi-arrow-clockwise';
+    document.getElementById('ai-refresh-btn').disabled = on;
+}
+
+async function aiLoadSummary() {
+    _setLoading(true);
+    document.getElementById('ai-analysis-content').classList.add('d-none');
+    try {
+        const resp = await fetch(AI_SUMMARY_URL, {
+            headers: { 'X-CSRFToken': csrf(), 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        const data = await resp.json();
+        if (data.success) {
+            document.getElementById('ai-analysis-text').textContent = data.analysis;
+            const badge = document.getElementById('ai-source-badge');
+            badge.textContent = data.source === 'ollama' ? 'Ollama' : 'Análisis estático';
+            badge.className = `badge ${data.source === 'ollama' ? 'bg-success' : 'bg-secondary'}`;
+            document.getElementById('ai-analysis-content').classList.remove('d-none');
+            document.getElementById('ai-placeholder').classList.add('d-none');
+        } else {
+            document.getElementById('ai-placeholder').textContent = '⚠️ ' + (data.error || 'Error al analizar');
+        }
+    } catch(e) {
+        document.getElementById('ai-placeholder').textContent = '⚠️ Error de conexión';
+    } finally {
+        _setLoading(false);
+    }
+}
+
+async function aiSendMessage() {
+    const input   = document.getElementById('ai-chat-input');
+    const sendBtn = document.getElementById('ai-send-btn');
+    const message = input.value.trim();
+    if (!message) return;
+
+    input.value = '';
+    input.disabled = true;
+    sendBtn.disabled = true;
+
+    _appendChat('user', message);
+
+    // Indicador de escritura
+    const typingId = 'typing-' + Date.now();
+    const zone = document.getElementById('ai-chat-history');
+    const typing = document.createElement('div');
+    typing.id = typingId;
+    typing.className = 'd-flex justify-content-start mb-1';
+    typing.innerHTML = `<div class="px-2 py-1 rounded small bg-light text-muted">
+        <span class="spinner-border spinner-border-sm" style="width:.75rem;height:.75rem;"></span>
+        Pensando…</div>`;
+    zone.appendChild(typing);
+    zone.scrollTop = zone.scrollHeight;
+
+    try {
+        const resp = await fetch(AI_CHAT_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrf(),
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({ message }),
+        });
+        const data = await resp.json();
+        document.getElementById(typingId)?.remove();
+
+        if (data.success) {
+            _appendChat('assistant', data.reply);
+        } else {
+            _appendChat('assistant', '⚠️ ' + (data.error || 'Error al responder'));
+        }
+    } catch(e) {
+        document.getElementById(typingId)?.remove();
+        _appendChat('assistant', '⚠️ Error de conexión con el asistente');
+    } finally {
+        input.disabled = false;
+        sendBtn.disabled = false;
+        input.focus();
+    }
+}
+</script>
+
+<style>
+/* Spinner animation para el botón refresh */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { display: inline-block; animation: spin 1s linear infinite; }
+</style>
+
+
 <script src="{% static 'events/js/inbox.js' %}"></script>
 {% endblock %}

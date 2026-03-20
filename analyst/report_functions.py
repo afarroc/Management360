@@ -872,3 +872,6 @@ def kpis_weekly_trend(sources: dict, params: dict):
     grouped['valor_promedio']  = grouped['valor_promedio'].round(3)
     grouped = grouped.sort_values('semana')
     return grouped
+
+# ─── Events / GTD report functions ───────────────────────────────────────────
+from analyst import report_functions_events  # noqa: F401 — registra las 5 funciones
