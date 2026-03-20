@@ -1,6 +1,6 @@
 # Management360 — Diseño, Roadmap y Estado de Implementación
 
-> **Última actualización:** 2026-03-19
+> **Última actualización:** 2026-03-19 (Sesión Analista Doc — lote 2)
 > **Contexto:** Plataforma SaaS de Workforce Management (WFM) y Customer Experience (CX)
 > **Apps activas:** 20 | **Archivos Python+HTML:** ~710
 > **Metodología:** Scrum — sprints semanales sincronizados entre apps
@@ -29,11 +29,13 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | Backend | Django 5.1.7 (Python 3.13) |
 | Base de datos | MariaDB 12.2.2 (principal) + Redis 7 (cache/sesiones) |
 | Frontend | Bootstrap 5, HTMX (interactividad parcial), Chart.js 4.4.1 |
-| Tiempo real | Django Channels + Daphne 4.2.1 (ASGI) |
+| Tiempo real | Django Channels + Daphne 4.2.1 (ASGI) — app `chat` |
+| Tiempo real (rooms) | Centrifugo (CentrifugoMixin, Outbox, CDC) — app `rooms` |
+| IA local | Ollama (localhost:11434) — app `chat`, subsistema asistente |
 | Procesamiento de datos | pandas, numpy, openpyxl |
 | Almacenamiento | RemoteMediaStorage (dev: 192.168.18.51) / S3 (prod) |
-| Cache | Redis (sesiones GTR, previews analyst, portapapeles) |
-| API | Django REST Framework (endpoints internos) |
+| Cache | Redis (sesiones GTR, previews analyst, portapapeles, rate limit) |
+| API | Django REST Framework (endpoints internos + rooms ViewSets) |
 | Tareas asíncronas | (pendiente implementar Celery) |
 | Despliegue | Termux/Daphne (dev) / Render (prod) |
 | **Engine externo** | **micropolisengine (proot Ubuntu :8001) — solo para `simcity`** |
@@ -90,6 +92,8 @@ Management360 es una plataforma integral de Workforce Management que combina:
 
 ## Sprint 8 — Planificado ⬜
 
+### Tareas originales
+
 | Tarea | Prioridad |
 |-------|-----------|
 | BOT-1: Mejorar motor de asignación de leads en `bots` | 🔴 |
@@ -99,6 +103,23 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | BOT-5: Reglas de distribución basadas en skills | 🟡 |
 | SC-8: Tests básicos del proxy simcity | 🟡 |
 | SC-9: KPIs urbanos (población, energía) → app kpis | 🟠 |
+
+### Bugs críticos a resolver antes de arrancar Sprint 8
+> Descubiertos en la sesión de documentación 2026-03-19
+
+| ID | App | Bug | Prioridad |
+|----|-----|-----|-----------|
+| ACC-SEC-1 | `accounts` | Contraseña `"DefaultPassword123"` hardcodeada en `reset_to_default_password` | 🔴 |
+| ACC-SEC-2 | `accounts` | Open redirect en `login_view` — param `next` sin validar | 🔴 |
+| MEM-SEC-1 | `memento` | IDOR en `MementoConfigUpdateView` — sin filtro de propietario | 🔴 |
+| ROOMS-RT-1 | `rooms` | `room_comments` falla con `TypeError` — campo `text` inexistente | 🔴 |
+| ROOMS-RT-2 | `rooms` | `navigate_room` falla con `AttributeError` — `str.opposite()` no existe | 🔴 |
+| ROOMS-RT-3 | `rooms` | 3 ViewSets CRUD ordenan por `-created_at` en modelos sin ese campo | 🔴 |
+| CRS-RT-1 | `courses` | `standalone_lessons_list` inaccesible — URL duplicada con `content_manager` | 🔴 |
+| CRS-RT-2 | `courses` | `mark_lesson_complete` falla con `AttributeError` en lecciones independientes | 🔴 |
+| CHAT-RT-1 | `chat` | Template `edit_assistant_configuration.html` no existe — vista da 500 | 🔴 |
+| CHAT-PROD-1 | `chat` | `HardcodedNotificationManager` en producción — notificaciones falsas | 🔴 |
+| CORE-SEM-1 | `core` | `upcoming_events` filtra por `created_at` en lugar de `start_date` | 🟠 |
 
 ---
 
@@ -123,7 +144,7 @@ Management360 es una plataforma integral de Workforce Management que combina:
                ├──> analyst (creador de datasets)
                ├──> sim (creador de cuentas)
                ├──> simcity (propietario de partidas)
-               ├──> courses (autor de cursos)
+               ├──> courses (tutor de cursos)
                └──> cv (propietario del CV)
 
     analyst ──┬──> sim (ETL source + dashboard widgets)
@@ -144,28 +165,42 @@ Management360 es una plataforma integral de Workforce Management que combina:
     kpis ─────┬──> analyst (datasets de métricas)
               └──> sim (comparación con simulaciones)
 
-    courses ──┬──> analyst (análisis de progreso de estudiantes)
-              └──> cv (certificaciones)
+    courses ──┬──> cv   (import directo en models.py — dependencia crítica)
+              ├──> analyst (análisis de progreso — pendiente formalizar)
+              └──> cv (certificaciones — pendiente formalizar)
 
     bitacora ─┬──> events (related_event, related_task, related_project)
               ├──> rooms (related_room)
               ├──> events.Tag (tags M2M)
               └──> courses.ContentBlock (structured_content)
 
+    core ─────┬──> events (import directo de Event, Project, Task, Status en utils.py)
+              └──> ← todas las apps (provee layouts/templates globales)
+
+    chat ─────┬──> rooms (consume Room, Message, MessageRead, RoomMember)
+              └──> ← rooms.Notification (fix pendiente CHAT-PROD-1)
+
+    rooms ────┬──> chat.UserPresence (FK a rooms.Room)
+              └──> chat.MessageReaction (FK a rooms.Message)
+
 ### Convenciones de Nombres de Campos
 
 | Concepto | Campo estándar | Tipo | Notas |
 |----------|----------------|------|-------|
-| PK pública | `id` | `UUIDField(primary_key=True)` | Todas las apps excepto `simcity` |
+| PK pública | `id` | `UUIDField(primary_key=True)` | Todas las apps excepto `events` (int) y `simcity` (AutoField int) |
 | Usuario creador | `created_by` | `ForeignKey(User)` | Convención general |
 | Timestamps | `created_at` / `updated_at` | `DateTimeField` | auto_now_add / auto_now |
 | Soft delete | `is_active` | `BooleanField(default=True)` | Donde aplica |
 
-> **Excepciones documentadas:**
+> **Excepciones documentadas (todas confirmadas en auditoría 2026-03-19):**
 > - `events` usa `host` para Project/Task/Event — NO cambiar
-> - `rooms` usa `owner` para Room — NO cambiar
+> - `events` usa PKs int (AutoField) — NO cambiar
+> - `rooms` usa `owner` + `creator` para Room — `owner` es el propietario real
 > - `bitacora` usa `fecha_creacion`/`fecha_actualizacion` (en español) — convención interna
 > - `simcity.Game` usa `AutoField` (int) como PK — heredado del engine original
+> - `courses` usa `tutor` para Course, `author` para Lesson/ContentBlock, `student` para Enrollment
+> - `chat` usa `user` en Conversation, CommandLog, AssistantConfiguration
+> - `memento` usa `user` en MementoConfig
 
 ### `accounts.User` — Campos del modelo custom
 
@@ -177,32 +212,45 @@ class User(AbstractUser):
     updated_at = models.DateTimeField(auto_now=True)
 ```
 
+### Sistemas de tiempo real coexistentes
+
+> **⚠️ Dos sistemas distintos — no son intercambiables:**
+
+| Sistema | App | Uso |
+|---------|-----|-----|
+| Django Channels (WebSocket) | `chat` | Chat en tiempo real, notificaciones push |
+| Centrifugo (HTTP broadcast) | `rooms` | Broadcast de mensajes y eventos de sala |
+
+Centrifugo requiere en settings: `CENTRIFUGO_HTTP_API_ENDPOINT`, `CENTRIFUGO_HTTP_API_KEY`, `CENTRIFUGO_BROADCAST_MODE`, `CENTRIFUGU_OUTBOX_PARTITIONS` (⚠️ typo con doble U — verificar consistencia).
+
 ---
 
 ## Estado de Documentación por App
 
 | App | CONTEXT.md | DEV_REFERENCE.md | DESIGN.md | Tests | Cobertura |
-|-----|-----------|-------------------|-----------|-------|-----------|
+|-----|:---:|:---:|:---:|-------|-----------|
 | analyst | ✅ auto | ✅ | ✅ | 34/50 | 68% |
 | sim | ✅ auto | ✅ | ✅ | 157/157 | 100% |
 | bitacora | ✅ auto | ✅ | ✅ | — | — |
 | simcity | ✅ auto | ✅ | ✅ | — | — |
-| events | ⬜ | ⬜ | ⬜ | — | — |
-| chat | ⬜ | ⬜ | ⬜ | — | — |
-| rooms | ⬜ | ⬜ | ⬜ | — | — |
-| courses | ⬜ | ⬜ | ⬜ | — | — |
+| events | ✅ auto | ✅ | ✅ | — | — |
+| accounts | ✅ auto | ✅ | ✅ | tests.py (212 líneas) | — |
+| core | ✅ auto | ✅ | ✅ | test_performance.py (249 líneas) | — |
+| memento | ✅ auto | ✅ | ✅ | tests.py (68 líneas) | — |
+| chat | ✅ auto | ✅ | ✅ | — | — |
+| rooms | ✅ auto | ✅ | ✅ | management commands | — |
+| courses | ✅ auto | ✅ | ✅ | management commands | — |
 | kpis | ⬜ | 🔵 parcial | ⬜ | — | — |
 | bots | ⬜ | ⬜ | ⬜ | — | — |
 | board | ⬜ | ⬜ | ⬜ | — | — |
 | cv | ⬜ | ⬜ | ⬜ | — | — |
-| accounts | ⬜ | ⬜ | ⬜ | — | — |
-| core | ⬜ | ⬜ | ⬜ | — | — |
 | campaigns | ⬜ | ⬜ | ⬜ | — | — |
 | help | ⬜ | ⬜ | ⬜ | — | — |
-| memento | ⬜ | ⬜ | ⬜ | — | — |
 | passgen | ⬜ | ⬜ | ⬜ | — | — |
 | api | ⬜ | ⬜ | ⬜ | — | — |
 | panel | ⬜ | ⬜ | ⬜ | — | — |
+
+**Progreso:** 11 / 20 apps documentadas (55%)
 
 ---
 
@@ -235,40 +283,45 @@ class User(AbstractUser):
 - **`simcity` arranque:** aliases `engine` y `m360` en `~/.zshrc` — dos terminales Termux
 - **`bitacora.CategoriaChoices`** es módulo-level — NO `BitacoraEntry.CategoriaChoices`
 - **`bitacora` templates** usan `categoria_choices` del contexto — NO `entry.CATEGORIA_CHOICES`
+- **`core` importa directamente de `events`** — si events falla, core no carga
+- **`courses` importa directamente de `cv`** — si cv falla, courses no carga
+- **`upcoming_events` en `core`** filtra por `created_at__gte=now()` (bug) — no refleja eventos futuros reales
+- **`chat.HardcodedNotificationManager`** es un stub — todas las notificaciones son falsas. El modelo real es `rooms.Notification`
+- **Ollama debe estar en :11434** para que el asistente de chat funcione
+- **`rooms.navigate_room`** está roto — `entrance.face.opposite()` lanza `AttributeError`
+- **`rooms.room_comments`** está roto — campo `text` no existe, lanza `TypeError`
+- **`courses.standalone_lessons_list`** es inaccesible — URL duplicada con `content_manager`
+- **`courses.mark_lesson_complete`** falla con lecciones independientes (`module=None`)
+- **`memento.MementoConfigUpdateView`** sin filtro de propietario — IDOR activo
+- **`accounts.reset_to_default_password`** tiene contraseña hardcodeada `"DefaultPassword123"`
 
 ---
 
-## 🔄 Handoff — Sesión 2026-03-19
+## 🔄 Handoff — Sesión 2026-03-19 (Analista Doc lote 2)
 
-### Commits de esta sesión
+### Apps documentadas esta sesión
+`accounts`, `core`, `memento`, `chat`, `rooms`, `courses` — 12 documentos generados
 
-| Hash | Descripción |
-|------|-------------|
-| `19578101` | docs: remove obsolete root READMEs, update project docs |
-| `93414566` | accounts: minor fixes (forms, views, tests) |
-| `b439d8a8` | events: refactor views into modules, clean old views, update urls/templates |
-| `7e564670` | cv: refactor templates (remove legacy edit pages), update views/forms/urls |
-| _(kpis)_ | kpis: refactor models, views, urls; remove upload_csv template |
-| _(bitacora)_ | bitacora: update dev docs, forms, templates (Sprint 7 refactor) |
-| _(sim)_ | sim: add sim app (initial) |
-| _(chore)_ | chore: remove debug/test scripts, update staticfiles + requirements |
-| `2b84db3c` | core/chat/rooms/courses: minor updates across apps |
-| `fbf2c544` | bitacora: BIT-6 — change `<int:pk>` to `<uuid:pk>` in urls.py |
-| `e16ab499` | bitacora: BIT-5 — fix entry.autor→created_by, mood raw→get_mood_display in entry_detail |
-| _(list)_ | bitacora: BIT-5 — fix CATEGORIA_CHOICES context + mood display in entry_list |
-| _(dashboard)_ | bitacora: BIT-5 — fix get_categoria_choices in dashboard |
-| _(views)_ | bitacora: BIT-5 — fix CategoriaChoices import in views.py |
-| _(docs)_ | bitacora: update design and dev reference docs (Sprint 7 close) |
+### Pendiente próxima sesión de código
 
-### Pendiente próxima sesión
-
-1. **`git push`** — 15+ commits locales sin pushear
-2. **Sprint 8** — app `bots`: motor de asignación + integración sim
-3. **Sprint 7 KPIs** — revisión de métricas / cierre formal
+1. **`git push`** — commits locales sin pushear
+2. **Bugs críticos** de la tabla Sprint 8 antes de arrancar el sprint
+3. **Sprint 8** — app `bots`: motor de asignación + integración sim
 4. **SC-8** — tests básicos del proxy simcity
 5. **BIT-17** — navegación prev/next filtrar por `created_by`+`is_active`
 
-### Comandos para arrancar próxima sesión
+### Pendiente próxima sesión de documentación
+
+Prioridad sugerida: `kpis` → `cv` → `bots` → `board` → resto
+
+```bash
+# Generar CONTEXT antes de cada sesión de doc:
+bash scripts/m360_map.sh app ./kpis
+bash scripts/m360_map.sh app ./cv
+bash scripts/m360_map.sh app ./bots
+```
+
+### Comandos para arrancar próxima sesión de código
 
 ```bash
 # Terminal 1 — engine simcity

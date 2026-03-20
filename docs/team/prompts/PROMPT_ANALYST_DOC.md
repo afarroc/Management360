@@ -1,7 +1,7 @@
 # PROMPT — Sesión Analista Doc · Management360
 
 > **Cómo usar:** Pega este archivo completo al inicio de una nueva conversación con Claude.
-> Luego indica la app a documentar.
+> Luego indica la app a documentar y sube los archivos fuente.
 > **Rol:** Technical Writer + Arquitecto · Documentación técnica
 > **Foco:** UNA o DOS apps relacionadas · Entregables: DEV_REFERENCE + DESIGN
 
@@ -10,9 +10,10 @@
 ## Contexto del Proyecto
 
 Proyecto **Management360** — SaaS de Workforce Management / Customer Experience.
-**Stack:** Django 5.1.7 · Python 3.13 · MariaDB 12.2.2 · Redis 7 · Bootstrap 5 + HTMX · Django Channels
+**Stack:** Django 5.1.7 · Python 3.13 · MariaDB 12.2.2 · Redis 7 · Bootstrap 5 + HTMX · Django Channels · Centrifugo · Ollama (IA local)
 **Entorno:** Termux / Android 15
 **20 apps** · ~710 archivos Python+HTML
+**Documentadas:** 11/20 — `analyst`, `sim`, `bitacora`, `simcity`, `events`, `accounts`, `core`, `memento`, `chat`, `rooms`, `courses`
 
 ---
 
@@ -30,7 +31,7 @@ Cada app debe tener 3 documentos:
 
 ## Formato de APP_DEV_REFERENCE.md
 
-Sigue este esquema (ver `EVENTS_DEV_REFERENCE.md` como ejemplo de referencia):
+Sigue este esquema (ver `ACCOUNTS_DEV_REFERENCE.md` o `CHAT_DEV_REFERENCE.md` como referencias de calidad):
 
 ```
 # Referencia de Desarrollo — App `nombre`
@@ -39,12 +40,13 @@ Sigue este esquema (ver `EVENTS_DEV_REFERENCE.md` como ejemplo de referencia):
 ## Índice (tabla de secciones)
 ## 1. Resumen (qué hace la app, sus pilares)
 ## 2. Modelos (todos, con campos clave y relaciones)
-## 3. Vistas (organización por módulo, responsabilidades)
-## 4. URLs (mapa agrupado por función)
-## 5. Convenciones críticas (gotchas, campos especiales)
-## 6. [Sección específica si aplica — ej: "Sistema GTD", "ACD", etc.]
-## 7. Bugs conocidos (tabla con estado)
-## 8. Deuda técnica (alta/media/baja prioridad)
+## 3. Formularios (si existen)
+## 4. Vistas (organización por módulo, responsabilidades)
+## 5. URLs (mapa agrupado por función)
+## 6. Convenciones críticas (gotchas, campos especiales)
+## 7. [Sección específica si aplica — ej: "Sistema GTD", "CMS", "Navegación 3D", etc.]
+## 8. Bugs conocidos (tabla con estado)
+## 9. Deuda técnica (alta/media/baja prioridad)
 ```
 
 ---
@@ -64,17 +66,32 @@ Sigue este esquema (ver `EVENTS_DEV_REFERENCE.md` como ejemplo de referencia):
 
 ---
 
-## Convenciones del proyecto que debes documentar si se violan
+## Convenciones del proyecto — verificar siempre
 
-| Convención | Estándar | Excepciones conocidas |
-|------------|----------|-----------------------|
-| PK | `UUIDField` | `events` (int), `simcity` (AutoField int) |
-| Propietario | `created_by` | `events` (host), `rooms` (owner) |
+| Convención | Estándar | Excepciones conocidas (todas auditadas) |
+|------------|----------|----------------------------------------|
+| PK | `UUIDField(primary_key=True)` | `events` (int), `simcity` (AutoField int) |
+| Propietario | `created_by` | ver tabla completa abajo |
 | Timestamps | `created_at` / `updated_at` | `bitacora` (en español) |
 | Soft delete | `is_active` | donde aplica |
-| Namespace | `app_name = 'x'` declarado | `events` no lo tiene (bug) |
-| User import | `settings.AUTH_USER_MODEL` en models | varios violan esto |
+| Namespace | `app_name = 'x'` en `urls.py` | `core`, `events`, `memento` no lo declaran (vienen del include externo) |
+| User import en models | `settings.AUTH_USER_MODEL` | varios violan esto |
 | JSON response | `{"success": true/false}` | — |
+| `@csrf_exempt` | PROHIBIDO en POST con datos de usuario | `chat` (20+ endpoints), `core` — activo |
+
+### Excepciones de propietario por app (tabla completa)
+
+| App | Modelo(s) | Campo propietario | Nota |
+|-----|-----------|-------------------|------|
+| `events` | `Project`, `Task`, `Event` | `host` | NO `created_by` |
+| `events` | `InboxItem` | `created_by` ✅ | Excepción dentro de la excepción |
+| `rooms` | `Room` | `owner` + `creator` | `owner` = propietario real |
+| `courses` | `Course` | `tutor` | NO `created_by` |
+| `courses` | `Lesson` (standalone), `ContentBlock` | `author` | NO `created_by` |
+| `courses` | `Enrollment` | `student` | NO `created_by` |
+| `chat` | `Conversation`, `CommandLog`, `AssistantConfiguration` | `user` | NO `created_by` |
+| `memento` | `MementoConfig` | `user` | NO `created_by` |
+| `rooms` | `RoomNotification` | `created_by` ✅ | Sí cumple convención |
 
 ---
 
@@ -91,31 +108,45 @@ Actúa como **technical writer y arquitecto** de la app asignada. Debes:
 
 **Nivel de detalle:** suficiente para que otro dev o Claude pueda trabajar en la app sin leer el código fuente. Los modelos deben documentarse campo por campo cuando son complejos.
 
+**Al finalizar cada app**, actualizar la tabla de bugs globales numerando desde el #68 (los #1–#67 ya están registrados en `PROJECT_DEV_REFERENCE.md`).
+
 ---
 
 ## App Asignada Esta Sesión
 
 **App:** [NOMBRE DE LA APP]
 **Archivos a subir:**
-- `APP_CONTEXT.md` (si existe — generado por m360_map.sh)
+- `APP_CONTEXT.md` (generado por m360_map.sh — **obligatorio**)
 - `models.py`
 - `urls.py`
 - `views.py` o `views/__init__.py`
+- `forms.py` (si existe)
 
-**Comando para generar CONTEXT si no existe:**
+**Comando para generar CONTEXT:**
 ```bash
 bash scripts/m360_map.sh app ./nombre_app
-cat nombre_app/APP_CONTEXT.md  # o el archivo generado
 ```
 
 ---
 
-## Referencia de Formato
+## Apps pendientes (prioridad sugerida)
 
-Usa `EVENTS_DEV_REFERENCE.md` y `EVENTS_DESIGN.md` como plantilla de calidad y extensión esperada.
+| App | Prioridad | Motivo |
+|-----|-----------|--------|
+| `kpis` | 🔴 | DEV_REFERENCE parcial — completar |
+| `cv` | 🔴 | Dependencia directa de `courses` |
+| `bots` | 🔴 | Target Sprint 8 |
+| `board` | 🟠 | Simple — 3 modelos |
+| `campaigns` | 🟠 | Simple — 3 modelos |
+| `help` | 🟡 | 7 modelos |
+| `api` | 🟡 | 0 modelos, 4 endpoints |
+| `passgen` | 🟡 | Muy simple |
+| `panel` | 🟡 | 0 modelos, configuración |
+
+---
 
 ## Archivos de contexto globales
 
 Adjunta junto a este prompt:
-- `PROJECT_DEV_REFERENCE.md`
-- `PROJECT_DESIGN.md` (para entender el roadmap global)
+- `PROJECT_DEV_REFERENCE.md` ← contiene bugs #1–#67, convenciones, patrones
+- `PROJECT_DESIGN.md` ← roadmap global, sprints, dependencias entre apps
