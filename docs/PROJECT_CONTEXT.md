@@ -1,8 +1,8 @@
 # Mapa del Proyecto — Management360
 
-> Generado por `m360_map.sh`  |  2026-03-20 09:48:45
+> Generado por `m360_map.sh`  |  2026-03-20 14:11:49
 > Raíz: `/data/data/com.termux/files/home/projects/Management360`
-> Apps: **20**  |  Archivos Python+HTML: **710**
+> Apps: **20**  |  Archivos Python+HTML: **711**
 
 ---
 
@@ -21,7 +21,7 @@
 | `core` | `—` | 44 | 1 | 16 | Dashboard, URL-map, Home |
 | `courses` | `courses` | 88 | 12 | 59 | Cursos, lecciones, curriculum |
 | `cv` | `cv` | 32 | 10 | 14 | Curriculum Vitae dinamico |
-| `events` | `—` | 231 | 33 | 145 | Eventos, Proyectos, Tareas (app principal) |
+| `events` | `events` | 232 | 31 | 145 | Eventos, Proyectos, Tareas (app principal) |
 | `help` | `help` | 15 | 7 | 10 | Centro de ayuda, tickets |
 | `kpis` | `kpis` | 11 | 2 | 5 | KPIs, AHT Dashboard, CallRecord |
 | `memento` | `—` | 16 | 1 | 6 | Recordatorios, memoria personal |
@@ -65,17 +65,29 @@ Management360/
     ├── simcity/
     ├── staticfiles/
     ├── ACCOUNTS_CONTEXT.md
+    ├── BOARD_CONTEXT.md
+    ├── CAMPAIGNS_CONTEXT.md
     ├── CHAT_CONTEXT.md
     ├── CORE_CONTEXT.md
     ├── COURSES_CONTEXT.md
     ├── CV_CONTEXT.md
     ├── KPIS_CONTEXT.md
     ├── MEMENTO_CONTEXT.md
+    ├── PASSGEN_CONTEXT.md
     ├── README.md
     ├── ROOMS_CONTEXT.md
     ├── _fix_git_ignore.py
+    ├── board_consumers.py
+    ├── board_htmx_views.py
+    ├── board_models.py
+    ├── board_urls.py
+    ├── board_views.py
     ├── build.sh
+    ├── campaigns_models.py
+    ├── campaigns_urls.py
+    ├── campaigns_views.py
     ├── create_gtd_structure.sh
+    ├── ev3_patch_models.py
     └── manage.py
 ```
 
@@ -849,39 +861,37 @@ list` |
 
 ### `events`
 
-- L11: `class Status(models.Model):`
-- L20: `class ProjectStatus(models.Model):`
-- L29: `class TaskStatus(models.Model):`
-- L39: `class Classification(models.Model):`
-- L47: `class ProjectState(models.Model):`
-- L66: `class ProjectHistory(models.Model):`
-- L78: `class Project(models.Model):`
-- L138: `class ProjectAttendee(models.Model):`
-- L146: `class TaskState(models.Model):`
-- L165: `class TaskHistory(models.Model):`
-- L177: `class Task(models.Model):`
-- L254: `class TaskProgram(models.Model):`
-- L275: `class TaskSchedule(models.Model):`
-- L444: `class EventState(models.Model):`
-- L463: `class EventHistory(models.Model):`
-- L475: `class TagCategory(models.Model):`
-- L488: `class Tag(models.Model):`
-- L503: `class Event(models.Model):`
-- L558: `class EventAttendee(models.Model):`
-- L571: `class CreditAccount(models.Model):`
-- L593: `class Room(models.Model):`
-- L600: `class Message(models.Model):`
-- L607: `class TaskDependency(models.Model):`
-- L625: `class ProjectTemplate(models.Model):`
-- L637: `class TemplateTask(models.Model):`
-- L652: `class InboxItem(models.Model):`
-- L863: `class Reminder(models.Model):`
-- L886: `class InboxItemAuthorization(models.Model):`
-- L905: `class InboxItemClassification(models.Model):`
-- L944: `class InboxItemHistory(models.Model):`
-- L969: `class GTDClassificationPattern(models.Model):`
-- L1029: `class GTDLearningEntry(models.Model):`
-- L1058: `class GTDProcessingSettings(models.Model):`
+- L12: `class Status(models.Model):`
+- L21: `class ProjectStatus(models.Model):`
+- L30: `class TaskStatus(models.Model):`
+- L40: `class Classification(models.Model):`
+- L48: `class ProjectState(models.Model):`
+- L67: `class ProjectHistory(models.Model):`
+- L79: `class Project(models.Model):`
+- L139: `class ProjectAttendee(models.Model):`
+- L147: `class TaskState(models.Model):`
+- L166: `class TaskHistory(models.Model):`
+- L178: `class Task(models.Model):`
+- L255: `class TaskProgram(models.Model):`
+- L276: `class TaskSchedule(models.Model):`
+- L445: `class EventState(models.Model):`
+- L464: `class EventHistory(models.Model):`
+- L476: `class TagCategory(models.Model):`
+- L489: `class Tag(models.Model):`
+- L504: `class Event(models.Model):`
+- L559: `class EventAttendee(models.Model):`
+- L568: `class CreditAccount(models.Model):`
+- L591: `class TaskDependency(models.Model):`
+- L609: `class ProjectTemplate(models.Model):`
+- L621: `class TemplateTask(models.Model):`
+- L636: `class InboxItem(models.Model):`
+- L836: `class Reminder(models.Model):`
+- L859: `class InboxItemAuthorization(models.Model):`
+- L878: `class InboxItemClassification(models.Model):`
+- L917: `class InboxItemHistory(models.Model):`
+- L942: `class GTDClassificationPattern(models.Model):`
+- L1002: `class GTDLearningEntry(models.Model):`
+- L1031: `class GTDProcessingSettings(models.Model):`
 
 ### `help`
 

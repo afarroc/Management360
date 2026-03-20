@@ -13,7 +13,7 @@ Proyecto **Management360** — SaaS de Workforce Management / Customer Experienc
 **Stack:** Django 5.1.7 · Python 3.13 · MariaDB 12.2.2 · Redis 7 · Bootstrap 5 + HTMX · Django Channels · Centrifugo · Ollama (IA local)
 **Entorno:** Termux / Android 15
 **20 apps** · ~710 archivos Python+HTML
-**Documentadas:** 11/20 — `analyst`, `sim`, `bitacora`, `simcity`, `events`, `accounts`, `core`, `memento`, `chat`, `rooms`, `courses`
+**Documentadas:** 17/20 — `analyst`, `sim`, `bitacora`, `simcity`, `events`, `accounts`, `core`, `memento`, `chat`, `rooms`, `courses`, `bots`, `kpis`, `cv`, `board`, `campaigns`, `passgen`
 
 ---
 
@@ -31,7 +31,7 @@ Cada app debe tener 3 documentos:
 
 ## Formato de APP_DEV_REFERENCE.md
 
-Sigue este esquema (ver `ACCOUNTS_DEV_REFERENCE.md` o `CHAT_DEV_REFERENCE.md` como referencias de calidad):
+Sigue este esquema (ver `KPIS_DEV_REFERENCE.md`, `CV_DEV_REFERENCE.md` o `BOARD_DEV_REFERENCE.md` como referencias de calidad reciente):
 
 ```
 # Referencia de Desarrollo — App `nombre`
@@ -70,12 +70,12 @@ Sigue este esquema (ver `ACCOUNTS_DEV_REFERENCE.md` o `CHAT_DEV_REFERENCE.md` co
 
 | Convención | Estándar | Excepciones conocidas (todas auditadas) |
 |------------|----------|----------------------------------------|
-| PK | `UUIDField(primary_key=True)` | `events` (int), `simcity` (AutoField int) |
+| PK | `UUIDField(primary_key=True)` | `events` (int), `simcity` (AutoField int), `bots` (AutoField int), `board` (AutoField int), `cv` (AutoField int) |
 | Propietario | `created_by` | ver tabla completa abajo |
-| Timestamps | `created_at` / `updated_at` | `bitacora` (en español) |
+| Timestamps | `created_at` / `updated_at` | `bitacora` (en español), `board.Activity` usa `timestamp`, `campaigns` usa `upload_date`/`load_date` |
 | Soft delete | `is_active` | donde aplica |
-| Namespace | `app_name = 'x'` en `urls.py` | `core`, `events`, `memento` no lo declaran (vienen del include externo) |
-| User import en models | `settings.AUTH_USER_MODEL` | varios violan esto |
+| Namespace | `app_name = 'x'` en `urls.py` | `core`, `events`, `memento` no lo declaran (vienen del include externo); `passgen` no lo declara (bug #95) |
+| User import en models | `settings.AUTH_USER_MODEL` | `board` usa `get_user_model()` a nivel de módulo (bug #89) |
 | JSON response | `{"success": true/false}` | — |
 | `@csrf_exempt` | PROHIBIDO en POST con datos de usuario | `chat` (20+ endpoints), `core` — activo |
 
@@ -86,12 +86,17 @@ Sigue este esquema (ver `ACCOUNTS_DEV_REFERENCE.md` o `CHAT_DEV_REFERENCE.md` co
 | `events` | `Project`, `Task`, `Event` | `host` | NO `created_by` |
 | `events` | `InboxItem` | `created_by` ✅ | Excepción dentro de la excepción |
 | `rooms` | `Room` | `owner` + `creator` | `owner` = propietario real |
+| `rooms` | `RoomNotification` | `created_by` ✅ | Sí cumple convención |
 | `courses` | `Course` | `tutor` | NO `created_by` |
 | `courses` | `Lesson` (standalone), `ContentBlock` | `author` | NO `created_by` |
 | `courses` | `Enrollment` | `student` | NO `created_by` |
 | `chat` | `Conversation`, `CommandLog`, `AssistantConfiguration` | `user` | NO `created_by` |
 | `memento` | `MementoConfig` | `user` | NO `created_by` |
-| `rooms` | `RoomNotification` | `created_by` ✅ | Sí cumple convención |
+| `board` | `Board` | `owner` | NO `created_by` |
+| `board` | `Activity` | `user` | Log de actividad — NO `created_by` |
+| `cv` | `Curriculum` | `user` (OneToOne) | Propietario implícito — NO `created_by` |
+| `campaigns` | Todos | — | Sin propietario — datos globales de contact center |
+| `kpis` | `CallRecord` | `created_by` (null=True, SET_NULL) | ✅ Convención, pero null=True intencional |
 
 ---
 
@@ -108,7 +113,7 @@ Actúa como **technical writer y arquitecto** de la app asignada. Debes:
 
 **Nivel de detalle:** suficiente para que otro dev o Claude pueda trabajar en la app sin leer el código fuente. Los modelos deben documentarse campo por campo cuando son complejos.
 
-**Al finalizar cada app**, actualizar la tabla de bugs globales numerando desde el #68 (los #1–#67 ya están registrados en `PROJECT_DEV_REFERENCE.md`).
+**Al finalizar cada app**, actualizar la tabla de bugs globales numerando desde el **#100** (los #1–#99 ya están registrados en `PROJECT_DEV_REFERENCE.md`).
 
 ---
 
@@ -129,24 +134,18 @@ bash scripts/m360_map.sh app ./nombre_app
 
 ---
 
-## Apps pendientes (prioridad sugerida)
+## Apps pendientes (última tanda)
 
-| App | Prioridad | Motivo |
-|-----|-----------|--------|
-| `kpis` | 🔴 | DEV_REFERENCE parcial — completar |
-| `cv` | 🔴 | Dependencia directa de `courses` |
-| `bots` | 🔴 | Target Sprint 8 |
-| `board` | 🟠 | Simple — 3 modelos |
-| `campaigns` | 🟠 | Simple — 3 modelos |
-| `help` | 🟡 | 7 modelos |
-| `api` | 🟡 | 0 modelos, 4 endpoints |
-| `passgen` | 🟡 | Muy simple |
-| `panel` | 🟡 | 0 modelos, configuración |
+| App | Prioridad | Complejidad | Notas |
+|-----|-----------|-------------|-------|
+| `help` | 🟠 | Media | 7 modelos, 10 endpoints |
+| `api` | 🟡 | Baja | 0 modelos, 4 endpoints |
+| `panel` | 🟡 | Media | 0 modelos, 28 endpoints de configuración |
 
 ---
 
 ## Archivos de contexto globales
 
 Adjunta junto a este prompt:
-- `PROJECT_DEV_REFERENCE.md` ← contiene bugs #1–#67, convenciones, patrones
+- `PROJECT_DEV_REFERENCE.md` ← contiene bugs #1–#99, convenciones, patrones
 - `PROJECT_DESIGN.md` ← roadmap global, sprints, dependencias entre apps
