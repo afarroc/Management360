@@ -76,70 +76,64 @@ class FileProcessorService:
             logger.error(f"Error procesando archivo: {str(e)}", exc_info=True)
             raise ValueError(f"Error al procesar el archivo: {str(e)}")
     
-    # analyst/services/excel_processor.py
-    
-    @staticmethod
-    def process_excel(file, sheet_name=None, cell_range=None):
+    @classmethod
+    def process_excel(cls, file, model: Model, sheet_name=None,
+                      cell_range=None, column_mapping: Dict = None) -> Tuple[List, List[Dict], List[str]]:
         """
-        Procesa un archivo Excel con opciones de hoja y rango
-        
+        Procesa un archivo Excel con opciones de hoja y rango.
+
         Args:
-            file: Archivo Excel
-            sheet_name: Nombre de la hoja o índice (None para primera hoja)
-            cell_range: Rango de celdas (ej: 'A1:C10')
-        
+            file:           Archivo Excel (file-like object)
+            model:          Clase del modelo Django destino
+            sheet_name:     Nombre de hoja o índice (None → primera hoja)
+            cell_range:     Rango de celdas (ej: 'B2:G500'); None → hoja completa
+            column_mapping: {df_col_name: model_field_name} (None → mapeo automático)
+
         Returns:
-            Tuple[pd.DataFrame, Dict]: DataFrame y metadatos
+            Tuple[List, List[Dict], List[str]]: (registros, datos_preview, columnas)
         """
         logger.debug(f"Procesando Excel - Sheet: {sheet_name}, Range: {cell_range}")
-        
+
         excel_file = pd.ExcelFile(file)
-        
+
         # Determinar qué hoja usar
         if sheet_name is None or sheet_name == '':
-            selected_sheet = 0  # Primera hoja
+            selected_sheet = 0
             sheet_name_used = excel_file.sheet_names[0]
         else:
             try:
-                # Intentar como índice numérico
                 selected_sheet = int(sheet_name)
                 sheet_name_used = excel_file.sheet_names[selected_sheet]
             except (ValueError, IndexError):
-                # Usar como nombre de hoja
                 selected_sheet = sheet_name
                 sheet_name_used = sheet_name
-        
+
         logger.info(f"Usando hoja: {sheet_name_used} (índice/nombre: {selected_sheet})")
-        
-        metadata = {
-            'type': 'excel',
-            'available_sheets': excel_file.sheet_names,
-            'selected_sheet': sheet_name_used,
-            'sheet_index': selected_sheet if isinstance(selected_sheet, int) else None
-        }
-        
+
         try:
             if cell_range and ':' in cell_range:
                 df = ExcelProcessor._read_with_range(excel_file, selected_sheet, cell_range)
-                metadata['cell_range'] = cell_range
             else:
                 df = pd.read_excel(excel_file, sheet_name=selected_sheet)
-                metadata['cell_range'] = 'full'
-            
-            # Validar DataFrame
+
             if df.empty:
                 raise ValueError("El archivo Excel no contiene datos en el rango especificado")
-            
-            # Información adicional
-            metadata.update({
-                'max_columns': len(df.columns),
-                'max_rows': len(df),
-                'sheet_used': sheet_name_used
-            })
-            
-            logger.info(f"Excel procesado - Shape: {df.shape}, Hoja: {sheet_name_used}")
-            return df, metadata
-            
+
+            # Normalizar nombres de columnas (igual que process_csv)
+            df.columns = [cls.normalize_name(str(col)) for col in df.columns]
+            df = df.replace({pd.NA: None, '': None})
+
+            preview_data = df.head(10).to_dict('records')
+            columns = df.columns.tolist()
+
+            if column_mapping:
+                records = cls._create_instances_with_mapping(df, model, column_mapping)
+            else:
+                records = cls._create_instances_auto(df, model)
+
+            logger.info(f"Excel procesado - {len(records)} registros, shape: {df.shape}, hoja: {sheet_name_used}")
+            return records, preview_data, columns
+
         except Exception as e:
             logger.error(f"Error procesando Excel: {str(e)}", exc_info=True)
             raise ValueError(f"Error al procesar archivo Excel: {str(e)}")    

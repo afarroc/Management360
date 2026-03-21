@@ -35,7 +35,6 @@ def get_model_choices():
     
     return sorted(choices, key=lambda x: x[1])
 
-# analyst/forms.py
 
 class DataUploadForm(forms.Form):
     """Form for uploading CSV/Excel files to Django models."""
@@ -196,9 +195,6 @@ class DataUploadForm(forms.Form):
                 "Internal error while validating the model. "
                 "The technical team has been notified. Please try again later."
             )
-
-
-    # analyst/forms.py
 
 
     def clean_file(self):
