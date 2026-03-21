@@ -41,6 +41,11 @@ from django.views.decorators.http import require_GET, require_POST
 # ← CAMBIO: se agrega AnalystBase al import
 from analyst.models import ETLSource, ETLJob, StoredDataset, AnalystBase
 
+# EVENTS-AI-3: campo en ETLSource para filtrar por host/created_by de events
+# No hay FK nueva en el modelo — se filtra por el propio request.user.
+# events.InboxItem usa created_by; events.Task/Project usan host.
+# La fuente "events" extrae siempre los ítems del usuario autenticado.
+
 logger = logging.getLogger(__name__)
 
 # ============================================================================
@@ -408,15 +413,169 @@ def _extract_sim_account(source, runtime_params, user):
     return df.reset_index(drop=True), None
 
 
+# ── EVENTS-AI-3 ──────────────────────────────────────────────────────────────
+
+_EVENTS_MODELS = {
+    'inbox':    ('events', 'InboxItem'),
+    'tasks':    ('events', 'Task'),
+    'projects': ('events', 'Project'),
+    'events':   ('events', 'Event'),
+}
+
+# Campos propietario por modelo — events NO usa created_by para Task/Project/Event
+_EVENTS_OWNER_FIELD = {
+    'inbox':    'created_by',
+    'tasks':    'host',
+    'projects': 'host',
+    'events':   'host',
+}
+
+# Campo de fecha principal por modelo — verificado contra errores de runtime
+# InboxItem: tiene due_date (DateField) — campo de fecha GTD principal
+# Task:      NO tiene due_date — tiene reminder (DateTimeField, null=True)
+# Project:   solo created_at confirmado
+# Event:     solo created_at confirmado
+_EVENTS_DATE_FIELD = {
+    'inbox':    'due_date',
+    'tasks':    'created_at',
+    'projects': 'created_at',
+    'events':   'created_at',
+}
+
+
+def _events_item_fields(model_key: str = 'inbox') -> list:
+    """
+    EVENTS-AI-3: Introspección de modelos events sin pasar por el whitelist ETL.
+    model_key: 'inbox' | 'tasks' | 'projects' | 'events'
+    """
+    app_label, model_name = _EVENTS_MODELS.get(model_key, ('events', 'InboxItem'))
+    try:
+        from django.apps import apps as _dapps
+        Model = _dapps.get_model(app_label, model_name)
+        fields = []
+        for f in Model._meta.get_fields():
+            if f.many_to_many or f.one_to_many:
+                continue
+            if f.is_relation:
+                attname = getattr(f, 'attname', None)
+                if not attname:
+                    continue
+                fields.append({
+                    "name":    attname,
+                    "verbose": f"{getattr(f, 'verbose_name', f.name)} (ID)",
+                    "dtype":   "object",
+                    "is_fk":   True,
+                })
+            else:
+                fields.append({
+                    "name":    f.name,
+                    "verbose": str(getattr(f, 'verbose_name', f.name)),
+                    "dtype":   _dtype_for_field(f),
+                    "is_fk":   False,
+                })
+        return fields
+    except Exception:
+        return []
+
+
+def _extract_events_items(source, runtime_params, user):
+    """
+    EVENTS-AI-3: Extrae ítems de un modelo events para el usuario autenticado.
+
+    Modelos soportados (source.events_model):
+      'inbox'    → events.InboxItem  filtra por created_by=user
+      'tasks'    → events.Task       filtra por host=user
+      'projects' → events.Project    filtra por host=user
+      'events'   → events.Event      filtra por host=user
+
+    Filtro de fecha: aplica sobre el campo canónico del modelo (ver _EVENTS_DATE_FIELD).
+    runtime_params: date_from, date_to, include_processed (inbox), status (tasks/projects)
+    """
+    model_key = (getattr(source, 'events_model', None) or 'inbox').strip()
+    if model_key not in _EVENTS_MODELS:
+        return None, f"Modelo events no reconocido: '{model_key}'. Use: inbox, tasks, projects, events."
+
+    app_label, model_name = _EVENTS_MODELS[model_key]
+    try:
+        from django.apps import apps as _dapps
+        Model = _dapps.get_model(app_label, model_name)
+    except Exception:
+        return None, f"App 'events' no disponible en este entorno."
+
+    owner_field = _EVENTS_OWNER_FIELD[model_key]
+    qs = Model.objects.filter(**{owner_field: user})
+
+    # ── Obtener campos reales del modelo (para validar antes de filtrar) ───────
+    real_fields = {f.name for f in Model._meta.get_fields()
+                   if not f.many_to_many and not f.one_to_many}
+
+    # ── Filtro de fecha ───────────────────────────────────────────────────────
+    date_field = _EVENTS_DATE_FIELD[model_key]
+    if date_field not in real_fields:
+        date_field = 'created_at' if 'created_at' in real_fields else None
+    date_from = (runtime_params.get("date_from") or "").strip()
+    date_to   = (runtime_params.get("date_to")   or "").strip()
+    if date_field and date_from:
+        qs = qs.filter(**{f"{date_field}__date__gte": date_from})
+    if date_field and date_to:
+        qs = qs.filter(**{f"{date_field}__date__lte": date_to})
+
+    # ── Filtro: InboxItem processed (opcional) ────────────────────────────────
+    if model_key == 'inbox' and 'is_processed' in real_fields:
+        include_processed = runtime_params.get("include_processed", True)
+        if not include_processed:
+            qs = qs.filter(is_processed=False)
+
+    # ── Filtro: status genérico — solo si el campo existe en el modelo ────────
+    status_filter = (runtime_params.get("status") or "").strip()
+    if status_filter and model_key in ('tasks', 'projects', 'events'):
+        # Task usa task_status (FK), Project/Event pueden usar status o similar
+        status_field = None
+        for candidate in ('status', 'task_status', 'estado'):
+            if candidate in real_fields:
+                status_field = candidate
+                break
+        if status_field:
+            qs = qs.filter(**{status_field: status_filter})
+
+    # ── Orden por fecha canónica ──────────────────────────────────────────────
+    order_field = date_field if date_field else 'id'
+    qs = qs.order_by(f"-{order_field}")
+
+    # ── Límite de filas ───────────────────────────────────────────────────────
+    limit = source.max_rows or 0
+    if not user.is_superuser and (not limit or limit > MAX_ROWS_NON_SUPERUSER):
+        limit = MAX_ROWS_NON_SUPERUSER
+    if limit:
+        qs = qs[:limit]
+
+    records = list(qs.values())
+    if not records:
+        return pd.DataFrame(), None
+
+    df = pd.DataFrame(records)
+
+    # ── Selección de campos específicos ───────────────────────────────────────
+    if source.fields:
+        selected = [f for f in source.fields if f in df.columns]
+        if selected:
+            df = df[selected]
+
+    return df.reset_index(drop=True), None
+
+
 def _run_extraction(source, runtime_params, user):
     # ── Sim path (SIM-4) ──────────────────────────────────────────────────────
     if getattr(source, 'sim_account_id', None):
         return _extract_sim_account(source, runtime_params, user)
 
     # ── AnalystBase path ──────────────────────────────────────────────────────
-    # ← NUEVO: se evalúa primero antes que SQL y ORM
     if getattr(source, 'analyst_base_id', None):
         return _extract_analyst_base(source, runtime_params, user)
+
+    # ── Events path (EVENTS-AI-3) ─────────────────────────────────────────────
+    if getattr(source, 'events_model', None):
+        return _extract_events_items(source, runtime_params, user)
 
     # ── SQL path (superusers only) ────────────────────────────────────────────
     if source.sql_override.strip():
@@ -583,6 +742,16 @@ def etl_models_api(request):
             # SIM-4
             "sim_accounts":           _get_sim_accounts(request.user),
             "sim_interaction_fields": _sim_interaction_fields(),
+            # EVENTS-AI-3
+            "events_models": [
+                {"key": k, "label": {
+                    "inbox":    "GTD Inbox (InboxItem)",
+                    "tasks":    "Tareas (Task)",
+                    "projects": "Proyectos (Project)",
+                    "events":   "Agenda (Event)",
+                }[k], "fields": _events_item_fields(k)}
+                for k in ("inbox", "tasks", "projects", "events")
+            ],
         })
     except Exception as exc:
         return JsonResponse({"success": False, "error": str(exc)}, status=500)
@@ -615,15 +784,23 @@ def etl_source_save(request):
         analyst_base_id = body.get("analyst_base_id") or None
         # SIM-4
         sim_account_id  = body.get("sim_account_id")  or None
+        # EVENTS-AI-3
+        events_model    = body.get("events_model") or ''
+        if events_model and events_model not in _EVENTS_MODELS:
+            return JsonResponse(
+                {"success": False,
+                 "error": f"Modelo events no válido: '{events_model}'. "
+                           "Use: inbox, tasks, projects, events."},
+                status=400)
 
         if not name:
             return JsonResponse({"success": False, "error": "El nombre es requerido."}, status=400)
 
         # Debe haber al menos una fuente
-        if not model_path and not sql_override and not analyst_base_id and not sim_account_id:
+        if not model_path and not sql_override and not analyst_base_id and not sim_account_id and not events_model:
             return JsonResponse(
                 {"success": False,
-                 "error": "Se requiere modelo, SQL, base analista o cuenta simulador."},
+                 "error": "Se requiere modelo, SQL, base analista, cuenta simulador o fuente events."},
                 status=400)
 
         # Security checks
@@ -703,6 +880,13 @@ def etl_source_save(request):
             safe_fields  = []
             safe_filters = []
 
+        # EVENTS-AI-3: campos events se validan contra la introspección del modelo
+        if events_model:
+            events_field_names = {f["name"] for f in _events_item_fields(events_model)}
+            safe_fields  = [f for f in (body.get("fields") or [])
+                            if _validate_field_name(f) and f in events_field_names]
+            safe_filters = []  # events no expone filtros personalizados por UI (usa runtime_params)
+
         max_rows = int(body.get("max_rows") or 0)
         if not request.user.is_superuser and (max_rows == 0 or max_rows > MAX_ROWS_NON_SUPERUSER):
             max_rows = MAX_ROWS_NON_SUPERUSER
@@ -724,6 +908,8 @@ def etl_source_save(request):
             "analyst_base_id":  analyst_base_id,
             # SIM-4
             "sim_account_id":   sim_account_id,
+            # EVENTS-AI-3
+            "events_model":     events_model or '',
         }
 
         if source_id:
@@ -797,10 +983,13 @@ def etl_source_run(request, source_id):
         dataset_name   = (body.get("dataset_name") or src.name).strip()
         description    = body.get("description", src.description)
         runtime_params = {
-            "date_from":  body.get("date_from", ""),
-            "date_to":    body.get("date_to", ""),
-            "date_field": body.get("date_field", ""),
-            "fields":     body.get("fields", []),
+            "date_from":          body.get("date_from", ""),
+            "date_to":            body.get("date_to", ""),
+            "date_field":         body.get("date_field", ""),
+            "fields":             body.get("fields", []),
+            # EVENTS-AI-3: parámetros específicos de events
+            "include_processed":  body.get("include_processed", True),
+            "status":             body.get("status", ""),
         }
     except json.JSONDecodeError:
         return JsonResponse({"success": False, "error": "JSON invalido."}, status=400)
@@ -815,6 +1004,8 @@ def etl_source_run(request, source_id):
         source_label = f"Sim:{src.sim_account_id}"
     elif src.analyst_base_id:
         source_label = f"AnalystBase:{src.analyst_base_id}"
+    elif getattr(src, 'events_model', None):
+        source_label = f"Events:{src.events_model}"
     else:
         source_label = f"ETL:{src.model_path or 'SQL'}"
 

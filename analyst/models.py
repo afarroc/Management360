@@ -133,6 +133,21 @@ class ETLSource(models.Model):
         verbose_name='Cuenta Sim',
     )
 
+    # EVENTS-AI-3: modelo events a extraer (sin FK — no hay un objeto "cuenta")
+    # Valores: 'inbox' | 'tasks' | 'projects' | 'events' | '' (no events)
+    events_model = models.CharField(
+        max_length=20,
+        blank=True,
+        default='',
+        choices=[
+            ('inbox',    'GTD Inbox (InboxItem)'),
+            ('tasks',    'Tareas (Task)'),
+            ('projects', 'Proyectos (Project)'),
+            ('events',   'Agenda (Event)'),
+        ],
+        verbose_name='Modelo Events',
+    )
+
     # ── Extraction config (all JSONField for schema-free flexibility) ─────────
     # List of field names to SELECT; empty = all fields
     fields      = models.JSONField(default=list)
