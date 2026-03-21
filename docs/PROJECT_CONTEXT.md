@@ -1,8 +1,8 @@
 # Mapa del Proyecto — Management360
 
-> Generado por `m360_map.sh`  |  2026-03-20 14:11:49
+> Generado por `m360_map.sh`  |  2026-03-20 18:52:19
 > Raíz: `/data/data/com.termux/files/home/projects/Management360`
-> Apps: **20**  |  Archivos Python+HTML: **711**
+> Apps: **20**  |  Archivos Python+HTML: **713**
 
 ---
 
@@ -11,7 +11,7 @@
 | App | Namespace | Archivos | Modelos | Endpoints | Notas |
 |-----|-----------|----------|---------|-----------|-------|
 | `accounts` | `—` | 19 | 1 | 11 | Autenticacion, Perfiles, CV |
-| `analyst` | `analyst` | 58 | 10 | 99 | Plataforma de datos (5 fases, SIM-4 integrado) |
+| `analyst` | `analyst` | 59 | 10 | 99 | Plataforma de datos (5 fases, SIM-4 integrado) |
 | `api` | `—` | 6 | 00 | 4 | API REST publica |
 | `bitacora` | `bitacora` | 17 | 4 | 9 | Bitacora personal GTD |
 | `board` | `board` | 15 | 3 | 8 | Kanban board |
@@ -21,7 +21,7 @@
 | `core` | `—` | 44 | 1 | 16 | Dashboard, URL-map, Home |
 | `courses` | `courses` | 88 | 12 | 59 | Cursos, lecciones, curriculum |
 | `cv` | `cv` | 32 | 10 | 14 | Curriculum Vitae dinamico |
-| `events` | `events` | 232 | 31 | 145 | Eventos, Proyectos, Tareas (app principal) |
+| `events` | `events` | 233 | 31 | 147 | Eventos, Proyectos, Tareas (app principal) |
 | `help` | `help` | 15 | 7 | 10 | Centro de ayuda, tickets |
 | `kpis` | `kpis` | 11 | 2 | 5 | KPIs, AHT Dashboard, CallRecord |
 | `memento` | `—` | 16 | 1 | 6 | Recordatorios, memoria personal |
@@ -65,29 +65,24 @@ Management360/
     ├── simcity/
     ├── staticfiles/
     ├── ACCOUNTS_CONTEXT.md
+    ├── API_CONTEXT.md
     ├── BOARD_CONTEXT.md
     ├── CAMPAIGNS_CONTEXT.md
     ├── CHAT_CONTEXT.md
     ├── CORE_CONTEXT.md
     ├── COURSES_CONTEXT.md
     ├── CV_CONTEXT.md
+    ├── EVENTS_CONTEXT.md
+    ├── HELP_CONTEXT.md
     ├── KPIS_CONTEXT.md
     ├── MEMENTO_CONTEXT.md
+    ├── PANEL_CONTEXT.md
     ├── PASSGEN_CONTEXT.md
     ├── README.md
     ├── ROOMS_CONTEXT.md
     ├── _fix_git_ignore.py
-    ├── board_consumers.py
-    ├── board_htmx_views.py
-    ├── board_models.py
-    ├── board_urls.py
-    ├── board_views.py
     ├── build.sh
-    ├── campaigns_models.py
-    ├── campaigns_urls.py
-    ├── campaigns_views.py
     ├── create_gtd_structure.sh
-    ├── ev3_patch_models.py
     └── manage.py
 ```
 
@@ -514,6 +509,8 @@ list` |
 | `/events/inbox/api/classification-history/<int:item_id>/` | `get_classification_history` |
 | `/events/inbox/classify/<int:item_id>/` | `classify_inbox_item_ajax` |
 | `/events/inbox/api/consensus/<int:item_id>/` | `get_consensus_api` |
+| `/events/inbox/ai/summary/` | `inbox_ai_summary` |
+| `/events/inbox/ai/chat/` | `inbox_ai_chat` |
 | `/events/kanban/` | `kanban_board` |
 | `/events/kanban/organized/` | `kanban_board_organized` |
 | `/events/kanban/project/<int:project_id>/` | `kanban_project` |

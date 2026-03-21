@@ -1,8 +1,8 @@
 # Referencia de Desarrollo — App `events`
 
-> **Actualizado:** 2026-03-20  
-> **Audiencia:** Desarrolladores y asistentes IA  
-> **Archivos:** ~235 | **Vistas:** 21 archivos | **Templates:** 152 | **Endpoints:** ~145
+> **Actualizado:** 2026-03-20 (Sprint 9 — EVENTS-AI)
+> **Audiencia:** Desarrolladores y asistentes IA
+> **Archivos:** ~237 | **Vistas:** 22 archivos | **Templates:** 152 | **Endpoints:** ~147
 
 ---
 
@@ -16,8 +16,9 @@
 | 4. URLs | Mapa completo de endpoints |
 | 5. Convenciones críticas | Campos especiales, gotchas |
 | 6. Sistema GTD | Inbox, clasificación, consenso |
-| 7. Bugs conocidos | Issues activos y resueltos |
-| 8. Deuda técnica | Lo que necesita refactor |
+| 7. Integración IA | Asistente GTD + reportes en analyst |
+| 8. Bugs conocidos | Issues activos y resueltos |
+| 9. Deuda técnica | Lo que necesita refactor |
 
 ---
 
@@ -29,6 +30,7 @@
 - **Proyectos** → agrupación de tareas, con estados e historial
 - **Tareas** → unidad mínima de trabajo, con dependencias y programación
 - **GTD / Inbox** → sistema Getting Things Done con clasificación colaborativa
+- **Asistente IA** → análisis GTD en tiempo real vía Ollama (Sprint 9)
 - **Kanban / Eisenhower** → vistas de productividad sobre las tareas
 - **Recordatorios** → notificaciones ligadas a eventos/proyectos/tareas
 - **Plantillas de proyectos** → reutilización de estructuras comunes
@@ -89,6 +91,7 @@ class Task(models.Model):
     created_at  # auto_now_add
     updated_at  # auto_now
     done        # BooleanField
+    due_date    # DateField (nullable) — ordenar por order_by('due_date')
     project     # FK → Project (nullable)
     event       # FK → Event (nullable)
     task_status # FK → TaskStatus
@@ -97,8 +100,6 @@ class Task(models.Model):
     ticket_price# DecimalField(6,2)
     tags        # M2M → Tag
 ```
-
-Campos de fecha: `due_date` (DateField) — ordenar por `order_by('due_date')`.
 
 Métodos clave:
 - `change_status(new_status_id, user=None)` — igual a Project + registra en TaskHistory si hay user
@@ -110,6 +111,7 @@ Métodos clave:
 class Event(models.Model):
     title          # CharField(200)
     description    # TextField (nullable)
+    start_date     # DateTimeField (nullable) — usar para agenda
     event_status   # FK → Status
     venue          # CharField(200)
     host           # FK → User (related: 'hosted_events')
@@ -131,7 +133,7 @@ class Event(models.Model):
 | Project | `ProjectState` | `ProjectHistory` |
 | Task | `TaskState` | `TaskHistory` |
 
-`*State`: registra transiciones con `start_time`/`end_time`.  
+`*State`: registra transiciones con `start_time`/`end_time`.
 `*History`: registra cambios de campo con `field_name`, `old_value`, `new_value`, `editor`.
 
 ### TaskSchedule — Recurrencia
@@ -211,6 +213,7 @@ Métodos importantes:
 | `projects_views.py` | CRUD proyectos, alerts, export, bulk, templates |
 | `tasks_views.py` | CRUD tareas, ajax status, export, bulk |
 | `gtd_views.py` | Inbox GTD, clasificación, consenso, colaboración |
+| `ai_assistant.py` | **NUEVO Sprint 9** — asistente IA GTD (Ollama + fallback estático) |
 | `schedules_views.py` | TaskSchedule, recurrencia, admin dashboard |
 | `kanban_views.py` | Kanban unificado + por proyecto |
 | `eisenhower_views.py` | Eisenhower matrix, move AJAX |
@@ -284,6 +287,12 @@ Métodos importantes:
 /inbox/api/consensus/<int:item_id>/       → get_consensus_api
 ```
 
+**Asistente IA GTD** ← NUEVO Sprint 9
+```
+/inbox/ai/summary/                        → inbox_ai_summary  (GET)
+/inbox/ai/chat/                           → inbox_ai_chat     (POST)
+```
+
 **Herramientas**
 ```
 /kanban/                                  → kanban_board
@@ -308,6 +317,7 @@ Métodos importantes:
 {% url 'events:projects' %}
 {% url 'events:task_create' %}
 {% url 'events:inbox' %}
+{% url 'events:inbox_ai_summary' %}   # nuevo Sprint 9
 
 # INCORRECTO — sin namespace (rompe desde Sprint 8)
 {% url 'projects' %}
@@ -351,6 +361,7 @@ InboxItem (pendiente)
     ├── Clasificación manual (process_inbox_item)
     ├── Clasificación automática (GTDClassificationPattern)
     ├── Clasificación colaborativa (InboxItemClassification)
+    ├── Asistente IA (inbox_ai_summary / inbox_ai_chat)  ← Sprint 9
     └── Procesamiento final → processed_to → Task o Project
 ```
 
@@ -366,31 +377,83 @@ InboxItemAuthorization.permission_level:
 
 ---
 
-## 7. Bugs Conocidos
+## 7. Integración IA
 
-| # | Estado | Descripción |
-|---|--------|-------------|
-| B1 | ✅ resuelto | `energy_required` y `estimated_time` duplicados en `InboxItem` — limpiado en Sprint 8 |
-| B2 | ⬜ activo | `from django.contrib.auth.models import User` directo en models.py |
-| B3 | ✅ resuelto | `Room` y `Message` en `events/models.py` — eliminados en Sprint 8 |
-| B4 | ⬜ activo | `assign_to_available_user()` importa `User` dentro del método |
-| B5 | ⬜ activo | `related_name='managed_projets'` — typo histórico en Project.assigned_to |
-| B9 | ⬜ activo | N+1 en dashboard de proyectos — Sprint 9 |
-| B10 | ✅ resuelto | `events` sin namespace — declarado en Sprint 8, ~520 url tags corregidos |
+### Asistente GTD (`events/views/ai_assistant.py`)
+
+Dos endpoints bajo `/events/inbox/ai/`:
+
+```python
+# GET — análisis automático del estado GTD
+inbox_ai_summary(request)
+# → {"success": true, "analysis": "...", "context": {...}, "source": "ollama"|"static"}
+
+# POST — chat con contexto GTD
+inbox_ai_chat(request)
+# body: {"message": "¿Qué hago primero hoy?"}
+# → {"success": true, "reply": "...", "source": "ollama"|"static"}
+```
+
+**Contexto que inyecta al prompt:**
+- Inbox: total, sin_procesar, por_categoria, por_accion
+- Tasks: total, vencidas, importantes, por_estado
+- Projects: total, por_estado
+- Eventos próximos (hasta 5)
+
+**Fallback:** si Ollama (`chat.ollama_api.generate_response`) no está disponible, devuelve análisis estático basado en los datos. No crashea.
+
+**Integración en template:** panel sidebar en `events/templates/events/inbox.html` — fetch nativo, sin HTMX, sin dependencias nuevas.
+
+### Report Functions en `analyst`
+
+Archivo: `analyst/report_functions_events.py`
+
+5 funciones registradas en el report builder bajo categoría **"Events / GTD"**:
+
+| key | label | Fuente ETL recomendada |
+|-----|-------|----------------------|
+| `events_inbox_summary` | GTD Inbox — Resumen por Estado | `events.InboxItem` |
+| `events_task_backlog` | Tasks — Backlog y Vencimiento | `events.Task` |
+| `events_project_status` | Projects — Estado y Progreso | `events.Project` |
+| `events_agenda` | Agenda — Eventos Próximos | `events.Event` |
+| `events_gtd_health` | GTD Health Score — Diagnóstico Combinado | las 3 anteriores |
+
+Consumo: `/analyst/reports/build/` → elegir función → configurar ETL Sources → añadir a Dashboard.
+
+`events_gtd_health` produce un score 0–100 con benchmarks:
+- Inbox procesado ≥ 80 % → 40 pts
+- Tareas vencidas ≤ 5 % → 35 pts
+- Proyectos sin avance ≤ 20 % → 25 pts
 
 ---
 
-## 8. Deuda Técnica
+## 8. Bugs Conocidos
+
+| # | Estado | Descripción |
+|---|--------|-------------|
+| B1 | ✅ resuelto | `energy_required` y `estimated_time` duplicados en `InboxItem` — limpiado Sprint 8 |
+| B2 | ⬜ activo | `from django.contrib.auth.models import User` directo en models.py |
+| B3 | ✅ resuelto | `Room` y `Message` en `events/models.py` — eliminados Sprint 8 |
+| B4 | ⬜ activo | `assign_to_available_user()` importa `User` dentro del método |
+| B5 | ⬜ activo | `related_name='managed_projets'` — typo histórico en Project.assigned_to |
+| B9 | ⬜ activo | N+1 en `projects_views.py` — Sprint 9 |
+| B10 | ✅ resuelto | `events` sin namespace — declarado Sprint 8, ~520 url tags corregidos |
+
+---
+
+## 9. Deuda Técnica
 
 **Alta prioridad (Sprint 9):**
 - Fix N+1 en `projects_views.py` (`select_related`/`prefetch_related`)
-- Migrar PKs de int a UUID (alinear con el resto del proyecto)
+- Crear ETL Sources en `/analyst/etl/` para alimentar las 5 report functions GTD
+- Crear Dashboard "GTD Overview" con widgets `events_gtd_health` + `events_task_backlog`
 
 **Media prioridad:**
 - Reemplazar `from django.contrib.auth.models import User` por `get_user_model()` en models.py
+- Migrar PKs de int a UUID (alinear con el resto del proyecto)
 - Auditar `_old_scripts/` — `views_bkup.py` tiene 3847 líneas
 
 **Baja prioridad:**
 - Unificar las dos CBV de edición de TaskSchedule
 - Limpiar rutas legacy en `urls.py`
-- Ampliar tests: vistas, GTD, TaskSchedule
+- Ampliar tests: vistas, GTD, TaskSchedule, ai_assistant
