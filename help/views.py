@@ -282,12 +282,12 @@ def search_help(request):
     if not query:
         return redirect('help:help_home')
 
-    # Registrar la búsqueda
-    HelpSearchLog.objects.create(
+    # Registrar la búsqueda — guardar instancia para actualizar sin race condition
+    search_log = HelpSearchLog.objects.create(
         query=query,
         user=request.user if request.user.is_authenticated else None,
         ip_address=request.META.get('REMOTE_ADDR'),
-        user_agent=request.META.get('HTTP_USER_AGENT')
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
     )
 
     # Buscar en artículos (incluyendo contenido de objetos referenciados)
@@ -338,13 +338,11 @@ def search_help(request):
         )
     )[:5]
 
-    # Actualizar estadísticas de búsqueda
-    search_log = HelpSearchLog.objects.filter(query=query).last()
-    if search_log:
-        total_results = articles.count() + faqs.count() + videos.count() + guides.count()
-        search_log.results_count = total_results
-        search_log.has_results = total_results > 0
-        search_log.save()
+    # Actualizar estadísticas — usar la instancia guardada, evitar race condition y doble count()
+    total_results = articles.count() + faqs.count() + videos.count() + guides.count()
+    search_log.results_count = total_results
+    search_log.has_results = total_results > 0
+    search_log.save(update_fields=['results_count', 'has_results'])
 
     context = {
         'page_title': f'Resultados de búsqueda: "{query}"',
@@ -353,7 +351,7 @@ def search_help(request):
         'faqs': faqs,
         'videos': videos,
         'guides': guides,
-        'total_results': articles.count() + faqs.count() + videos.count() + guides.count(),
+        'total_results': total_results,
     }
 
     return render(request, 'help/search_results.html', context)
@@ -388,9 +386,10 @@ def submit_feedback(request, article_slug):
     # Actualizar contadores del artículo
     if was_helpful:
         article.helpful_count += 1
+        article.save(update_fields=['helpful_count'])
     else:
         article.not_helpful_count += 1
-    article.save()
+        article.save(update_fields=['not_helpful_count'])
 
     return JsonResponse({
         'success': True,
@@ -398,6 +397,7 @@ def submit_feedback(request, article_slug):
     })
 
 
+@login_required
 def article_feedback_stats(request, article_slug):
     """
     Obtener estadísticas de feedback de un artículo (para admins)

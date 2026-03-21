@@ -1,9 +1,6 @@
+from django.conf import settings
 from django.db import models
-from django.contrib.auth import get_user_model
-
-User = get_user_model()
 from django.utils import timezone
-from courses.models import Course, Lesson, ContentBlock, CourseCategory
 
 
 class HelpCategory(models.Model):
@@ -44,11 +41,11 @@ class HelpArticle(models.Model):
     excerpt = models.TextField(blank=True, help_text="Resumen breve del artículo")
 
     category = models.ForeignKey(HelpCategory, on_delete=models.CASCADE, related_name='articles')
-    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='help_articles')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='help_articles')
 
     # Referencias opcionales a objetos del sistema de cursos
     referenced_course = models.ForeignKey(
-        Course,
+        'courses.Course',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -56,7 +53,7 @@ class HelpArticle(models.Model):
         help_text="Curso relacionado (opcional)"
     )
     referenced_lesson = models.ForeignKey(
-        Lesson,
+        'courses.Lesson',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -64,7 +61,7 @@ class HelpArticle(models.Model):
         help_text="Lección relacionada (opcional)"
     )
     referenced_content_block = models.ForeignKey(
-        ContentBlock,
+        'courses.ContentBlock',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -243,7 +240,7 @@ class HelpSearchLog(models.Model):
     Registro de búsquedas en el sistema de ayuda
     """
     query = models.CharField(max_length=200, help_text="Término de búsqueda")
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
 
@@ -266,7 +263,7 @@ class HelpFeedback(models.Model):
     Feedback de usuarios sobre artículos de ayuda
     """
     article = models.ForeignKey(HelpArticle, on_delete=models.CASCADE, related_name='feedback')
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
 
     was_helpful = models.BooleanField(help_text="Si el artículo fue útil")
@@ -304,11 +301,11 @@ class VideoTutorial(models.Model):
     thumbnail_url = models.URLField(blank=True, help_text="URL de la miniatura")
 
     category = models.ForeignKey(HelpCategory, on_delete=models.CASCADE, related_name='video_tutorials')
-    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
 
     # Referencia opcional a lección con video
     referenced_lesson = models.ForeignKey(
-        Lesson,
+        'courses.Lesson',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

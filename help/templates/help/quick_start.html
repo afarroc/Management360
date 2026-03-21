@@ -1,0 +1,185 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="pagetitle">
+    <h1>
+        <i class="bi bi-rocket-takeoff text-primary me-3"></i>
+        {{ page_title }}
+    </h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'rooms:lobby' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'help:help_home' %}">Ayuda</a></li>
+            <li class="breadcrumb-item active">Inicio Rápido</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+
+    <!-- Filtro por audiencia -->
+    {% if audience_choices %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'help:quick_start' %}"
+                   class="btn btn-sm {% if not current_audience %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                    <i class="bi bi-people me-1"></i> Todos
+                </a>
+                {% for val, label in audience_choices %}
+                <a href="?audience={{ val }}"
+                   class="btn btn-sm {% if current_audience == val %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                    {{ label }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Grid de guías -->
+    <div class="row">
+        {% for guide in guides %}
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 border-0 shadow-sm hover-card">
+                <div class="card-body p-4">
+
+                    {% if guide.is_featured %}
+                    <div class="featured-badge">
+                        <i class="bi bi-star-fill"></i> Destacado
+                    </div>
+                    {% endif %}
+
+                    <!-- Cabecera -->
+                    <div class="d-flex align-items-center mb-3 gap-2">
+                        <span class="badge bg-primary">{{ guide.get_target_audience_display }}</span>
+                        <small class="text-muted ms-auto">
+                            <i class="bi bi-clock me-1"></i>~{{ guide.estimated_time }} min
+                        </small>
+                        {% if guide.completion_count > 0 %}
+                        <small class="text-success">
+                            <i class="bi bi-check-circle me-1"></i>{{ guide.completion_count }} completadas
+                        </small>
+                        {% endif %}
+                    </div>
+
+                    <h5 class="card-title mb-2">{{ guide.title }}</h5>
+                    <p class="text-muted mb-3">{{ guide.description }}</p>
+
+                    {% if guide.prerequisites %}
+                    <div class="alert alert-light border-start border-warning border-3 py-2 mb-3">
+                        <small>
+                            <i class="bi bi-exclamation-triangle text-warning me-1"></i>
+                            <strong>Requisitos previos:</strong> {{ guide.prerequisites }}
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <!-- Contenido colapsable -->
+                    <div class="collapse" id="guide{{ guide.id }}">
+                        <div class="guide-content mt-3 pt-3 border-top">
+                            {{ guide.content|safe }}
+                        </div>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="d-flex gap-2 mt-3">
+                        <button class="btn btn-outline-primary btn-sm"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#guide{{ guide.id }}"
+                                aria-expanded="false"
+                                onclick="toggleGuideBtn(this)">
+                            <i class="bi bi-book me-1"></i> Leer guía
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="bi bi-rocket-takeoff display-1 text-muted mb-3 d-block"></i>
+                <h4 class="text-muted">No hay guías disponibles</h4>
+                <p class="text-muted">
+                    {% if current_audience %}
+                    No hay guías para el perfil seleccionado.
+                    <a href="{% url 'help:quick_start' %}">Ver todas las guías</a>
+                    {% else %}
+                    Las guías de inicio rápido estarán disponibles próximamente.
+                    {% endif %}
+                </p>
+                <a href="{% url 'help:help_home' %}" class="btn btn-primary mt-2">
+                    <i class="bi bi-house me-1"></i> Volver al Centro de Ayuda
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</section>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hover-card {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+.hover-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    border-color: rgba(0,123,255,0.2);
+}
+.featured-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    z-index: 10;
+}
+.card { position: relative; }
+.guide-content h2 { font-size: 1.25rem; margin-top: 1.5rem; }
+.guide-content h3 { font-size: 1.1rem; margin-top: 1rem; }
+.guide-content p { margin-bottom: 1rem; }
+.guide-content ul, .guide-content ol { padding-left: 1.5rem; margin-bottom: 1rem; }
+.guide-content li { margin-bottom: 0.4rem; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleGuideBtn(btn) {
+    const isExpanded = btn.getAttribute('aria-expanded') === 'true';
+    btn.innerHTML = isExpanded
+        ? '<i class="bi bi-book me-1"></i> Leer guía'
+        : '<i class="bi bi-x-circle me-1"></i> Cerrar guía';
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.hover-card');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    });
+    cards.forEach((card, i) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = `all 0.5s ease ${i * 0.05}s`;
+        observer.observe(card);
+    });
+});
+</script>
+{% endblock %}
