@@ -1,9 +1,9 @@
 # Plataforma de Datos `analyst` — Diseño y Estado de Implementación
 
-> **Última actualización:** 2026-03-17
+> **Última actualización:** 2026-03-20 (Sprint 9 — EVENTS-AI-1)
 > **Contexto:** Expansión del módulo ETL hacia una plataforma completa de gestión de datos,
 > reportes y dashboards para analistas de negocio.
-> **Metodología:** Scrum — sprints sincronizados con `sim`.
+> **Metodología:** Scrum — sprints sincronizados con `sim` y `events`.
 
 ---
 
@@ -18,6 +18,8 @@
 | **Fase 5** | `Pipeline` — transformaciones encadenadas y programables | S1 | ✅ Completada |
 | **SIM-4 ETL** | `ETLSource.sim_account` FK — fuente sim nativa | S2 | ✅ Completada |
 | **SIM-4b Dashboard** | `source.type = "sim"` en widgets | S2 | ✅ Completada |
+| **Sprint 7 WFM** | 3 funciones kpis en Report Builder | S7 | ✅ Completada |
+| **EVENTS-AI-1** | 5 funciones Events/GTD en Report Builder | S9 | ✅ Completada |
 
 ---
 
@@ -146,18 +148,19 @@ class CrossSource(models.Model):
 
 ---
 
-## Fase 3 — Report Builder (Completada)
+## Fase 3 — Report Builder (Completada + extensiones)
 
 ### Archivos entregados
 
 | Archivo | Descripción |
 |---------|-------------|
 | `analyst/report_functions.py` | 13 funciones registradas (7 originales + 3 WFM/sim + 3 WFM/kpis) |
+| `analyst/report_functions_events.py` | **NUEVO Sprint 9** — 5 funciones Events/GTD |
 | `analyst/views/report_builder.py` | 7 endpoints |
 | `analyst/templates/analyst/report_builder.html` | Panel SPA con toolbar |
 | `analyst/urls.py` | 7 rutas bajo `reports/` |
 
-### Funciones registradas
+### Funciones registradas — 18 total
 
 | key | Descripción | Fuentes | Params clave |
 |-----|-------------|---------|-------------|
@@ -174,6 +177,21 @@ class CrossSource(models.Model):
 | `kpis_aht_report` | Reporte AHT por Dimensión | kpis.CallRecord | agente/canal/servicio/supervisor, aht, eventos |
 | `kpis_satisfaction_report` | Reporte de Satisfacción por Agente | kpis.CallRecord | satisfaccion, evaluaciones |
 | `kpis_weekly_trend` | Tendencia Semanal de KPIs | kpis.CallRecord | semana/fecha, métrica elegida |
+| `events_inbox_summary` | GTD Inbox — Resumen por Estado | events.InboxItem | period_days, include_processed |
+| `events_task_backlog` | Tasks — Backlog y Vencimiento | events.Task | group_by, period_days |
+| `events_project_status` | Projects — Estado y Progreso | events.Project | group_by, period_days |
+| `events_agenda` | Agenda — Eventos Próximos | events.Event | window_days, include_past, cols |
+| `events_gtd_health` | GTD Health Score — Diagnóstico Combinado | inbox + tasks + projects | — |
+
+### Patrón de extensión
+
+Para añadir más categorías crear un módulo `report_functions_<app>.py` e importarlo al final de `report_functions.py`:
+
+```python
+# report_functions.py — al final
+from analyst import report_functions_events  # noqa: F401  ← aplicado Sprint 9
+# from analyst import report_functions_bots  # cuando se necesite
+```
 
 ### Endpoint `report_rerun`
 
@@ -365,6 +383,45 @@ Columnas de `Interaction` auto-populadas al seleccionar la cuenta.
 
 ---
 
+## Visión completa — estado actual
+
+```
+FUENTES                   TRANSFORMACIÓN          SALIDA
+-----------------         ---------------         --------
+Modelos Django    ──┐                             StoredDataset  ✅
+SQL raw           ──┤  ETL Engine        ✅       AnalystBase    ✅
+CSV/Excel         ──┤                             Export CSV     ✅
+AnalystBase       ──┤
+DataFrameClip     ──┘──> bulk-import-raw ✅
+
+sim.SimAccount    ──────> ETL sim  (SIM-4)  ✅    StoredDataset  ✅
+sim.SimAccount    ──────> Dashboard widget  ✅    Vista HTML     ✅
+  incl. GTR BD            (SIM-4b + SIM-6a) ✅
+
+events.InboxItem  ──────> ETL + Report GTD  ✅    result_data    ✅  ← Sprint 9
+events.Task       ──────> ETL + Report GTD  ✅    result_data    ✅  ← Sprint 9
+events.Project    ──────> ETL + Report GTD  ✅    result_data    ✅  ← Sprint 9
+events.Event      ──────> ETL + Report GTD  ✅    result_data    ✅  ← Sprint 9
+
+CrossSource       ──────> join/merge/concat ──>  StoredDataset  ✅
+Report            ──────> cálculo funciones ──>  result_data    ✅
+Dashboard         ──────> widgets visuales  ──>  Vista HTML     ✅
+Pipeline          ──────> transformaciones  ──>  StoredDataset  ✅
+```
+
+---
+
+## Integraciones completadas
+
+| Integración | Sprint | Estado | Descripción |
+|-------------|--------|--------|-------------|
+| Interacciones GTR persistidas en ETL/Dashboard | S3 | ✅ | `SimRun(canales=['gtr'])` identifica sesiones GTR |
+| `kpis.CallRecord` en ETL Manager | S7 | ✅ | ORM path + `/kpis/api/` — campo `fecha` DateField |
+| 3 funciones WFM kpis en Report Builder | S7 | ✅ | `kpis_aht_report`, `kpis_satisfaction_report`, `kpis_weekly_trend` |
+| 5 funciones Events/GTD en Report Builder | S9 | ✅ | `events_inbox_summary`, `events_task_backlog`, `events_project_status`, `events_agenda`, `events_gtd_health` |
+
+---
+
 ## Bugs conocidos pendientes
 
 | Archivo | Descripción |
@@ -380,63 +437,39 @@ Columnas de `Interaction` auto-populadas al seleccionar la cuenta.
 
 ---
 
-## Visión completa — estado actual
-
-```
-FUENTES                   TRANSFORMACION          SALIDA
------------------         ---------------         --------
-Modelos Django    ──┐                             StoredDataset  ✅
-SQL raw           ──┤  ETL Engine        ✅       AnalystBase    ✅
-CSV/Excel         ──┤                             Export CSV     ✅
-AnalystBase       ──┤
-DataFrameClip     ──┘──> bulk-import-raw ✅
-
-sim.SimAccount    ──────> ETL sim  (SIM-4)  ✅    StoredDataset  ✅
-sim.SimAccount    ──────> Dashboard widget  ✅    Vista HTML     ✅
-  incl. GTR BD            (SIM-4b + SIM-6a) ✅
-
-CrossSource       ──────> join/merge/concat ──>  StoredDataset  ✅
-Report            ──────> cálculo funciones ──>  result_data    ✅
-Dashboard         ──────> widgets visuales  ──>  Vista HTML     ✅
-Pipeline          ──────> transformaciones  ──>  StoredDataset  ✅
-```
-
----
-
-## Integraciones completadas — Sprint 7
-
-| Integración | Sprint | Estado | Descripción |
-|-------------|--------|--------|-------------|
-| Interacciones GTR persistidas en ETL/Dashboard | S3 | ✅ | `SimRun(canales=['gtr'])` identifica sesiones GTR |
-| `kpis.CallRecord` en ETL Manager | S7 | ✅ | ORM path + `/kpis/api/` — campo `fecha` DateField |
-| 3 funciones WFM kpis en Report Builder | S7 | ✅ | `kpis_aht_report`, `kpis_satisfaction_report`, `kpis_weekly_trend` |
-
 ## Próximas integraciones (roadmap)
 
 | Integración | Sprint | Descripción |
 |-------------|--------|-------------|
+| ETL Sources + Dashboard "GTD Overview" | S9 | EVENTS-AI-3 — crear configuraciones en UI |
 | `SimAgentProfile` en Report Builder | S5 | Nueva función `sim_agent_profile_report` |
 | Dashboard ACD en tiempo real | S5 | Widget polling `ACDSession` → métricas live |
+| Funciones `bots` en Report Builder | S10 | leads, distribución, performance |
 
 ---
 
-> **Nota para Claude:**
-> - Fases 1-5 completadas. SIM-4 y SIM-4b integradas. Sprint 7 kpis integrado.
+> **Notas para Claude:**
+> - Fases 1–5 completadas. SIM-4/4b + Sprint 7 kpis + Sprint 9 Events/GTD integrados.
 > - No modificar: `StoredDataset`, `data_upload_async/`, `_save_as_stored_dataset()`.
 > - `sim.Interaction` → fecha: `fecha` (DateField). Nunca `started_at`.
 > - `kpis.CallRecord` → fecha: `fecha` (DateField). Nunca `start_time`.
 > - Las interacciones GTR persisten en BD con `SimRun.canales` conteniendo `'gtr'`.
-> - `report_functions.py` tiene 13 funciones — no añadir imports pandas/numpy dentro de funciones.
+> - `report_functions.py` tiene 13 funciones base — no añadir imports pandas/numpy dentro de funciones.
+> - `report_functions_events.py` tiene 5 funciones GTD — importado al final de `report_functions.py`.
+> - Las funciones GTD reciben DataFrames via ETL, no consultan la DB directamente.
+> - `events.InboxItem` usa `created_by_id` como filtro ETL; `events.Task`/`Project` usan `host_id`.
 
 ---
 
-## 🔄 Handoff
+## Handoff
 
-> Estado: Fases 1-5 + SIM-4/4b + Sprint 7 kpis. Próximo: Dashboard ACD widget (Sprint 5).
+> Estado: Fases 1–5 + SIM-4/4b + Sprint 7 kpis + Sprint 9 EVENTS-AI-1.
+> Próximo: EVENTS-AI-3 (ETL Sources + Dashboard GTD) + Dashboard ACD widget.
 
 ### Archivos para próxima sesión
 
 ```bash
-bash scripts/m360_map.sh app ./analyst   # ANALYST_CONTEXT.md
+cat analyst/views/etl_manager.py | termux-clipboard-set
+cat analyst/views/dashboard.py | termux-clipboard-set
 # Adjuntar ANALYST_PLATFORM_DESIGN.md + ANALYST_DEV_REFERENCE.md
 ```
