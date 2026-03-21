@@ -8,9 +8,7 @@ logger = logging.getLogger(__name__)
 
 class ExcelProcessor:
     """Servicio especializado para procesar archivos Excel con opciones avanzadas"""
-    
-    # analyst/services/excel_processor.py
-    
+
     @staticmethod
     def process_excel(file, sheet_name=None, cell_range=None, no_header=False):
         """
