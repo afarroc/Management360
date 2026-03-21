@@ -1,0 +1,258 @@
+{% extends 'layouts/base.html' %}
+{% load static %}
+
+{% block content %}
+
+<div class="pagetitle">
+    <h1>
+        <i class="bi bi-play-circle text-primary me-3"></i>
+        {{ page_title }}
+    </h1>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'rooms:lobby' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'help:help_home' %}">Ayuda</a></li>
+            <li class="breadcrumb-item active">Tutoriales en Video</li>
+        </ol>
+    </nav>
+</div>
+
+<section class="section">
+
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <!-- Filtro por categoría -->
+                <a href="{% url 'help:video_tutorials' %}{% if current_difficulty %}?difficulty={{ current_difficulty }}{% endif %}"
+                   class="btn btn-sm {% if not current_category %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                    Todas las categorías
+                </a>
+                {% for cat in categories %}
+                <a href="?category={{ cat.slug }}{% if current_difficulty %}&difficulty={{ current_difficulty }}{% endif %}"
+                   class="btn btn-sm {% if current_category.slug == cat.slug %}btn-primary{% else %}btn-outline-secondary{% endif %}">
+                    {% if cat.icon %}<i class="bi {{ cat.icon }} me-1"></i>{% endif %}
+                    {{ cat.name }}
+                    <span class="badge bg-light text-dark ms-1">{{ cat.video_count }}</span>
+                </a>
+                {% endfor %}
+
+                {% if difficulty_choices %}
+                <span class="text-muted ms-2">|</span>
+                <a href="{% url 'help:video_tutorials' %}{% if current_category %}?category={{ current_category.slug }}{% endif %}"
+                   class="btn btn-sm {% if not current_difficulty %}btn-info{% else %}btn-outline-secondary{% endif %}">
+                    Todos los niveles
+                </a>
+                {% for val, label in difficulty_choices %}
+                <a href="?difficulty={{ val }}{% if current_category %}&category={{ current_category.slug }}{% endif %}"
+                   class="btn btn-sm {% if current_difficulty == val %}btn-info{% else %}btn-outline-secondary{% endif %}">
+                    {{ label }}
+                </a>
+                {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Grid de videos -->
+    <div class="row">
+        {% for video in videos %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-0 shadow-sm hover-card">
+                <div class="card-body">
+                    {% if video.is_featured %}
+                    <div class="featured-badge">
+                        <i class="bi bi-star-fill"></i> Destacado
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex align-items-start mb-2">
+                        <span class="badge bg-info text-dark">{{ video.get_difficulty_display }}</span>
+                        <small class="text-muted ms-auto">
+                            <i class="bi bi-eye me-1"></i>{{ video.view_count }}
+                        </small>
+                    </div>
+
+                    <!-- Icono de play -->
+                    <div class="text-center py-3 bg-light rounded mb-3">
+                        <i class="bi bi-play-circle-fill display-4 text-primary"></i>
+                        {% if video.duration %}
+                        <div class="mt-1">
+                            <small class="text-muted">
+                                <i class="bi bi-clock me-1"></i>{{ video.duration }}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <h6 class="card-title mb-2">
+                        <a href="#" class="text-decoration-none stretched-link"
+                           onclick="openVideoModal('{{ video.id }}', '{{ video.get_embed_url|escapejs }}', '{{ video.title|escapejs }}'); return false;">
+                            {{ video.title }}
+                        </a>
+                    </h6>
+
+                    <p class="card-text small text-muted mb-3">{{ video.description|truncatechars:120 }}</p>
+
+                    <div class="video-meta mt-auto">
+                        {% if video.author %}
+                        <small class="text-muted d-block">
+                            <i class="bi bi-person me-1"></i>
+                            {{ video.author.get_full_name|default:video.author.username }}
+                        </small>
+                        {% endif %}
+                        {% if video.category %}
+                        <small class="text-muted d-block">
+                            <i class="bi bi-folder me-1"></i>{{ video.category.name }}
+                        </small>
+                        {% endif %}
+                        {% if video.like_count > 0 %}
+                        <small class="text-success d-block">
+                            <i class="bi bi-hand-thumbs-up me-1"></i>{{ video.like_count }} likes
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="bi bi-camera-video display-1 text-muted mb-3 d-block"></i>
+                <h4 class="text-muted">No hay tutoriales disponibles</h4>
+                <p class="text-muted">
+                    {% if current_category or current_difficulty %}
+                    No hay videos con los filtros seleccionados.
+                    <a href="{% url 'help:video_tutorials' %}">Ver todos los tutoriales</a>
+                    {% else %}
+                    Los tutoriales en video estarán disponibles próximamente.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Paginación -->
+    {% if videos.has_other_pages %}
+    <div class="d-flex justify-content-center mt-4">
+        <nav aria-label="Navegación de videos">
+            <ul class="pagination">
+                {% if videos.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ videos.previous_page_number }}{% if current_category %}&category={{ current_category.slug }}{% endif %}{% if current_difficulty %}&difficulty={{ current_difficulty }}{% endif %}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+                {% for num in videos.paginator.page_range %}
+                {% if videos.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > videos.number|add:'-3' and num < videos.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if current_category %}&category={{ current_category.slug }}{% endif %}{% if current_difficulty %}&difficulty={{ current_difficulty }}{% endif %}">{{ num }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+                {% if videos.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ videos.next_page_number }}{% if current_category %}&category={{ current_category.slug }}{% endif %}{% if current_difficulty %}&difficulty={{ current_difficulty }}{% endif %}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+
+</section>
+
+<!-- Modal para videos -->
+<div class="modal fade" id="videoModal" tabindex="-1" aria-labelledby="videoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="videoModalLabel">Tutorial en Video</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="videoContent" class="ratio ratio-16x9"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.hover-card {
+    transition: all 0.3s ease;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+.hover-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    border-color: rgba(0,123,255,0.2);
+}
+.featured-badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    z-index: 10;
+}
+.card { position: relative; }
+.video-meta small { display: block; margin-bottom: 0.25rem; }
+.pagination .page-link { color: #007bff; border-color: #dee2e6; }
+.pagination .page-item.active .page-link { background-color: #007bff; border-color: #007bff; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openVideoModal(videoId, embedUrl, title) {
+    const modal = new bootstrap.Modal(document.getElementById('videoModal'));
+    document.getElementById('videoModalLabel').textContent = title || 'Tutorial en Video';
+    const content = document.getElementById('videoContent');
+
+    if (embedUrl) {
+        content.innerHTML = `<iframe src="${embedUrl}" allowfullscreen class="w-100 h-100" style="min-height:400px;"></iframe>`;
+    } else {
+        content.innerHTML = `
+            <div class="text-center p-5">
+                <i class="bi bi-play-circle display-1 text-muted mb-3 d-block"></i>
+                <h5>Video no disponible</h5>
+                <p class="text-muted">Este tutorial no tiene video asociado aún.</p>
+            </div>`;
+    }
+    modal.show();
+    document.getElementById('videoModal').addEventListener('hidden.bs.modal', () => {
+        content.innerHTML = '';
+    }, { once: true });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.hover-card');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    });
+    cards.forEach((card, i) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = `all 0.5s ease ${i * 0.05}s`;
+        observer.observe(card);
+    });
+});
+</script>
+{% endblock %}
