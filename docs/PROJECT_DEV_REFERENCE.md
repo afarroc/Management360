@@ -225,8 +225,10 @@ get_object_or_404(MyModel, pk=pk, created_by=request.user)
 |-----|--------|-------------------|--------------|
 | **sim** | `Interaction` | `fecha` (DateField) + `hora_inicio` (DateTimeField) | `order_by('fecha', 'hora_inicio')` |
 | **kpis** | `CallRecord` | `fecha` (DateField) + `semana` (IntegerField calculado) | `order_by('fecha', 'agente')` |
-| **events** | `Task` | `due_date` (DateField) | `order_by('due_date')` |
-| **events** | `Event` | `start_date` (DateTimeField) | `order_by('start_date')` |
+| **events** | `InboxItem` | `created_at` (DateTimeField) + `due_date` (DateField, null=True) + `processed_at` (DateTimeField, null=True) | `order_by('-created_at')` |
+| **events** | `Task` | `created_at` (DateTimeField) + `reminder` (DateTimeField, null=True) — **NO tiene `due_date`** | `order_by('-created_at')` |
+| **events** | `Project` | `created_at` / `updated_at` (DateTimeField) — **NO tiene `start_date`** | `order_by('-created_at')` |
+| **events** | `Event` | `created_at` / `updated_at` (DateTimeField) — **NO tiene `start_date` ni `start_time`** | `order_by('-created_at')` |
 | **chat** | `rooms.Message` | `created_at` (DateTimeField) | `order_by('created_at')` |
 | **bitacora** | `BitacoraEntry` | `fecha_creacion` (DateTimeField) | `order_by('-fecha_creacion')` |
 | **courses** | `Lesson` | `created_at` (DateTimeField) | `order_by('order', 'created_at')` |
@@ -250,6 +252,9 @@ from datetime import timedelta   # CORRECTO
 # rooms.EntranceExit — NO tiene created_at  → no ordenar por ese campo
 # rooms.Portal       — NO tiene created_at  → ídem
 # rooms.RoomConnection — NO tiene created_at → ídem
+# events.Task        — NO tiene due_date    → usar reminder (null=True) o created_at
+# events.Project     — NO tiene start_date  → usar created_at
+# events.Event       — NO tiene start_date ni start_time → usar created_at
 ```
 
 ---
@@ -559,14 +564,16 @@ ProjectStatus.objects.filter(status_name__in=['Completed', 'In Progress'])
 TaskStatus.objects.filter(status_name__in=['Completed', 'In Progress', 'To Do'])
 ```
 
-### Bug semántico en `upcoming_events`
+### Bug semántico en `upcoming_events` (bug #41 — core)
 
 ```python
 # INCORRECTO — filtra eventos creados en el futuro (siempre vacío):
 Event.objects.filter(created_at__gte=timezone.now())
 
-# CORRECTO — debería usar start_date:
-Event.objects.filter(start_date__gte=timezone.now())
+# CORRECTO — events.Event NO tiene start_date ni start_time (campos inexistentes).
+# El modelo no tiene campo de fecha de inicio confirmado. Verificar con:
+# [f.name for f in Event._meta.get_fields() if hasattr(f,'get_internal_type')
+#  and 'date' in f.get_internal_type().lower()]
 ```
 
 ---
