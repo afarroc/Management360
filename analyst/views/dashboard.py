@@ -107,6 +107,36 @@ def _acd_interaction_columns() -> list:
     except Exception:
         return []
 
+def _events_item_columns(model_key: str = 'inbox') -> list:
+    """
+    EVENTS-AI-3: columnas de un modelo events para el selector de widgets.
+    model_key: 'inbox' | 'tasks' | 'projects' | 'events'
+    """
+    _MAP = {
+        'inbox':    ('events', 'InboxItem'),
+        'tasks':    ('events', 'Task'),
+        'projects': ('events', 'Project'),
+        'events':   ('events', 'Event'),
+    }
+    app_label, model_name = _MAP.get(model_key, ('events', 'InboxItem'))
+    try:
+        from django.apps import apps as _dapps
+        Model = _dapps.get_model(app_label, model_name)
+        cols = []
+        for f in Model._meta.get_fields():
+            if f.many_to_many or f.one_to_many:
+                continue
+            if f.is_relation:
+                attname = getattr(f, 'attname', None)
+                if attname:
+                    cols.append(attname)
+            else:
+                cols.append(f.name)
+        return cols
+    except Exception:
+        return []
+
+
 def _deserialize(blob: str) -> pd.DataFrame:
     return pickle.loads(base64.b64decode(blob.encode()))
 
@@ -170,6 +200,28 @@ def _load_df(source: dict, user) -> pd.DataFrame | None:
             from sim.models import ACDSession, ACDInteraction
             session = ACDSession.objects.get(id=src_id, created_by=user)
             qs = ACDInteraction.objects.filter(session=session).order_by('routed_at')
+            records = list(qs.values())
+            if not records:
+                return pd.DataFrame()
+            return pd.DataFrame(records)
+
+        # EVENTS-AI-3: fuente events — InboxItem / Task / Project / Event del usuario
+        if src_type == 'events':
+            # src_id formato: "inbox" | "tasks" | "projects" | "events"
+            # El widget apunta directamente al model_key, no a un UUID de objeto.
+            _EVENTS_MAP = {
+                'inbox':    ('events', 'InboxItem',  'created_by', 'created_at'),
+                'tasks':    ('events', 'Task',       'host',       'due_date'),
+                'projects': ('events', 'Project',    'host',       'start_date'),
+                'events':   ('events', 'Event',      'host',       'start_time'),
+            }
+            entry = _EVENTS_MAP.get(src_id)
+            if not entry:
+                return None
+            app_label, model_name, owner_field, order_field = entry
+            from django.apps import apps as _dapps
+            Model = _dapps.get_model(app_label, model_name)
+            qs = Model.objects.filter(**{owner_field: user}).order_by(f'-{order_field}')
             records = list(qs.values())
             if not records:
                 return pd.DataFrame()
@@ -407,6 +459,21 @@ def dashboard_list(request):
                 'columns': acd_cols,
             }
             for s in acd_sessions
+        ]),
+
+        # EVENTS-AI-3: modelos GTD/Events disponibles como fuente de widget
+        'events_sources_json': _safe_json_str([
+            {
+                'id':      key,
+                'name':    label,
+                'columns': _events_item_columns(key),
+            }
+            for key, label in [
+                ('inbox',    'GTD Inbox'),
+                ('tasks',    'Tareas'),
+                ('projects', 'Proyectos'),
+                ('events',   'Agenda'),
+            ]
         ]),
 
 

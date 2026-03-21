@@ -75,6 +75,14 @@
 #etl-root .sim-badge.canal { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
 #etl-root .sim-badge.type  { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
 
+/* ── EVENTS-AI-3: source icon events ─────────────────────────────────────── */
+#etl-root .source-icon.events { background: #f0fdf4; color: #16a34a; }
+#etl-root .events-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700;
+  background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;
+}
+
 /* ── Header ───────────────────────────────────────────────────────────────── */
 #etl-root .etl-header {
   display: flex;
@@ -453,13 +461,13 @@
           <div id="sourceList">
             {% for src in sources %}
             <div class="source-item" data-id="{{ src.id }}" data-sim="{{ src.sim_account_id|default:'' }}" onclick="selectSource('{{ src.id }}')">
-              <div class="source-icon {% if src.sim_account_id %}sim{% elif src.sql_override %}sql{% else %}orm{% endif %}">
-                <i class="bi bi-{% if src.sim_account_id %}play-circle{% elif src.sql_override %}code-square{% else %}table{% endif %}"></i>
+              <div class="source-icon {% if src.sim_account_id %}sim{% elif src.events_model %}events{% elif src.sql_override %}sql{% else %}orm{% endif %}">
+                <i class="bi bi-{% if src.sim_account_id %}play-circle{% elif src.events_model %}calendar-check{% elif src.sql_override %}code-square{% else %}table{% endif %}"></i>
               </div>
               <div class="source-meta">
                 <div class="source-name">{{ src.name }}</div>
                 <div class="source-sub">
-                  {% if src.sim_account_id %}Sim{% elif src.model_path %}{{ src.model_path }}{% else %}SQL{% endif %}
+                  {% if src.sim_account_id %}Sim{% elif src.events_model %}Events · {{ src.get_events_model_display }}{% elif src.model_path %}{{ src.model_path }}{% else %}SQL{% endif %}
                   · {{ src.jobs.count }} ej.
                   {% if src.max_rows %} · max {{ src.max_rows }}{% endif %}
                 </div>
@@ -587,6 +595,9 @@
             <button class="mode-tab" id="modeSIM" onclick="setMode('sim')">
               <i class="bi bi-play-circle"></i> Simulador
             </button>
+            <button class="mode-tab" id="modeEVENTS" onclick="setMode('events')">
+              <i class="bi bi-calendar-check"></i> Events / GTD
+            </button>
           </div>
 
           <!-- ORM section -->
@@ -682,6 +693,67 @@
           </div>
           <!-- /simSection -->
 
+          <!-- ── Events section (EVENTS-AI-3) ──────────────────────────── -->
+          <div id="eventsSection" style="display:none;">
+            <div class="sec-banner info" style="margin-bottom:12px;background:#f0fdf4;border-color:#bbf7d0;color:#15803d;">
+              <i class="bi bi-calendar-check" style="font-size:16px;flex-shrink:0;margin-top:1px;"></i>
+              <span>
+                Extrae datos de tu GTD / agenda directamente.<br>
+                Siempre filtra por <b>tu usuario</b> — nunca accedes a datos de otros.
+                El resultado queda como <b>StoredDataset</b> listo para reportes y dashboards.
+              </span>
+            </div>
+
+            <div class="form-row">
+              <label class="form-label">Modelo Events <span style="color:var(--danger)">*</span></label>
+              <select id="srcEventsModel" class="form-control" onchange="onEventsModelChange(this.value)">
+                <option value="">— Selecciona modelo —</option>
+                <option value="inbox">GTD Inbox (InboxItem) — filtra por created_by</option>
+                <option value="tasks">Tareas (Task) — filtra por host</option>
+                <option value="projects">Proyectos (Project) — filtra por host</option>
+                <option value="events">Agenda (Event) — filtra por host</option>
+              </select>
+            </div>
+
+            <div id="eventsModelInfo" style="display:none;margin:0 0 12px;"></div>
+
+            <div class="form-row" id="eventsFieldSection" style="display:none;">
+              <label class="form-label">
+                Campos
+                <span style="color:var(--text-m);font-weight:400;">(vacío = todos)</span>
+                <button type="button" class="btn-add" style="margin-left:8px;padding:2px 8px;font-size:11px;" onclick="toggleEventsFields(true)">✓ todos</button>
+                <button type="button" class="btn-add" style="padding:2px 8px;font-size:11px;" onclick="toggleEventsFields(false)">✗ ninguno</button>
+              </label>
+              <div class="field-list" id="eventsFieldList"></div>
+            </div>
+
+            <div class="form-row-inline" style="margin-top:4px;">
+              <div class="form-row">
+                <label class="form-label">Desde</label>
+                <input type="date" id="eventsDateFrom" class="form-control">
+                <div class="form-hint" id="eventsDateHint">Aplica sobre el campo de fecha del modelo seleccionado</div>
+              </div>
+              <div class="form-row">
+                <label class="form-label">Hasta</label>
+                <input type="date" id="eventsDateTo" class="form-control">
+              </div>
+            </div>
+
+            <div class="form-row" id="eventsInboxOptions" style="display:none;">
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+                <input type="checkbox" id="eventsIncludeProcessed" checked>
+                Incluir ítems ya procesados
+              </label>
+            </div>
+
+            <div class="form-row" id="eventsStatusRow" style="display:none;">
+              <label class="form-label">Filtrar por estado <span style="color:var(--text-m);font-weight:400;">(opcional)</span></label>
+              <input type="text" id="eventsStatus" class="form-control" placeholder="Ej: open, pending, active…">
+              <div class="form-hint">Deja vacío para extraer todos los estados</div>
+            </div>
+          </div>
+          <!-- /eventsSection -->
+
           <!-- Options row -->
           <div class="form-row-inline">
             <div class="form-row">
@@ -763,6 +835,7 @@ let state = {
   mode: 'orm', sourceId: null,
   fields: [], sqlAllowed: IS_SUPERUSER,
   simAccounts: [], simFields: [],        // SIM-4
+  eventsModels: [],                      // EVENTS-AI-3
 };
 
 // ── Boot ────────────────────────────────────────────────────────────────────
@@ -794,18 +867,23 @@ let state = {
     btn.disabled = true;
     btn.title = 'Sin cuentas de simulador activas';
   }
+
+  // EVENTS-AI-3: modelos events
+  state.eventsModels = d.events_models || [];
 })();
 
 // ── Mode ─────────────────────────────────────────────────────────────────────
 function setMode(m) {
   if (m === 'sql' && !state.sqlAllowed) return;
   state.mode = m;
-  document.getElementById('ormSection').style.display = m === 'orm' ? '' : 'none';
-  document.getElementById('sqlSection').style.display = m === 'sql' ? '' : 'none';
-  document.getElementById('simSection').style.display = m === 'sim' ? '' : 'none';
-  document.getElementById('modeORM').classList.toggle('active', m === 'orm');
-  document.getElementById('modeSQL').classList.toggle('active', m === 'sql');
-  document.getElementById('modeSIM').classList.toggle('active', m === 'sim');
+  document.getElementById('ormSection').style.display    = m === 'orm'    ? '' : 'none';
+  document.getElementById('sqlSection').style.display    = m === 'sql'    ? '' : 'none';
+  document.getElementById('simSection').style.display    = m === 'sim'    ? '' : 'none';
+  document.getElementById('eventsSection').style.display = m === 'events' ? '' : 'none';
+  document.getElementById('modeORM').classList.toggle('active',    m === 'orm');
+  document.getElementById('modeSQL').classList.toggle('active',    m === 'sql');
+  document.getElementById('modeSIM').classList.toggle('active',    m === 'sim');
+  document.getElementById('modeEVENTS').classList.toggle('active', m === 'events');
   // Auto-render campos de Interaction al entrar en modo sim
   if (m === 'sim' && state.simFields.length && !document.querySelector('.sim-field-check')) {
     _renderSimFields(state.simFields);
@@ -937,6 +1015,17 @@ function clearEditor() {
   document.getElementById('simFieldList').innerHTML = '';
   document.getElementById('simDateFrom').value = '';
   document.getElementById('simDateTo').value   = '';
+  // EVENTS-AI-3
+  document.getElementById('srcEventsModel').value = '';
+  document.getElementById('eventsModelInfo').style.display = 'none';
+  document.getElementById('eventsFieldSection').style.display = 'none';
+  document.getElementById('eventsFieldList').innerHTML = '';
+  document.getElementById('eventsDateFrom').value = '';
+  document.getElementById('eventsDateTo').value   = '';
+  document.getElementById('eventsInboxOptions').style.display = 'none';
+  document.getElementById('eventsStatusRow').style.display = 'none';
+  document.getElementById('eventsIncludeProcessed').checked = true;
+  document.getElementById('eventsStatus').value = '';
   setMode('orm');
 }
 
@@ -976,6 +1065,9 @@ async function saveSource() {
   if (state.mode === 'sim' && !document.getElementById('srcSimAccount').value) {
     notify('error', 'Selecciona una cuenta del simulador.'); return;
   }
+  if (state.mode === 'events' && !document.getElementById('srcEventsModel').value) {
+    notify('error', 'Selecciona un modelo Events/GTD.'); return;
+  }
 
   const payload = {
     id:             state.sourceId,
@@ -986,7 +1078,9 @@ async function saveSource() {
                       ? [...document.querySelectorAll('.field-check:checked')].map(c => c.value)
                       : state.mode === 'sim'
                           ? [...document.querySelectorAll('.sim-field-check:checked')].map(c => c.value)
-                          : [],
+                          : state.mode === 'events'
+                              ? [...document.querySelectorAll('.events-field-check:checked')].map(c => c.value)
+                              : [],
     filters:        state.mode === 'orm' ? getFilters() : [],
     date_field:     state.mode === 'orm' ? document.getElementById('srcDateField').value : '',
     aggregations:   state.mode === 'orm' ? { group_by: getGroupBy(), aggregations: getAggs() } : {},
@@ -996,6 +1090,8 @@ async function saveSource() {
     frequency:      document.getElementById('srcFrequency').value,
     // SIM-4
     sim_account_id: state.mode === 'sim' ? document.getElementById('srcSimAccount').value : null,
+    // EVENTS-AI-3
+    events_model:   state.mode === 'events' ? document.getElementById('srcEventsModel').value : null,
   };
 
   try {
@@ -1039,10 +1135,13 @@ async function runSource() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
       body: JSON.stringify({
-        dataset_name: name,
-        description:  document.getElementById('runDesc').value.trim(),
-        date_from:    document.getElementById('runDateFrom').value,
-        date_to:      document.getElementById('runDateTo').value,
+        dataset_name:       name,
+        description:        document.getElementById('runDesc').value.trim(),
+        date_from:          document.getElementById('runDateFrom').value,
+        date_to:            document.getElementById('runDateTo').value,
+        // EVENTS-AI-3
+        include_processed:  document.getElementById('eventsIncludeProcessed')?.checked ?? true,
+        status:             document.getElementById('eventsStatus')?.value.trim() || '',
       }),
     });
     const d = await r.json();
@@ -1128,6 +1227,67 @@ function _renderSimFields(fields) {
 
 function toggleSimFields(checked) {
   document.querySelectorAll('.sim-field-check').forEach(cb => { cb.checked = checked; });
+}
+
+// ── Events helpers (EVENTS-AI-3) ──────────────────────────────────────────────
+
+const _EVENTS_DATE_HINTS = {
+  inbox:    'Aplica sobre created_at',
+  tasks:    'Aplica sobre due_date',
+  projects: 'Aplica sobre start_date',
+  events:   'Aplica sobre start_time',
+};
+
+function onEventsModelChange(key) {
+  const infoEl   = document.getElementById('eventsModelInfo');
+  const fieldSec = document.getElementById('eventsFieldSection');
+  const fieldList= document.getElementById('eventsFieldList');
+  const inboxOpt = document.getElementById('eventsInboxOptions');
+  const statusRow= document.getElementById('eventsStatusRow');
+  const dateHint = document.getElementById('eventsDateHint');
+
+  if (!key) {
+    infoEl.style.display = 'none';
+    fieldSec.style.display = 'none';
+    inboxOpt.style.display = 'none';
+    statusRow.style.display = 'none';
+    return;
+  }
+
+  // Badge informativo
+  const labels = {
+    inbox:    'GTD Inbox · created_by=tú',
+    tasks:    'Tareas · host=tú',
+    projects: 'Proyectos · host=tú',
+    events:   'Agenda · host=tú',
+  };
+  infoEl.innerHTML = `<span class="events-badge"><i class="bi bi-calendar-check"></i> ${labels[key]}</span>`;
+  infoEl.style.display = '';
+
+  // Hint de fecha
+  if (dateHint) dateHint.textContent = _EVENTS_DATE_HINTS[key] || '';
+
+  // Mostrar/ocultar opciones específicas
+  inboxOpt.style.display  = key === 'inbox'  ? '' : 'none';
+  statusRow.style.display = key !== 'inbox'  ? '' : 'none';
+
+  // Campos del modelo — desde state.eventsModels cargado en boot
+  const modelDef = state.eventsModels.find(m => m.key === key);
+  if (modelDef && modelDef.fields.length) {
+    fieldList.innerHTML = modelDef.fields.map(f => `
+      <label>
+        <input type="checkbox" class="events-field-check" value="${f.name}" checked>
+        <span>${f.verbose}</span><span class="f-dtype">${f.dtype}</span>
+      </label>`).join('');
+    fieldSec.style.display = '';
+  } else {
+    fieldList.innerHTML = '<span style="color:var(--text-m);font-size:12px;padding:8px;display:block;">Sin campos disponibles</span>';
+    fieldSec.style.display = '';
+  }
+}
+
+function toggleEventsFields(checked) {
+  document.querySelectorAll('.events-field-check').forEach(cb => { cb.checked = checked; });
 }
 
 // ── Notify ─────────────────────────────────────────────────────────────────────
