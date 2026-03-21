@@ -1,7 +1,7 @@
 # Referencia de Desarrollo — Proyecto Management360
 
 > **Audiencia:** Desarrolladores del proyecto y asistentes de IA (Claude, Copilot, etc.)
-> **Actualizado:** 2026-03-20 (Sesión Analista Doc — lote 4: help, api, panel — documentación 20/20 ✅) | **Apps:** 20 | **Archivos Python+HTML:** ~710
+> **Actualizado:** 2026-03-21 (Sesión Manager — Sprint 9 planificado, API-ARCH Opción A aprobada) | **Apps:** 20 | **Archivos Python+HTML:** ~710
 
 ---
 
@@ -41,7 +41,7 @@
 |-----|-----------|-----------|-------|
 | `accounts` | `accounts` | 11 | Autenticación, Perfiles — `app_name` en include externo |
 | `analyst` | `analyst` | 99 | Plataforma de datos (5 fases, SIM-4 integrado) |
-| `api` | `—` ⚠️ | 4 | Enrutamiento puro — lógica real en `panel/views.py`. Sin `app_name` (bug #111) |
+| `api` | `—` ⚠️ | 4 | **API-ARCH:** `api/urls.py` a eliminar (Sprint 9). Lógica real en `panel/views.py`. Bug #111, #112. |
 | `bitacora` | `bitacora` | 9 | Bitácora personal GTD |
 | `board` | `board` ✅ | 8 | Kanban board — HTMX + WebSocket (sin activar) |
 | `bots` | `bots` ✅ | 13 | Automatizaciones, bots, leads |
@@ -54,14 +54,15 @@
 | `help` | `help` ✅ | 10 | CMS de ayuda — artículos, FAQs, videos, guías. Integración con `courses` |
 | `kpis` | `kpis` ✅ | 5 | KPIs, AHT Dashboard, CallRecord |
 | `memento` | `—` ⚠️ | 6 | Visualización de mortalidad (Memento Mori) |
-| `panel` | `—` | 8 | Paquete de configuración del proyecto (settings, urls raíz, storage, middleware) |
-| `passgen` | `—` ⚠️ | 2 | Generador de contraseñas — namespace no declarado |
+| `panel` | `—` | 28 | Configuración del proyecto (settings, urls raíz, storage, middleware) + endpoints API |
+| `passgen` | `—` ⚠️ | 2 | Generador de contraseñas — namespace no declarado (bug #95 ⬜) |
 | `rooms` | `rooms` ✅ | 53 | Salas virtuales, mundo virtual 3D, Centrifugo |
 | `sim` | `sim` | 48 | Simulador WFM — SIM-1→SIM-7a completo |
 | `simcity` | `simcity` | 14 | Simulador urbano — proxy proot:8001 |
 
 > ⚠️ `core`, `events` y `memento` no declaran `app_name` en su `urls.py` — el namespace viene del `include()` en el urls raíz. Frágil si se cambia el include.
 > ⚠️ `passgen` y `api` no declaran `app_name` — sin namespace. Bugs #95 y #111.
+> ⚠️ **API-ARCH Opción A aprobada 2026-03-21**: `api/urls.py` se elimina. Todos los endpoints van a `panel/urls.py`. Eliminar `include('api.urls')` del router raíz.
 
 ### Convenciones de nomenclatura
 
@@ -309,11 +310,11 @@ Está explícitamente prohibido en vistas con datos de usuario. Violaciones **ac
 | CORE-SEC-1 | `core` | Exposición de arquitectura | `url_map_view` sin `@login_required` |
 | CORE-SEC-2 | `core` | Exposición de datos | `search_view` sin `@login_required` |
 | ROOMS-SEC-1 | `rooms` | Múltiples vistas sin auth | `room_detail`, `room_list`, `room_3d_view`, `room_comments` |
-| BOARD-SEC-1 | `board` | IDOR | `BoardDetailView` sin verificación de propietario — Bug #84 |
-| CV-SEC-1 | `cv` | Reverse sin namespace | `reverse('project_detail')` en `CorporateDataMixin` → posible `NoReverseMatch` — Bug #76 |
-| PANEL-SEC-1 | `panel` | Sin autenticación | `RedisTestView` sin `@login_required` — accesible públicamente — Bug #117 |
-| HELP-SEC-1 | `help` | Sin autenticación | `article_feedback_stats` sin `@login_required` — solo verifica `is_staff` manualmente — Bug #102 |
-| PANEL-SEC-2 | `panel` | Endpoint roto | `get_connection_token` no retorna respuesta — Bug #114 |
+| BOARD-SEC-1 | `board` | IDOR | `BoardDetailView` sin verificación de propietario — Bug #84 ⬜ |
+| CV-SEC-1 | `cv` | Reverse sin namespace | `reverse('project_detail')` en `CorporateDataMixin` → posible `NoReverseMatch` — Bug #76 ⬜ |
+| PANEL-SEC-1 | `panel` | Sin autenticación | `RedisTestView` sin `@login_required` — Bug #117 ⬜ |
+| HELP-SEC-1 | `help` | Sin autenticación | `article_feedback_stats` sin `@login_required` — Bug #102 ⬜ |
+| PANEL-SEC-2 | `panel` | Endpoint roto | `get_connection_token` no retorna respuesta — Bug #114 ⬜ |
 
 ---
 
@@ -415,7 +416,7 @@ Requiere Daphne corriendo como servidor ASGI + Redis como channel layer.
 re_path(r'ws/board/(?P<board_id>\d+)/$', BoardConsumer.as_asgi()),
 ```
 
-Requiere `BOARD_CONFIG = {'CARDS_PER_PAGE': 20}` en settings (ver Bug #85).
+Requiere `BOARD_CONFIG = {'CARDS_PER_PAGE': 20}` en settings (ver Bug #85 ⬜).
 
 ### Ollama — Asistente IA (chat)
 
@@ -571,9 +572,6 @@ TaskStatus.objects.filter(status_name__in=['Completed', 'In Progress', 'To Do'])
 Event.objects.filter(created_at__gte=timezone.now())
 
 # CORRECTO — events.Event NO tiene start_date ni start_time (campos inexistentes).
-# El modelo no tiene campo de fecha de inicio confirmado. Verificar con:
-# [f.name for f in Event._meta.get_fields() if hasattr(f,'get_internal_type')
-#  and 'date' in f.get_internal_type().lower()]
 ```
 
 ---
@@ -590,6 +588,26 @@ def api_items(request):
 ### DRF en `rooms`
 
 `rooms` usa Django REST Framework para sus ViewSets CRUD. Los ViewSets tienen `permission_classes = [IsAuthenticated]`. Las vistas funcionales de rooms usan `@api_view` de DRF — **no mezclar `@api_view` con `render()`** (causa problemas de content negotiation).
+
+### API-ARCH — Decisión aprobada 2026-03-21
+
+**Opción A seleccionada:** `api/urls.py` se elimina. Todos los endpoints `/api/*` quedan en `panel/urls.py`.
+
+```python
+# ANTES (duplicado — bug #112):
+# config/urls.py incluye TANTO panel/urls.py COMO api/urls.py → 4 endpoints duplicados
+
+# DESPUÉS (correcto):
+# config/urls.py incluye solo panel/urls.py
+# api/urls.py eliminado o vaciado
+# api/views.py permanece como stub (no rompe INSTALLED_APPS)
+```
+
+Para verificar que no hay `reverse()` apuntando a namespace `api:`:
+```bash
+grep -r "api:" --include="*.py" --include="*.html" .
+grep -r "include('api.urls')" --include="*.py" .
+```
 
 ---
 
@@ -609,13 +627,17 @@ Bootstrap 5 + HTMX en todas las apps.
 | App | Tests | Cobertura | Tipo |
 |-----|-------|-----------|------|
 | sim | 157 | 100% | Unitarios |
-| analyst | 34/50 | 68% | ⚠️ **Stub (3 líneas) — los tests no existen (INC-004)** |
+| analyst | 34/50 documentados | **0% real** | ⚠️ **Stub (3 líneas) — los tests NO existen (INC-004 activo)** |
 | accounts | 212 líneas | — | Unitarios (tests.py) |
 | core | 249 líneas | — | Performance (test_performance.py) |
 | memento | 68 líneas | — | Unitarios (tests.py) |
+| panel | 58 líneas | — | Resolución de URLs (test_urls.py) |
+| events | 9 archivos | — | Integración |
 | courses | — | — | Management commands |
 | rooms | — | — | Management commands |
 | simcity | 0 | 0% | Pendiente SC-8 |
+
+**Cobertura real: 6/20 apps con tests funcionales (30%)**
 
 ---
 
@@ -643,7 +665,8 @@ CENTRIFUGO_HTTP_API_ENDPOINT=http://...
 CENTRIFUGO_HTTP_API_KEY=...
 CENTRIFUGO_BROADCAST_MODE=api
 OLLAMA_API_URL=http://localhost:11434  # pendiente mover desde hardcode en ollama_api.py
-BOARD_CONFIG={"CARDS_PER_PAGE": 20}   # requerido por board/htmx_views.py — Bug #85
+BOARD_CONFIG={"CARDS_PER_PAGE": 20}   # requerido por board/htmx_views.py — Bug #85 ⬜
+CENTRIFUGO_TOKEN_SECRET=...           # requerido por rooms y panel/get_subscription_token
 ```
 
 ⚠️ **Nunca pegar output de `.env` en chats** — INC-003.
@@ -652,7 +675,7 @@ BOARD_CONFIG={"CARDS_PER_PAGE": 20}   # requerido por board/htmx_views.py — Bu
 
 ## 19. Migraciones
 
-### Estado actual (2026-03-20)
+### Estado actual (2026-03-21)
 
 | App | Última migración | Notas |
 |-----|-----------------|-------|
@@ -745,7 +768,7 @@ BOARD_CONFIG={"CARDS_PER_PAGE": 20}   # requerido por board/htmx_views.py — Bu
 | 38 | ⬜ | accounts | `app_name` no declarado en `urls.py` — namespace frágil |
 | 39 | ⬜ | accounts | `email` sin `unique=True` en modelo — validación solo en form |
 | 40 | ⬜ | accounts | Import muerto `file_tree_view` de analyst en views.py |
-| 41 | ⬜ | core | `upcoming_events` filtra por `created_at` en lugar de `start_date` |
+| 41 | ⬜ | core | `upcoming_events` filtra por `created_at` en lugar de fecha de inicio |
 | 42 | ⬜ | core | `refresh_dashboard_data` con `@csrf_exempt` en POST autenticado |
 | 43 | ⬜ | core | `search_view` y `url_map_view` sin `@login_required` |
 | 44 | ⬜ | core | `Article.get_absolute_url()` hace reverse de URL inexistente → `NoReverseMatch` |
@@ -773,27 +796,27 @@ BOARD_CONFIG={"CARDS_PER_PAGE": 20}   # requerido por board/htmx_views.py — Bu
 | 66 | ⬜ | courses | `Review.save()` y signal `update_course_rating` duplican recálculo |
 | 67 | ⬜ | courses | Switch de 20 tipos duplicado entre `create_content_block` y `edit_content_block` |
 | 68 | ⬜ | kpis | `UploadCSVForm` importada en views.py pero sin vista de upload — import muerto |
-| 69 | ⬜ | kpis | `SERVICE_CHOICES` en forms.py difiere de `SERVICIO_CHOICES` en models.py — datos generados inconsistentes |
+| 69 | ⬜ | kpis | `SERVICE_CHOICES` en forms.py difiere de `SERVICIO_CHOICES` en models.py |
 | 70 | ⬜ | kpis | forms.py con doble bloque de imports — legacy no limpiado |
 | 71 | ⬜ | kpis | `aht_por_semana` ordena por semana ISO sin año — ambigüedad cross-year |
 | 72 | ⬜ | kpis | `cache.delete_pattern()` silencioso si backend no lo soporta |
 | 73 | ⬜ | cv | `from django.contrib.auth.models import User` importado sin uso en models.py |
 | 74 | ⬜ | cv | Sin UUID PK en ningún modelo |
-| 75 | ⬜ | cv | `EventManager/ProjectManager/TaskManager` importados a nivel de módulo — si `events.management` falla, cv no carga |
-| 76 | ⬜ | cv | `reverse('project_detail', ...)` sin namespace en `CorporateDataMixin` — probable `NoReverseMatch` |
+| 75 | ⬜ | cv | `EventManager/ProjectManager/TaskManager` importados a nivel de módulo — cadena de fallo |
+| 76 | ⬜ | cv | `reverse('project_detail', ...)` sin namespace en `CorporateDataMixin` |
 | 77 | ⬜ | cv | `pk_url_kwarg = 'user_id'` en `PublicCurriculumView` superfluo |
-| 78 | ⬜ | cv | `get_upload_path()` enruta archivos CSV/xlsx al path `images/` — semánticamente incorrecto |
+| 78 | ⬜ | cv | `get_upload_path()` enruta archivos CSV/xlsx al path `images/` |
 | 79 | ⬜ | cv | `ImageForm` acepta `.gif` pero `Image` model valida solo jpg/jpeg/png/bmp |
 | 80 | ⬜ | cv | Wizard de edición sin pasos para Language ni Certification |
 | 81 | ⬜ | board | Sin UUID PK en los 3 modelos |
 | 82 | ⬜ | board | `Board.owner` en vez de `created_by` — violación de convención |
 | 83 | ⬜ | board | `Activity.user` en vez de `created_by` — violación de convención |
-| 84 | ⬜ | board | `BoardDetailView` sin verificación de propietario — IDOR activo |
-| 85 | ⬜ | board | `settings.BOARD_CONFIG['CARDS_PER_PAGE']` — KeyError si no está definido en settings |
+| 84 | ⬜ | board | `BoardDetailView` sin verificación de propietario — **IDOR activo** |
+| 85 | ⬜ | board | `settings.BOARD_CONFIG['CARDS_PER_PAGE']` — **KeyError** si no está en settings |
 | 86 | ⬜ | board | `BoardConsumer` sin URL WebSocket registrada — tiempo real no activado |
 | 87 | ⬜ | board | Sin vistas de edición ni eliminación de `Board` — CRUD incompleto |
 | 88 | ⬜ | board | `Activity.target_id` es IntegerField — incompatible con modelos UUID |
-| 89 | ⬜ | board | `get_user_model()` a nivel de módulo en models.py — usar `settings.AUTH_USER_MODEL` |
+| 89 | ⬜ | board | `get_user_model()` a nivel de módulo en models.py |
 | 90 | ⬜ | campaigns | Sin `created_by` en ningún modelo — diseño global intencional |
 | 91 | ⬜ | campaigns | `ContactRecord` y `DiscadorLoad` sin UUID PK |
 | 92 | ⬜ | campaigns | `upload_date`/`load_date` con `default=timezone.now` en vez de `auto_now_add` |
@@ -802,26 +825,26 @@ BOARD_CONFIG={"CARDS_PER_PAGE": 20}   # requerido por board/htmx_views.py — Bu
 | 95 | ⬜ | passgen | Sin `app_name` en `urls.py` — namespace no declarado |
 | 96 | ⬜ | passgen | `password_help` da `AttributeError: CATEGORIES` — vista siempre da 500 |
 | 97 | ⬜ | passgen | `PasswordForm.length` y `exclude_ambiguous` definidos pero nunca leídos |
-| 98 | ⬜ | passgen | `MIN_ENTROPY=60` bloquea 5 de 7 patrones predefinidos — solo `strong` y `secure` funcionan |
-| 99 | ⬜ | passgen | `generate_password` y `password_help` sin `@login_required` — acceso público |
-| **100** | ⬜ | help | `get_user_model()` a nivel de módulo en `models.py` — usar `settings.AUTH_USER_MODEL` en FKs |
-| **101** | ⬜ | help | `from courses.models import Course, Lesson, ContentBlock, CourseCategory` a nivel de módulo — `CourseCategory` sin uso; si `courses` falla, `help` no carga |
-| **102** | ⬜ | help | `article_feedback_stats` sin `@login_required` — verifica `is_staff` manualmente pero accesible por anónimos |
-| **103** | ⬜ | help | `search_help` evalúa `count()` dos veces sobre los mismos querysets — doble hit a BD |
-| **104** | ⬜ | help | `submit_feedback` llama `article.save()` sin `update_fields` — sobreescribe todos los campos del artículo |
-| **105** | ⬜ | help | `QuickStartGuide.mark_completed(user)` — parámetro `user` ignorado, `UserGuideProgress` no implementado |
-| **106** | ⬜ | help | `HelpArticle.get_related_articles()` filtra solo por categoría — docstring dice "por categoría y tags" pero ignora tags |
-| **107** | ⬜ | help | 3 templates faltantes: `faq_list.html`, `video_tutorials.html`, `quick_start.html` — **TemplateDoesNotExist en runtime** |
-| **108** | ⬜ | help | Sin UUID PK en ningún modelo — todos AutoField int |
-| **109** | ⬜ | help | `author`/`user` en vez de `created_by` — excepción al estándar del proyecto |
-| **110** | ⬜ | help | `search_help` — busca log por texto de query para actualizar stats — race condition con búsquedas simultáneas del mismo término |
-| **111** | ⬜ | api | Sin `app_name` en `urls.py` — sin namespace |
-| **112** | ⬜ | api | 4 endpoints registrados dos veces — en `panel/urls.py` directamente Y via `include('api.urls')` |
-| **113** | ⬜ | api | `api/token/connection/` y `api/token/subscription/` no incluidos en `api/urls.py` — inconsistencia |
-| **114** | 🔴 | panel | `get_connection_token` no tiene `return` — devuelve `None`, endpoint de Centrifugo inaccesible |
-| **115** | ⬜ | panel | `DatabaseSelectorMiddleware` referencia `postgres_online` y `sqlite` no definidos en `DATABASES` — KeyError por request |
-| **116** | ⬜ | panel | `storages.py` tiene ~30 `print()` ejecutándose en producción — spam en logs |
-| **117** | ⬜ | panel | `RedisTestView` sin `@login_required` — accesible públicamente en `/redis-test/` |
-| **118** | ⬜ | panel | `from django.utils import timezone` a nivel global en `settings.py` — solo usado en `TINYMCE_DEFAULT_CONFIG` |
-| **119** | ⬜ | panel | `AUTH_USER_MODEL = 'accounts.User'` definido dos veces al final de `settings.py` |
-| **120** | ⬜ | panel | `INSTALLED_APPS += ['django_htmx']` al final del archivo — frágil, debería estar en el bloque principal |
+| 98 | ⬜ | passgen | `MIN_ENTROPY=60` bloquea 5 de 7 patrones predefinidos |
+| 99 | ⬜ | passgen | `generate_password` y `password_help` sin `@login_required` |
+| 100 | ⬜ | help | `get_user_model()` a nivel de módulo en `models.py` |
+| 101 | ⬜ | help | `from courses.models import ...` a nivel de módulo — si `courses` falla, `help` no carga |
+| 102 | ⬜ | help | `article_feedback_stats` sin `@login_required` |
+| 103 | ⬜ | help | `search_help` evalúa `count()` dos veces — doble hit a BD |
+| 104 | ⬜ | help | `submit_feedback` llama `article.save()` sin `update_fields` |
+| 105 | ⬜ | help | `QuickStartGuide.mark_completed(user)` — parámetro `user` ignorado |
+| 106 | ⬜ | help | `HelpArticle.get_related_articles()` ignora tags a pesar de la docstring |
+| 107 | ⬜ | help | 3 templates faltantes: `faq_list.html`, `video_tutorials.html`, `quick_start.html` |
+| 108 | ⬜ | help | Sin UUID PK en ningún modelo |
+| 109 | ⬜ | help | `author`/`user` en vez de `created_by` — excepción al estándar |
+| 110 | ⬜ | help | Race condition en `HelpSearchLog` — busca por texto de query para actualizar stats |
+| 111 | ⬜ | api | Sin `app_name` en `urls.py` — sin namespace |
+| 112 | ⬜ | api | 4 endpoints registrados dos veces — `panel/urls.py` Y `api/urls.py`. **API-ARCH Opción A: eliminar `api/urls.py`** |
+| 113 | ⬜ | api | `api/token/connection/` y `api/token/subscription/` no incluidos en `api/urls.py` |
+| 114 | ⬜ | panel | `get_connection_token` no tiene `return` — endpoint de Centrifugo inaccesible |
+| 115 | ⬜ | panel | `DatabaseSelectorMiddleware` referencia `postgres_online` y `sqlite` no definidos |
+| 116 | ⬜ | panel | `storages.py` tiene ~30 `print()` ejecutándose en producción |
+| 117 | ⬜ | panel | `RedisTestView` sin `@login_required` — accesible públicamente |
+| 118 | ⬜ | panel | `from django.utils import timezone` a nivel global en `settings.py` |
+| 119 | ⬜ | panel | `AUTH_USER_MODEL = 'accounts.User'` definido dos veces al final de `settings.py` |
+| 120 | ⬜ | panel | `INSTALLED_APPS += ['django_htmx']` al final del archivo — frágil |

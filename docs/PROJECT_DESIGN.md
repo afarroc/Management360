@@ -1,6 +1,6 @@
 # Management360 — Diseño, Roadmap y Estado de Implementación
 
-> **Última actualización:** 2026-03-20 (Sesión Analista Doc — lote 4: help, api, panel — documentación 20/20 ✅)
+> **Última actualización:** 2026-03-21 (Sesión Manager — Sprint 9 planificado, API-ARCH decidido)
 > **Contexto:** Plataforma SaaS de Workforce Management (WFM) y Customer Experience (CX)
 > **Apps activas:** 20 | **Archivos Python+HTML:** ~710
 > **Metodología:** Scrum — sprints semanales sincronizados entre apps
@@ -22,7 +22,8 @@ Management360 es una plataforma integral de Workforce Management que combina:
 - **Campañas Outbound** (app `campaigns`) - Leads, contactos, discador
 - **Perfil Profesional** (app `cv`) - Currículum dinámico
 - **GTD Personal** (apps `bitacora`, `board`, `memento`) - Productividad personal
-- **Utilidades** (apps `passgen`, `api`, `panel`, `help`) - Herramientas de soporte
+- **Utilidades** (apps `passgen`, `panel`, `help`) - Herramientas de soporte
+- **API** (app `api`) - ⚠️ Consolidando en `panel` (API-ARCH Opción A aprobada 2026-03-21)
 
 ### Stack Tecnológico Unificado
 
@@ -56,7 +57,7 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | **Fase 6** | Sistema de aprendizaje (courses) | S6 | ✅ |
 | **Fase 7** | Métricas de contacto (kpis) + estabilización bitacora + simcity | S7 | ✅ |
 | **Fase 8** | Automatización y bots (bots) | S8 | ✅ BOT-1/BOT-4/BOT-AUDIT |
-| **Fase 9** | Optimización y escalado | S9 | ⬜ |
+| **Fase 9** | Optimización y escalado | S9 | 🔄 En curso |
 
 ---
 
@@ -80,8 +81,8 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | **SC-5: Slot /admin/simcity/ — GameAdmin** | 🟡 | ✅ `fa01b4f9` |
 | **SC-6: Exportar partida a analyst dataset** | 🟠 | ✅ `c0f8c47c` |
 | **SC-7: Script inicio automático** | 🟡 | ✅ `scripts/start_simcity.sh` |
-| KPI-1: UUID PK + `fecha` DateField + 5 índices + `created_by` (MySQL IF NOT EXISTS) | 🔴 | ✅ |
-| KPI-2: Cache Redis 5min `kpis:dashboard:{user}:{desde}:{hasta}`, colores fijos | 🔴 | ✅ |
+| KPI-1: UUID PK + `fecha` DateField + 5 índices + `created_by` | 🔴 | ✅ |
+| KPI-2: Cache Redis 5min `kpis:dashboard:{user}:{desde}:{hasta}` | 🔴 | ✅ |
 | KPI-3: `/kpis/api/` JSON + 3 funciones WFM en Report Builder analyst | 🟠 | ✅ |
 | KPI-4: Dashboard sat promedio + top/bottom servicio + total eventos | 🟠 | ✅ |
 | KPI-5: `kpis_aht_report` — agrupa por agente/supervisor/canal/servicio/semana | 🟡 | ✅ |
@@ -92,7 +93,7 @@ Management360 es una plataforma integral de Workforce Management que combina:
 
 ## Sprint 7.5 — Documentación ✅ COMPLETO
 
-### Objetivo: Documentar apps del proyecto
+### Objetivo: Documentar las 20 apps del proyecto
 
 | App | DEV_REFERENCE | DESIGN | CONTEXT | Sesión |
 |-----|:---:|:---:|:---:|--------|
@@ -113,9 +114,9 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | `board` | ✅ | ✅ | ✅ auto | Lote 3 (2026-03-20) |
 | `campaigns` | ✅ | ✅ | ✅ auto | Lote 3 (2026-03-20) |
 | `passgen` | ✅ | ✅ | ✅ auto | Lote 3 (2026-03-20) |
-| `help` | ✅ | ✅ | ✅ auto | **Lote 4 (2026-03-20)** |
-| `api` | ✅ | ✅ | ✅ auto | **Lote 4 (2026-03-20)** |
-| `panel` | ✅ | ✅ | ✅ auto | **Lote 4 (2026-03-20)** |
+| `help` | ✅ | ✅ | ✅ auto | Lote 4 (2026-03-20) |
+| `api` | ✅ | ✅ | ✅ auto | Lote 4 (2026-03-20) |
+| `panel` | ✅ | ✅ | ✅ auto | Lote 4 (2026-03-20) |
 
 **Bugs críticos descubiertos durante documentación (lotes 1-4):** 120 registrados (#1–#120).
 **Progreso: 20 / 20 apps (100%) ✅**
@@ -133,7 +134,7 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | BOT-4: Dashboard de rendimiento de bots | 🟠 | ✅ HTMX poll 30s |
 | EVENTS-BUG-FK: FKs events → accounts_user | 🔴 | ✅ migración 0004 |
 | BOT-2: Integración bots ↔ sim | 🔴 | ⬜ Pasa a Sprint 9 |
-| BOT-3: Pipeline campañas outbound / custom_rules | 🟠 | ⬜ Pasa a Sprint 9 |
+| BOT-3: Pipeline campañas outbound | 🟠 | ⬜ Pasa a Sprint 9 |
 | BOT-5: Reglas distribución por skills | 🟡 | ⬜ Pasa a Sprint 9 |
 
 ### Pre-Sprint 8 — Bugs críticos (estado final)
@@ -164,53 +165,84 @@ Management360 es una plataforma integral de Workforce Management que combina:
 | CRS-B4 / #64 | `courses` | `mark_lesson_complete` falla en lecciones independientes | Guard `module is None` |
 | CHAT-B10 / #52 | `chat` | Template `edit_assistant_configuration.html` inexistente | Crear template |
 | PASSGEN-96 / #96 | `passgen` | `password_help` — `AttributeError: CATEGORIES` | Definir `self.CATEGORIES` |
-| PASSGEN-98 / #98 | `passgen` | 5/7 patrones predefinidos fallan por `MIN_ENTROPY=60` | Bajar umbral |
+| PASSGEN-98 / #98 | `passgen` | 5/7 patrones predefinidos fallan por `MIN_ENTROPY=60` | Bajar umbral a 20 |
 | BOARD-85 / #85 | `board` | `settings.BOARD_CONFIG` — KeyError si no definido | Agregar a settings |
 | CV-76 / #76 | `cv` | `reverse('project_detail')` sin namespace | Corregir con `events:` |
 | CV-75 / #75 | `cv` | Imports de managers a nivel de módulo en views.py | Mover a lazy imports |
 
 ---
 
-## Sprint 9 — Planificado ⬜
+## Sprint 9 — En curso 🔄 (inicio 2026-03-21)
 
-### Objetivo: Optimización, estabilización de bugs heredados, completar bots
+### Objetivo: Estabilizar bugs críticos + completar integración bots + QA analyst
 
-| ID | Tarea | Prioridad |
-|----|-------|-----------|
-| **EVENTS-SIG** | Guard `create_credit_account` para usuarios bot | 🔴 |
-| **EVENTS-SIG-2** | Fix reverse query GenericFK en signal de events | 🟠 |
-| **BOT-BUG-19** | Persistir BotTaskQueue en DB (`status='queued'`) | 🟠 |
-| **BOT-2** | Integrar bots ↔ sim (ACDAgentSlot) | 🟠 |
-| **BOT-3** | Pipeline `ContactRecord → Lead` + `DiscadorLoad → LeadCampaign` | 🟠 |
-| **BOT-5** | Reglas de distribución por skills | 🟡 |
-| SCA-1 | Implementar Celery para tareas asíncronas | 🔴 |
-| SCA-2 | Particionamiento de tablas grandes | 🔴 |
-| REFACTOR-1 | Dividir `chat/views.py` (2017 líneas) en módulos | 🟠 |
-| REFACTOR-2 | Dividir `rooms/views.py` (2858 líneas) en módulos | 🟠 |
-| REFACTOR-3 | Dividir `courses/views.py` (2309 líneas) en módulos | 🟠 |
-| NEW-T1 | Crear tests reales para `analyst` (INC-004) | 🟠 |
-| KPI-7 | Unificar `SERVICE_CHOICES` en `kpis/forms.py` (Bug #69) | 🟠 |
-| KPI-8 | Implementar vista de upload CSV en `kpis` (Bug #68) | 🟠 |
-| CV-1 | Fix `reverse()` sin namespace en `CorporateDataMixin` (Bug #76) | 🔴 |
-| CV-2 | Imports lazy de `events.management.*` en `cv/views.py` (Bug #75) | 🔴 |
-| BOARD-1 | Fix IDOR en `BoardDetailView` (Bug #84) | 🔴 |
-| BOARD-2 | Agregar `BOARD_CONFIG` en settings (Bug #85) | 🔴 |
-| BOARD-3 | CRUD completo de Board (editar/eliminar) | 🟠 |
-| CMP-1 | Fix `hasattr` → `try/except` en `campaign_detail` (Bug #93) | 🟠 |
-| PG-1 | Fix `CATEGORIES` en `PasswordGenerator` (Bug #96) | 🔴 |
-| PG-2 | Fix `MIN_ENTROPY` en `passgen` (Bug #98) | 🔴 |
-| SIM-7e | Agentes simulados perfilados en ACD | 🔴 |
-| BIT-17 | Nav prev/next filtrar por `created_by`+`is_active` | 🟡 |
-| SC-8 | Tests básicos del proxy simcity | 🟡 |
-| ~~DOC-FINAL~~ | ~~Documentar `help`, `api`, `panel`~~ | ✅ Completado lote 4 |
+### Decisiones de arquitectura aprobadas (Manager 2026-03-21)
 
-### Pendientes técnicos heredados
+| ID | Decisión | Impacto |
+|----|----------|---------|
+| **API-ARCH** | **Opción A** — Eliminar `api/urls.py`. Consolidar todos los endpoints en `panel/urls.py`. Eliminar `include('api.urls')` del router raíz. | Bug #112 resuelto. Eliminación de duplicados. |
+| **PRIORIDAD** | Bugs críticos heredados primero, luego BOT-2/3 | Estabilidad antes que features |
+| **QA** | Sesión dedicada a `analyst` para cerrar INC-004 | Cerrar incidente activo |
+
+### Orden de ejecución — Semana 1
+
+```
+Día 1     │ 🔬 Dev   → Bloque fixes críticos: passgen + board + panel (< 1h total)
+Día 1-2   │ 🔬 Dev   → API-ARCH: consolidar api → panel, limpiar router raíz
+Día 1-2   │ 🔬 Dev   → cv + help: romper cadena de fallo imports (#75, #76, #101)
+Día 2-3   │ 🔬 Dev   → BOT-2: BotInstance ↔ ACDAgentSlot (sim)
+Día 3-4   │ 🔬 Dev   → BOT-3: pipeline DiscadorLoad → LeadCampaign → Lead
+Día 4     │ 📝 Doc   → help: crear 3 templates faltantes (#107)
+Día 4-5   │ 🧪 QA    → analyst: tests reales — cerrar INC-004
+Día 5     │ 🔬 Dev   → BOT-5 (si hay tiempo) / BIT-17
+```
+
+### Tareas Sprint 9 — detalle completo
+
+| ID | Tarea | Rol | Prioridad | Estado |
+|----|-------|-----|-----------|--------|
+| **FIX-S9-1** | passgen: `self.CATEGORIES`, `MIN_ENTROPY=20`, `app_name` (#95, #96, #98) | 🔬 Dev | 🔴 | ⬜ |
+| **FIX-S9-2** | board: IDOR `BoardDetailView` (#84) + `BOARD_CONFIG` en settings (#85) | 🔬 Dev | 🔴 | ⬜ |
+| **FIX-S9-3** | panel: `get_connection_token` return (#114) + middleware (#115) + `@login_required` RedisTest (#117) | 🔬 Dev | 🔴 | ⬜ |
+| **FIX-S9-4** | panel: `print()` → `logger.debug()` en `storages.py` (PNL-4) | 🔬 Dev | 🟠 | ⬜ |
+| **API-ARCH** | Eliminar `api/urls.py`, consolidar en `panel/urls.py` (#112) | 🔬 Dev | 🔴 | ⬜ |
+| **CV-1** | Lazy imports `events.management.*` en `cv/views.py` (#75) | 🔬 Dev | 🔴 | ⬜ |
+| **CV-2** | `reverse('events:project_detail', ...)` con namespace (#76) | 🔬 Dev | 🔴 | ⬜ |
+| **HELP-1** | Mover `from courses.models import ...` fuera del nivel módulo (#101) | 🔬 Dev | 🔴 | ⬜ |
+| **HELP-2** | `@login_required` en `article_feedback_stats` (#102) + `update_fields` en save (#104) | 🔬 Dev | 🟠 | ⬜ |
+| **HELP-3** | Crear 3 templates faltantes: `faq_list`, `video_tutorials`, `quick_start` (#107) | 📝 Doc/Dev | 🔴 | ⬜ |
+| **BOT-2** | `BotInstance` ↔ `ACDAgentSlot` en `sim` | 🔬 Dev | 🟠 | ⬜ |
+| **BOT-3** | Pipeline `DiscadorLoad → LeadCampaign → Lead` | 🔬 Dev | 🟠 | ⬜ |
+| **BOT-5** | Reglas distribución por skills (`LeadDistributionRule`) | 🔬 Dev | 🟡 | ⬜ |
+| **NEW-T1** | Tests reales `analyst` — cerrar INC-004 (mínimo 10 tests) | 🧪 QA | 🔴 | ⬜ |
+| **SC-8** | Tests básicos proxy `simcity` | 🧪 QA | 🟡 | ⬜ |
+| **SIM-7e** | Agentes simulados perfilados en ACD | 🔬 Dev | 🔴 | ⬜ sesión separada |
+| **SIM-6b** | GTR Interactivo sliders | 🔬 Dev | 🟠 | ⬜ sesión separada |
+| **BIT-17** | Nav prev/next filtrar por `created_by`+`is_active` | 🔬 Dev | 🟡 | ⬜ |
+| **REFACTOR-1** | Dividir `rooms/views.py` (2858L) | 🔬 Dev | 🟠 | ⬜ |
+| **REFACTOR-2** | Dividir `courses/views.py` (2309L) | 🔬 Dev | 🟠 | ⬜ |
+| **REFACTOR-3** | Dividir `chat/views.py` (2017L) | 🔬 Dev | 🟠 | ⬜ |
+
+### Definición de "Sprint 9 Completado"
+
+| Nivel | Criterio |
+|-------|---------|
+| ✅ Mínimo | Bugs críticos #75–#117 resueltos + API-ARCH ejecutado |
+| ✅ Completo | + BOT-2 + BOT-3 + INC-004 cerrado |
+| ✅ Excepcional | + BOT-5 + HELP-3 + BIT-17 |
+
+### Pendientes técnicos heredados (no bloquean Sprint 9)
 
 | ID | App | Descripción |
 |----|-----|-------------|
-| SIM-6b | `sim` | GTR Interactivo con sliders |
-| BIT-18 | `bitacora` | TinyMCE CDN usa `no-api-key` |
-| ResourceLock | `bots` | `acquire_lock()` usa `timezone.timedelta` |
+| SCA-1 | global | Implementar Celery para tareas asíncronas |
+| SCA-2 | global | Particionamiento de tablas grandes |
+| BIT-18 | `bitacora` | TinyMCE CDN usa `no-api-key` — registrar en tiny.cloud |
+| ResourceLock | `bots` | `acquire_lock()` usa `timezone.timedelta` (bug heredado) |
+| KPI-7 | `kpis` | Unificar `SERVICE_CHOICES` (#69) |
+| KPI-8 | `kpis` | Vista upload CSV (#68) |
+| BOARD-3 | `board` | CRUD completo (editar/eliminar Board) (#87) |
+| CMP-1 | `campaigns` | Fix `hasattr` → `try/except` en `campaign_detail` (#93) |
 
 ---
 
@@ -233,7 +265,7 @@ analyst ───┬──> sim (ETL source + dashboard widgets)
            └──> kpis (reportes avanzados de llamadas)
 
 sim ───────┬──> analyst (datos para reportes)
-           └──> bots (BOT-2 — ACDAgentSlot, pendiente)
+           └──> bots (BOT-2 — ACDAgentSlot, ⬜ Sprint 9)
 
 simcity ───┬──> proot:8001 (micropolisengine — engine externo)
            ├──> analyst (exportar partida ✅ SC-6)
@@ -256,7 +288,7 @@ courses ───┬──> cv (import directo en models.py — CRÍTICO)
            └──> analyst (análisis de progreso — pendiente)
 
 cv ────────┬──> accounts (User OneToOne)
-           └──> events (managers importados en views — Bug #75)
+           └──> events (managers importados en views — Bug #75 ⬜ Sprint 9)
 
 core ──────┬──> events (import directo — si events falla, core no carga)
            └──> ← todas las apps (provee layouts/templates globales)
@@ -266,26 +298,19 @@ chat ──────┬──> rooms (consume Room, Message, RoomMember)
 
 board ─────> (sin dependencias externas — app independiente)
 bitacora ──> events + rooms + courses (relaciones opcionales)
+
+api ───────> panel (⚠️ API-ARCH Opción A: api/urls.py a eliminar en Sprint 9)
 ```
 
-### Convenciones de Nombres de Campos
+### Cadena de fallo crítica (⬜ pendiente Sprint 9)
 
-| Concepto | Campo estándar | Tipo | Notas |
-|----------|----------------|------|-------|
-| PK pública | `id` | `UUIDField(primary_key=True)` | Todas excepto `events` (int), `simcity` (AutoField), `bots` (AutoField), `board` (AutoField), `cv` (AutoField) |
-| Usuario creador | `created_by` | `ForeignKey(User)` | Convención general — excepciones en §3 de DEV_REFERENCE |
-| Timestamps | `created_at` / `updated_at` | `DateTimeField` | auto_now_add / auto_now |
-| Soft delete | `is_active` | `BooleanField(default=True)` | Donde aplica |
-
-### Sistemas de tiempo real coexistentes
-
-> **⚠️ Dos sistemas activos — no son intercambiables:**
-
-| Sistema | App | Uso |
-|---------|-----|-----|
-| Django Channels (WebSocket) | `chat` | Chat en tiempo real, notificaciones push |
-| Centrifugo (HTTP broadcast) | `rooms` | Broadcast de mensajes y eventos de sala |
-| Django Channels (WebSocket) | `board` | Movimiento de cards — ⚠️ infraestructura lista, sin activar |
+```
+events.management.* (falla)
+  → cv no carga (bug #75)
+      → courses no carga (import de cv)
+          → help no carga (import de courses, bug #101)
+```
+Fix: lazy imports en `cv/views.py` + `help/models.py`.
 
 ---
 
@@ -293,14 +318,14 @@ bitacora ──> events + rooms + courses (relaciones opcionales)
 
 | App | CONTEXT.md | DEV_REFERENCE.md | DESIGN.md | Tests | Cobertura |
 |-----|:---:|:---:|:---:|-------|-----------|
-| analyst | ✅ auto | ✅ | ✅ | ⚠️ stub (3L) | ❌ 0% — **los 34 tests documentados no existen** |
+| analyst | ✅ auto | ✅ | ✅ | ⚠️ stub (3L) | ❌ 0% — **INC-004 activo** |
 | sim | ✅ auto | ✅ | ✅ | ✅ 3 archivos | 100% |
 | bitacora | ✅ auto | ✅ | ✅ | ⚠️ stub (3L) | ❌ 0% |
 | simcity | ✅ auto | ✅ | ✅ | ⚠️ stub (3L) | ❌ 0% (SC-8 pendiente) |
 | events | ✅ auto | ✅ | ✅ | ✅ 9 archivos | — |
-| accounts | ✅ auto | ✅ | ✅ | ✅ tests.py (212 líneas) | — |
+| accounts | ✅ auto | ✅ | ✅ | ✅ tests.py (212L) | — |
 | core | ✅ auto | ✅ | ✅ | ✅ test_performance.py | — |
-| memento | ✅ auto | ✅ | ✅ | ✅ tests.py (68 líneas) | — |
+| memento | ✅ auto | ✅ | ✅ | ✅ tests.py (68L) | — |
 | chat | ✅ auto | ✅ | ✅ | ❌ sin tests | — |
 | rooms | ✅ auto | ✅ | ✅ | ❌ sin tests | — |
 | courses | ✅ auto | ✅ | ✅ | ❌ sin tests | — |
@@ -312,14 +337,10 @@ bitacora ──> events + rooms + courses (relaciones opcionales)
 | passgen | ✅ auto | ✅ | ✅ | ❌ sin tests | — |
 | help | ✅ auto | ✅ | ✅ | ⚠️ stub | ❌ 0% |
 | api | ✅ auto | ✅ | ✅ | ❌ sin tests | — |
-| panel | ✅ auto | ✅ | ✅ | ✅ test_urls.py | — |
+| panel | ✅ auto | ✅ | ✅ | ✅ test_urls.py (58L) | — |
 
 **Progreso doc: 20 / 20 apps documentadas (100%) ✅**
 **Cobertura real de tests: 6 / 20 apps con tests funcionales (30%)** — `sim`, `events`, `accounts`, `core`, `memento`, `panel`
-
-### Apps pendientes — próxima sesión de documentación
-
-**Ninguna — documentación 20/20 completa ✅**
 
 ---
 
@@ -341,10 +362,10 @@ bitacora ──> events + rooms + courses (relaciones opcionales)
 **Resolución:** Key revocada. Nueva key generada. Bloque bash eliminado del `.env`.
 **Prevención:** Nunca pegar output de `.env` directamente en chats.
 
-### INC-004 — 2026-03-20: Tests de `analyst` inexistentes
+### INC-004 — 2026-03-20: Tests de `analyst` inexistentes ⬜ ACTIVO
 **Síntoma:** `analyst/tests.py` tiene 3 líneas (stub). El documento indicaba 34/50 tests al 68%.
-**Resolución:** Pendiente — crear tests reales (NEW-T1, Sprint 9).
-**Impacto:** Cobertura real del proyecto es 25% (5/20 apps).
+**Resolución:** Pendiente — crear tests reales (NEW-T1, Sprint 9, QA prioritario).
+**Impacto:** Cobertura real del proyecto es 30% (6/20 apps), no 68%.
 
 ---
 
@@ -362,12 +383,12 @@ bitacora ──> events + rooms + courses (relaciones opcionales)
 - **`bitacora.CategoriaChoices`** es módulo-level — NO `BitacoraEntry.CategoriaChoices`
 - **`core` importa directamente de `events`** — si events falla, core no carga
 - **`courses` importa directamente de `cv`** — si cv falla, courses no carga
-- **`cv.views` importa managers de `events` a nivel de módulo** — si events.management falla, cv no carga (bug #75)
+- **`cv.views` importa managers de `events` a nivel de módulo** — si events.management falla, cv no carga (bug #75 ⬜)
 - **`chat.HardcodedNotificationManager`** es un stub — todas las notificaciones son falsas (bug #5/#50)
-- **`passgen` solo funciona con patrones `strong` y `secure`** — los demás fallan por MIN_ENTROPY=60 (bug #98)
-- **`passgen.password_help`** siempre da 500 — `CATEGORIES` no definido (bug #96)
-- **`board.BoardDetailView`** sin verificación de propietario — IDOR activo (bug #84)
-- **`board` requiere `settings.BOARD_CONFIG`** — KeyError si no está definido (bug #85)
+- **`passgen` solo funciona con patrones `strong` y `secure`** — los demás fallan por MIN_ENTROPY=60 (bug #98 ⬜)
+- **`passgen.password_help`** siempre da 500 — `CATEGORIES` no definido (bug #96 ⬜)
+- **`board.BoardDetailView`** sin verificación de propietario — IDOR activo (bug #84 ⬜)
+- **`board` requiere `settings.BOARD_CONFIG`** — KeyError si no está definido (bug #85 ⬜)
 - **`campaigns`** son datos globales — sin `created_by`, todos los usuarios ven todo (diseño intencional)
 - **`kpis.CallRecord.created_by`** es `null=True, SET_NULL` — intencional para preservar métricas históricas
 - **`board.cards.all()`** ya viene ordenado por `['-is_pinned', '-created_at']`
@@ -375,104 +396,40 @@ bitacora ──> events + rooms + courses (relaciones opcionales)
 - **`bots` PK int** en todos los modelos — FKs desde otras apps deben usar int
 - **`events.InboxItem` usa `created_by`** (no `host`) — los bots pueden crear InboxItems
 - **Pipeline bots verificado end-to-end:** Lead → InboxItem → BotTaskAssignment → GTDProcessor → Task
-- **`help` tiene 3 templates faltantes** — `faq_list`, `video_tutorials`, `quick_start` dan 500 al visitarlos (bug #107)
-- **`help` depende de `courses` en import de módulo** — si `courses` falla, `help` no carga (bug #101)
+- **`help` tiene 3 templates faltantes** — `faq_list`, `video_tutorials`, `quick_start` dan 500 al visitarlos (bug #107 ⬜)
+- **`help` depende de `courses` en import de módulo** — si `courses` falla, `help` no carga (bug #101 ⬜)
 - **`help.author`/`help.user`** en vez de `created_by` — es la convención de esta app
 - **`api/views.py` está vacío** — toda la lógica de `/api/*` vive en `panel/views.py`
-- **Rutas `/api/*` están duplicadas** — registradas en `panel/urls.py` directamente Y via `include('api.urls')` (bug #112)
-- **`panel.get_connection_token` no retorna nada** — endpoint Centrifugo inaccesible (bug #114)
-- **`panel.DatabaseSelectorMiddleware`** referencia `postgres_online` y `sqlite` no definidos — activo pero sin efecto útil (bug #115)
+- **`api/urls.py` a eliminar** — API-ARCH Opción A aprobada 2026-03-21 (bug #112 ⬜)
+- **`panel.get_connection_token` no retorna nada** — endpoint Centrifugo inaccesible (bug #114 ⬜)
+- **`panel.DatabaseSelectorMiddleware`** referencia `postgres_online` y `sqlite` no definidos (bug #115 ⬜)
 - **`panel.RemoteMediaStorage`** requiere `192.168.18.51:8000` activo para uploads — en offline todos los uploads fallan
-- **`BOARD_CONFIG`** ya definido en `settings.py` con `CARDS_PER_PAGE: 12` (fix bug #85)
+- **`BOARD_CONFIG`** debe estar en `settings.py` con `CARDS_PER_PAGE` — KeyError si falta (bug #85 ⬜)
 - **`CENTRIFUGO_TOKEN_SECRET`** debe estar en `.env` — requerido por `rooms` y `panel/views.get_subscription_token`
 - **`panel/tests/test_urls.py`** existe (58L) — única app con tests de resolución de URLs
 
 ---
 
-## 🔄 Handoff — Sesión 2026-03-20 (Analista Doc — lote 3)
+## 🔄 Handoff — Sesión 2026-03-21 (Manager)
 
 ### Completado esta sesión
 
-- Revisado estado de `bots` (Sprint 8 cerrado, documentación completa)
-- Generada documentación completa para **6 apps**: `kpis`, `cv`, `board`, `campaigns`, `passgen`
-- Registrados **32 bugs nuevos** (#68–#99)
-- Actualizado `PROJECT_DEV_REFERENCE.md` — bugs #68–#99 integrados
-- Actualizado `PROJECT_DESIGN.md` — doc 17/20 (85%), Sprint 8 cerrado, Sprint 9 planificado
-- Documentación global: **17/20 apps (85%)** — sube desde 55% (inicio de sesión)
+- Revisión completa del estado del proyecto vs los 4 handoffs de documentación
+- Detección de discrepancias en documentación (TEAM_ROLES 17/20 desactualizado, Sprint 9 sin plan formal)
+- **Sprint 9 planificado en detalle** con orden de ejecución, criterios de aceptación por tarea
+- **Decisiones de arquitectura aprobadas:** API-ARCH Opción A, QA prioridad INC-004, orden de prioridad Sprint 9
+- Generados archivos actualizados: `PROJECT_DESIGN.md`, `TEAM_ROLES.md`, `PROJECT_DEV_REFERENCE.md`
 
-### Hallazgos críticos de esta sesión
-
-- **`passgen` más rota de lo esperado** — 5/7 patrones fallan, `password_help` da 500 siempre. Fixes son de 1–3 líneas.
-- **`board` IDOR activo** — `BoardDetailView` sin verificación de propietario (Bug #84).
-- **`cv` imports frágiles** — managers de `events` importados a nivel de módulo (Bug #75/#76).
-- **`board.BOARD_CONFIG`** — KeyError potencial si no está en settings (Bug #85).
-
-### Próximos pasos — rol Dev
-
-1. **Fixes inmediatos `passgen`** (3 líneas cada uno):
-   - `self.CATEGORIES = {...}` en `PasswordGenerator.__init__` (Bug #96)
-   - `self.MIN_ENTROPY = 20` en `PasswordGenerator.__init__` (Bug #98)
-   - `app_name = 'passgen'` en `urls.py` (Bug #95)
-2. **Fix IDOR `board`** — `get_queryset(owner=request.user)` en `BoardDetailView` (Bug #84)
-3. **Fix imports `cv`** — mover imports de managers a lazy en `get_context_data` (Bug #75)
-4. Verificar `BOARD_CONFIG` en `settings.py` (Bug #85)
-5. Bugs de seguridad heredados: ACC-B4, ACC-B3, MEM-B3, ROOMS-SEC-1, CORE-SEC-1/2
-
-### Próximos pasos — rol Analista Doc
-
-**Ninguno — documentación 20/20 completada ✅**
-
-### Comandos para arrancar próxima sesión
+### Pendiente antes de arrancar sesiones Dev/QA
 
 ```bash
-# Terminal 1 — engine simcity
-engine
-
-# Terminal 2 — M360
-m360
-
-# Push documentación lote 4
-git add help/ api/ panel/ docs/
-git add PROJECT_DEV_REFERENCE.md PROJECT_DESIGN.md TEAM_ROLES.md
-git commit -m "docs: documentación completa lote 4 (help, api, panel) — 20/20 apps, bugs #100-#120"
+# Push obligatorio — 15+ commits locales sin subir
 git push origin main
+git log --oneline -5   # verificar estado
 ```
 
----
+### Próxima acción recomendada
 
-## 🔄 Handoff — Sesión 2026-03-20 (Analista Doc — lote 4)
-
-### Completado esta sesión
-
-- Generada documentación completa para **3 apps**: `help`, `api`, `panel`
-- Registrados **21 bugs nuevos** (#100–#120)
-- Actualizado `PROJECT_DEV_REFERENCE.md` — bugs #100–#120 integrados, app table actualizada, sección 20 a 20/20
-- Actualizado `PROJECT_DESIGN.md` — doc 20/20, Sprint 7.5 cerrado, Sprint 9 DOC-FINAL marcado ✅
-- Actualizado `TEAM_ROLES.md` — Sprint 8 completo, asignaciones Sprint 9
-- **Documentación global: 20/20 apps (100%)** — Sprint 7.5 oficialmente cerrado
-
-### Hallazgos críticos de esta sesión
-
-- **`panel.get_connection_token` roto** — no retorna respuesta. Fix: 2 líneas (Bug #114)
-- **`help` tiene 3 templates faltantes** — `faq_list`, `video_tutorials`, `quick_start` crashean en runtime (Bug #107)
-- **`api` es un placeholder vacío** — requiere decisión de arquitectura: consolidar en `panel` o completar migración (Bug #112)
-- **`panel.DatabaseSelectorMiddleware`** activo pero referencia BDs inexistentes — candidato a desactivar (Bug #115)
-- **`panel.RemoteMediaStorage`** tiene ~30 `print()` activos en producción (Bug #116)
-
-### Próximos pasos — rol Dev
-
-1. **Fix inmediato `panel`** — completar `get_connection_token` con `jwt.encode()` + `return JsonResponse({'token': token})` (Bug #114, ~2 líneas)
-2. **Crear 3 templates `help`** — `faq_list.html`, `video_tutorials.html`, `quick_start.html` (Bug #107, ~1.5h)
-3. **Decisión arquitectura `api`** — Opción A (eliminar `include`) o Opción B (migrar vistas) (Bug #112)
-4. **Limpiar `DatabaseSelectorMiddleware`** — quitar `postgres_online`/`sqlite` del `db_order` (Bug #115, 1 línea)
-5. Bugs críticos heredados Sprint 8: #84 (IDOR board), #96/#98 (passgen), #75/#76 (cv)
-
-### Estado final del proyecto
-
-| Métrica | Valor |
-|---------|-------|
-| Apps documentadas | 20 / 20 (100%) ✅ |
-| Bugs registrados | #1 – #120 (120 total) |
-| Bugs críticos 🔴 activos | #84, #96, #98, #107, #114 |
-| Apps con tests funcionales | 6 / 20 (30%) |
-| Sprint activo | Sprint 9 |
+**Sesión 🔬 Analista Dev — Bloque fixes críticos (Día 1)**
+Subir: `passgen/generators.py` · `passgen/urls.py` · `board/views.py` · `panel/views.py` · `panel/middleware.py` · `panel/storages.py` · `settings.py`
+Prompt: aplicar FIX-S9-1, FIX-S9-2, FIX-S9-3 en ese orden. Commit atómico por app.
