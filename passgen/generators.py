@@ -432,3 +432,4 @@ if __name__ == "__main__":
         print(f"Entropy: {result['entropy']:.1f} bits")
     except ValueError as e:
         print(f"Error: {str(e)}")
+        
