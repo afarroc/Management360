@@ -56,8 +56,9 @@ class FileProcessorService:
         return name.strip('_')
     
     @classmethod
-    def process_file(cls, file, model: Model, sheet_name: str = None, 
-                    cell_range: str = None, column_mapping: Dict = None) -> Tuple[List, List[Dict], List[str]]:
+    def process_file(cls, file, model: Model, sheet_name: str = None,
+                    cell_range: str = None, column_mapping: Dict = None,
+                    no_header: bool = False) -> Tuple[List, List[Dict], List[str]]:
         """
         Procesa un archivo (CSV o Excel) y retorna registros, preview y columnas
         
@@ -69,7 +70,7 @@ class FileProcessorService:
         
         try:
             if file_extension in ('.xls', '.xlsx'):
-                return cls.process_excel(file, model, sheet_name, cell_range, column_mapping)
+                return cls.process_excel(file, model, sheet_name, cell_range, column_mapping, no_header)
             else:
                 return cls.process_csv(file, model, column_mapping)
         except Exception as e:
@@ -78,7 +79,8 @@ class FileProcessorService:
     
     @classmethod
     def process_excel(cls, file, model: Model, sheet_name=None,
-                      cell_range=None, column_mapping: Dict = None) -> Tuple[List, List[Dict], List[str]]:
+                      cell_range=None, column_mapping: Dict = None,
+                      no_header: bool = False) -> Tuple[List, List[Dict], List[str]]:
         """
         Procesa un archivo Excel con opciones de hoja y rango.
 
@@ -88,11 +90,12 @@ class FileProcessorService:
             sheet_name:     Nombre de hoja o índice (None → primera hoja)
             cell_range:     Rango de celdas (ej: 'B2:G500'); None → hoja completa
             column_mapping: {df_col_name: model_field_name} (None → mapeo automático)
+            no_header:      Si True, la primera fila es dato (no cabecera)
 
         Returns:
             Tuple[List, List[Dict], List[str]]: (registros, datos_preview, columnas)
         """
-        logger.debug(f"Procesando Excel - Sheet: {sheet_name}, Range: {cell_range}")
+        logger.debug(f"Procesando Excel - Sheet: {sheet_name}, Range: {cell_range}, NoHeader: {no_header}")
 
         excel_file = pd.ExcelFile(file)
 
@@ -112,9 +115,13 @@ class FileProcessorService:
 
         try:
             if cell_range and ':' in cell_range:
-                df = ExcelProcessor._read_with_range(excel_file, selected_sheet, cell_range)
+                df = ExcelProcessor._read_with_range(excel_file, selected_sheet, cell_range, no_header)
             else:
-                df = pd.read_excel(excel_file, sheet_name=selected_sheet)
+                if no_header:
+                    df = pd.read_excel(excel_file, sheet_name=selected_sheet, header=None)
+                    df.columns = [f"Columna{i+1}" for i in range(len(df.columns))]
+                else:
+                    df = pd.read_excel(excel_file, sheet_name=selected_sheet)
 
             if df.empty:
                 raise ValueError("El archivo Excel no contiene datos en el rango especificado")
