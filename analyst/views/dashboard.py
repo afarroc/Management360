@@ -211,9 +211,9 @@ def _load_df(source: dict, user) -> pd.DataFrame | None:
             # El widget apunta directamente al model_key, no a un UUID de objeto.
             _EVENTS_MAP = {
                 'inbox':    ('events', 'InboxItem',  'created_by', 'created_at'),
-                'tasks':    ('events', 'Task',       'host',       'due_date'),
-                'projects': ('events', 'Project',    'host',       'start_date'),
-                'events':   ('events', 'Event',      'host',       'start_time'),
+                'tasks':    ('events', 'Task',       'host',       'created_at'),  # Task NO tiene due_date
+                'projects': ('events', 'Project',    'host',       'created_at'),   # Project sin start_date confirmado
+                'events':   ('events', 'Event',      'host',       'created_at'),   # Event sin start_time confirmado
             }
             entry = _EVENTS_MAP.get(src_id)
             if not entry:
@@ -676,3 +676,135 @@ def widget_data(request, dashboard_id, widget_id):
     w  = get_object_or_404(DashboardWidget, id=widget_id, dashboard=db)
     data = _compute_widget_data(w, request.user)
     return JsonResponse({'success': True, 'data': data})
+
+
+# ─── EVENTS-AI-3 Parte 3 — GTD Overview predefinido ──────────────────────────
+
+@login_required
+@require_POST
+def dashboard_gtd_overview(request):
+    """
+    Crea un Dashboard GTD Overview predefinido con widgets events.
+
+    Fila 0 (KPI cards, 4 cols cada una):
+      - 📥 Inbox pendiente   → conteo InboxItem del usuario
+      - 📋 Tareas activas    → conteo Task del usuario
+      - 📁 Proyectos         → conteo Project del usuario
+
+    Fila 1 (tablas, 6 cols cada una):
+      - Detalle Inbox        → tabla InboxItem (title / is_processed / due_date / created_at)
+      - Backlog de Tareas    → tabla Task      (title / created_at / host_id)
+
+    Fila 2 (tabla, 12 cols):
+      - Proyectos activos    → tabla Project   (title / created_at / host_id)
+
+    Cada llamada crea un dashboard nuevo (sin deduplicación por diseño).
+    Los widgets fallarán sin datos si el usuario no tiene eventos registrados —
+    _compute_widget_data devuelve {'error': 'Sin datos disponibles.'} en ese caso,
+    sin lanzar excepciones.
+
+    Nota sobre value_col='id' en kpi_card:
+      events models usan int PK → pd.to_numeric(df['id']) funciona → count = len(series).
+      Si el modelo usara UUID PK, count devolvería 0 (bug conocido de _compute_widget_data).
+      Events usa int PK por excepción documentada → seguro.
+    """
+    try:
+        body = json.loads(request.body) if request.body else {}
+        from django.utils import timezone as _tz
+        _default_name = f"GTD Overview {_tz.localdate().strftime('%d/%m/%Y')}"
+        name = str(body.get('name', '') or _default_name).strip() or _default_name
+        _default_desc = "Dashboard predefinido · Inbox · Tareas · Proyectos (GTD/Events)"
+        desc = str(body.get('description', '') or _default_desc).strip() or _default_desc
+
+        db = Dashboard.objects.create(
+            name=name,
+            description=desc,
+            created_by=request.user,
+        )
+
+        # (title, widget_type, events_src_id, config, col, width, row_order)
+        _PRESET = [
+            # ── Fila 0: KPI cards ────────────────────────────────────────────
+            (
+                "📥 Inbox pendiente",
+                "kpi_card",
+                "inbox",
+                {"value_col": "id", "aggregation": "count",
+                 "label": "Items en inbox", "format": "number"},
+                0, 4, 0,
+            ),
+            (
+                "📋 Tareas activas",
+                "kpi_card",
+                "tasks",
+                {"value_col": "id", "aggregation": "count",
+                 "label": "Tareas", "format": "number"},
+                4, 4, 0,
+            ),
+            (
+                "📁 Proyectos",
+                "kpi_card",
+                "projects",
+                {"value_col": "id", "aggregation": "count",
+                 "label": "Proyectos activos", "format": "number"},
+                8, 4, 0,
+            ),
+            # ── Fila 1: tablas inbox + tasks ─────────────────────────────────
+            (
+                "📥 Detalle Inbox",
+                "table",
+                "inbox",
+                # InboxItem: title + is_processed + due_date (existe en InboxItem) + created_at
+                # _compute_widget_data filtra cols inexistentes → no falla si alguna no está
+                {"columns": ["title", "is_processed", "due_date", "created_at"],
+                 "page_size": 10},
+                0, 6, 1,
+            ),
+            (
+                "📋 Backlog de Tareas",
+                "table",
+                "tasks",
+                # Task: title + created_at + host_id (Task no tiene due_date — excepción documentada)
+                {"columns": ["title", "created_at", "host_id"],
+                 "page_size": 10},
+                6, 6, 1,
+            ),
+            # ── Fila 2: tabla proyectos (ancho completo) ──────────────────────
+            (
+                "📁 Proyectos activos",
+                "table",
+                "projects",
+                {"columns": ["title", "created_at", "host_id"],
+                 "page_size": 10},
+                0, 12, 2,
+            ),
+        ]
+
+        layout = []
+        for title, wtype, src_id, cfg, col, width, row in _PRESET:
+            w = DashboardWidget.objects.create(
+                dashboard=db,
+                widget_type=wtype,
+                title=title,
+                source={"type": "events", "id": src_id},
+                config=cfg,
+            )
+            layout.append({
+                "widget_id": str(w.id),
+                "col":       col,
+                "width":     width,
+                "row_order": row,
+            })
+
+        db.layout = layout
+        db.save(update_fields=["layout", "updated_at"])
+
+        logger.info("GTD Overview creado: %s por %s", db.id, request.user)
+        return JsonResponse({
+            "success":   True,
+            "dashboard": _dashboard_row(db),
+        })
+
+    except Exception as e:
+        logger.error("dashboard_gtd_overview: %s", e, exc_info=True)
+        return JsonResponse({"success": False, "error": str(e)}, status=500)
