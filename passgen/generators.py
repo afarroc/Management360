@@ -96,11 +96,16 @@ class PasswordGenerator:
         # Security configuration
         self.MIN_LENGTH = 8
         self.MAX_LENGTH = 64
-        self.MIN_ENTROPY = 60  # bits
+        self.MIN_ENTROPY = 20  # bits — pin es el patrón más bajo (~20 bits)
         self.BANNED_CHARS = "'\"\\`"
         self.COMMON_PATTERNS = [
             '123', 'abc', 'qwe', 'asd', 'password', 'admin', 'qwerty'
         ]
+
+        # Agrupación de patrones por categoría — requerido por get_context_data()
+        self.CATEGORIES: Dict[str, List[str]] = {}
+        for _key, _data in self.PREDEFINED_PATTERNS.items():
+            self.CATEGORIES.setdefault(_data['category'], []).append(_key)
 
     # Core generation methods ################################################
 
