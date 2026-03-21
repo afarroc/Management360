@@ -1,6 +1,6 @@
 # Equipo de Análisis — Management360
 
-> **Actualizado:** 2026-03-20 (sesión Analista Doc — lote 3: kpis, cv, board, campaigns, passgen)
+> **Actualizado:** 2026-03-21 (Sesión Manager — Sprint 9 planificado, API-ARCH decidido)
 > **Proyecto:** Management360 — Django 5.1.7 / 20 apps / ~710 archivos
 > **Metodología:** Sprints semanales | Sesiones Claude especializadas por rol
 
@@ -95,82 +95,79 @@ No mezclar roles en la misma sesión.
 
 ---
 
-## Asignaciones — Sprint 9 (activo)
+## Asignaciones — Sprint 9 (activo desde 2026-03-21)
 
-### Dev — Pasan de Sprint 8
+### Decisiones de arquitectura aprobadas (Manager 2026-03-21)
 
-| App | Tarea | Rol | Estado |
-|-----|-------|-----|--------|
-| `bots` | BOT-2: integración bots ↔ sim | 🔬 Analista Dev | ⬜ Espera sesión |
-| `bots` | BOT-3: pipeline campañas outbound | 🔬 Analista Dev | ⬜ Espera BOT-2 |
-| `bots` | BOT-5: reglas distribución por skills | 🔬 Analista Dev | ⬜ Espera BOT-1 |
-| `sim` | SIM-7e: agentes simulados perfilados en ACD | 🔬 Analista Dev | ⬜ Sesión separada |
-| `sim` | SIM-6b: GTR Interactivo sliders | 🔬 Analista Dev | ⬜ Sesión separada |
-| `bitacora` | BIT-17: nav prev/next filtrar por created_by+is_active | 🔬 Analista Dev | ⬜ Sesión separada |
+| ID | Decisión |
+|----|----------|
+| API-ARCH | **Opción A** — Eliminar `api/urls.py`, consolidar en `panel/urls.py`. Eliminar `include('api.urls')` del router raíz. |
+| PRIORIDAD | Bugs críticos heredados primero → BOT-2/3 → resto |
+| QA Sprint 9 | Sesión dedicada a `analyst` — cerrar INC-004 |
 
-### Dev — Fixes críticos heredados (bugs #36–#99)
+---
+
+### Dev — Semana 1 (orden de ejecución)
+
+| Día | App(s) | Tarea | ID | Prioridad |
+|-----|--------|-------|----|-----------|
+| 1 | `passgen`, `board`, `panel` | Bloque fixes críticos | #84, #85, #95, #96, #98, #114, #115, #117, PNL-4 | 🔴 |
+| 1-2 | `api` + `panel` | API-ARCH Opción A — consolidar urls | API-ARCH | 🔴 |
+| 1-2 | `cv` + `help` | Romper cadena de fallo imports | #75, #76, #101, #102, #104 | 🔴 |
+| 2-3 | `bots` + `sim` | BOT-2: BotInstance ↔ ACDAgentSlot | BOT-2 | 🟠 |
+| 3-4 | `bots` + `campaigns` | BOT-3: pipeline DiscadorLoad → LeadCampaign | BOT-3 | 🟠 |
+| 4 | `help` | Crear 3 templates faltantes | #107 | 🔴 |
+| 5 | `bots` | BOT-5: reglas por skills (si hay tiempo) | BOT-5 | 🟡 |
+
+### Dev — Backlog Sprint 9
+
+| App | Tarea | ID | Prioridad |
+|-----|-------|----|-----------|
+| `sim` | Agentes simulados perfilados en ACD | SIM-7e | 🔴 sesión separada |
+| `sim` | GTR Interactivo sliders | SIM-6b | 🟠 sesión separada |
+| `bitacora` | Nav prev/next filtrado | BIT-17 | 🟡 |
+| `rooms` | Dividir views.py (2858L) | REFACTOR-1 | 🟠 |
+| `courses` | Dividir views.py (2309L) | REFACTOR-2 | 🟠 |
+| `chat` | Dividir views.py (2017L) | REFACTOR-3 | 🟠 |
+
+### Dev — Bugs críticos heredados pendientes (seguridad)
 
 | Bug | App | Descripción | Prioridad |
 |-----|-----|-------------|-----------|
 | #84 | `board` | IDOR — `BoardDetailView` sin verificar propietario | 🔴 |
 | #96 | `passgen` | `password_help` siempre 500 — `CATEGORIES` no definido | 🔴 |
 | #98 | `passgen` | `MIN_ENTROPY=60` bloquea 5/7 patrones | 🔴 |
-| #85 | `board` | `BOARD_CONFIG` no definido en settings — KeyError | 🔴 |
+| #114 | `panel` | `get_connection_token` sin return — Centrifugo roto | 🔴 |
 | #75 | `cv` | Managers de `events` importados a nivel de módulo | 🔴 |
-| #76 | `cv` | `reverse('project_detail')` sin namespace — NoReverseMatch | 🔴 |
-| #95 | `passgen` | Sin `app_name` en urls.py | 🟡 |
-| #97 | `passgen` | `PasswordForm.length` y `exclude_ambiguous` nunca leídos | 🟠 |
+| #76 | `cv` | `reverse('project_detail')` sin namespace | 🔴 |
+| #107 | `help` | 3 templates faltantes → TemplateDoesNotExist | 🔴 |
+| #101 | `help` | Import `courses` a nivel módulo — cadena de fallo | 🔴 |
+| #115 | `panel` | `DatabaseSelectorMiddleware` con BDs inexistentes | 🟠 |
+| #117 | `panel` | `RedisTestView` sin `@login_required` | 🟠 |
+| #36 | `accounts` | Contraseña `"DefaultPassword123"` hardcodeada | 🔴 |
+| #37 | `accounts` | Open redirect en `login_view` — `next` sin validar | 🔴 |
+| #46 | `memento` | IDOR en `MementoConfigUpdateView` | 🔴 |
+| #43 | `core` | `search_view` y `url_map_view` sin `@login_required` | 🔴 |
 
-### QA — Pendiente
+### QA — Sprint 9
 
-| App | Tarea | Rol | Estado |
-|-----|-------|-----|--------|
-| `simcity` | SC-8: tests básicos proxy | 🧪 Analista QA | ⬜ Paralelo |
-| `chat` | Tests — 0 cobertura actual | 🧪 Analista QA | ⬜ |
-| `rooms` | Tests — 0 cobertura actual | 🧪 Analista QA | ⬜ |
-| `courses` | Tests — 0 cobertura actual | 🧪 Analista QA | ⬜ |
-| `analyst` | Tests reales — stub 3 líneas (INC-004) | 🧪 Analista QA | ⬜ |
+| App | Tarea | Estado | Prioridad |
+|-----|-------|--------|-----------|
+| `analyst` | Tests reales — cerrar INC-004 (stub de 3 líneas) | ⬜ **PRIORIDAD** | 🔴 |
+| `simcity` | SC-8: tests básicos proxy | ⬜ Paralelo | 🟡 |
+| `chat` | Tests — 0 cobertura actual | ⬜ | 🟠 |
+| `rooms` | Tests — 0 cobertura actual | ⬜ | 🟠 |
+| `courses` | Tests — 0 cobertura actual | ⬜ | 🟠 |
 
-### Doc — Última tanda (3 apps pendientes)
+### Doc — Sprint 9
 
-| App | Complejidad | Rol | Estado |
-|-----|-------------|-----|--------|
-| `help` | 🟠 Media — 7 modelos, 10 endpoints | 📝 Analista Doc | ⬜ **PRÓXIMA SESIÓN** |
-| `api` | 🟢 Baja — 0 modelos, 4 endpoints | 📝 Analista Doc | ⬜ **PRÓXIMA SESIÓN** |
-| `panel` | 🟡 Media — 0 modelos, 28 endpoints | 📝 Analista Doc | ⬜ **PRÓXIMA SESIÓN** |
-
----
-
-## Documentación Completada — 17 / 20 apps (85%)
-
-| App | DEV_REFERENCE | DESIGN | Sesión | Bugs registrados |
-|-----|:---:|:---:|--------|-----------------|
-| `analyst` | ✅ | ✅ | Lote 1 | — |
-| `sim` | ✅ | ✅ | Lote 1 | — |
-| `bitacora` | ✅ | ✅ | Lote 1 | — |
-| `simcity` | ✅ | ✅ | Lote 1 | — |
-| `events` | ✅ | ✅ | Lote 1 | — |
-| `accounts` | ✅ | ✅ | Lote 2 (2026-03-19) | #36, #37 |
-| `core` | ✅ | ✅ | Lote 2 (2026-03-19) | #42, #43 |
-| `memento` | ✅ | ✅ | Lote 2 (2026-03-19) | #46 |
-| `chat` | ✅ | ✅ | Lote 2 (2026-03-19) | #50–#55 |
-| `rooms` | ✅ | ✅ | Lote 2 (2026-03-19) | #56–#67 |
-| `courses` | ✅ | ✅ | Lote 2 (2026-03-19) | — |
-| `bots` | ✅ revisado | ✅ revisado | Lote 3 (2026-03-20) — Sprint 8 audit | — |
-| `kpis` | ✅ | ✅ | Lote 3 (2026-03-20) | #68–#72 |
-| `cv` | ✅ | ✅ | Lote 3 (2026-03-20) | #73–#80 |
-| `board` | ✅ | ✅ | Lote 3 (2026-03-20) | #81–#89 |
-| `campaigns` | ✅ | ✅ | Lote 3 (2026-03-20) | #90–#94 |
-| `passgen` | ✅ | ✅ | Lote 3 (2026-03-20) | #95–#99 |
-| `help` | ⬜ | ⬜ | Pendiente lote 4 | — |
-| `api` | ⬜ | ⬜ | Pendiente lote 4 | — |
-| `panel` | ⬜ | ⬜ | Pendiente lote 4 | — |
-
-**Bugs registrados globales: #1–#99 (99 bugs). Próximos desde #100.**
+**Documentación 20/20 completada ✅ — sin tareas pendientes para Analista Doc en Sprint 9.**
 
 ---
 
-## Sprint 8 — Completado ✅ (2026-03-19 → 2026-03-20)
+## Historial de Sprints
+
+### Sprint 8 — Completado ✅ (2026-03-19 → 2026-03-20)
 
 | Tarea | Estado |
 |-------|--------|
@@ -183,6 +180,47 @@ No mezclar roles en la misma sesión.
 | BOT-5: reglas distribución por skills | ⏭️ Pasa a Sprint 9 |
 | DOC Sprint 7.5: lote 3 (kpis, cv, board, campaigns, passgen) | ✅ |
 
+### Sprint 7.5 — Documentación ✅ COMPLETO (2026-03-19 → 2026-03-20)
+
+| Lote | Apps | Bugs registrados |
+|------|------|-----------------|
+| Lote 1 | analyst, sim, bitacora, simcity, events | #1–#35 |
+| Lote 2 | accounts, core, memento, chat, rooms, courses | #36–#67 |
+| Lote 3 | bots (revisión), kpis, cv, board, campaigns, passgen | #68–#99 |
+| Lote 4 | help, api, panel | #100–#120 |
+
+**Resultado: 20 / 20 apps documentadas (100%) ✅ — 120 bugs registrados**
+
+---
+
+## Documentación — Estado final
+
+| App | DEV_REFERENCE | DESIGN | Tests |
+|-----|:---:|:---:|-------|
+| analyst | ✅ | ✅ | ⚠️ stub — **INC-004 activo** |
+| sim | ✅ | ✅ | ✅ 100% |
+| bitacora | ✅ | ✅ | ⚠️ stub |
+| simcity | ✅ | ✅ | ⚠️ stub |
+| events | ✅ | ✅ | ✅ |
+| accounts | ✅ | ✅ | ✅ |
+| core | ✅ | ✅ | ✅ |
+| memento | ✅ | ✅ | ✅ |
+| chat | ✅ | ✅ | ❌ |
+| rooms | ✅ | ✅ | ❌ |
+| courses | ✅ | ✅ | ❌ |
+| bots | ✅ | ✅ | ⚠️ stub |
+| kpis | ✅ | ✅ | ❌ |
+| cv | ✅ | ✅ | ❌ |
+| board | ✅ | ✅ | ⚠️ stub |
+| campaigns | ✅ | ✅ | ❌ |
+| passgen | ✅ | ✅ | ❌ |
+| help | ✅ | ✅ | ⚠️ stub |
+| api | ✅ | ✅ | ❌ |
+| panel | ✅ | ✅ | ✅ test_urls.py (58L) |
+
+**Documentación: 20 / 20 apps (100%) ✅**
+**Cobertura tests real: 6 / 20 apps (30%) — analyst stub no cuenta**
+
 ---
 
 ## Reglas de Operación
@@ -190,7 +228,7 @@ No mezclar roles en la misma sesión.
 1. **Una sesión = un rol = un foco** — no mezclar
 2. **Siempre cargar el contexto completo** al inicio de sesión (ver prompts)
 3. **Siempre terminar con un handoff** — qué se hizo, qué queda pendiente
-4. **Los bugs se registran siempre** — aunque no se resuelvan en la sesión — numeración desde #100
+4. **Los bugs se registran siempre** — aunque no se resuelvan en la sesión — numeración desde #121
 5. **El Manager aprueba** cambios de arquitectura o que afecten múltiples apps
 6. **Commits atómicos** — un commit por tarea, mensaje descriptivo
 7. **Documentar antes de desarrollar** — no tocar una app sin su DEV_REFERENCE
@@ -215,9 +253,10 @@ No mezclar roles en la misma sesión.
 
 | Convención | Estándar | Excepciones |
 |------------|----------|-------------|
-| PK | `UUIDField` | `events` (int), `simcity`/`bots`/`board`/`cv` (AutoField int), `campaigns` mixto |
-| Propietario | `created_by` | `events` → `host`; `rooms` → `owner`/`creator`; `courses` → `tutor`/`author`; `chat`/`memento` → `user`; `board` → `owner`; `cv` → `user` OneToOne; `campaigns` → sin propietario (global) |
+| PK | `UUIDField` | `events` (int), `simcity`/`bots`/`board`/`cv`/`help` (AutoField int), `campaigns` mixto |
+| Propietario | `created_by` | `events` → `host`; `rooms` → `owner`/`creator`; `courses` → `tutor`/`author`; `chat`/`memento` → `user`; `board` → `owner`; `cv` → `user` OneToOne; `help` → `author`/`user`; `campaigns` → sin propietario (global) |
 | Timestamps | `created_at`/`updated_at` | `bitacora` en español; `board.Activity` → `timestamp`; `campaigns` → `upload_date`/`load_date` |
-| Namespace `app_name` | declarado en urls.py | `core`, `events`, `memento` (include externo); `passgen` (bug #95) |
+| Namespace `app_name` | declarado en urls.py | `core`, `events`, `memento` (include externo); `passgen` (bug #95 — pendiente fix) |
 | Respuesta JSON | `{"success": true/false}` | — |
 | `@csrf_exempt` | PROHIBIDO en POST con datos | `chat` (20+ endpoints bug #53), `core` (bug #42) |
+| `api/urls.py` | consolidado en `panel` | **API-ARCH Opción A aprobada 2026-03-21** — eliminar `include('api.urls')` |
