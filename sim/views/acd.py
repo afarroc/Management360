@@ -788,7 +788,8 @@ def acd_agent_poll(request, slot_id):
         ).exclude(id=slot.id).select_related('user', 'profile')
         available_slots = [
             {'id': str(s.id), 'name': s.name,
-             'status': s.status, 'skill': s.skill}
+             'status': s.status, 'skill': s.skill,
+             'can_transfer': s.status not in ('absent', 'offline')}
             for s in qs_slots
         ]
 
@@ -881,6 +882,12 @@ def acd_agent_action(request, slot_id):
             if to_slot_id:
                 try:
                     to_slot = ACDAgentSlot.objects.get(id=to_slot_id, session=slot.session)
+                    # Fix C: no transferir a agentes no operativos
+                    if to_slot.status in ('absent', 'offline'):
+                        return JsonResponse(
+                            {'success': False, 'error': 'El agente destino no está disponible.'},
+                            status=400
+                        )
                     ix.slot = to_slot
                     ix.save(update_fields=['slot'])
                     to_slot.status = 'ringing'
@@ -903,6 +910,18 @@ def acd_agent_action(request, slot_id):
             slot.save(update_fields=['stats'])
 
         elif action_type == 'conference' and ix:
+            with_slot_id = params.get('with_slot_id')
+            if with_slot_id:
+                try:
+                    with_slot = ACDAgentSlot.objects.get(id=with_slot_id, session=slot.session)
+                    # Fix C: no conferenciar con agentes no operativos
+                    if with_slot.status in ('absent', 'offline'):
+                        return JsonResponse(
+                            {'success': False, 'error': 'El agente destino no está disponible.'},
+                            status=400
+                        )
+                except ACDAgentSlot.DoesNotExist:
+                    pass
             stats = slot.stats or {}
             stats['conference_count'] = stats.get('conference_count', 0) + 1
             slot.stats = stats

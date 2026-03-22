@@ -63,6 +63,16 @@
 #agent-root .hold-banner.visible{display:flex}
 #agent-root .hold-timer{font-size:20px;font-family:monospace;margin-left:auto}
 
+/* Conference banner */
+#agent-root .conf-banner{background:#a78bfa22;border:1px solid #a78bfa55;
+  border-radius:10px;padding:10px 14px;margin-bottom:10px;
+  display:none;align-items:center;gap:10px;font-size:13px;font-weight:700;color:var(--g-purple)}
+#agent-root .conf-banner.visible{display:flex}
+
+/* Slot item disabled (absent/offline en modales transfer/conf) */
+#agent-root .slot-item.slot-disabled{opacity:.4;cursor:not-allowed}
+#agent-root .slot-item.slot-disabled:hover{border-color:var(--g-border);background:transparent}
+
 /* Buttons */
 #agent-root .btn{display:inline-flex;align-items:center;gap:5px;padding:10px 16px;
   border-radius:10px;font-family:inherit;font-size:13px;font-weight:700;
@@ -210,6 +220,12 @@
         <span class="hold-timer" id="hold-timer">00:00</span>
       </div>
 
+      <!-- Conference banner -->
+      <div class="conf-banner" id="conf-banner">
+        👥 En conferencia con
+        <span id="conf-agent-name" style="margin-left:4px;color:var(--g-purple)">—</span>
+      </div>
+
       <!-- Nivel básico -->
       {% if slot.level == 'basic' %}
       <div id="basic-actions" class="action-grid cols-2" style="margin-top:14px">
@@ -314,10 +330,8 @@
   </div>
 
 </div><!-- /agent-page -->
-</div><!-- /agent-root -->
 
 <!-- ── Modal Transfer ────────────────────────────────────────────────────── -->
-<div id="agent-root">
 <div class="modal-backdrop" id="modal-transfer">
   <div class="modal-box">
     <div class="modal-title">🔀 Transferir llamada</div>
@@ -368,7 +382,8 @@
   </div>
 </div>
 {% endif %}
-</div><!-- /agent-root modal wrapper -->
+
+</div><!-- /agent-root -->
 
 <script>
 const SLOT_ID = '{{ slot.id }}';
@@ -394,6 +409,7 @@ let ACW_TIMER      = null;
 let HOLD_ACTIVE    = false;
 let HOLD_START     = null;
 let HOLD_TIMER     = null;
+let CONF_ACTIVE    = false;   // true mientras hay conferencia activa
 let SELECTED_SLOT  = null;   // para modales transfer/conference
 let AVAILABLE_SLOTS = [];    // actualizado en cada poll
 
@@ -464,6 +480,17 @@ function showIdle(){
   clearInterval(HOLD_TIMER); HOLD_TIMER=null; HOLD_ACTIVE=false; HOLD_START=null;
   const hb = document.getElementById('hold-banner');
   if(hb) hb.classList.remove('visible');
+  // Fix B: limpiar banner de conferencia
+  CONF_ACTIVE = false;
+  const cb = document.getElementById('conf-banner');
+  if(cb) cb.classList.remove('visible');
+  // Fix D: limpiar formulario de tipificación para la próxima llamada
+  const tipifSel = document.getElementById('tipif-sel');
+  const subtipifSel = document.getElementById('subtipif-sel');
+  const tipifNotes = document.getElementById('tipif-notes');
+  if(tipifSel) tipifSel.value = '';
+  if(subtipifSel) subtipifSel.value = '';
+  if(tipifNotes) tipifNotes.value = '';
   document.getElementById('btn-break').style.display='';
   document.getElementById('btn-return').style.display='none';
 }
@@ -603,10 +630,15 @@ function _renderSlotList(containerId){
     return;
   }
   el.innerHTML = AVAILABLE_SLOTS.map(s=>{
-    const dotClass = `dot-${s.status||'offline'}`;
+    const dotClass   = `dot-${s.status||'offline'}`;
     const statusLabel = {available:'Disponible',on_call:'En llamada',break:'Break',
                          offline:'Offline',absent:'Ausente'}[s.status]||s.status;
-    return `<div class="slot-item" onclick="selectSlotItem(this,'${s.id}')" data-slot="${s.id}">
+    // Fix E: absent/offline no son seleccionables
+    const canSelect  = !['absent','offline'].includes(s.status);
+    const cls        = canSelect ? 'slot-item' : 'slot-item slot-disabled';
+    const click      = canSelect ? `onclick="selectSlotItem(this,'${s.id}')"` : '';
+    const title      = canSelect ? '' : 'title="No disponible para transferencia"';
+    return `<div class="${cls}" ${click} ${title} data-slot="${s.id}">
       <span class="slot-status-dot ${dotClass}"></span>
       <span style="font-weight:700;flex:1">${s.name||'Agente'}</span>
       <span style="font-size:11px;color:var(--g-text-m)">${statusLabel}</span>
@@ -639,6 +671,13 @@ function openConferenceModal(){
 
 function confirmConference(){
   if(!SELECTED_SLOT){ alert('Selecciona un agente para la conferencia.'); return; }
+  // Mostrar banner con nombre del agente
+  const agentData = AVAILABLE_SLOTS.find(s => s.id === SELECTED_SLOT);
+  CONF_ACTIVE = true;
+  const cb = document.getElementById('conf-banner');
+  const cn = document.getElementById('conf-agent-name');
+  if(cb) cb.classList.add('visible');
+  if(cn) cn.textContent = agentData?.name || 'agente';
   doAction('conference', {with_slot_id: SELECTED_SLOT});
   closeModal('modal-conference');
 }
