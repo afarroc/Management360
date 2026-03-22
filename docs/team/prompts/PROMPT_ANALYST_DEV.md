@@ -14,7 +14,7 @@ Proyecto **Management360** — SaaS de Workforce Management / Customer Experienc
 **Stack:** Django 5.1.7 · Python 3.13 · MariaDB 12.2.2 · Redis 7 · Bootstrap 5 + HTMX · Django Channels · Daphne 4.2.1 · Centrifugo · Ollama (IA local)
 **Entorno:** Termux / Android 15 / Lineage OS 22.2
 **Repo:** GitHub · branch `main`
-**20 apps** · ~710 archivos Python+HTML · Documentación: 20/20 ✅
+**19 apps** (board eliminado) · ~710 archivos Python+HTML · Documentación: 20/20 ✅
 
 ---
 
@@ -103,57 +103,54 @@ python3 ~/fix_algo.py
 | `events` | `Event` NO tiene `start_date` ni `start_time` → usar `created_at` |
 | `events` | `InboxItem` SÍ tiene `due_date` (DateField, null=True) |
 | `bots` | Todos los modelos usan `AutoField` (int) como PK — deuda técnica documentada, NO corregir |
-| `board` | `Board.owner` y `Activity.user` — NO `created_by` (deuda documentada) |
 | `cv` | `Curriculum.user` OneToOne — NO `created_by` |
 | `campaigns` | Sin propietario — datos globales de contact center (diseño intencional) |
 | `chat` | `Conversation`, `CommandLog`, `AssistantConfiguration` usan `user` — NO `created_by` |
 | `memento` | `MementoConfig` usa `user` — NO `created_by` |
 | `courses` | `Course.tutor`, `Lesson.author`, `Enrollment.student` — NO `created_by` |
+| `api` | `reverse('api-*')` → `reverse('api:*')` — namespace añadido Sprint 9 |
 
 ---
 
 ## Estado del Sprint 9 — Backlog activo
 
-### Fixes críticos heredados (ordenar por impacto antes de features)
+### Completado Sprint 9 (no reabrir)
 
-| Bug | App | Fix | Esfuerzo |
-|-----|-----|-----|---------|
-| #114 | `panel` | Completar `get_connection_token` — nunca retorna, Centrifugo roto | 2 min |
-| #107 | `help` | Crear 3 templates faltantes: `faq_list.html`, `video_tutorials.html`, `quick_start.html` | ~1.5h |
-| #84 | `board` | IDOR en `BoardDetailView` — sin verificación de propietario | 5 min |
-| #85 | `board` | `BOARD_CONFIG` no definido en settings — KeyError en runtime | 2 min |
-| #96 | `passgen` | `password_help` siempre 500 — `self.CATEGORIES` no definido | 3 min |
-| #98 | `passgen` | `MIN_ENTROPY=60` bloquea 5/7 patrones predefinidos | 1 min |
-| #75 | `cv` | Imports de `events.management` a nivel de módulo — cadena de fallo | 15 min |
-| #76 | `cv` | `reverse('project_detail')` sin namespace — NoReverseMatch probable | 5 min |
-| #115 | `panel` | `DatabaseSelectorMiddleware` referencia DBs inexistentes | 2 min |
-| #117 | `panel` | `RedisTestView` sin `@login_required` | 2 min |
-| #102 | `help` | `article_feedback_stats` sin `@login_required` — acceso anónimo | 1 min |
-| #104 | `help` | `submit_feedback` sin `update_fields` — sobreescribe todos los campos | 3 min |
-| #101 | `help` | Import `courses.models` a nivel de módulo — cadena de fallo si courses falla | 5 min |
+| Commit | App | Trabajo |
+|--------|-----|---------|
+| 2026-03-21 | `panel` / `api` | Bugs #111–#120 · board eliminado · `api:` namespace |
+| 2026-03-21 | `passgen` | #96 CATEGORIES · #98 MIN_ENTROPY |
+| 2026-03-21 | `help` | #101 #102 #103 #104 #107 #110 · templates faq/video/quickstart |
+| 2026-03-21 | `analyst` | #1 #2 #3 · EVENTS-AI-3 · GTD Overview · ACD widget UI |
+| 2026-03-22 | `cv` | #73 #75 #76 #77 #78 #79 #80 |
+| 2026-03-22 | `sim` | SIM-7e (agentes perfilados) · SIM-7c (pantalla avanzada) · bugs #6–#15 |
 
-### Features Sprint 9
+### Features pendientes Sprint 9
 
-| ID | App | Tarea | Depende de | Prioridad |
-|----|-----|-------|------------|-----------|
-| BOT-2 | `bots` + `sim` | Integración BotInstance ↔ ACDAgentSlot | BOT-1 ✅ | 🔴 |
-| BOT-3 | `bots` + `campaigns` | Pipeline DiscadorLoad → LeadCampaign → Lead | BOT-1 ✅ | 🟠 |
-| BOT-5 | `bots` + `sim` | Reglas distribución por skills | BOT-1 ✅ | 🟡 |
-| SIM-7e | `sim` | Agentes simulados perfilados en ACD | — | 🔴 (sesión separada) |
-| SIM-6b | `sim` | GTR Interactivo con sliders | — | 🟠 (sesión separada) |
-| BIT-17 | `bitacora` | Nav prev/next filtrar por created_by+is_active | — | 🟡 (sesión separada) |
-| API-ARCH | `api` | Decisión arquitectura: eliminar `api/urls.py` redundante o completar migración | — | 🟠 |
-| PNL-4 | `panel` | `print()` → `logger` en `storages.py` (~30 prints en producción) | — | 🟠 |
-| REFACTOR-1 | `chat` | Dividir views.py (2017 líneas) en módulos | — | 🟠 |
-| REFACTOR-2 | `rooms` | Dividir views.py (2858 líneas) en módulos | — | 🟠 |
-| REFACTOR-3 | `courses` | Dividir views.py (2309 líneas) en módulos | — | 🟠 |
-| HELP-1 | `help` | Template `faq_list.html` | — | 🔴 |
-| HELP-2 | `help` | Template `video_tutorials.html` | — | 🔴 |
-| HELP-3 | `help` | Template `quick_start.html` | — | 🔴 |
+| ID | App | Tarea | Prioridad |
+|----|-----|-------|-----------|
+| BOT-2 | `bots` + `sim` | BotInstance ↔ ACDAgentSlot | 🔴 |
+| BOT-3 | `bots` + `campaigns` | DiscadorLoad → LeadCampaign → Lead | 🟠 |
+| BOT-5 | `bots` + `sim` | Reglas distribución por skills | 🟡 |
+| BIT-17 | `bitacora` | Nav prev/next filtrar por created_by+is_active | 🟡 |
+| REFACTOR-1 | `chat` | Dividir views.py (2017 líneas) en módulos | 🟠 |
+| REFACTOR-2 | `rooms` | Dividir views.py (2858 líneas) en módulos | 🟠 |
+| REFACTOR-3 | `courses` | Dividir views.py (2309 líneas) en módulos | 🟠 |
+
+### Deuda técnica residual abierta
+
+| # | App | Descripción | Prioridad |
+|---|-----|-------------|-----------|
+| #5 | `sim` | Tests SIM-6b sin cobertura (7 eventos + overrides) | 🟡 |
+| #7 | `sim` | ✅ Cerrado — SIM-7c completo 2026-03-22 | — |
+| #74 | `cv` | UUID PKs — breaking change, diferir coordinación con `courses`/`events` | baja |
+| #105 | `help` | `mark_completed(user)` — `user` ignorado, `UserGuideProgress` no implementado | baja |
+| #106 | `help` | `get_related_articles()` ignora tags | media |
+| #108 | `help` | Sin UUID PK — todos AutoField | diferir |
 
 ---
 
-## Contexto rápido — Estado actual de bots (Sprint 8 completado)
+## Contexto rápido — Estado actual de bots (Sprint 9)
 
 ```
 AUTH_USER_MODEL = 'accounts.User'  → tabla: accounts_user
@@ -186,6 +183,61 @@ get_bot_coordinator() → BotCoordinatorService (utils.py), NO el modelo BotCoor
                                   check_system_health(), send_bot_message()
 
 bots — int PK (AutoField) en todos los modelos — deuda documentada, NO corregir ahora
+```
+
+---
+
+## Contexto rápido — Estado actual de sim (Sprint 9)
+
+```
+Migraciones aplicadas:
+  0001_initial · 0002_add_training · 0003_add_sim_agent_profile · 0004_add_acd  ✅
+
+SIM-7e ✅ (2026-03-22):
+  _get_account_tmo_acw()     — TMO/ACW por canal desde account.config
+  _resolve_tipificacion()    — tipificaciones reales por canal via weighted_choice
+  _tick_simulated_breaks()   — break_freq y break_dur_s activos
+  _resolve_simulated_slot()  — transfer_rate activo, available_pct post-llamada
+
+SIM-7c ✅ (2026-03-22) — commit 99a7524f:
+  acd_agent.html: conference banner, form reset entre llamadas,
+                  slot-disabled para absent/offline, #agent-root único
+  acd.py: validación destino transfer/conference, can_transfer en poll
+
+Bugs abiertos:
+  #5  tests/test_gtr_engine.py — sin cobertura SIM-6b (7 eventos + overrides)
+
+Convención crítica sim:
+  _resolve_simulated_slot(_from_transfer=True) para evitar recursión en transferencias
+  acd_agent_poll: available_slots incluye can_transfer:bool desde 2026-03-22
+```
+
+---
+
+## Contexto rápido — Estado actual de analyst (Sprint 9)
+
+```
+Commits aplicados (2026-03-21):
+  ef3678e7  fix(analyst): Bugs #1 y #2 — process_excel firma rota + comentarios huérfanos
+  4b7a0219  fix(analyst): Bugs #1 #2 #3 — no_header huérfano + excel_processor limpieza
+
+EVENTS-AI-3 completo end-to-end:
+  _extract_events_items() / _events_item_fields() / _run_extraction()   ✅
+  etl_source_save() / etl_source_run() / etl_models_api()               ✅
+  _source_row() serializa events_model                                   ✅
+  _load_df() fuente events en dashboard                                  ✅
+  Modal widget dashboard — selector fuente events                        ✅
+  Template ETL — tab Events/GTD, hints, labels                           ✅
+  GTD Overview modal (preset 6 widgets)                                  ✅
+  ACD widget UI — labels ricos [canal · status], hints contextuales      ✅
+  urls.py: ruta dashboards/gtd-overview/                                 ✅
+
+Arquitectura clave analyst:
+  _handle_preview() usa ExcelProcessor.process_excel() directamente — NO FileProcessorService
+  FileProcessorService.process_file() es entrada alternativa (bulk import programático)
+  Ambas rutas ahora tienen no_header propagado correctamente
+
+Bugs analyst abiertos: NINGUNO
 ```
 
 ---
