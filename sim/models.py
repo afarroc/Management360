@@ -397,8 +397,21 @@ class SimAgentProfile(models.Model):
         help_text='Prioridad por skill {"PORTABILIDAD": 1, "LINEA NUEVA": 2}')
 
     # ── Meta ──────────────────────────────────────────────────────────────────
-    is_preset   = models.BooleanField(default=False,
-    help_text   ='True = preset del sistema (no editable por usuarios)')
+    # BOT-2: Si is_preset=True y bot_specialization != '', este perfil se asigna
+    # automáticamente al registrar un BotInstance con esa specialization en ACD.
+    bot_specialization = models.CharField(
+        max_length=50, blank=True,
+        help_text=(
+            'Especialización de BotInstance compatible. '
+            'Valores: gtd_processor | project_manager | task_executor | '
+            'calendar_optimizer | communication_handler | general_assistant. '
+            'Vacío = perfil de uso general.'
+        ),
+    )
+    is_preset   = models.BooleanField(
+        default=False,
+        help_text='True = preset del sistema (no editable por usuarios)',
+    )
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='sim_agent_profiles')    
     created_at  = models.DateTimeField(auto_now_add=True)
     updated_at  = models.DateTimeField(auto_now=True)
@@ -432,6 +445,7 @@ ACD_SESSION_STATUS = [
 ACD_AGENT_TYPE = [
     ('real',      'OJT Real'),
     ('simulated', 'Simulado'),
+    ('bot',       'Bot FTE'),        # BOT-2
 ]
 
 ACD_AGENT_STATUS = [

@@ -320,7 +320,7 @@ def _tick_simulated_breaks(session: ACDSession):
     P(ir a break en este tick)  = break_freq [breaks/h] × SIM_TICK_S / 3600
     P(volver de break en tick)  = SIM_TICK_S / break_dur_s
     """
-    for slot in session.slots.filter(agent_type='simulated').select_related('profile'):
+    for slot in session.slots.filter(agent_type__in=('simulated', 'bot')).select_related('profile'):  # BOT-2
         profile = slot.profile
         if not profile:
             continue
@@ -406,7 +406,7 @@ def _resolve_simulated_slot(slot: ACDAgentSlot, interaction: ACDInteraction,
             slot.status = 'available'
             slot.save(update_fields=['stats', 'status'])
             # Resolver en el destino si también es simulado
-            if target.agent_type == 'simulated':
+            if target.agent_type in ('simulated', 'bot'):  # BOT-2
                 _resolve_simulated_slot(target, interaction, _from_transfer=True)
             return
 
@@ -611,7 +611,7 @@ def _do_routing(session: ACDSession, gtr_state: dict):
         slot.save(update_fields=['status'])
 
         # Simulated agents: resolve immediately
-        if slot.agent_type == 'simulated':
+        if slot.agent_type in ('simulated', 'bot'):  # BOT-2
             _resolve_simulated_slot(slot, ix)
 
 
@@ -955,6 +955,141 @@ def acd_agent_action(request, slot_id):
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BOT-2 — Registro de BotInstances como slots ACD
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@login_required
+@require_POST
+def acd_add_bots(request, pk):
+    """
+    BOT-2: Registra BotInstances activos como ACDAgentSlots (agent_type='bot')
+    dentro de una ACDSession existente.
+
+    POST /sim/acd/<pk>/bots/add/
+    Body: {"bot_ids": [1, 2, 3], "canal": "inbound"}   # canal opcional
+
+    Respuesta:
+        {"success": true,
+         "created": [{"slot_id", "slot_number", "bot_id", "bot_name",
+                       "profile", "tier", "display_name"}],
+         "errors":  [{"bot_id", "error"}]}
+    """
+    from bots.models import BotInstance  # import local — evita circular en apps.py
+
+    try:
+        session = get_object_or_404(ACDSession, pk=pk, created_by=request.user)
+
+        if session.status not in ('config', 'active'):
+            return JsonResponse(
+                {'success': False, 'error': 'La sesión no acepta cambios en este estado.'},
+                status=400,
+            )
+
+        data    = json.loads(request.body)
+        bot_ids = data.get('bot_ids', [])
+        canal   = data.get('canal') or session.canal
+
+        if not bot_ids:
+            return JsonResponse({'success': False, 'error': 'bot_ids requerido.'}, status=400)
+
+        last_slot_number = (
+            session.slots.order_by('-slot_number')
+                         .values_list('slot_number', flat=True)
+                         .first()
+            or 0
+        )
+
+        created_list = []
+        error_list   = []
+
+        for i, bot_id in enumerate(bot_ids, start=1):
+            result = _register_bot_slot(
+                session=session,
+                bot_id=bot_id,
+                canal=canal,
+                slot_number=last_slot_number + i,
+            )
+            if result['ok']:
+                created_list.append(result['data'])
+            else:
+                error_list.append({'bot_id': bot_id, 'error': result['error']})
+
+        return JsonResponse({'success': True, 'created': created_list, 'errors': error_list})
+
+    except Exception as e:
+        logger.error("acd_add_bots: %s", e, exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+def _register_bot_slot(session: ACDSession, bot_id: int, canal: str, slot_number: int) -> dict:
+    """
+    BOT-2: Crea un ACDAgentSlot(agent_type='bot') para el BotInstance dado.
+
+    Lookup de perfil: bot_specialization + canal exacto → fallback sin canal.
+    Devuelve {'ok': True, 'data': {...}} o {'ok': False, 'error': str}.
+    """
+    from bots.models import BotInstance
+
+    try:
+        bot = (
+            BotInstance.objects
+            .select_related('generic_user__user')
+            .get(pk=bot_id, is_active=True)
+        )
+    except BotInstance.DoesNotExist:
+        return {'ok': False, 'error': 'Bot no encontrado o inactivo.'}
+
+    # Perfil: canal exacto → fallback cualquier canal
+    profile = (
+        SimAgentProfile.objects
+        .filter(bot_specialization=bot.specialization, canal=canal, is_preset=True)
+        .first()
+    )
+    if profile is None:
+        profile = (
+            SimAgentProfile.objects
+            .filter(bot_specialization=bot.specialization, is_preset=True)
+            .first()
+        )
+    if profile is None:
+        return {
+            'ok': False,
+            'error': (
+                f'Sin SimAgentProfile para specialization="{bot.specialization}". '
+                'Ejecutar: python manage.py seed_agent_profiles'
+            ),
+        }
+
+    slot = ACDAgentSlot.objects.create(
+        session=session,
+        slot_number=slot_number,
+        agent_type='bot',
+        user=bot.generic_user.user,
+        profile=profile,
+        display_name=bot.name,
+        skill=profile.skills[0] if profile.skills else '',
+        # Consistente con acd_slot_add: offline hasta que la sesión arranque
+        status='available' if session.status == 'active' else 'offline',
+        stats={},
+    )
+
+    return {
+        'ok': True,
+        'data': {
+            'slot_id':      str(slot.id),
+            'slot_number':  slot.slot_number,
+            'bot_id':       bot_id,
+            'bot_name':     bot.name,
+            'profile':      profile.name,
+            'tier':         profile.tier,
+            'display_name': slot.display_name,
+        },
+    }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 
 def _get_tipificaciones(session: ACDSession) -> list:
     """Retorna lista de tipificaciones configuradas en la cuenta."""
