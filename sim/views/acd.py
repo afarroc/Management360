@@ -237,27 +237,136 @@ def _generate_acd_interactions(session: ACDSession, n: int = 5) -> list:
     return interactions
 
 
-def _resolve_simulated_slot(slot: ACDAgentSlot, interaction: ACDInteraction):
+# ─── SIM-7e helpers ───────────────────────────────────────────────────────────
+
+# Segundos simulados estimados por ciclo de routing (clock_speed × poll_real_s ≈ 60).
+# Usado en _tick_simulated_breaks para convertir break_freq [breaks/h] a P(break/tick).
+SIM_TICK_S = 60
+
+
+def _get_account_tmo_acw(session: ACDSession) -> tuple:
+    """
+    Retorna (tmo_s, acw_s) base desde la config de la cuenta según canal.
+    SIM-7e — antes hardcodeados en _resolve_simulated_slot (313/18 inbound siempre).
+    """
+    try:
+        cfg = (session.account.config or {}).get(session.canal, {})
+    except Exception:
+        cfg = {}
+    if session.canal == 'inbound':
+        return cfg.get('tmo_s', 313), cfg.get('acw_s', 18)
+    elif session.canal == 'outbound':
+        return cfg.get('tmo_s', 180), cfg.get('acw_s', 12)
+    elif session.canal == 'digital':
+        return cfg.get('duration_s', 240), cfg.get('acw_s', 10)
+    return 313, 18
+
+
+def _resolve_tipificacion(session: ACDSession, conv_rate: float, agenda_rate: float) -> str:
+    """
+    Tipificación realista basada en la config de la cuenta y el canal.
+    SIM-7e — antes solo retornaba 'Venta' o 'Atendida' ignorando la cuenta.
+    """
+    from sim.generators.base import weighted_choice
+    try:
+        cfg = (session.account.config or {}).get(session.canal, {})
+    except Exception:
+        cfg = {}
+
+    if session.canal == 'inbound':
+        all_tipifs = {}
+        for skill_data in cfg.get('skills', {}).values():
+            all_tipifs.update(skill_data.get('tipificaciones', {}))
+        if all_tipifs:
+            return weighted_choice(all_tipifs)
+
+    elif session.canal == 'outbound':
+        contact_rate = cfg.get('contact_rate', 0.276)
+        if random.random() > contact_rate:
+            no_contact = cfg.get('tipif_no_contacto', {})
+            return weighted_choice(no_contact) if no_contact else 'No contesta'
+        tipif_contacto = cfg.get('tipif_contacto', {})
+        if tipif_contacto:
+            return weighted_choice(tipif_contacto)
+        r = random.random()
+        if r < conv_rate:
+            return 'Venta'
+        if r < conv_rate + agenda_rate:
+            return 'Agenda'
+        return 'No interesado'
+
+    elif session.canal == 'digital':
+        tipifs = {}
+        tipifs.update(cfg.get('tipificaciones_bxi', {}))
+        tipifs.update(cfg.get('tipificaciones_app', {}))
+        if not tipifs:
+            tipifs = cfg.get('tipificaciones', {})
+        if tipifs:
+            return weighted_choice(tipifs)
+
+    # fallback genérico
+    if random.random() < conv_rate:
+        return 'Venta'
+    return 'Atendida'
+
+
+def _tick_simulated_breaks(session: ACDSession):
+    """
+    Aplica breaks espontáneos y retornos a agentes simulados según su perfil.
+    Llamado en cada ciclo de routing — diferencia tiers en sesiones largas.
+
+    SIM-7e — implementa break_freq y break_dur_s del SimAgentProfile que antes no se usaban.
+
+    P(ir a break en este tick)  = break_freq [breaks/h] × SIM_TICK_S / 3600
+    P(volver de break en tick)  = SIM_TICK_S / break_dur_s
+    """
+    for slot in session.slots.filter(agent_type='simulated').select_related('profile'):
+        profile = slot.profile
+        if not profile:
+            continue
+        if slot.status == 'available':
+            p_break = profile.break_freq * SIM_TICK_S / 3600
+            if random.random() < p_break:
+                slot.status = 'break'
+                slot.save(update_fields=['status'])
+        elif slot.status == 'break':
+            p_return = SIM_TICK_S / max(profile.break_dur_s, SIM_TICK_S)
+            if random.random() < p_return:
+                slot.status = 'available'
+                slot.save(update_fields=['status'])
+
+
+def _resolve_simulated_slot(slot: ACDAgentSlot, interaction: ACDInteraction,
+                             _from_transfer: bool = False):
     """
     Resuelve automáticamente una interacción para un agente simulado
     según su perfil conductual (SimAgentProfile).
+
+    SIM-7e: usa TMO/ACW de la cuenta, tipificaciones reales por canal,
+    transfer_rate activo y available_pct post-llamada.
     """
     profile = slot.profile
     now = timezone.now()
+    session = slot.session  # FK — cacheado tras el primer acceso
 
-    # Si no tiene perfil, usa defaults promedio
-    answer_rate   = profile.answer_rate  if profile else 0.93
-    conv_rate     = profile.conv_rate    if profile else 0.008
-    hold_rate     = profile.hold_rate    if profile else 0.05
-    hold_dur_s    = profile.hold_dur_s   if profile else 30
-    aht_factor    = profile.aht_factor   if profile else 1.0
-    acw_factor    = profile.acw_factor   if profile else 1.0
-    corte_rate    = profile.corte_rate   if profile else 0.05
+    # Parámetros conductuales del perfil (defaults = agente medio sin perfil)
+    answer_rate   = profile.answer_rate   if profile else 0.93
+    conv_rate     = profile.conv_rate     if profile else 0.008
+    agenda_rate   = profile.agenda_rate   if profile else 0.128
+    hold_rate     = profile.hold_rate     if profile else 0.05
+    hold_dur_s    = profile.hold_dur_s    if profile else 30
+    aht_factor    = profile.aht_factor    if profile else 1.0
+    acw_factor    = profile.acw_factor    if profile else 1.0
+    corte_rate    = profile.corte_rate    if profile else 0.05
     transfer_rate = profile.transfer_rate if profile else 0.04
+    available_pct = profile.available_pct if profile else 0.85
+
+    # TMO/ACW base desde la cuenta según canal (SIM-7e)
+    base_tmo_account, base_acw_account = _get_account_tmo_acw(session)
 
     # Rechaza?
     if random.random() > answer_rate:
-        interaction.status  = 'rejected'
+        interaction.status   = 'rejected'
         interaction.ended_at = now
         interaction.save(update_fields=['status', 'ended_at'])
         slot.status = 'available'
@@ -268,26 +377,41 @@ def _resolve_simulated_slot(slot: ACDAgentSlot, interaction: ACDInteraction):
     interaction.answered_at = now
     interaction.status = 'on_call'
 
-    base_tmo = 313 * aht_factor
+    base_tmo = base_tmo_account * aht_factor
     dur_s = max(30, int(random.gauss(base_tmo, base_tmo * 0.15)))
 
-    # Hold
     hold_s = 0
     if random.random() < hold_rate:
         hold_s = max(10, int(random.gauss(hold_dur_s, hold_dur_s * 0.3)))
 
-    acw_base = 18 * acw_factor
+    acw_base = base_acw_account * acw_factor
     acw_s = max(5, int(random.gauss(acw_base, acw_base * 0.3)))
 
-    # Corte antes de ACW
     if random.random() < corte_rate:
         acw_s = 0
 
-    # Resultado
-    if random.random() < conv_rate:
-        tipif = 'Venta'
-    else:
-        tipif = 'Atendida'
+    # Transferencia (SIM-7e — transfer_rate antes leído pero nunca aplicado)
+    if not _from_transfer and random.random() < transfer_rate:
+        target = ACDAgentSlot.objects.filter(
+            session=session, status='available'
+        ).exclude(id=slot.id).first()
+        if target:
+            interaction.slot = target
+            interaction.save(update_fields=['slot'])
+            target.status = 'ringing'
+            target.save(update_fields=['status'])
+            stats = slot.stats or {}
+            stats['transfer_count'] = stats.get('transfer_count', 0) + 1
+            slot.stats  = stats
+            slot.status = 'available'
+            slot.save(update_fields=['stats', 'status'])
+            # Resolver en el destino si también es simulado
+            if target.agent_type == 'simulated':
+                _resolve_simulated_slot(target, interaction, _from_transfer=True)
+            return
+
+    # Tipificación rica por canal (SIM-7e — antes solo 'Venta' o 'Atendida')
+    tipif = _resolve_tipificacion(session, conv_rate, agenda_rate)
 
     interaction.duration_s   = dur_s
     interaction.hold_s       = hold_s
@@ -297,17 +421,18 @@ def _resolve_simulated_slot(slot: ACDAgentSlot, interaction: ACDInteraction):
     interaction.ended_at     = now + timedelta(seconds=dur_s + acw_s)
     interaction.save()
 
-    # Actualizar stats del slot
+    # Stats del slot
     stats = slot.stats or {}
-    stats['atendidas']  = stats.get('atendidas', 0) + 1
-    stats['tmo_sum_s']  = stats.get('tmo_sum_s', 0) + dur_s
-    stats['tmo_count']  = stats.get('tmo_count', 0) + 1
+    stats['atendidas'] = stats.get('atendidas', 0) + 1
+    stats['tmo_sum_s'] = stats.get('tmo_sum_s', 0) + dur_s
+    stats['tmo_count'] = stats.get('tmo_count', 0) + 1
     if tipif == 'Venta':
         stats['ventas'] = stats.get('ventas', 0) + 1
     if hold_s:
         stats['hold_count'] = stats.get('hold_count', 0) + 1
-    slot.stats  = stats
-    slot.status = 'available'
+    slot.stats = stats
+    # Post-llamada: vuelve a available o toma break según available_pct del perfil (SIM-7e)
+    slot.status = 'available' if random.random() < available_pct else 'break'
     slot.save(update_fields=['stats', 'status'])
 
 
@@ -457,6 +582,9 @@ def _do_routing(session: ACDSession, gtr_state: dict):
     """
     if session.dialing_mode == 'manual' and session.canal == 'outbound':
         return  # el agente controla el marcado
+
+    # SIM-7e — breaks espontáneos en agentes simulados antes del routing
+    _tick_simulated_breaks(session)
 
     queued = list(ACDInteraction.objects.filter(
         session=session, status='queued'
