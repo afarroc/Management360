@@ -1,9 +1,9 @@
 # Referencia de Desarrollo — App `cv`
 
-> **Actualizado:** 2026-03-20 (Sesión Analista Doc — documentación completa)
+> **Actualizado:** 2026-03-22 (Sesión Bug Fixes #73–#80 — Sprint 9)
 > **Audiencia:** Desarrolladores del proyecto y asistentes de IA (Claude)
-> **Sprint:** S7.5 — Documentación completa generada.
-> **Stats:** 32 archivos · models.py 286 L · views.py 873 L · forms.py 382 L · urls.py 32 L · 23 templates
+> **Sprint:** S9 — Bugs #73, #75, #76, #77, #78, #79, #80 cerrados.
+> **Stats:** 32 archivos · models.py 286 L · views.py 873 L · forms.py 382 L · urls.py 34 L · 23 templates
 > **Namespace:** `cv` ✅
 
 ---
@@ -15,7 +15,7 @@
 | 1 | Resumen | Qué hace la app, sus pilares |
 | 2 | Modelos | 10 modelos — campo por campo |
 | 3 | Formularios | Jerarquía de forms, validaciones |
-| 4 | Vistas | 14 vistas organizadas por módulo |
+| 4 | Vistas | 16 vistas organizadas por módulo |
 | 5 | URLs | Mapa completo de endpoints |
 | 6 | Mixins | `CorporateDataMixin`, `FileManagementMixin` |
 | 7 | Template tags | `custom_filters.py` |
@@ -34,7 +34,7 @@ La app `cv` implementa el **Curriculum Vitae dinámico** de Management360. Cada 
 `Curriculum` + 6 modelos relacionados (Experience, Education, Skill, Language, Certification, y 3 modelos de archivo) con edición por secciones mediante formsets.
 
 **Pilar 2 — Vista corporativa con datos de `events`**
-`CurriculumDetailView` es la vista principal — muestra el perfil del usuario enriquecido con métricas de proyectos, tareas y eventos activos, usando los `EventManager`, `ProjectManager` y `TaskManager` de `events`.
+`CurriculumDetailView` es la vista principal — muestra el perfil del usuario enriquecido con métricas de proyectos, tareas y eventos activos, usando los `EventManager`, `ProjectManager` y `TaskManager` de `events` (imports lazy dentro de cada método).
 
 **Pilar 3 — Dos formatos de visualización**
 El CV puede verse en formato corporativo (`corporate_profile.html`) o en formato tradicional/Harvard (`traditional_profile.html`). Además existe una vista pública sin login (`PublicCurriculumView`).
@@ -51,7 +51,6 @@ El CV puede verse en formato corporativo (`corporate_profile.html`) o en formato
 ⚠️ **Violaciones documentadas — no cambiar sin migración:**
 - **Sin UUID PKs** — todos los modelos usan `AutoField` (int) por defecto.
 - **Sin `created_by`** — el propietario es siempre `Curriculum.user` (OneToOne con AUTH_USER_MODEL). Los modelos relacionados heredan el propietario a través de la FK al `Curriculum`.
-- **Import incorrecto en models.py** — `from django.contrib.auth.models import User` importado pero no usado como campo (todos los campos usan `settings.AUTH_USER_MODEL`). Import muerto que viola la convención del proyecto.
 
 ---
 
@@ -218,22 +217,28 @@ Los tres modelos de archivo siguen el mismo patrón:
 |-------|------|-------|
 | `cv` | `FK(Curriculum, CASCADE, related_name='documents'/'images'/'databases')` | — |
 | `upload` | `FileField(upload_to=get_upload_path, validators=[FileExtensionValidator])` | — |
-| `uploaded_at` | `DateTimeField(auto_now_add=True)` | ⚠️ NO es `created_at` — inconsistencia de nombre |
+| `uploaded_at` | `DateTimeField(auto_now_add=True)` | ⚠️ NO es `created_at` — inconsistencia de nombre (deuda #74) |
 
-**Extensiones permitidas:**
+**Extensiones permitidas (post Bug #79):**
 
 | Modelo | Extensiones | `related_name` |
 |--------|-------------|----------------|
 | `Document` | `pdf`, `docx`, `ppt` | `documents` |
-| `Image` | `jpg`, `jpeg`, `png`, `bmp` | `images` |
+| `Image` | `jpg`, `jpeg`, `png`, `bmp`, `gif` | `images` |
 | `Database` | `csv`, `txt`, `xlsx`, `xlsm` | `databases` |
 
-**`get_upload_path(instance, filename)`** — helper a nivel de módulo:
+**`get_upload_path(instance, filename)`** — helper a nivel de módulo (post Bug #78):
 ```python
-# Si ext in ['pdf', 'docx', 'ppt'] → documents/{ext}/{filename}
-# Else → images/{ext}/{filename}
-# ⚠️ Bug: 'bmp', 'csv', 'xlsx', 'xlsm', 'txt', 'xlsm' van a images/ aunque no sean imágenes
+# 3 ramas semánticas:
+if ext in ['pdf', 'docx', 'ppt']:
+    path = f'documents/{ext}/'
+elif ext in ['jpg', 'jpeg', 'png', 'bmp', 'gif']:
+    path = f'images/{ext}/'
+else:
+    path = f'databases/{ext}/'  # csv, txt, xlsx, xlsm
 ```
+
+> ⚠️ **Deploy note:** archivos subidos antes del fix bajo `images/csv/`, `images/xlsx/`, etc. no se migran automáticamente — mover manualmente o actualizar registros en BD.
 
 ---
 
@@ -292,13 +297,11 @@ Form base (no ModelForm) con:
 - Límite de tamaño: **10 MB**
 - Regex de nombre de archivo: solo `[\w\-. ]` (sin caracteres especiales)
 
-| Form | Extensiones | `accept` HTML |
-|------|-------------|---------------|
+| Form | Extensiones (post Bug #79) | `accept` HTML |
+|------|---------------------------|---------------|
 | `DocumentForm` | pdf, docx, ppt | `.pdf,.docx,.ppt` |
-| `ImageForm` | jpg, jpeg, png, gif | `.jpg,.jpeg,.png,.gif` |
+| `ImageForm` | jpg, jpeg, png, gif, bmp | `.jpg,.jpeg,.png,.gif,.bmp` |
 | `DatabaseForm` | csv, xlsx, xls | `.csv,.xlsx,.xls` |
-
-⚠️ `ImageForm` acepta `.gif` pero `Image` model valida `['jpg','jpeg','png','bmp']` — discrepancia.
 
 ---
 
@@ -353,15 +356,13 @@ Edición completa del CV con **5 formsets simultáneos** (experience, education,
 
 Muestra el CV de cualquier usuario por `user_id`. Si no existe → renderiza `cv/curriculum_not_found.html` con status 404.
 
-⚠️ **Bug #79** — `pk_url_kwarg = 'user_id'` está seteado pero `get_object()` es sobreescrito y no lo usa — setting superfluo/confuso.
-
 ---
 
 ### 4.5 `EditPersonalInfoView`
 
 **URL:** `GET|POST /cv/editar/personal/`  
 **Template:** `cv/edit_section.html`  
-Paso 1/5 del wizard de edición. Redirige a `cv:edit_experience` en éxito.
+Paso 1/6 del wizard de edición. Redirige a `cv:edit_experience` en éxito. `progress_percentage = 17`.
 
 ---
 
@@ -369,22 +370,38 @@ Paso 1/5 del wizard de edición. Redirige a `cv:edit_experience` en éxito.
 
 **URLs:** `/cv/editar/experiencia/`, `/cv/editar/educacion/`, `/cv/editar/habilidades/`  
 **Template:** `cv/edit_section.html` (compartido)  
-Pasos 2/5, 3/5 y 4/5 del wizard. Cada uno usa un formset con `extra=0, can_delete=True`.
-
-**Flujo del wizard:**
-```
-edit_personal (1/5, 20%)
-  → edit_experience (2/5, 40%)
-    → edit_education (3/5, 60%)
-      → edit_skills (4/5, 80%)
-        → cv_detail
-```
-
-⚠️ Las secciones de `Language` y `Certification` no tienen vistas propias en el wizard — solo se editan desde `CurriculumUpdateView` (edición completa).
+Pasos 2/6, 3/6 y 4/6 del wizard. Cada uno usa un formset con `extra=0, can_delete=True`.
 
 ---
 
-### 4.7 `FileUploadView` y subclases
+### 4.7 `EditLanguageView` ✨
+
+**URL:** `GET|POST /cv/editar/idiomas/`  
+**Template:** `cv/edit_section.html`  
+Paso 5/6 del wizard. `progress_percentage = 83`. Redirige a `cv:edit_certifications` en éxito.
+
+---
+
+### 4.8 `EditCertificationView` ✨
+
+**URL:** `GET|POST /cv/editar/certificaciones/`  
+**Template:** `cv/edit_section.html`  
+Paso 6/6 del wizard. `progress_percentage = 100`. Redirige a `cv:cv_detail` en éxito.
+
+**Flujo completo del wizard (post Bug #80):**
+```
+edit_personal (1/6, 17%)
+  → edit_experience (2/6, 33%)
+    → edit_education (3/6, 50%)
+      → edit_skills (4/6, 67%)
+        → edit_languages (5/6, 83%)
+          → edit_certifications (6/6, 100%)
+            → cv_detail
+```
+
+---
+
+### 4.9 `FileUploadView` y subclases
 
 **URLs:** `/cv/documentos/subir/documento/`, `/cv/documentos/subir/imagen/`, `/cv/documentos/subir/base-datos/`  
 **Template:** `cv/documents/upload.html`
@@ -399,7 +416,7 @@ Vista base con `dispatch()` que verifica existencia de CV. `form_valid()` crea e
 
 ---
 
-### 4.8 `FileDeleteView`
+### 4.10 `FileDeleteView`
 
 **URL:** `POST /cv/documentos/eliminar/<str:file_type>/<int:file_id>/`
 
@@ -407,7 +424,7 @@ Elimina archivo verificando propietario: `get_object_or_404(model, id=file_id, c
 
 ---
 
-### 4.9 `DocumentListView`
+### 4.11 `DocumentListView`
 
 **URL:** `GET /cv/documentos/`  
 **Template:** `cv/documents/docsview.html`
@@ -416,7 +433,7 @@ Lista los 3 tipos de archivos del CV del usuario. Contexto: `documents`, `images
 
 ---
 
-### 4.10 `TraditionalProfileView`
+### 4.12 `TraditionalProfileView`
 
 **URL:** `GET /cv/view/<int:user_id>/tradicional/`  
 **Template:** `cv/traditional_profile.html`  
@@ -437,6 +454,8 @@ CV en formato tradicional. Si se pasa `user_id` → busca por `Curriculum(user_i
 | `/cv/editar/experiencia/` | `cv:edit_experience` | `EditExperienceView` | ✅ login |
 | `/cv/editar/educacion/` | `cv:edit_education` | `EditEducationView` | ✅ login |
 | `/cv/editar/habilidades/` | `cv:edit_skills` | `EditSkillsView` | ✅ login |
+| `/cv/editar/idiomas/` | `cv:edit_languages` | `EditLanguageView` ✨ | ✅ login |
+| `/cv/editar/certificaciones/` | `cv:edit_certifications` | `EditCertificationView` ✨ | ✅ login |
 | `/cv/documentos/` | `cv:docsview` | `DocumentListView` | ✅ login |
 | `/cv/documentos/subir/documento/` | `cv:document_upload` | `DocumentUploadView` | ✅ login |
 | `/cv/documentos/subir/imagen/` | `cv:image_upload` | `ImageUploadView` | ✅ login |
@@ -462,15 +481,38 @@ Mixin sin herencia propia. Provee 3 métodos usados por `CurriculumDetailView`:
 
 **`get_recent_activities(user, limit=5, days=30)`** — mezcla hasta 3 tareas + 2 proyectos + 2 eventos recientes, ordenados por `updated_at` desc.
 
-⚠️ **Bug #75** — Los managers de `events` se importan a **nivel de módulo** al tope de `views.py`:
-```python
-from events.management.event_manager import EventManager
-from events.management.project_manager import ProjectManager
-from events.management.task_manager import TaskManager
-```
-Si estos módulos no existen o tienen errores, **toda la app `cv` falla al cargar**.
+✅ **Bug #75 resuelto** — Los managers de `events` se importan con **lazy imports** dentro de cada método, no a nivel de módulo. Si `events.management` falla, `cv.views` carga igualmente:
 
-⚠️ **Bug #76** — `get_active_projects` usa `reverse('project_detail', ...)` y `reverse('tasks_with_id', ...)` sin namespace — producen `NoReverseMatch` si los names no están registrados exactamente así.
+```python
+def get_user_metrics(self, user):
+    from events.management.event_manager import EventManager
+    from events.management.project_manager import ProjectManager
+    from events.management.task_manager import TaskManager
+    ...
+
+def get_active_projects(self, user, limit=5):
+    from events.management.project_manager import ProjectManager
+    from events.models import Task
+    ...
+
+def get_recent_activities(self, user, limit=5, days=30):
+    from events.management.task_manager import TaskManager
+    from events.management.project_manager import ProjectManager
+    from events.management.event_manager import EventManager
+    ...
+```
+
+✅ **Bug #76 resuelto** — 5 llamadas a `reverse()` corregidas con namespace `events:`:
+
+| Método | Antes | Después |
+|--------|-------|---------|
+| `get_active_projects` | `reverse('project_detail', ...)` | `reverse('events:project_detail', ...)` |
+| `get_active_projects` | `reverse('project_edit', ...)` | `reverse('events:project_edit', ...)` |
+| `get_recent_activities` | `reverse('tasks_with_id', ...)` | `reverse('events:tasks_with_id', ...)` |
+| `get_recent_activities` | `reverse('project_detail', ...)` | `reverse('events:project_detail', ...)` |
+| `get_recent_activities` | `reverse('event_detail', ...)` | `reverse('events:event_detail', ...)` |
+
+> ⚠️ Verificar que `events:project_edit`, `events:tasks_with_id` y `events:event_detail` existan exactamente con esos nombres en `events/urls.py`.
 
 ### 6.2 `FileManagementMixin`
 
@@ -484,6 +526,8 @@ Hereda de `LoginRequiredMixin`. Provee:
 ## 7. Template Tags — `custom_filters.py`
 
 Ubicado en `cv/templatetags/custom_filters.py` (57 líneas). No documentado en detalle en el código fuente. Registrado como librería de template tags para uso en los templates de `cv`.
+
+> Deuda: documentar qué filtros provee.
 
 ---
 
@@ -500,15 +544,19 @@ from cv.models import Curriculum
 
 ### Con `events`
 
-`CorporateDataMixin` en `views.py` importa a nivel de módulo:
+`CorporateDataMixin` en `views.py` usa **lazy imports** (post Bug #75) — los managers y modelos de `events` se importan dentro de cada método, no a nivel de módulo:
+
 ```python
-from events.management.event_manager import EventManager
-from events.management.project_manager import ProjectManager
-from events.management.task_manager import TaskManager
-from events.models import Task, Project, Event, EventAttendee
+# ✅ CORRECTO — lazy import dentro del método
+def get_user_metrics(self, user):
+    from events.management.event_manager import EventManager
+    ...
+
+# ❌ INCORRECTO — no hacer esto (era el Bug #75)
+# from events.management.event_manager import EventManager  ← nivel de módulo
 ```
 
-Esta dependencia es **en tiempo de carga del módulo** — si `events` no está disponible, `cv.views` no importa.
+Esta dependencia es ahora **en tiempo de ejecución del método**, no en tiempo de carga — si `events` no está disponible, `cv.views` carga igualmente y solo falla al llamar a los métodos del mixin.
 
 ---
 
@@ -516,10 +564,10 @@ Esta dependencia es **en tiempo de carga del módulo** — si `events` no está 
 
 | Convención | Estándar | Estado en `cv` |
 |------------|----------|----------------|
-| PK UUID | `UUIDField(primary_key=True)` | ❌ Todos los modelos usan AutoField int |
+| PK UUID | `UUIDField(primary_key=True)` | ❌ Todos los modelos usan AutoField int (deuda #74) |
 | `created_by` | `FK(AUTH_USER_MODEL)` | ❌ Ausente — propietario es `Curriculum.user` (OneToOne) |
 | Timestamps | `created_at`/`updated_at` | ⚠️ Solo `Curriculum` los tiene; modelos de archivo usan `uploaded_at` |
-| User import en models | `settings.AUTH_USER_MODEL` | ⚠️ `from django.contrib.auth.models import User` importado pero no usado como campo |
+| User import en models | `settings.AUTH_USER_MODEL` | ✅ Imports muertos eliminados (Bug #73) |
 | Namespace | `app_name = 'cv'` | ✅ Correcto |
 | `@login_required` | en todas las vistas | ✅ excepto `PublicCurriculumView` (intencional — vista pública) |
 
@@ -546,14 +594,14 @@ get_object_or_404(Curriculum, user=request.user)  ✅
 | # | Estado | App | Descripción | Impacto |
 |---|--------|-----|-------------|---------|
 | #24 | ✅ | cv | Admin con campos inexistentes | — |
-| #73 | ⬜ | cv | `from django.contrib.auth.models import User` importado sin uso en `models.py` — violación de convención | Bajo |
-| #74 | ⬜ | cv | Sin UUID PK en ningún modelo | Bajo (deuda) |
-| #75 | ⬜ | cv | `EventManager`, `ProjectManager`, `TaskManager` importados a nivel de módulo — si `events.management` falla, `cv` no carga | **Alto** |
-| #76 | ⬜ | cv | `reverse('project_detail', ...)` y `reverse('tasks_with_id', ...)` sin namespace en `CorporateDataMixin` — probable `NoReverseMatch` | **Alto** |
-| #77 | ⬜ | cv | `pk_url_kwarg = 'user_id'` en `PublicCurriculumView` superfluo — `get_object()` sobreescrito no lo usa | Bajo (code smell) |
-| #78 | ⬜ | cv | `get_upload_path()` enruta `bmp`, `csv`, `xlsx`, `xlsm`, `txt` al path `images/` — path semánticamente incorrecto | Bajo |
-| #79 | ⬜ | cv | `ImageForm` acepta `.gif` pero `Image` model valida solo `jpg`, `jpeg`, `png`, `bmp` — discrepancia de extensiones | Medio |
-| #80 | ⬜ | cv | El wizard de edición no incluye vistas para `Language` ni `Certification` — solo editables desde `cv:cv_edit` (edición completa) | Bajo (UX) |
+| #73 | ✅ | cv | `from django.contrib.auth.models import User` + imports muertos eliminados de `models.py` | Bajo |
+| #74 | ⬜ | cv | Sin UUID PK en ningún modelo — requiere migraciones coordinadas con `courses` y `events` | Bajo (deuda) |
+| #75 | ✅ | cv | Managers de `events` movidos a lazy imports dentro de los métodos de `CorporateDataMixin` | Alto |
+| #76 | ✅ | cv | 5 llamadas a `reverse()` corregidas con namespace `events:` en `CorporateDataMixin` | Alto |
+| #77 | ✅ | cv | `pk_url_kwarg = 'user_id'` eliminado de `PublicCurriculumView` (dead code) | Bajo |
+| #78 | ✅ | cv | `get_upload_path()` refactorizado con 3 ramas semánticas: `documents/`, `images/`, `databases/` | Bajo |
+| #79 | ✅ | cv | Extensiones unificadas entre `ImageForm` y `Image` model: añadido `gif` al model, `bmp` al form | Medio |
+| #80 | ✅ | cv | Wizard completado — pasos 5 (`EditLanguageView`) y 6 (`EditCertificationView`) añadidos | Bajo (UX) |
 
 ---
 
@@ -561,20 +609,16 @@ get_object_or_404(Curriculum, user=request.user)  ✅
 
 ### Alta prioridad
 
-- **Bug #75 — Imports de managers a nivel de módulo** — convertir a imports lazy (dentro del método) para evitar que la app falle si `events.management` no está disponible.
-- **Bug #76 — reverse sin namespace** — cambiar a `reverse('events:project_detail', ...)` o el nombre correcto según `events/urls.py`.
+_(ninguna — bugs #75 y #76 cerrados)_
 
 ### Media prioridad
 
-- **Bug #79 — Unificar extensiones** entre `ImageForm` y `Image` model (agregar `gif` al model o quitarlo del form).
-- **Bug #73 — Limpiar import** `from django.contrib.auth.models import User` de `models.py`.
-- **Agregar `created_by`** a `LeadCampaign` — `Curriculum` ya tiene propietario vía `user`, pero los modelos de archivo no tienen auditoría de quién subió cada archivo.
-- **UUID PKs** — migración para convertir todos los modelos (bloquea interoperabilidad con otras apps que usan UUIDs).
+- **Bug #74 — UUID PKs** — migración para convertir todos los modelos. Bloquea interoperabilidad con otras apps que usan UUIDs. Coordinar con quien toque `courses` y `events`.
+- **`uploaded_at` → `created_at`** en modelos de archivo — consistencia con el resto del proyecto.
+- **Auditoría de archivos** — los modelos `Document`, `Image`, `Database` no tienen campo que registre quién subió el archivo (solo a qué CV pertenece).
 
 ### Baja prioridad
 
-- **Bug #78 — Fix `get_upload_path()`** — usar paths semánticos por tipo de modelo, no por extensión.
-- **Agregar vistas wizard** para `Language` y `Certification` (pasos 5 y 6).
-- **`custom_filters.py`** — documentar qué filtros provee.
+- **`custom_filters.py`** — documentar qué filtros provee (57 líneas sin doc).
 - **Tests** — sin tests reales.
-- **`uploaded_at` → `created_at`** en modelos de archivo — consistencia con el resto del proyecto.
+- **Bug #77 (resuelto)** — verificar que ningún template referencie `pk_url_kwarg` de `PublicCurriculumView`.

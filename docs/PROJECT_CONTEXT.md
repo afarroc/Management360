@@ -1,6 +1,6 @@
 # Mapa del Proyecto — Management360
 
-> Generado por `m360_map.sh`  |  2026-03-20 18:52:19
+> Generado por `m360_map.sh`  |  2026-03-21 13:36:20
 > Raíz: `/data/data/com.termux/files/home/projects/Management360`
 > Apps: **20**  |  Archivos Python+HTML: **713**
 
@@ -775,13 +775,13 @@ list` |
 - L12: `class StoredDataset(models.Model):`
 - L50: `class Report(models.Model):`
 - L104: `class ETLSource(models.Model):`
-- L172: `class ETLJob(models.Model):`
-- L212: `class AnalystBase(models.Model):`
-- L315: `class CrossSource(models.Model):`
-- L418: `class Dashboard(models.Model):`
-- L452: `class DashboardWidget(models.Model):`
-- L513: `class Pipeline(models.Model):`
-- L581: `class PipelineRun(models.Model):`
+- L187: `class ETLJob(models.Model):`
+- L227: `class AnalystBase(models.Model):`
+- L330: `class CrossSource(models.Model):`
+- L433: `class Dashboard(models.Model):`
+- L467: `class DashboardWidget(models.Model):`
+- L528: `class Pipeline(models.Model):`
+- L596: `class PipelineRun(models.Model):`
 
 ### `bitacora`
 

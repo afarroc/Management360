@@ -1,7 +1,8 @@
 # Referencia de Desarrollo — App `analyst`
 
 > **Audiencia:** Desarrolladores del proyecto y asistentes de IA (Claude, Copilot, etc.)
-> **Actualizado:** 2026-03-18 | **Archivos cubiertos:** 38 / 52
+> **Actualizado:** 2026-03-22 (Sprint 9 — ANALYST-BUG + EVENTS-AI-3 + ANALYST-GTD + ANALYST-ACD)
+> **Archivos cubiertos:** 38 / 52
 > **Proyecto:** Management360 · Django app
 
 ---
@@ -44,10 +45,10 @@
 - Editar DataFrames en memoria (filtros, tipo de dato, valores nulos, duplicados, normalización) antes de importar
 - Persistir DataFrames como **`StoredDataset`** (BD + Redis) para reutilización entre sesiones
 - Copiar DataFrames temporalmente al **portapapeles** de la sesión activa
-- Extraer datos desde modelos ORM o SQL raw via el gestor **ETL**
+- Extraer datos desde modelos ORM o SQL raw via el gestor **ETL** — incluyendo `events` (GTD/InboxItems)
 - Cruzar fuentes de datos con **`CrossSource`** (join / concat entre StoredDataset, AnalystBase, ETLSource, Clipboard)
 - Construir **reportes** calculados sobre datasets almacenados con funciones registradas
-- Componer **dashboards** de visualización con widgets configurables (KPI, tabla, gráficos)
+- Componer **dashboards** de visualización con widgets configurables (KPI, tabla, gráficos) — incluyendo preset GTD Overview
 
 ### Stack técnico relevante
 
@@ -71,7 +72,7 @@ analyst/
 ├── models.py                       # StoredDataset · Report · ETLSource · ETLJob
 │                                   # AnalystBase · CrossSource · Dashboard · DashboardWidget
 ├── forms.py                        # DataUploadForm
-├── urls.py                         # ~80 endpoints
+├── urls.py                         # ~80 endpoints + dashboards/gtd-overview/
 ├── constants.py                    # MAX_FILE_SIZE · FORBIDDEN_MODELS · DEFAULT_CHUNK_SIZE
 ├── signals.py                      # Hooks post-save
 ├── report_functions.py             # Registro de funciones (13 funciones — 7 generales + 3 WFM/sim + 3 WFM/kpis)
@@ -83,11 +84,11 @@ analyst/
 │   ├── data_upload.py              # Vista GET/POST del panel principal
 │   ├── clipboard.py
 │   ├── dataset_manager.py
-│   ├── etl_manager.py
+│   ├── etl_manager.py              # Incluye _extract_events_items() — fuente events/GTD
 │   ├── analyst_base.py             # AnalystBase (18 endpoints)
 │   ├── cross_source.py             # CrossSource (10 endpoints)
 │   ├── report_builder.py           # Report Builder (7 endpoints)
-│   ├── dashboard.py                # Dashboard + widgets (10 endpoints)
+│   ├── dashboard.py                # Dashboard + widgets (11 endpoints) + gtd_overview_preset
 │   ├── excel_analyze.py
 │   ├── file_views.py
 │   ├── other_tools.py
@@ -102,10 +103,10 @@ analyst/
 │       └── clipboard.py
 │
 ├── services/
-│   ├── file_processor_service.py   # Servicio central de procesamiento
+│   ├── file_processor_service.py   # Servicio central — process_file() entrada programática
 │   ├── base_validator.py           # Validacion AnalystBase
 │   ├── cross_engine.py             # Motor de cruce
-│   ├── excel_processor.py
+│   ├── excel_processor.py          # process_excel() — usado directo por _handle_preview()
 │   ├── excel_analyzer.py
 │   ├── model_mapper.py             # Fuzzy matching columna->campo
 │   ├── data_importer.py            # bulk_create
@@ -121,11 +122,11 @@ analyst/
 └── templates/analyst/
     ├── upload_data_csv.html         # Panel principal SPA (~5540 lineas)
     ├── dataset_manager.html
-    ├── etl_manager.html
+    ├── etl_manager.html             # Incluye tab Events/GTD con hints y labels
     ├── analyst_base.html            # SPA
     ├── cross_source.html            # SPA
     ├── report_builder.html          # SPA
-    ├── dashboard.html               # SPA (~960 lineas)
+    ├── dashboard.html               # SPA (~960 lineas) + modal GTD Overview + ACD widget UI
     ├── load_clipboard_form.html
     └── partials/
         └── clipboard_details.html
@@ -286,7 +287,7 @@ class DashboardWidget(models.Model):
     widget_type = models.CharField(max_length=20)
     title       = models.CharField(max_length=200, blank=True)
     source      = models.JSONField(default=dict)
-    # {"type": "report|dataset|cross_source|analyst_base", "id": "uuid"}
+    # {"type": "report|dataset|cross_source|analyst_base|sim|events", "id": "uuid"}
     config      = models.JSONField(default=dict)
     # kpi_card:   {value_col, aggregation: sum|avg|count|max|min|last, format: number|percent|currency}
     # table:      {columns: [], page_size: 10}
@@ -341,13 +342,22 @@ def mi_operacion_async(request):
 
 | Servicio | Responsabilidad |
 |----------|----------------|
-| `FileProcessorService` | Orquesta pipeline de carga. `normalize_name()` es la funcion canonica. |
+| `FileProcessorService` | Orquesta pipeline de carga. `normalize_name()` es la funcion canonica. `process_file()` es la entrada programática (bulk import). |
 | `BaseValidator` | Valida filas contra schema AnalystBase. Persiste DF en Redis + `data_blob`. |
 | `CrossEngine` | Ejecuta cruces. Resuelve fuentes, merge/concat, post-filtros, guarda StoredDataset. |
 | `ModelMapper` | Fuzzy matching columna->campo con `difflib`. |
 | `DataImporter` | `bulk_create` en chunks. Estadisticas de exito/error por fila. |
-| `ExcelProcessor` | Lectura con hoja, rango y sin-cabecera. |
+| `ExcelProcessor` | Lectura con hoja, rango y sin-cabecera. `process_excel()` usado directamente por `_handle_preview()`. |
 | `ExcelAnalyzer` | Detecta regiones de datos automaticamente en XLSX. |
+
+### ⚠️ Arquitectura crítica — dos rutas de procesamiento Excel (post Bug #2/#3)
+
+| Ruta | Usada por | Retorna |
+|------|-----------|---------|
+| `ExcelProcessor.process_excel()` | `_handle_preview()` en `data_upload.py` | `(df, metadata)` |
+| `FileProcessorService.process_excel()` | `process_file()` — entrada programática | `(records, preview, columns)` |
+
+Ambas rutas tienen `no_header` propagado correctamente tras Bug #3. **NUNCA** llamar a `FileProcessorService` desde `_handle_preview()` ni viceversa — son rutas independientes.
 
 ---
 
@@ -378,25 +388,46 @@ if getattr(source, 'sim_account_id', None):    # sim.Interaction — prioridad 0
     return _extract_sim_account(...)
 if getattr(source, 'analyst_base_id', None):   # AnalystBase — prioridad 1
     return _extract_analyst_base(...)
-if source.sql_override.strip():                  # SQL raw
+if source.events_model:                         # events GTD — prioridad 2 ✨
+    return _extract_events_items(...)
+if source.sql_override.strip():                 # SQL raw
     ...
 # ORM path — kpis.CallRecord y cualquier modelo Django permitido
 ```
 
-**SQL raw:** solo `SELECT`. Bloqueado: `INSERT`, `UPDATE`, `DELETE`, `DROP`, `EXEC`, `;` multiple.
-
-### Fuentes ETL disponibles (Sprint 7)
+### Fuentes ETL disponibles (post Sprint 9)
 
 | Tipo | Modelo fuente | Filtros soportados | Orden |
 |------|--------------|-------------------|-------|
 | `sim` | `sim.Interaction` | `date_from`, `date_to`, `run_id`, `canal` | `fecha ASC, hora_inicio ASC` |
 | `kpis` | `kpis.CallRecord` | `fecha__gte`, `fecha__lte` | `fecha ASC, agente ASC` |
+| `events` ✨ | `events.InboxItem` / GTD items | `created_by`, `status`, `date_range` | `created_at ASC` |
 | `analyst_base` | `AnalystBase` dataset | — | por `StoredDataset` |
 | `model` (ORM) | Cualquier modelo en `ANALYST_ETL_ALLOWED_APPS` | JSONField filters | definido en source |
 | `sql` | Query raw SELECT | — | definido en SQL |
 
 > **CRÍTICO:** En `kpis.CallRecord` el campo de fecha es `fecha` (DateField). Nunca usar `start_time`.
 > En `sim.Interaction` el campo de fecha es `fecha` (DateField) + `hora_inicio` (DateTimeField). Nunca usar `started_at`.
+
+### Fuente `events` — integración GTD (EVENTS-AI-3) ✨
+
+```python
+# etl_manager.py — funciones nuevas
+_extract_events_items(source, filters)
+    # Extrae InboxItems del usuario con los campos definidos en _events_item_fields()
+    # Retorna DataFrame con columnas: id, title, status, priority, due_date,
+    #                                  project, tags, created_at, updated_at
+
+_events_item_fields()
+    # Retorna lista de campos disponibles para la fuente events
+
+# etl_source_save() — acepta events_model como campo de ETLSource
+# etl_source_run()  — delega a _extract_events_items() si source.events_model
+# etl_models_api()  — incluye events models en la respuesta
+# _source_row()     — serializa events_model en la lista de fuentes del template
+```
+
+**Template ETL (`etl_manager.html`):** incluye tab "Events/GTD" con hints contextuales y labels descriptivos por campo.
 
 ---
 
@@ -479,7 +510,6 @@ Todos con fallback a `data_blob` si Redis no está disponible.
 | `reports/<id>/delete/` | Elimina |
 | `reports/<id>/export/` | CSV con BOM |
 | `reports/<id>/rerun/` | Re-ejecuta con datos frescos |
-
 
 ---
 
@@ -576,7 +606,7 @@ Resuelve fuentes, seleccion de columnas, merge/concat, post-filtros, guarda resu
 
 ```python
 source = {
-    "type": "report|dataset|cross_source|analyst_base|sim",
+    "type": "report|dataset|cross_source|analyst_base|sim|events",
     "id":   "uuid_del_recurso"
 }
 ```
@@ -588,6 +618,35 @@ source = {
 | `cross_source` | `CrossSource.last_result` | StoredDataset |
 | `analyst_base` | `AnalystBase.dataset` | StoredDataset |
 | `sim` | `sim.SimAccount` interacciones | ORM → `Interaction.objects.filter(account=id)` |
+| `events` ✨ | `events.InboxItem` / GTD items | `_extract_events_items()` → ETL |
+
+### Modal selector de fuente (dashboard.html)
+
+El modal de creación/edición de widget incluye selector de tipo de fuente con la opción `events` habilitada. Al seleccionar `events`, muestra los campos de `InboxItem` disponibles con hints contextuales.
+
+### Widget ACD — UI enriquecida (ANALYST-ACD) ✨
+
+Los widgets que renderizan datos ACD muestran:
+- **Labels ricos** con formato `[canal · status]` — ej. `[inbound · atendida]`
+- **Hints contextuales** que explican cada KPI al hacer hover
+- Presentación diferenciada por canal e estado de interacción
+
+### GTD Overview — preset 6 widgets (ANALYST-GTD) ✨
+
+```
+POST /analyst/dashboards/gtd-overview/
+Body JSON: {name?, description?}  — fallback a valores por defecto
+```
+
+Crea un `Dashboard` + 6 `DashboardWidget` con layout predefinido y retorna el dashboard creado:
+
+| Fila | Widgets | Tipo |
+|------|---------|------|
+| 0 | 3 KPI cards | `kpi_card` |
+| 1 | 2 tablas | `table` |
+| 2 | 1 tabla | `table` |
+
+El modal de GTD Overview es accesible desde el toolbar del dashboard (`bi-kanban`, `tip-teal`) y crea el preset en un click usando `submitGtdOverview()` — mismo patrón de re-render que `submitDashboard()`.
 
 ### Endpoints (bajo `analyst/dashboards/`)
 
@@ -603,6 +662,7 @@ source = {
 | `dashboards/<id>/widgets/<wid>/update/` | Editar widget |
 | `dashboards/<id>/widgets/<wid>/delete/` | Eliminar widget |
 | `dashboards/<id>/widgets/<wid>/data/` | Datos frescos de un widget |
+| `dashboards/gtd-overview/` ✨ | Genera preset GTD Overview (6 widgets) |
 
 ---
 
@@ -612,7 +672,7 @@ source = {
 
 Campo principal: `model` — selector de modelo destino. Validado contra `FORBIDDEN_MODELS` + whitelist de apps.
 
-**Bug conocido:** `clean_file()` esta definido dos veces. Python usa la segunda. Pendiente limpiar.
+✅ **Bug #1 resuelto** — `clean_file()` duplicado eliminado. El archivo tenía comentarios huérfanos de una definición anterior; eliminados en commit `ef3678e7`.
 
 ---
 
@@ -630,9 +690,7 @@ Campo principal: `model` — selector de modelo destino. Validado contra `FORBID
 
 **AnalystBase:** list · create · api · sources · columns-from-clip · schema · delete · data · rows/add · rows/edit · rows/delete · bulk-import · bulk-import-raw · export · columns-api
 
-**Dashboard:** list · create · view · update · delete · layout/save · widgets/add · widgets/update · widgets/delete · widgets/data
-
-**Pipeline:** list · api · create · update · delete · steps/add · steps/delete · steps/reorder · run · runs
+**Dashboard:** list · create · view · update · delete · layout/save · widgets/add · widgets/update · widgets/delete · widgets/data · **gtd-overview** ✨
 
 **ETL:** list · sources/save · sources/delete · sources/run · jobs/status · models-api · model-fields-api
 
@@ -788,6 +846,7 @@ ANALYST_ETL_MAX_ROWS     = 100_000
 7. **dtype_map:** indexar por nombre de columna, nunca por posición: `{str(col): str(df.dtypes[col]) for col in df.columns}`.
 8. **Funciones WFM en Report Builder:** nunca duplicar imports de `pandas`/`numpy` dentro de las funciones — ya están en el top del módulo.
 9. **Campo fecha en fuentes WFM:** `sim.Interaction` → `fecha` (DateField). `kpis.CallRecord` → `fecha` (DateField). Nunca `started_at` ni `start_time`.
+10. **process_excel en FileProcessorService:** `@classmethod` — firma `(cls, file, model, column_mapping, no_header, ...)` → retorna `(records, preview, columns)`. No es `@staticmethod`. No llamar desde `_handle_preview()` — es la ruta programática.
 
 ---
 
@@ -795,40 +854,55 @@ ANALYST_ETL_MAX_ROWS     = 100_000
 
 | # | Estado | Archivo | Descripcion |
 |---|--------|---------|-------------|
-| 1 | ⬜ Pendiente limpiar | `forms.py` | `clean_file()` definido dos veces (~líneas 200 y 220). Python usa la segunda. Eliminar la primera definición. |
-| 2 | ⬜ Verificar | `services/file_processor_service.py` | `process_excel()` referencia `ExcelProcessor._read_with_range()` posiblemente fuera de scope. |
-| 3 | Corregido | `upload_data_csv.html` | `CSRF_TOKEN` inexistente al paginar. Corregido a `csrf()`. |
-| 4 | Corregido | `upload_data_csv.html` | `showToast()` inexistente. Corregido a `showNotification()`. |
-| 5 | Corregido | `upload_data_csv.html` | Toolbar crecia al cargar dataset. tbState movido como barra de subtitulo fija. |
-| 6 | Corregido | `upload_data_csv.html` | Scroll innecesario en `.edit-group`. Movido a elementos internos (col-check-list, tablas, selects). |
+| 1 | ✅ Corregido | `forms.py` | `clean_file()` duplicado — comentarios huérfanos de definición anterior eliminados. Commit `ef3678e7`. |
+| 2 | ✅ Corregido | `services/file_processor_service.py` | `process_excel()` tenía tres sub-bugs: (2a) era `@staticmethod` en lugar de `@classmethod`; (2b) firma `(file, sheet_name, cell_range)` — `model` se asignaba a `sheet_name` en runtime; (2c) retornaba `(df, metadata)` en vez de `(records, preview, columns)`. Todo upload Excel fallaba silenciosamente. Commit `ef3678e7` / `4b7a0219`. |
+| 3 | ✅ Corregido | `services/file_processor_service.py` | `no_header` nunca se propagaba a `ExcelProcessor` dentro de `FileProcessorService`. `ExcelProcessor` ya lo soportaba — faltaba pasarlo. Commit `4b7a0219`. |
+| 4 | Corregido | `upload_data_csv.html` | `CSRF_TOKEN` inexistente al paginar. Corregido a `csrf()`. |
+| 5 | Corregido | `upload_data_csv.html` | `showToast()` inexistente. Corregido a `showNotification()`. |
+| 6 | Corregido | `upload_data_csv.html` | Toolbar crecia al cargar dataset. tbState movido como barra de subtitulo fija. |
 | 7 | Corregido | `upload_data_csv.html` | Boton Reanalizar desbordaba en movil. Corregido con flex-wrap y model-switcher flexible. |
 | 8 | Corregido | `cross_engine.py` | `df.dtypes[i]` por posicion -> KeyError. Corregido a `df.dtypes[col]`. |
 | 9 | Corregido | `cross_source.py` | UUID Python en JS -> SyntaxError. Corregido con `_safe_json_str()`. |
 | 10 | Corregido | `cross_source.py` | KeyError: NaN por columnas float. Corregido con `.astype(object).where(pd.notnull, None)`. |
+| B-1 | ✅ Corregido | `views/dashboard.py` | `_load_df._EVENTS_MAP`: `Project.start_date` y `Event.start_time` no existen → `FieldError` al renderizar cualquier widget `events:projects` o `events:events`. Corregido a `created_at`. |
+| B-2 | ✅ Corregido | `views/etl_manager.py` | `_source_row()` no incluía `events_model` → JS no podía identificar fuentes events ni activar el tab correcto al editar. Añadido `"events_model": getattr(src,'events_model','') or ''`. |
+| B-NEW | ✅ Corregido | `views/dashboard.py` | `_EVENTS_MAP['tasks']` usaba `due_date` como `order_field` → `Task` no tiene `due_date`. `FieldError` en todo widget `events:tasks`. Corregido a `created_at`. |
+| T-1 | ✅ Corregido | `templates/analyst/etl_manager.html` | `_EVENTS_DATE_HINTS` apuntaba a campos incorrectos. Corregidos a: `inbox→due_date`, `tasks/projects/events→created_at`. |
+| T-2 | ✅ Corregido | `templates/analyst/etl_manager.html` | `get_events_model_display` llamado sobre CharField sin `choices` → probable `AttributeError`. Reemplazado por lookup inline con if/elif. |
+| T-3 | ✅ Corregido | `templates/analyst/etl_manager.html` | Sección sim mostraba "started_at" en labels y texto de ayuda. Corregido a `fecha` (campo real de `sim.Interaction`). |
+| T-4 | ✅ Corregido | `templates/analyst/dashboard.html` | Fuente `events` completamente ausente del modal de widgets: faltaban `<option value="events">`, `events_sources` en `SOURCES`, y branch `events` en `onSrcTypeChange()` / `onSrcRefChange()`. |
+
+**Bugs abiertos: NINGUNO.**
 
 ---
 
-## 22. Archivos pendientes de documentar
+## 22. Pendientes de documentar
 
 | Prioridad | Archivo | Notas |
 |-----------|---------|-------|
 | Alta | `constants.py` | Valores exactos de límites y FORBIDDEN_MODELS |
 | Alta | `signals.py` | Qué eventos dispara |
-| Alta | `views/etl_manager.py` | Documentar `_extract_sim_account()` y `_extract_kpis_callrecord()` (Sprint 7) |
+| Alta | `views/etl_manager.py` | Documentar `_extract_events_items()`, `_events_item_fields()`, `_extract_sim_account()`, `_extract_kpis_callrecord()` |
 | Media | `views/clipboard.py` | Vistas de portapapeles no-async |
 | Media | `views/data_upload.py` | Vista principal legacy |
 | Media | `views/report_builder.py` | Flujo completo de ejecución y persistencia |
 | Baja | `views/other_tools.py` | Calculadoras Erlang C y tráfico |
 | Baja | `views/file_views.py` | Árbol de archivos |
 | Baja | `views/excel_analyze.py` | AJAX análisis rangos Excel |
-| Info | `templates/etl_manager.html` | Template ETL |
+| Info | `templates/etl_manager.html` | Tab Events/GTD — documentar hints y campos |
+| Info | `templates/dashboard.html` | Modal GTD Overview + ACD widget UI |
 | Info | `templates/load_clipboard_form.html` | Formulario de carga clip |
 | Info | `templates/report_builder.html` | SPA Report Builder |
 
-### Cambios pendientes de aplicar en código
+### Cambios aplicados en código (✅ cerrados)
 
-| Archivo | Pendiente |
-|---------|-----------|
-| `forms.py` | Eliminar `clean_file()` duplicado (Bug #1) |
-| `views/etl_manager.py` | Verificar `ExcelProcessor._read_with_range()` scope (Bug #2) |
+| Archivo | Cambio |
+|---------|--------|
+| `forms.py` | ✅ Comentarios huérfanos de `clean_file()` eliminados (Bug #1) |
+| `services/file_processor_service.py` | ✅ `process_excel()` corregido: `@classmethod`, firma completa con `model`/`column_mapping`/`no_header`, retorno `(records, preview, columns)` (Bugs #2 y #3) |
+| `views/etl_manager.py` | ✅ `_extract_events_items()` / `_events_item_fields()` implementados; `_source_row()` incluye `events_model` (EVENTS-AI-3 + fix B-2) |
+| `views/dashboard.py` | ✅ `dashboard_gtd_overview()` endpoint POST; fuente `events` en `_compute_widget_data`; fix B-1 (`Project/Event created_at`); fix B-NEW (`Task order_field created_at`) |
+| `templates/etl_manager.html` | ✅ Tab Events/GTD con hints; fix T-1 (`_EVENTS_DATE_HINTS`), T-2 (`get_events_model_display`), T-3 (sim `started_at`→`fecha`) |
+| `templates/dashboard.html` | ✅ Modal GTD Overview + ACD widget UI (labels ricos + hints `_SRC_TYPE_HINTS`); fix T-4 (fuente events ausente del modal) |
+| `urls.py` | ✅ Ruta `dashboards/gtd-overview/` añadida |
 | `report_functions.py` | ✅ Integrado Sprint 7 — 13 funciones |

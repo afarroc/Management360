@@ -1,8 +1,8 @@
 # Referencia de Desarrollo — App `sim`
 
 > **Audiencia:** Desarrolladores del proyecto y asistentes de IA (Claude, Copilot, etc.)
-> **Actualizado:** 2026-03-19 | **Archivos cubiertos:** 24 / 24
-> **Proyecto:** Management360 · Django app
+> **Actualizado:** 2026-03-22 | **Archivos cubiertos:** 24 / 24
+> **Proyecto:** Management360 · Django app · **Sprint activo: 9**
 
 ---
 
@@ -81,7 +81,7 @@ sim/
 │   ├── dashboard.py           # Sim Dashboard — KPIs resumen
 │   ├── account_editor.py      # Editor de cuenta — parámetros personalizables
 │   ├── training.py            # Training Mode — 10 endpoints
-│   ├── acd.py                 # ACD Simulator — 17 endpoints + motor enrutamiento
+│   ├── acd.py                 # ACD Simulator — 17 endpoints + motor enrutamiento + SIM-7e perfiles
 │   └── docs.py                # Sirve los 3 MDs como HTML renderizado
 │
 ├── templates/sim/
@@ -855,6 +855,53 @@ GET  sim/acd/agent/<slot_id>/poll/   → acd_agent_poll   ← polling 2s
 POST sim/acd/agent/<slot_id>/action/ → acd_agent_action (answer/reject/hold/tipify/end_acw/break/return)
 ```
 
+### Motor de agentes simulados (`acd.py`) — SIM-7e ✨
+
+#### Helpers
+
+**`_get_account_tmo_acw(session)`** — TMO y ACW base desde `account.config` por canal:
+
+| Canal | TMO fallback | ACW fallback |
+|-------|-------------|-------------|
+| `inbound` | 313 s | 18 s |
+| `outbound` | 180 s | 12 s |
+| `digital` | 240 s | 10 s |
+
+**`_resolve_tipificacion(session, conv_rate, agenda_rate)`** — tipificación realista por canal:
+- `inbound` → `weighted_choice` sobre tipificaciones reales de los skills de la cuenta
+- `outbound` → modela contacto/no-contacto con `tipif_no_contacto`/`tipif_contacto` de la cuenta
+- `digital` → `weighted_choice` sobre `tipificaciones_bxi` + `tipificaciones_app`
+- fallback genérico si no hay config: `'Venta'` / `'Atendida'`
+
+**`_tick_simulated_breaks(session)`** — breaks espontáneos por tick según `SimAgentProfile`:
+
+```python
+SIM_TICK_S = 60  # segundos simulados estimados por ciclo
+
+# slot available → break:
+P(break)  = profile.break_freq × 60 / 3600
+
+# slot break → available:
+P(return) = 60 / max(profile.break_dur_s, 60)
+```
+
+Ejemplo: tier `top` (break_freq=0.5) → P≈0.8%/tick; tier `bajo` (break_freq=2.0) → P≈3.3%/tick.
+**Llamado al inicio de `_do_routing()` — diferencia tiers en sesiones largas.**
+
+#### `_resolve_simulated_slot` — parámetros activos post SIM-7e
+
+| Parámetro | Antes | Ahora |
+|-----------|-------|-------|
+| `base_tmo` | 313 hardcoded | `account.config[canal].tmo_s × aht_factor` |
+| `acw_base` | 18 hardcoded | `account.config[canal].acw_s × acw_factor` |
+| `tipificacion` | `'Venta'` o `'Atendida'` | `_resolve_tipificacion()` — real por canal |
+| `transfer_rate` | leído, nunca aplicado | activo — busca slot disponible y transfiere |
+| `available_pct` | ignorado | `slot.status = 'available' if random() < available_pct else 'break'` |
+| `agenda_rate` | ignorado | pasado a `_resolve_tipificacion()` |
+| `break_freq`/`break_dur_s` | ignorados | activos vía `_tick_simulated_breaks()` |
+
+**`_from_transfer=True`** — flag interno para evitar cadena de transferencias recursivas.
+
 **Documentación:**
 ```
 GET  sim/docs/<key>/   → docs_view   key: context | reference | design
@@ -1055,6 +1102,7 @@ BATCH = 2000   # batch de escritura a BD
 8. **sim_date vs fecha:** `session.sim_date` es `date`. `Interaction.fecha` es `DateField`. Son el mismo valor.
 9. **agent_codigo → SimAgent PK:** los generadores producen `agent_codigo` string. El engine hace el lookup `agent_pk_map[codigo]` para el FK.
 10. **Identificar interacciones GTR:** `SimRun.objects.filter(canales__contains='gtr')` o `Interaction.objects.filter(run__canales__contains='gtr')`.
+11. **Agentes simulados en ACD:** `_resolve_simulated_slot()` usa `_get_account_tmo_acw()` para TMO/ACW por canal. Nunca hardcodear 313/18. Pasar `_from_transfer=True` al resolver transferencias para evitar recursión.
 
 ---
 
@@ -1072,10 +1120,11 @@ BATCH = 2000   # batch de escritura a BD
 | 8 | ✅ Corregido | `views/acd.py` | `_get_tipificaciones()` sin rama `digital` → retornaba `[]` sin caer al fallback. Agregada rama digital (`tipificaciones_bxi` + `tipificaciones_app`) + fallback activado solo si lista vacía. |
 | 9 | ✅ Corregido | `views/acd.py` | Indentación rota en `acd_agent_poll` — bloque `available_slots` flotaba fuera del cuerpo de la función (0 spaces vs 4). |
 | 10 | ✅ Corregido | `views/acd.py` | `get_user_model()` importado inline en 2 funciones distintas. Movido al tope del archivo. |
-| 11 | ✅ Corregido | `views/gtr.py` | `gtr_panel()` no pasaba `DEFAULT_THRESHOLDS_OUTBOUND` al template — inputs de umbral outbound renderizaban vacíos. |
-| 12 | ✅ Corregido | `gtr.html` | `csrf()` leía desde `[name=csrfmiddlewaretoken]` — cambiado a cookie (convención del proyecto). |
-| 13 | ✅ Corregido | `gtr.html` | `<div id="gtr-root">` duplicado envolviendo el modal — ID inválido + CSS scoped roto. Modal movido dentro del `#gtr-root` existente. |
-| 14 | ✅ Corregido | `gtr.html` | `.events-panel` sin `background`/`border`/`border-radius` — panel sin marco visual. Estilos agregados. |
+| 11 | ✅ Corregido (SIM-7e) | `views/acd.py` | `_resolve_simulated_slot`: TMO/ACW hardcodeados (313/18 siempre inbound), tipificación solo 'Venta'/'Atendida', `transfer_rate`/`available_pct`/`break_freq` leídos pero nunca aplicados — tiers idénticos en sesiones largas. Corregido con 3 nuevos helpers y reescritura completa. |
+| 12 | ✅ Corregido | `views/gtr.py` | `gtr_panel()` no pasaba `DEFAULT_THRESHOLDS_OUTBOUND` al template — inputs de umbral outbound renderizaban vacíos. |
+| 13 | ✅ Corregido | `gtr.html` | `csrf()` leía desde `[name=csrfmiddlewaretoken]` — cambiado a cookie (convención del proyecto). |
+| 14 | ✅ Corregido | `gtr.html` | `<div id="gtr-root">` duplicado envolviendo el modal — ID inválido + CSS scoped roto. Modal movido dentro del `#gtr-root` existente. |
+| 15 | ✅ Corregido | `gtr.html` | `.events-panel` sin `background`/`border`/`border-radius` — panel sin marco visual. Estilos agregados. |
 
 ---
 

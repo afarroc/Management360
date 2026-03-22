@@ -1,7 +1,7 @@
 # Mapa de Contexto — App `sim`
 
-> Generado por `m360_map.sh`  |  2026-03-18 13:38:04
-> Ruta: `/data/data/com.termux/files/home/projects/Management360/sim`  |  Total archivos: **36**
+> Generado por `m360_map.sh`  |  2026-03-22 12:39:33
+> Ruta: `/data/data/com.termux/files/home/projects/Management360/sim`  |  Total archivos: **37**
 
 ---
 
@@ -16,7 +16,7 @@
 | 5 | 🛡 `admin` | 1 |
 | 6 | 📄 `management` | 1 |
 | 7 | 🧪 `tests` | 4 |
-| 8 | 📄 `other` | 11 |
+| 8 | 📄 `other` | 12 |
 
 ---
 
@@ -30,10 +30,10 @@
 | `views.py` | 3 | `views.py` |
 | `__init__.py` | 7 | `views/__init__.py` |
 | `account_editor.py` | 235 | `views/account_editor.py` |
-| `acd.py` | 775 | `views/acd.py` |
+| `acd.py` | 964 | `views/acd.py` |
 | `dashboard.py` | 185 | `views/dashboard.py` |
 | `docs.py` | 60 | `views/docs.py` |
-| `gtr.py` | 172 | `views/gtr.py` |
+| `gtr.py` | 173 | `views/gtr.py` |
 | `simulator.py` | 297 | `views/simulator.py` |
 | `training.py` | 451 | `views/training.py` |
 
@@ -42,11 +42,11 @@
 | Archivo | Líneas | Ruta relativa |
 |---------|--------|---------------|
 | `account_editor.html` | 1110 | `templates/sim/account_editor.html` |
-| `acd_agent.html` | 392 | `templates/sim/acd_agent.html` |
-| `acd_trainner.html` | 665 | `templates/sim/acd_trainner.html` |
+| `acd_agent.html` | 669 | `templates/sim/acd_agent.html` |
+| `acd_trainner.html` | 735 | `templates/sim/acd_trainner.html` |
 | `dashboard.html` | 765 | `templates/sim/dashboard.html` |
 | `docs.html` | 327 | `templates/sim/docs.html` |
-| `gtr.html` | 862 | `templates/sim/gtr.html` |
+| `gtr.html` | 865 | `templates/sim/gtr.html` |
 | `simulator.html` | 647 | `templates/sim/simulator.html` |
 | `training.html` | 842 | `templates/sim/training.html` |
 
@@ -83,13 +83,14 @@
 | `test_generators.py` | 543 | `tests/test_generators.py` |
 | `test_gtr_engine.py` | 597 | `tests/test_gtr_engine.py` |
 
-### OTHER (11 archivos)
+### OTHER (12 archivos)
 
 | Archivo | Líneas | Ruta relativa |
 |---------|--------|---------------|
-| `SIM_CONTEXT.md` | 302 | `SIM_CONTEXT.md` |
-| `SIM_DESIGN.md` | 705 | `SIM_DESIGN.md` |
-| `SIM_DEV_REFERENCE.md` | 918 | `SIM_DEV_REFERENCE.md` |
+| `SIM_CONTEXT.md` | 354 | `SIM_CONTEXT.md` |
+| `SIM_DESIGN.md` | 728 | `SIM_DESIGN.md` |
+| `SIM_DEV_REFERENCE.md` | 1140 | `SIM_DEV_REFERENCE.md` |
+| `SIM_HANDOFF_20260319.md` | 123 | `SIM_HANDOFF_20260319.md` |
 | `__init__.py` | 0 | `__init__.py` |
 | `apps.py` | 6 | `apps.py` |
 | `engine.py` | 233 | `engine.py` |
@@ -139,6 +140,7 @@ sim/
 ├── SIM_CONTEXT.md
 ├── SIM_DESIGN.md
 ├── SIM_DEV_REFERENCE.md
+├── SIM_HANDOFF_20260319.md
 ├── __init__.py
 ├── admin.py
 ├── apps.py
@@ -255,31 +257,31 @@ Fuente: `urls.py`  |  namespace: `sim`
 **`views/acd.py`**
 
 ```
-50:def _session_row(s: ACDSession) -> dict:
-71:def _slot_row(slot: ACDAgentSlot) -> dict:
-97:def _interaction_row(ix: ACDInteraction) -> dict:
-120:def _acd_state(session: ACDSession, gtr_state: dict = None) -> dict:
-159:def slots_in_status(slots, status):
-165:def _route_interaction(session: ACDSession, interaction: ACDInteraction) -> ACDAgentSlot | None:
-193:def _generate_acd_interactions(session: ACDSession, n: int = 5) -> list:
-224:def _resolve_simulated_slot(slot: ACDAgentSlot, interaction: ACDInteraction):
-303:def acd_panel(request):
-337:def acd_sessions_api(request):
-346:def acd_session_create(request):
-374:def acd_session_start(request, session_id):
-414:def acd_session_state(request, session_id):
-432:def _do_routing(session: ACDSession, gtr_state: dict):
-472:def acd_session_pause(request, session_id):
-483:def acd_session_resume(request, session_id):
-494:def acd_session_stop(request, session_id):
-509:def acd_slot_add(request, session_id):
-542:def acd_slot_remove(request, session_id, slot_id):
-554:def acd_slot_control(request, session_id, slot_id):
-572:def acd_interactions(request, session_id):
-591:def acd_agent_panel(request, slot_id):
-608:def acd_agent_poll(request, slot_id):
-651:def acd_agent_action(request, slot_id):
-761:def _get_tipificaciones(session: ACDSession) -> list:
+53:def _session_row(s: ACDSession) -> dict:
+74:def _slot_row(slot: ACDAgentSlot) -> dict:
+104:def _interaction_row(ix: ACDInteraction) -> dict:
+127:def _acd_state(session: ACDSession, gtr_state: dict = None) -> dict:
+166:def slots_in_status(slots, status):
+172:def _route_interaction(session: ACDSession, interaction: ACDInteraction) -> ACDAgentSlot | None:
+200:def _generate_acd_interactions(session: ACDSession, n: int = 5) -> list:
+247:def _get_account_tmo_acw(session: ACDSession) -> tuple:
+265:def _resolve_tipificacion(session: ACDSession, conv_rate: float, agenda_rate: float) -> str:
+313:def _tick_simulated_breaks(session: ACDSession):
+339:def _resolve_simulated_slot(slot: ACDAgentSlot, interaction: ACDInteraction,
+444:def acd_panel(request):
+476:def acd_sessions_api(request):
+485:def acd_session_create(request):
+513:def acd_session_start(request, session_id):
+553:def acd_session_state(request, session_id):
+577:def _do_routing(session: ACDSession, gtr_state: dict):
+620:def acd_session_pause(request, session_id):
+631:def acd_session_resume(request, session_id):
+642:def acd_session_stop(request, session_id):
+657:def acd_slot_add(request, session_id):
+687:def acd_slot_remove(request, session_id, slot_id):
+699:def acd_slot_control(request, session_id, slot_id):
+717:def acd_interactions(request, session_id):
+736:def acd_agent_panel(request, slot_id):
 ```
 
 **`views/dashboard.py`**
@@ -299,14 +301,14 @@ Fuente: `urls.py`  |  namespace: `sim`
 
 ```
 32:def gtr_panel(request):
-55:def gtr_start(request):
-83:def gtr_tick(request, session_id):
-96:def gtr_state(request, session_id):
-106:def gtr_pause(request, session_id):
-115:def gtr_resume(request, session_id):
-124:def gtr_event(request, session_id):
-145:def gtr_stop(request, session_id):
-157:def gtr_interactions(request, session_id):
+56:def gtr_start(request):
+84:def gtr_tick(request, session_id):
+97:def gtr_state(request, session_id):
+107:def gtr_pause(request, session_id):
+116:def gtr_resume(request, session_id):
+125:def gtr_event(request, session_id):
+146:def gtr_stop(request, session_id):
+158:def gtr_interactions(request, session_id):
 ```
 
 **`views/simulator.py`**
