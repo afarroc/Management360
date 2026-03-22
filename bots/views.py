@@ -529,3 +529,87 @@ def api_bot_status(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+# ─────────────────────────────────────────────────────────────────────────────
+# BOT-3b — Añadir a bots/views.py
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# IMPORTS a añadir al tope de bots/views.py:
+#
+#   from django.views.decorators.csrf import csrf_exempt
+#   from .lead_connector import process_webhook_payload
+#
+# settings.py debe tener:
+#   WEBHOOK_SECRET      = 'cambia-esto-en-produccion'
+#   WEBHOOK_ALLOWED_IPS = ['127.0.0.1']  # vacío = permitir cualquier IP
+# ─────────────────────────────────────────────────────────────────────────────
+
+from django.conf import settings
+
+
+def _authenticate_webhook(request) -> tuple[bool, str]:
+    """
+    Valida token + IP del webhook.
+
+    Token: header X-Webhook-Token == settings.WEBHOOK_SECRET
+    IP:    REMOTE_ADDR en settings.WEBHOOK_ALLOWED_IPS
+           (lista vacía = sin restricción de IP — útil en desarrollo)
+
+    Returns:
+        (ok: bool, error_msg: str)
+    """
+    # ── Token ────────────────────────────────────────────────────────────────
+    secret = getattr(settings, 'WEBHOOK_SECRET', '')
+    if not secret:
+        return False, 'WEBHOOK_SECRET no configurado en settings.'
+
+    token = request.headers.get('X-Webhook-Token', '')
+    if token != secret:
+        return False, 'Token inválido.'
+
+    # ── IP ───────────────────────────────────────────────────────────────────
+    allowed_ips = getattr(settings, 'WEBHOOK_ALLOWED_IPS', [])
+    if allowed_ips:
+        remote_ip = (
+            request.META.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
+            or request.META.get('REMOTE_ADDR', '')
+        )
+        if remote_ip not in allowed_ips:
+            return False, f'IP no autorizada: {remote_ip}'
+
+    return True, ''
+
+
+@csrf_exempt
+def webhook_receiver(request, source):
+    """
+    Receptor de webhooks de leads externos.
+
+    POST /bots/webhook/<source>/
+    Headers:
+        X-Webhook-Token: <WEBHOOK_SECRET>
+    Body: JSON con el payload del origen (VICIdial, PureCloud, etc.)
+
+    Sources registrados: sim | vicidial | purecloud
+
+    Autenticación: token estático + IP whitelist (settings.py).
+    @csrf_exempt justificado: llamadas de sistemas externos sin sesión Django.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido.'}, status=405)
+
+    # ── Auth ─────────────────────────────────────────────────────────────────
+    ok, err = _authenticate_webhook(request)
+    if not ok:
+        logger.warning('webhook_receiver auth fail [%s]: %s', source, err)
+        return JsonResponse({'success': False, 'error': err}, status=401)
+
+    # ── Parsear payload ───────────────────────────────────────────────────────
+    try:
+        payload = json.loads(request.body)
+    except Exception:
+        return JsonResponse({'success': False, 'error': 'JSON inválido.'}, status=400)
+
+    # ── Procesar ─────────────────────────────────────────────────────────────
+    result = process_webhook_payload(source, payload)
+    status_code = 200 if result['success'] else 400
+    return JsonResponse(result, status=status_code)

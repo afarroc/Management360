@@ -421,6 +421,8 @@ def _resolve_simulated_slot(slot: ACDAgentSlot, interaction: ACDInteraction,
     interaction.ended_at     = now + timedelta(seconds=dur_s + acw_s)
     interaction.save()
 
+    _emit_completed(interaction, slot)   # BOT-3b
+
     # Stats del slot
     stats = slot.stats or {}
     stats['atendidas'] = stats.get('atendidas', 0) + 1
@@ -860,6 +862,7 @@ def acd_agent_action(request, slot_id):
             dur_s = int((now - ix.answered_at).total_seconds()) if ix.answered_at else 0
             ix.duration_s = dur_s
             ix.save(update_fields=['status', 'ended_at', 'duration_s'])
+            _emit_completed(ix, slot)   # BOT-3b
             # Actualizar stats del slot
             stats = slot.stats or {}
             stats['atendidas'] = stats.get('atendidas', 0) + 1
@@ -1087,6 +1090,44 @@ def _register_bot_slot(session: ACDSession, bot_id: int, canal: str, slot_number
             'display_name': slot.display_name,
         },
     }
+
+
+def _emit_completed(interaction: ACDInteraction, slot: ACDAgentSlot):
+    """
+    BOT-3b: Notifica al sistema de leads que una ACDInteraction se completó.
+    Llama process_webhook_payload('sim', ...) directamente — sin HTTP.
+    Tolerante a fallos: si el conector falla, loguea y continúa.
+    """
+    try:
+        from bots.lead_connector import process_webhook_payload
+
+        session = slot.session
+        payload = {
+            'source':        'sim',
+            'external_id':   str(interaction.id),
+            'phone':         interaction.lead_id,
+            'name':          f'Contacto {interaction.lead_id}',
+            'campaign_name': session.account.name,
+            'result':        interaction.tipificacion or '',
+            'duration_s':    interaction.duration_s,
+            'acw_s':         interaction.acw_s,
+            'agent_id':      str(slot.id),
+            'agent_name':    slot.name,
+            'skill':         interaction.skill or '',
+            'canal':         interaction.canal,
+            'metadata': {
+                'session_id':   str(session.id),
+                'slot_number':  slot.slot_number,
+                'agent_type':   slot.agent_type,
+                'hold_s':       interaction.hold_s,
+                'is_simulated': interaction.is_simulated,
+            },
+        }
+        result = process_webhook_payload('sim', payload)
+        if not result['success']:
+            logger.warning('_emit_completed: %s', result.get('error', ''))
+    except Exception as e:
+        logger.warning('_emit_completed error (ignorado): %s', e)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

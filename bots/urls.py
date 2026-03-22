@@ -36,4 +36,7 @@ urlpatterns = [
     # -----------------------------------------------------------------------
     path('api/campaigns/<int:campaign_pk>/stats/', views.api_campaign_stats, name='api_campaign_stats'),
     path('api/campaigns/<int:campaign_pk>/distribute/', views.api_trigger_distribution, name='api_trigger_distribution'),
+
+    path('webhook/<str:source>/', views.webhook_receiver, name='webhook_receiver'),
+
 ]
