@@ -14,6 +14,10 @@ from django.core.paginator import Paginator
 from .models import LeadCampaign, Lead, LeadDistributionRule, BotInstance
 from .lead_distributor import get_lead_distributor, get_bulk_importer
 from .utils import get_bot_coordinator
+from .lead_connector import process_webhook_payload          # BOT-3b
+from .discador_bridge import DiscadorBridge                  # BOT-3
+from campaigns.models import DiscadorLoad                    # BOT-3
+from django.views.decorators.csrf import csrf_exempt         # BOT-3b
 
 import json
 import csv
@@ -529,19 +533,11 @@ def api_bot_status(request):
 
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-# ─────────────────────────────────────────────────────────────────────────────
-# BOT-3b — Añadir a bots/views.py
-# ─────────────────────────────────────────────────────────────────────────────
-#
-# IMPORTS a añadir al tope de bots/views.py:
-#
-#   from django.views.decorators.csrf import csrf_exempt
-#   from .lead_connector import process_webhook_payload
-#
-# settings.py debe tener:
-#   WEBHOOK_SECRET      = 'cambia-esto-en-produccion'
-#   WEBHOOK_ALLOWED_IPS = ['127.0.0.1']  # vacío = permitir cualquier IP
-# ─────────────────────────────────────────────────────────────────────────────
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BOT-3b — Webhook receiver
+# ═══════════════════════════════════════════════════════════════════════════════
 
 from django.conf import settings
 
@@ -613,3 +609,49 @@ def webhook_receiver(request, source):
     result = process_webhook_payload(source, payload)
     status_code = 200 if result['success'] else 400
     return JsonResponse(result, status=status_code)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BOT-3 — Sincronización DiscadorLoad → LeadCampaign
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@login_required
+@require_POST
+def discador_sync(request, pk):
+    """
+    BOT-3: Sincroniza una DiscadorLoad con LeadCampaign + Lead
+    y opcionalmente distribuye leads a bots.
+
+    POST /bots/discador/<pk>/sync/
+    Body JSON:
+        {
+            "bot_ids":         [1, 2, 3],
+            "strategy":        "equal_split",
+            "auto_distribute": true
+        }
+    """
+    discador = get_object_or_404(DiscadorLoad, pk=pk)
+
+    if discador.campaign.contacts.count() == 0:
+        return JsonResponse(
+            {'success': False, 'error': 'La carga no tiene ContactRecords.'},
+            status=400,
+        )
+
+    try:
+        body      = json.loads(request.body) if request.body else {}
+        bot_ids   = body.get('bot_ids') or []
+        strategy  = body.get('strategy', 'equal_split')
+        auto_dist = body.get('auto_distribute', True)
+
+        result = DiscadorBridge().sync(
+            discador_load_id=pk,
+            bot_ids=bot_ids or None,
+            strategy=strategy,
+            auto_distribute=auto_dist,
+        )
+
+        return JsonResponse(result, status=200 if result['success'] else 500)
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
