@@ -57,6 +57,7 @@ urlpatterns = [
     path('acd/sessions/<uuid:session_id>/resume/',                  acd.acd_session_resume,  name='acd_session_resume'),
     path('acd/sessions/<uuid:session_id>/stop/',                    acd.acd_session_stop,    name='acd_session_stop'),
     path('acd/sessions/<uuid:session_id>/slots/add/',               acd.acd_slot_add,        name='acd_slot_add'),
+    path('acd/sessions/<uuid:pk>/bots/add/',                        acd.acd_add_bots,        name='acd_add_bots'),
     path('acd/sessions/<uuid:session_id>/slots/<uuid:slot_id>/remove/',  acd.acd_slot_remove,  name='acd_slot_remove'),
     path('acd/sessions/<uuid:session_id>/slots/<uuid:slot_id>/control/', acd.acd_slot_control, name='acd_slot_control'),
     path('acd/sessions/<uuid:session_id>/interactions/',            acd.acd_interactions,    name='acd_interactions'),
