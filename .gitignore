@@ -10,6 +10,7 @@ __pycache__/
 *.egg
 .python-version
 venv/
+venv312/
 env/
 .venv/
 ENV/
@@ -114,3 +115,11 @@ _fix_git_ignore.py
 gtd_config.yaml
 backup_pre_migration_*.json
 media/
+
+# ================================
+# Archives and third-party code
+# ================================
+*.tar.bz2
+*.tar.gz
+*.zip
+MacPorts-*/

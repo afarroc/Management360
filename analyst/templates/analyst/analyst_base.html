@@ -1143,18 +1143,19 @@ function filterSidebar(q) {
 }
 
 function selectBase(id) {
-  AB.baseId = id; AB.page = 1; AB.searchTerm = '';
-  document.querySelectorAll('.ab-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.id === id);
-  });
-  document.getElementById('ab-empty').style.display       = 'none';
-  document.getElementById('ab-active-panel').style.display = 'block';
-  // Enable toolbar buttons
-  ['tb-schema-btn','tb-delete-btn','tb-add-row-btn','tb-import-btn','tb-export-btn']
-    .forEach(b => { const el = document.getElementById(b); if(el) el.disabled = false; });
-  switchTab('data');
-  loadData();
-}
+   AB.baseId = id; AB.page = 1; AB.searchTerm = '';
+   document.querySelectorAll('.ab-item').forEach(el => {
+     el.classList.toggle('active', el.dataset.id === id);
+   });
+   document.getElementById('ab-empty').style.display       = 'none';
+   document.getElementById('ab-active-panel').style.display = 'block';
+   // Enable toolbar buttons
+   ['tb-schema-btn','tb-delete-btn','tb-add-row-btn','tb-import-btn','tb-export-btn']
+     .forEach(b => { const el = document.getElementById(b); if(el) el.disabled = false; });
+   switchTab('data');
+   loadData();
+   loadSources();
+ }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
 
@@ -1557,59 +1558,63 @@ async function inferSchemaFromClip(clipKey) {
 
 // Carga todas las fuentes (datasets + clips) una sola vez y rellena todos los selectores
 async function loadSources() {
-  const data = await fetch('/analyst/bases/sources/').then(r=>r.json()).catch(()=>null);
-  if (!data?.success) return;
-  window._sourcesCache = data;
+   const data = await fetch('/analyst/bases/sources/').then(r=>r.json()).catch(()=>null);
+   if (!data?.success) return;
+   window._sourcesCache = data;
 
-  // ── Selects de schema (dentro del modal crear) ──
-  const dsOpts  = data.datasets.map(d =>
-    `<option value="${d.id}">${d.name} (${d.rows} filas · ${d.col_count} cols)</option>`
-  ).join('');
-  const clipOpts = data.clips.map(c =>
-    `<option value="${c.key}">${c.key} — ${c.rows} filas · ${c.cols} cols${c.filename ? ' · ' + c.filename : ''}</option>`
-  ).join('');
+   // ── Selects de schema (dentro del modal crear) ──
+   const dsOpts  = data.datasets.map(d =>
+     `<option value="${d.id}">${d.name} (${d.rows} filas · ${d.col_count} cols)</option>`
+   ).join('');
+   const clipOpts = data.clips.map(c =>
+     `<option value="${c.key}">${c.key} — ${c.rows} filas · ${c.cols} cols${c.filename ? ' · ' + c.filename : ''}</option>`
+   ).join('');
 
-  const sDatasetSchema = document.getElementById('schema-dataset-select');
-  const sClipSchema    = document.getElementById('schema-clip-select');
-  const sDatasetImport = document.getElementById('dataset-select');
-  const sClipImport    = document.getElementById('clip-select');
+   const sDatasetSchema = document.getElementById('schema-dataset-select');
+   const sClipSchema    = document.getElementById('schema-clip-select');
+   const sDatasetImport = document.getElementById('dataset-select');
+   const sClipImport    = document.getElementById('clip-select');
 
-  const emptyDs  = '<option value="">— Seleccionar dataset —</option>';
-  const emptyClp = '<option value="">— Seleccionar clip —</option>';
+   const emptyDs  = '<option value="">— Seleccionar dataset —</option>';
+   const emptyClp = '<option value="">— Seleccionar clip —</option>';
 
-  if (sDatasetSchema) sDatasetSchema.innerHTML = emptyDs  + (dsOpts  || '<option disabled>Sin datasets disponibles</option>');
-  if (sClipSchema)    sClipSchema.innerHTML    = emptyClp + (clipOpts || '<option disabled>Sin clips disponibles</option>');
-  if (sDatasetImport) sDatasetImport.innerHTML = emptyDs  + (dsOpts  || '<option disabled>Sin datasets disponibles</option>');
-  if (sClipImport)    sClipImport.innerHTML    = emptyClp + (clipOpts || '<option disabled>Sin clips disponibles</option>');
+   if (sDatasetSchema) sDatasetSchema.innerHTML = emptyDs  + (dsOpts  || '<option disabled>Sin datasets disponibles</option>');
+   if (sClipSchema)    sClipSchema.innerHTML    = emptyClp + (clipOpts || '<option disabled>Sin clips disponibles</option>');
+   if (sDatasetImport) sDatasetImport.innerHTML = emptyDs  + (dsOpts  || '<option disabled>Sin datasets disponibles</option>');
+   if (sClipImport)    sClipImport.innerHTML    = emptyClp + (clipOpts || '<option disabled>Sin clips disponibles</option>');
 
-  // Mostrar info al seleccionar dataset de importación
-  const dpi = document.getElementById('dataset-preview-info');
-  if (sDatasetImport && dpi) {
-    sDatasetImport.addEventListener('change', () => {
-      const ds = data.datasets.find(d => d.id === sDatasetImport.value);
-      if (ds) {
-        dpi.style.display = '';
-        dpi.innerHTML = `<i class="bi bi-info-circle"></i> <strong>${ds.name}</strong> — ${ds.rows} filas · ${ds.col_count} columnas · ${ds.source_file || 'sin fuente'}`;
-      } else {
-        dpi.style.display = 'none';
-      }
-    });
-  }
+   // Mostrar info al seleccionar dataset de importación
+   const dpi = document.getElementById('dataset-preview-info');
+   if (sDatasetImport && dpi) {
+     const newSelect = sDatasetImport.cloneNode(true);
+     sDatasetImport.parentNode.replaceChild(newSelect, sDatasetImport);
+     newSelect.addEventListener('change', () => {
+       const ds = data.datasets.find(d => d.id === newSelect.value);
+       if (ds) {
+         dpi.style.display = '';
+         dpi.innerHTML = `<i class="bi bi-info-circle"></i> <strong>${ds.name}</strong> — ${ds.rows} filas · ${ds.col_count} columnas · ${ds.source_file || 'sin fuente'}`;
+       } else {
+         dpi.style.display = 'none';
+       }
+     });
+   }
 
-  // Mostrar info al seleccionar clip de importación
-  const cli = document.getElementById('clip-import-info');
-  if (sClipImport && cli) {
-    sClipImport.addEventListener('change', () => {
-      const clip = data.clips.find(c => c.key === sClipImport.value);
-      if (clip) {
-        cli.style.display = '';
-        cli.innerHTML = `<i class="bi bi-clipboard2-data"></i> <strong>${clip.key}</strong> — ${clip.rows} filas · ${clip.cols} columnas${clip.description ? ' · ' + clip.description : ''}`;
-      } else {
-        cli.style.display = 'none';
-      }
-    });
-  }
-}
+   // Mostrar info al seleccionar clip de importación
+   const cli = document.getElementById('clip-import-info');
+   if (sClipImport && cli) {
+     const newSelect = sClipImport.cloneNode(true);
+     sClipImport.parentNode.replaceChild(newSelect, sClipImport);
+     newSelect.addEventListener('change', () => {
+       const clip = data.clips.find(c => c.key === newSelect.value);
+       if (clip) {
+         cli.style.display = '';
+         cli.innerHTML = `<i class="bi bi-clipboard2-data"></i> <strong>${clip.key}</strong> — ${clip.rows} filas · ${clip.cols} columnas${clip.description ? ' · ' + clip.description : ''}`;
+       } else {
+         cli.style.display = 'none';
+       }
+     });
+   }
+ }
 
 // Alias para compatibilidad con llamada anterior
 function loadDatasetSelects() { loadSources(); }
@@ -2052,14 +2057,17 @@ async function submitImport() {
 // ── Sidebar count update ──────────────────────────────────────────────────
 
 function updateSidebarCount(id, count) {
-  const item = document.querySelector(`.ab-item[data-id="${id}"]`);
-  if (!item) return;
-  item.querySelector('.ab-item-count').textContent = count;
-  const meta = item.querySelector('.ab-item-meta');
-  if (meta) meta.innerHTML = `${AB.schema.length} col · ${count} filas`;
-  document.getElementById('stat-rows').textContent = count;
-  document.getElementById('tc-rows').textContent   = count;
-  AB.rowCount = count;
-}
-</script>
-{% endblock extra_js %}
+   const item = document.querySelector(`.ab-item[data-id="${id}"]`);
+   if (!item) return;
+   item.querySelector('.ab-item-count').textContent = count;
+   const meta = item.querySelector('.ab-item-meta');
+   if (meta) meta.innerHTML = `${AB.schema.length} col · ${count} filas`;
+   document.getElementById('stat-rows').textContent = count;
+   document.getElementById('tc-rows').textContent   = count;
+   AB.rowCount = count;
+ }
+
+ // Cargar fuentes al iniciar la página
+ loadSources();
+ </script>
+ {% endblock extra_js %}

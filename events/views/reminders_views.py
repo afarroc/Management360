@@ -87,7 +87,7 @@ def create_reminder(request):
             reminder.save()
 
             messages.success(request, f'Recordatorio "{reminder.title}" creado exitosamente')
-            return redirect('reminders_dashboard')
+            return redirect('events:reminders_dashboard')
 
 
     else:
@@ -110,14 +110,14 @@ def edit_reminder(request, reminder_id):
         reminder = Reminder.objects.get(id=reminder_id, created_by=request.user)
     except Reminder.DoesNotExist:
         messages.error(request, 'Recordatorio no encontrado.')
-        return redirect('reminders_dashboard')
+        return redirect('events:reminders_dashboard')
 
     if request.method == 'POST':
         form = ReminderForm(request.POST, instance=reminder)
         if form.is_valid():
             form.save()
             messages.success(request, f'Recordatorio "{reminder.title}" actualizado exitosamente')
-            return redirect('reminders_dashboard')
+            return redirect('events:reminders_dashboard')
     else:
         form = ReminderForm(instance=reminder)
 
@@ -139,13 +139,13 @@ def delete_reminder(request, reminder_id):
         reminder = Reminder.objects.get(id=reminder_id, created_by=request.user)
     except Reminder.DoesNotExist:
         messages.error(request, 'Recordatorio no encontrado.')
-        return redirect('reminders_dashboard')
+        return redirect('events:reminders_dashboard')
 
     if request.method == 'POST':
         reminder_title = reminder.title
         reminder.delete()
         messages.success(request, f'Recordatorio "{reminder_title}" eliminado exitosamente')
-        return redirect('reminders_dashboard')
+        return redirect('events:reminders_dashboard')
 
     context = {
         'title': 'Eliminar Recordatorio',
@@ -197,7 +197,7 @@ def bulk_reminder_action(request):
 
         if not selected_reminders:
             messages.error(request, 'No se seleccionaron recordatorios.')
-            return redirect('reminders_dashboard')
+            return redirect('events:reminders_dashboard')
 
         reminders = Reminder.objects.filter(id__in=selected_reminders, created_by=request.user)
 
@@ -226,4 +226,4 @@ def bulk_reminder_action(request):
         else:
             messages.error(request, 'Acción no válida.')
 
-    return redirect('reminders_dashboard')
+    return redirect('events:reminders_dashboard')

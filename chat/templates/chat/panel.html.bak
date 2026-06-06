@@ -6,14 +6,14 @@
 </button>
 
 <div id="chat-panel" class="docked card">
-    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center chat-header" style="flex-wrap: nowrap;">
-        <span class="d-flex align-items-center flex-shrink-1" style="min-width: 0;">
-            <i class="bi bi-chat-dots me-2"></i><span class="d-none d-sm-inline">Chat</span>
-            <select id="chat-room-selector" class="form-select form-select-sm ms-1" style="flex-shrink: 1; min-width: 0; width: auto; max-width: 80px;">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center chat-header">
+        <span>
+            <i class="bi bi-chat-dots me-2"></i>Chat
+            <select id="chat-room-selector" class="form-select form-select-sm ms-2">
                 <option value="" disabled selected>Selecciona una sala...</option>
             </select>
         </span>
-        <div class="d-flex gap-1 flex-shrink-0">
+        <div class="d-flex gap-1">
             <button id="go-chat-main-btn" class="btn btn-light btn-sm" title="Ir al chat principal">
                 <i class="bi bi-box-arrow-up-right"></i>
             </button>

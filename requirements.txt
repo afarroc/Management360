@@ -6,19 +6,22 @@ dj-database-url==2.3.0
 # Channels and WebSockets
 channels==4.2.2
 channels_redis==4.2.1
-# daphne==4.1.2
+daphne
 
 # Database
 PyMySQL==1.1.1
-psycopg2-binary==2.9.10
+psycopg2-binary==2.9.11
 
 # Forms and UI
 django-crispy-forms==2.3
 crispy-bootstrap5==2024.10
 django-widget-tweaks==1.5.0
+django-htmx
+django-tinymce
+django-ckeditor-5
 
 # Media and Files
-Pillow==11.1.0
+Pillow~=12.2.0
 whitenoise==6.9.0
 
 # Email processing
@@ -29,11 +32,12 @@ schedule==1.2.2
 
 # Redis
 redis==6.2.0
+django-redis
 
 # Data processing
-# pandas==2.2.3
+pandas
+numpy
 openpyxl==3.1.5
-# numpy==2.2.4
 
 # Encoding detection
 chardet==5.2.0
@@ -47,6 +51,7 @@ beautifulsoup4==4.12.3
 # Authentication and Security
 python-decouple==3.8
 python-dotenv
+PyJWT
 
 # Testing
 pytest==8.3.5
@@ -56,14 +61,10 @@ Faker==37.1.0
 ollama
 
 # HTTP and APIs
-requests==2.32.3
-# jwt==1.3.1
-
-# Async
-aiohttp==3.11.16
-aiohappyeyeballs==2.6.1
-aiosignal==1.3.2
-anyio==4.9.0
+aiohttp~=3.13.0
+aiohappyeyeballs>=2.6.0
+aiosignal>=1.4.0
+anyio>=4.9.0
 
 # Web server
 gunicorn==23.0.0
@@ -74,3 +75,4 @@ psutil==6.0.0
 python-dateutil==2.9.0.post0
 pytz==2025.2
 tzdata==2025.2
+markdown

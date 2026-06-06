@@ -115,14 +115,14 @@ def event_detail(request, event_id):
         
         if not has_event_permission(request.user, event, 'view'):
             messages.error(request, 'No tienes permisos para ver este evento.')
-            return redirect('events')
+            return redirect('events:events')
         
         return render(request, 'events/event_detail.html', _get_event_detail_context(event))
         
     except Exception as e:
         logger.error(f"Error in event_detail {event_id}: {e}", exc_info=True)
         messages.error(request, f'Error al cargar el evento: {e}')
-        return redirect('events')
+        return redirect('events:events')
 
 
 @login_required
@@ -150,7 +150,7 @@ def event_panel(request, event_id=None):
     except Exception as e:
         logger.error(f"Error in event_panel: {e}", exc_info=True)
         messages.error(request, f'Error al cargar el panel: {e}')
-        return redirect('events')
+        return redirect('events:events')
 
 
 # ============================================================================
@@ -186,10 +186,10 @@ def event_edit(request, event_id=None):
             
     except Event.DoesNotExist:
         messages.error(request, 'El evento no existe.')
-        return redirect('event_panel')
+        return redirect('events:event_panel')
     except PermissionDenied as e:
         messages.error(request, str(e))
-        return redirect('event_panel')
+        return redirect('events:event_panel')
     except Exception as e:
         logger.error(f"Error in event_edit: {e}", exc_info=True)
         messages.error(request, 'Error inesperado.')
@@ -239,7 +239,7 @@ def event_status_change(request, event_id):
         
         _update_event_status(event, request.user, new_status)
         messages.success(request, 'Estado actualizado exitosamente.')
-        return redirect('events')
+        return redirect('events:events')
         
     except Exception as e:
         logger.error(f"Error changing event status: {e}", exc_info=True)
@@ -257,7 +257,7 @@ def assign_attendee_to_event(request, event_id, user_id):
         # ========== MEJORA DE SEGURIDAD ==========
         if not can_edit_event(request.user, event):
             messages.error(request, 'No tienes permiso para modificar este evento.')
-            return redirect('event_detail', event_id=event_id)
+            return redirect('events:event_detail', event_id=event_id)
         # ==========================================
         
         user = get_object_or_404(User, pk=user_id, is_active=True)
@@ -268,7 +268,7 @@ def assign_attendee_to_event(request, event_id, user_id):
         else:
             messages.info(request, 'El asistente ya estaba asignado.')
 
-        return redirect('event_detail', event_id=event_id)
+        return redirect('events:event_detail', event_id=event_id)
         
     except Exception as e:
         messages.error(request, f'Error al asignar asistente: {e}')
@@ -286,17 +286,17 @@ def event_delete(request, event_id):
     """
     if request.method != 'POST':
         messages.error(request, 'Método no permitido.')
-        return redirect('event_panel')
+        return redirect('events:event_panel')
     
     event = get_object_or_404(Event, pk=event_id)
 
     if not is_superuser(request.user):
         messages.error(request, 'No tienes permiso para eliminar eventos.')
-        return redirect('event_panel')
+        return redirect('events:event_panel')
 
     event.delete()
     messages.success(request, 'Evento eliminado exitosamente.')
-    return redirect('event_panel')
+    return redirect('events:event_panel')
 
 
 @login_required
@@ -306,14 +306,14 @@ def event_bulk_action(request):
     """
     if request.method != 'POST':
         messages.error(request, 'Método no permitido.')
-        return redirect('event_panel')
+        return redirect('events:event_panel')
     
     action = request.POST.get('action')
     selected_events = request.POST.getlist('selected_items')
 
     if not selected_events:
         messages.error(request, 'No se seleccionaron eventos.')
-        return redirect('event_panel')
+        return redirect('events:event_panel')
 
     # ========== MEJORA DE SEGURIDAD ==========
     events = get_editable_events(request.user).filter(id__in=selected_events)
@@ -323,7 +323,7 @@ def event_bulk_action(request):
         if action == 'delete':
             if not is_superuser(request.user):
                 messages.error(request, 'Sin permiso para eliminar.')
-                return redirect('event_panel')
+                return redirect('events:event_panel')
             count = events.count()
             events.delete()
             messages.success(request, f'{count} evento(s) eliminado(s).')
@@ -343,7 +343,7 @@ def event_bulk_action(request):
     except Exception as e:
         messages.error(request, f'Error en acción masiva: {e}')
     
-    return redirect('event_panel')
+    return redirect('events:event_panel')
 
 
 # ============================================================================
@@ -401,7 +401,7 @@ def event_history(request, event_id=None):
         # ========== MEJORA DE SEGURIDAD ==========
         if not has_event_permission(request.user, event, 'view'):
             messages.error(request, 'No tienes permiso para ver este evento.')
-            return redirect('events')
+            return redirect('events:events')
         # ==========================================
         productive_status = get_default_status('event', 'In Progress')
         events_history = EventState.objects.filter(
@@ -565,7 +565,7 @@ def _render_event_detail_panel(request, event_id, title, managers,
     
     if not event_data:
         messages.error(request, f'Evento ID {event_id} no encontrado.')
-        return redirect('events')
+        return redirect('events:events')
     
     context = {
         'page': 'event_detail',
@@ -731,7 +731,7 @@ def _process_event_create_form(request, title):
             EventAttendee.objects.create(user=attendee, event=new_event)
         
         messages.success(request, 'Evento creado con éxito.')
-        return redirect('events')
+        return redirect('events:events')
         
     except (Status.DoesNotExist, IntegrityError) as e:
         messages.error(request, f'Error al crear evento: {e}')
@@ -950,13 +950,13 @@ def _handle_redirect_after_save(request, event):
         return redirect(next_url)
     
     if 'save_and_view' in request.POST:
-        return redirect('event_detail', event_id=event.id)
+        return redirect('events:event_detail', event_id=event.id)
     if 'save_and_continue' in request.POST:
-        return redirect('event_edit', event_id=event.id)
+        return redirect('events:event_edit', event_id=event.id)
     if 'save_and_new' in request.POST:
-        return redirect('event_create')
+        return redirect('events:event_create')
     
-    return redirect('event_panel')
+    return redirect('events:event_panel')
 
 
 def _get_status_options(user, event):

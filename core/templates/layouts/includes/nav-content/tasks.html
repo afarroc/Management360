@@ -63,12 +63,62 @@
             </ul>
         </li>
 
+        <!-- Scheduling & Calendar -->
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#task-scheduling-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-calendar-week"></i><span>Scheduling & Calendar</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="task-scheduling-nav" class="nav-content collapse" data-bs-parent="#tasks-nav">
+                <li>
+                    <a href="{% url 'events:task_schedules' %}">
+                        <i class="bi bi-arrow-repeat"></i><span>Task Schedules</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'events:create_task_schedule' %}">
+                        <i class="bi bi-plus-circle"></i><span>Create Schedule</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'events:planning_task' %}">
+                        <i class="bi bi-calendar-week"></i><span>Task Planning</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'events:task_programs_calendar' %}">
+                        <i class="bi bi-calendar-month"></i><span>Task Calendar</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+
         <!-- Reports -->
         <li>
             <a href="{% url 'events:task_export' %}">
                 <i class="bi bi-download"></i><span>Export Tasks</span>
             </a>
         </li>
+
+        <!-- Admin Schedules (Superuser only) -->
+        {% if user.is_superuser %}
+        <li class="nav-item">
+            <a class="nav-link collapsed" data-bs-target="#schedule-admin-nav" data-bs-toggle="collapse" href="#">
+                <i class="bi bi-calendar-event"></i><span>Schedule Admin</span><i class="bi bi-chevron-down ms-auto"></i>
+            </a>
+            <ul id="schedule-admin-nav" class="nav-content collapse" data-bs-parent="#tasks-nav">
+                <li>
+                    <a href="{% url 'events:schedule_admin_dashboard' %}">
+                        <i class="bi bi-speedometer2"></i><span>Admin Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'events:user_schedules_panel' %}">
+                        <i class="bi bi-people"></i><span>User Schedules</span>
+                    </a>
+                </li>
+            </ul>
+        </li>
+        {% endif %}
         {% endif %}
     </ul>
 </li><!-- End Optimized Tasks Nav -->

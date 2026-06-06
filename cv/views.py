@@ -108,8 +108,8 @@ class CorporateDataMixin:
                 'status_color': status_color,
                 'progress': progress,
                 'team_size': project.attendees.count() if hasattr(project, 'attendees') else 0,
-                'detail_url': reverse('project_detail', args=[project.id]),
-                'edit_url': reverse('project_edit', args=[project.id]),
+                'detail_url': reverse('events:project_detail', args=[project.id]),
+                'edit_url': reverse('events:project_edit', args=[project.id]),
             })
 
         return active_projects_list
@@ -146,7 +146,7 @@ class CorporateDataMixin:
                     task.updated_at,
                     'check-circle' if getattr(task, 'done', False) else 'circle',
                     'success' if getattr(task, 'done', False) else 'primary',
-                    reverse('tasks_with_id', args=[task.id]) if hasattr(task, 'id') else None
+                    reverse('events:tasks_with_id', args=[task.id]) if hasattr(task, 'id') else None
                 ))
                 task_count += 1
 
@@ -166,7 +166,7 @@ class CorporateDataMixin:
                     project.updated_at,
                     'folder',
                     'info',
-                    reverse('project_detail', args=[project.id])
+                    reverse('events:project_detail', args=[project.id])
                 ))
                 project_count += 1
 
@@ -186,7 +186,7 @@ class CorporateDataMixin:
                     event.updated_at,
                     'calendar',
                     'warning',
-                    reverse('event_detail', args=[event.id])
+                    reverse('events:event_detail', args=[event.id])
                 ))
                 event_count += 1
 

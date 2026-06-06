@@ -13,17 +13,17 @@ from ..forms import EventStatusForm, ProjectStatusForm, TaskStatusForm
 def status(request):
     title='Status Panel'
     urls=[
-        {'url':'status_create','name':'Create Status'},
-        {'url':'status_edit','name':'Edit Status'},        
+        {'url_name':'events:status_create','name':'Create Status'},
+        {'url_name':'events:status_edit','name':'Edit Status'},        
     ]
 
     form_urls = [
-        {'url': 'status_create', 'form_id' : 1 ,'name': 'Create Event Status'},
-        {'url': 'status_create', 'form_id' : 2 , 'name': 'Create Project Status'},
-        {'url': 'status_create', 'form_id' : 3 , 'name': 'Create Task Status'},
-        {'url': 'status_edit', 'form_id' : 1 ,'name': 'Edit Event Status'},
-        {'url': 'status_edit', 'form_id' : 2 , 'name': 'Edit Project Status'},
-        {'url': 'status_edit', 'form_id' : 3 , 'name': 'Edit Task Status'},
+        {'url_name': 'events:status_create_with_model', 'form_id' : 1 ,'name': 'Create Event Status'},
+        {'url_name': 'events:status_create_with_model', 'form_id' : 2 , 'name': 'Create Project Status'},
+        {'url_name': 'events:status_create_with_model', 'form_id' : 3 , 'name': 'Create Task Status'},
+        {'url_name': 'events:status_edit_with_model', 'form_id' : 1 ,'name': 'Edit Event Status'},
+        {'url_name': 'events:status_edit_with_model', 'form_id' : 2 , 'name': 'Edit Project Status'},
+        {'url_name': 'events:status_edit_with_model', 'form_id' : 3 , 'name': 'Edit Task Status'},
         ]
 
     return render(request, 'configuration/status.html', {
@@ -36,7 +36,7 @@ def status_edit(request, model_id=None, status_id=None):
     # Titulo de la Pagina
     title="Status Edit"
     urls = [
-        {'url': 'status', 'name': 'Status Panel'},
+        {'url_name': 'events:status', 'name': 'Status Panel'},
 
     ]
     try:
@@ -74,14 +74,13 @@ def status_edit(request, model_id=None, status_id=None):
                         form.save()
 
                         messages.success(request, 'El evento ha sido editado exitosamente.')
-                        return redirect('status_edit', model_id=model_id)
-                else:
-                    # Si el formulario no se envía, rellena el formulario con los datos actuales de la tipificación
-                    form = FormClass(instance=status)
-                    return render(request, 'configuration/status_edit.html', {
-                        'title' : title,
-                        'form' : form,
-
+                        return redirect('events:status_edit', model_id=model_id)
+                    else:
+                        # Si el formulario no se envía, rellena el formulario con los datos actuales de la tipificación
+                        form = FormClass(instance=status)
+                        return render(request, 'configuration/status_edit.html', {
+                            'title' : title,
+                            'form' : form,
                         })
 
             else:
@@ -101,9 +100,9 @@ def status_edit(request, model_id=None, status_id=None):
         else:
 
             form_urls = [
-                {'url': 'status_edit', 'form_id' : 1 ,'name': 'Edit Event Status'},
-                {'url': 'status_edit', 'form_id' : 2 , 'name': 'Edit Project Status'},
-                {'url': 'status_edit', 'form_id' : 3 , 'name': 'Edit Task Status'},
+                {'url_name': 'events:status_edit_with_model', 'form_id' : 1 ,'name': 'Edit Event Status'},
+                {'url_name': 'events:status_edit_with_model', 'form_id' : 2 , 'name': 'Edit Project Status'},
+                {'url_name': 'events:status_edit_with_model', 'form_id' : 3 , 'name': 'Edit Task Status'},
 
             ]
             return render(request, 'configuration/status_edit.html', {
@@ -114,17 +113,17 @@ def status_edit(request, model_id=None, status_id=None):
             
     except ValueError as e:
             messages.error(request, str(e))
-            return redirect('home')  
+            return redirect('home')
         
 def status_create(request, model_id=None):  
     title = 'Status Create'
     urls = [
-        {'url': 'status', 'name': 'Status Panel'},
+        {'url_name': 'events:status', 'name': 'Status Panel'},
         ]
     form_urls = [
-        {'url': 'status_create', 'form_id' : 1 ,'name': 'Create Event Status'},
-        {'url': 'status_create', 'form_id' : 2 , 'name': 'Create Project Status'},
-        {'url': 'status_create', 'form_id' : 3 , 'name': 'Create Task Status'},
+        {'url_name': 'events:status_create_with_model', 'form_id' : 1 ,'name': 'Create Event Status'},
+        {'url_name': 'events:status_create_with_model', 'form_id' : 2 , 'name': 'Create Project Status'},
+        {'url_name': 'events:status_create_with_model', 'form_id' : 3 , 'name': 'Create Task Status'},
 
     ]
     instructions = [
@@ -203,7 +202,7 @@ def status_delete(request, model_id, status_id):
                 print(request.POST)
                 status.delete()
                 messages.success(request, 'El evento ha sido eliminado exitosamente.')
-                return redirect('status_edit', model_id=model_id)
+                return redirect('events:status_edit', model_id=model_id)
             
             return render(request, 'configuration/confirm_delete.html', {
                 'object': status,
@@ -214,5 +213,5 @@ def status_delete(request, model_id, status_id):
             
     except ValueError as e:
             messages.error(request, str(e))
-            return redirect('home')  
+            return redirect('home')
                 

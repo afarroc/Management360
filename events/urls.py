@@ -152,13 +152,14 @@ urlpatterns = [
     path('eisenhower/', eisenhower_matrix, name='eisenhower_matrix'),
     path('eisenhower/move/<int:task_id>/<str:quadrant>/', move_task_eisenhower, name='move_task_eisenhower'),
 
-    # ============================================================================
-    # DEPENDENCIAS DE TAREAS
-    # ============================================================================
-    path('dependencies/', task_dependencies, name='task_dependencies_list'),
-    path('dependencies/create/<int:task_id>/', create_task_dependency, name='create_task_dependency'),
-    path('dependencies/<int:dependency_id>/delete/', delete_task_dependency, name='delete_task_dependency'),
-    path('dependencies/graph/<int:task_id>/', task_dependency_graph, name='task_dependency_graph'),
+# ============================================================================
+# DEPENDENCIAS DE TAREAS
+# ============================================================================
+path('dependencies/<int:task_id>/', task_dependencies, name='task_dependencies_list'),
+path('dependencies/', task_dependencies, name='task_dependencies_list'),
+path('dependencies/create/<int:task_id>/', create_task_dependency, name='create_task_dependency'),
+path('dependencies/<int:dependency_id>/delete/', delete_task_dependency, name='delete_task_dependency'),
+path('dependencies/graph/<int:task_id>/', task_dependency_graph, name='task_dependency_graph'),
 
     # ============================================================================
     # PLANTILLAS DE PROYECTOS

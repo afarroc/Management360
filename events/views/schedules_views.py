@@ -268,7 +268,7 @@ def create_task_schedule(request):
         if form.is_valid():
             schedule = form.save()
             messages.success(request, f'Programación creada exitosamente para "{schedule.task.title}"')
-            return redirect('task_schedule_detail', schedule_id=schedule.id)
+            return redirect('events:task_schedule_detail', schedule_id=schedule.id)
     else:
         form = TaskScheduleForm(user=request.user)
 
@@ -292,7 +292,7 @@ def task_schedule_detail(request, schedule_id):
         )
     except TaskSchedule.DoesNotExist:
         messages.error(request, 'Programación no encontrada.')
-        return redirect('task_schedules')
+        return redirect('events:task_schedules')
 
     # Generar próximas ocurrencias
     next_occurrences = schedule.generate_occurrences(limit=10)
@@ -323,7 +323,7 @@ def edit_task_schedule(request, schedule_id):
         schedule = TaskSchedule.objects.select_related('task').get(id=schedule_id, host=request.user)
     except TaskSchedule.DoesNotExist:
         messages.error(request, 'Programación no encontrada.')
-        return redirect('task_schedules')
+        return redirect('events:task_schedules')
 
     if request.method == 'POST':
         form = TaskScheduleForm(request.POST, instance=schedule, user=request.user)
@@ -346,7 +346,7 @@ def edit_task_schedule(request, schedule_id):
                 f'Programación "{schedule.task.title}" actualizada exitosamente. '
                 f'Se generarán {len(schedule.generate_occurrences(limit=5))} próximas ocurrencias.'
             )
-            return redirect('task_schedule_detail', schedule_id=schedule.id)
+            return redirect('events:task_schedule_detail', schedule_id=schedule.id)
         else:
             # Mejor manejo de errores
             for field, errors in form.errors.items():
@@ -458,7 +458,7 @@ class TaskScheduleEditView(LoginRequiredMixin, UpdateView):
         # Generar preview si se solicita
         if self.request.POST.get('action') == 'preview':
             # Redirigir a preview en lugar de guardar
-            return redirect('task_schedule_preview', schedule_id=schedule.id)
+            return redirect('events:task_schedule_preview', schedule_id=schedule.id)
 
         # Log de cambios para auditoría
         self._log_schedule_changes(schedule, form.changed_data, original_values)
@@ -522,7 +522,7 @@ def task_schedule_preview(request, schedule_id):
         schedule = TaskSchedule.objects.get(id=schedule_id, host=request.user)
     except TaskSchedule.DoesNotExist:
         messages.error(request, 'Programación no encontrada.')
-        return redirect('task_schedules')
+        return redirect('events:task_schedules')
 
     # Simular cambios basados en POST data
     if request.method == 'POST':
@@ -566,7 +566,7 @@ def task_schedule_preview(request, schedule_id):
             return render(request, 'events/task_schedule_preview.html', context)
         else:
             messages.error(request, 'Datos inválidos para preview.')
-            return redirect('edit_task_schedule', schedule_id=schedule_id)
+            return redirect('events:edit_task_schedule', schedule_id=schedule_id)
 
     # GET request - mostrar preview actual
     current_occurrences = schedule.generate_occurrences(limit=10)
@@ -591,13 +591,13 @@ def delete_task_schedule(request, schedule_id):
         schedule = TaskSchedule.objects.get(id=schedule_id, host=request.user)
     except TaskSchedule.DoesNotExist:
         messages.error(request, 'Programación no encontrada.')
-        return redirect('task_schedules')
+        return redirect('events:task_schedules')
 
     if request.method == 'POST':
         task_title = schedule.task.title
         schedule.delete()
         messages.success(request, f'Programación eliminada: "{task_title}"')
-        return redirect('task_schedules')
+        return redirect('events:task_schedules')
 
     context = {
         'title': 'Eliminar Programación',
@@ -616,7 +616,7 @@ def generate_schedule_occurrences(request, schedule_id):
         schedule = TaskSchedule.objects.get(id=schedule_id, host=request.user)
     except TaskSchedule.DoesNotExist:
         messages.error(request, 'Programación no encontrada.')
-        return redirect('task_schedules')
+        return redirect('events:task_schedules')
 
     if request.method == 'POST':
         # Generar ocurrencias
@@ -627,7 +627,7 @@ def generate_schedule_occurrences(request, schedule_id):
         else:
             messages.info(request, 'No se generaron nuevas programaciones (ya existen o no hay fechas futuras)')
 
-        return redirect('task_schedule_detail', schedule_id=schedule.id)
+        return redirect('events:task_schedule_detail', schedule_id=schedule.id)
 
     # GET request - mostrar confirmación
     next_occurrences = schedule.generate_occurrences(limit=5)
@@ -649,7 +649,7 @@ def user_schedules_panel(request):
     # Verificar permisos de administrador
     if not request.user.is_superuser:
         messages.error(request, 'No tienes permisos para acceder al panel de administración de horarios.')
-        return redirect('task_schedules')
+        return redirect('events:task_schedules')
 
     # Filtros
     user_filter = request.GET.get('user', 'all')
@@ -746,7 +746,7 @@ def schedule_admin_dashboard(request):
     # Verificar permisos de administrador
     if not request.user.is_superuser:
         messages.error(request, 'No tienes permisos para acceder al panel de administración de programaciones.')
-        return redirect('task_schedules')
+        return redirect('events:task_schedules')
 
     # Filtros
     status_filter = request.GET.get('status', 'all')
@@ -834,7 +834,7 @@ def schedule_admin_bulk_action(request):
     # Verificar permisos de administrador
     if not request.user.is_superuser:
         messages.error(request, 'No tienes permisos para realizar acciones masivas.')
-        return redirect('schedule_admin_dashboard')
+        return redirect('events:schedule_admin_dashboard')
 
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -842,7 +842,7 @@ def schedule_admin_bulk_action(request):
 
         if not selected_schedules:
             messages.error(request, 'No se seleccionaron programaciones.')
-            return redirect('schedule_admin_dashboard')
+            return redirect('events:schedule_admin_dashboard')
 
         schedules = TaskSchedule.objects.filter(id__in=selected_schedules)
 
@@ -857,7 +857,7 @@ def schedule_admin_bulk_action(request):
         elif action == 'delete':
             if not request.user.is_superuser:
                 messages.error(request, 'No tienes permiso para eliminar programaciones.')
-                return redirect('schedule_admin_dashboard')
+                return redirect('events:schedule_admin_dashboard')
 
             count = schedules.count()
             schedules.delete()
@@ -873,4 +873,4 @@ def schedule_admin_bulk_action(request):
         else:
             messages.error(request, 'Acción no válida.')
 
-    return redirect('schedule_admin_dashboard')
+    return redirect('events:schedule_admin_dashboard')

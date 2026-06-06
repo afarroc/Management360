@@ -333,7 +333,7 @@ def inbox_view(request):
                 })
             else:
                 messages.success(request, 'Item agregado al inbox correctamente')
-                return redirect('inbox')
+                return redirect('events:inbox')
         else:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
@@ -342,7 +342,7 @@ def inbox_view(request):
                 })
             else:
                 messages.error(request, 'El título es obligatorio')
-                return redirect('inbox')
+                return redirect('events:inbox')
 
     # Obtener items del inbox del usuario (creados por él o asignados a él)
     inbox_items = InboxItem.objects.filter(
@@ -603,7 +603,7 @@ def _process_single_inbox_item(request, item_id, logger):
     except InboxItem.DoesNotExist:
         logger.warning(f"User {request.user.username} denied access to inbox item {item_id}")
         messages.error(request, 'Item no encontrado o no tienes permisos')
-        return redirect('process_inbox_item_mailbox')
+        return redirect('events:process_inbox_item_mailbox')
     
     # Manejar POST request
     if request.method == 'POST':
@@ -647,10 +647,10 @@ def _handle_post_action(request, inbox_item, item_id, logger):
     
     # Acciones de modal (no procesan)
     if action in ['choose_existing_task', 'choose_existing_project', 'choose_existing_event']:
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
     
     messages.error(request, 'Acción no reconocida')
-    return redirect('process_inbox_item', item_id=item_id)
+    return redirect('events:process_inbox_item', item_id=item_id)
 
 # ============================================================================
 # HANDLERS DE ACCIONES ESPECÍFICAS
@@ -695,10 +695,10 @@ def _handle_convert_to_task(request, inbox_item, item_id, logger):
                 # Verificar permisos
                 if not _has_project_permission(project, request.user):
                     messages.error(request, 'No tienes permisos para usar este proyecto')
-                    return redirect('process_inbox_item', item_id=item_id)
+                    return redirect('events:process_inbox_item', item_id=item_id)
             except Project.DoesNotExist:
                 messages.error(request, 'Proyecto no encontrado')
-                return redirect('process_inbox_item', item_id=item_id)
+                return redirect('events:process_inbox_item', item_id=item_id)
         
         # Manejar opciones de evento
         if event_option == 'existing' and existing_event_id:
@@ -706,10 +706,10 @@ def _handle_convert_to_task(request, inbox_item, item_id, logger):
                 event = Event.objects.get(id=existing_event_id)
                 if not _has_event_permission(event, request.user):
                     messages.error(request, 'No tienes permisos para usar este evento')
-                    return redirect('process_inbox_item', item_id=item_id)
+                    return redirect('events:process_inbox_item', item_id=item_id)
             except Event.DoesNotExist:
                 messages.error(request, 'Evento no encontrado')
-                return redirect('process_inbox_item', item_id=item_id)
+                return redirect('events:process_inbox_item', item_id=item_id)
         elif event_option == 'new' and not event:
             # Solo crear evento si no se creó con proyecto
             event = _create_event_for_inbox_item(inbox_item, request.user, "task")
@@ -738,15 +738,15 @@ def _handle_convert_to_task(request, inbox_item, item_id, logger):
             messages.success(request, success_message)
             
             # Redirigir al inbox general
-            return redirect('process_inbox_item_mailbox')
+            return redirect('events:process_inbox_item_mailbox')
         else:
             messages.error(request, 'Error al vincular el item del inbox')
-            return redirect('process_inbox_item', item_id=item_id)
+            return redirect('events:process_inbox_item', item_id=item_id)
             
     except Exception as e:
         logger.error(f"Error creating task from inbox: {str(e)}", exc_info=True)
         messages.error(request, f'Error al crear la tarea: {e}')
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
 
 def _handle_convert_to_project(request, inbox_item, item_id, logger):
     """Convierte inbox item a proyecto con evento"""
@@ -762,10 +762,10 @@ def _handle_convert_to_project(request, inbox_item, item_id, logger):
                 event = Event.objects.get(id=existing_event_id)
                 if not _has_event_permission(event, request.user):
                     messages.error(request, 'No tienes permisos para usar este evento')
-                    return redirect('process_inbox_item', item_id=item_id)
+                    return redirect('events:process_inbox_item', item_id=item_id)
             except Event.DoesNotExist:
                 messages.error(request, 'Evento no encontrado')
-                return redirect('process_inbox_item', item_id=item_id)
+                return redirect('events:process_inbox_item', item_id=item_id)
         
         # Crear proyecto con evento
         project, created_event = _create_project_with_event(inbox_item, request.user, event)
@@ -785,15 +785,15 @@ def _handle_convert_to_project(request, inbox_item, item_id, logger):
             logger.info(f"DEBUG: Inbox item procesado a: {inbox_item.processed_to}")
             
             # Redirigir al inbox general
-            return redirect('process_inbox_item_mailbox')
+            return redirect('events:process_inbox_item_mailbox')
         else:
             messages.error(request, 'Error al crear o vincular el proyecto')
-            return redirect('process_inbox_item', item_id=item_id)
+            return redirect('events:process_inbox_item', item_id=item_id)
             
     except Exception as e:
         logger.error(f"Error creating project from inbox: {str(e)}", exc_info=True)
         messages.error(request, f'Error al crear el proyecto: {e}')
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
 
 def _handle_convert_to_event(request, inbox_item, item_id, logger):
     """Convierte inbox item a evento"""
@@ -803,15 +803,15 @@ def _handle_convert_to_event(request, inbox_item, item_id, logger):
         if event and _link_inbox_to_object(inbox_item, request.user, event, 'event'):
             messages.success(request, f'Evento "{event.title}" creado exitosamente')
             # Redirigir al inbox general
-            return redirect('process_inbox_item_mailbox')
+            return redirect('events:process_inbox_item_mailbox')
         else:
             messages.error(request, 'Error al crear el evento')
-            return redirect('process_inbox_item', item_id=item_id)
+            return redirect('events:process_inbox_item', item_id=item_id)
             
     except Exception as e:
         logger.error(f"Error creating event from inbox: {str(e)}", exc_info=True)
         messages.error(request, f'Error al crear el evento: {e}')
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
 
 def _handle_convert_to_task_project(request, inbox_item, item_id, logger):
     """Convierte inbox item a proyecto con tarea inicial"""
@@ -834,22 +834,22 @@ def _handle_convert_to_task_project(request, inbox_item, item_id, logger):
                 f'Evento asociado: {event.title}'
             )
             # Redirigir al inbox general
-            return redirect('process_inbox_item_mailbox')
+            return redirect('events:process_inbox_item_mailbox')
         else:
             messages.error(request, 'Error al vincular el item del inbox')
-            return redirect('process_inbox_item', item_id=item_id)
+            return redirect('events:process_inbox_item', item_id=item_id)
             
     except Exception as e:
         logger.error(f"Error creating project+task from inbox: {str(e)}", exc_info=True)
         messages.error(request, f'Error al crear proyecto con tarea: {e}')
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
 
 def _handle_link_to_task(request, inbox_item, item_id, logger):
     """Vincula inbox item a tarea existente"""
     task_id = request.POST.get('task_id')
     if not task_id:
         messages.error(request, 'Debe seleccionar una tarea para vincular.')
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
     
     try:
         task_id = int(task_id)
@@ -858,40 +858,40 @@ def _handle_link_to_task(request, inbox_item, item_id, logger):
         # Verificar permisos
         if not _has_task_permission(task, request.user):
             messages.error(request, 'No tienes permisos para vincular a esta tarea.')
-            return redirect('process_inbox_item', item_id=item_id)
+            return redirect('events:process_inbox_item', item_id=item_id)
         
         # Verificar estado válido
         if task.task_status.status_name in ['Deleted', 'Archived']:
             messages.error(request, 'No se puede vincular a una tarea eliminada o archivada.')
-            return redirect('process_inbox_item', item_id=item_id)
+            return redirect('events:process_inbox_item', item_id=item_id)
         
         # Vincular
         if _link_inbox_to_object(inbox_item, request.user, task, 'task'):
             messages.success(request,
                 f'Item del inbox vinculado exitosamente a la tarea: "{task.title}"')
             # Redirigir al inbox general
-            return redirect('process_inbox_item_mailbox')
+            return redirect('events:process_inbox_item_mailbox')
         else:
             messages.error(request, 'Error al vincular el item del inbox')
-            return redirect('process_inbox_item', item_id=item_id)
+            return redirect('events:process_inbox_item', item_id=item_id)
             
     except (ValueError, TypeError):
         messages.error(request, 'ID de tarea inválido.')
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
     except Task.DoesNotExist:
         messages.error(request, 'La tarea objetivo no existe o no tienes permisos para accederla.')
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
     except Exception as e:
         logger.error(f"Error linking to task {task_id}: {str(e)}", exc_info=True)
         messages.error(request, f'Error al vincular: {str(e)}')
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
 
 def _handle_link_to_project(request, inbox_item, item_id, logger):
     """Vincula inbox item a proyecto existente"""
     project_id = request.POST.get('project_id')
     if not project_id:
         messages.error(request, 'Debe seleccionar un proyecto para vincular.')
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
     
     try:
         project = Project.objects.get(id=project_id)
@@ -899,32 +899,32 @@ def _handle_link_to_project(request, inbox_item, item_id, logger):
         # Verificar permisos
         if not _has_project_permission(project, request.user):
             messages.error(request, 'No tienes permisos para vincular a este proyecto.')
-            return redirect('process_inbox_item', item_id=item_id)
+            return redirect('events:process_inbox_item', item_id=item_id)
         
         # Vincular
         if _link_inbox_to_object(inbox_item, request.user, project, 'project'):
             messages.success(request,
                 f'Item del inbox vinculado exitosamente al proyecto: "{project.title}"')
             # Redirigir al inbox general
-            return redirect('process_inbox_item_mailbox')
+            return redirect('events:process_inbox_item_mailbox')
         else:
             messages.error(request, 'Error al vincular el item del inbox')
-            return redirect('process_inbox_item', item_id=item_id)
+            return redirect('events:process_inbox_item', item_id=item_id)
             
     except Project.DoesNotExist:
         messages.error(request, 'El proyecto objetivo no existe.')
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
     except Exception as e:
         logger.error(f"Error linking to project {project_id}: {str(e)}", exc_info=True)
         messages.error(request, f'Error al vincular: {e}')
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
 
 def _handle_link_to_event(request, inbox_item, item_id, logger):
     """Vincula inbox item a evento existente"""
     event_id = request.POST.get('event_id')
     if not event_id:
         messages.error(request, 'Debe seleccionar un evento para vincular.')
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
     
     try:
         event = Event.objects.get(id=event_id)
@@ -932,41 +932,41 @@ def _handle_link_to_event(request, inbox_item, item_id, logger):
         # Verificar permisos
         if not _has_event_permission(event, request.user):
             messages.error(request, 'No tienes permisos para vincular a este evento.')
-            return redirect('process_inbox_item', item_id=item_id)
+            return redirect('events:process_inbox_item', item_id=item_id)
         
         # Vincular
         if _link_inbox_to_object(inbox_item, request.user, event, 'event'):
             messages.success(request,
                 f'Item del inbox vinculado exitosamente al evento: "{event.title}"')
             # Redirigir al inbox general
-            return redirect('process_inbox_item_mailbox')
+            return redirect('events:process_inbox_item_mailbox')
         else:
             messages.error(request, 'Error al vincular el item del inbox')
-            return redirect('process_inbox_item', item_id=item_id)
+            return redirect('events:process_inbox_item', item_id=item_id)
             
     except Event.DoesNotExist:
         messages.error(request, 'El evento objetivo no existe.')
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
     except Exception as e:
         logger.error(f"Error linking to event {event_id}: {str(e)}", exc_info=True)
         messages.error(request, f'Error al vincular: {e}')
-        return redirect('process_inbox_item', item_id=item_id)
+        return redirect('events:process_inbox_item', item_id=item_id)
 
 def _handle_delete(request, inbox_item, item_id, logger):
     """Elimina item del inbox"""
     inbox_item.delete()
     messages.success(request, 'Item eliminado del inbox')
-    return redirect('process_inbox_item_mailbox')
+    return redirect('events:process_inbox_item_mailbox')
 
 def _handle_postpone(request, inbox_item, item_id, logger):
     """Posponer item"""
     messages.info(request, 'Item pospuesto para procesar después')
-    return redirect('process_inbox_item_mailbox')
+    return redirect('events:process_inbox_item_mailbox')
 
 def _handle_categorize(request, inbox_item, item_id, logger):
     """Solo categorizar"""
     messages.success(request, f'Item categorizado como {inbox_item.gtd_category}')
-    return redirect('process_inbox_item_mailbox')
+    return redirect('events:process_inbox_item_mailbox')
 
 def _handle_reference(request, inbox_item, item_id, logger):
     """Guardar como referencia"""
@@ -977,7 +977,7 @@ def _handle_reference(request, inbox_item, item_id, logger):
     inbox_item.save()
     
     messages.success(request, f'Item "{inbox_item.title}" guardado como referencia')
-    return redirect('process_inbox_item_mailbox')
+    return redirect('events:process_inbox_item_mailbox')
 
 def _handle_someday(request, inbox_item, item_id, logger):
     """Guardar para 'algún día'"""
@@ -988,7 +988,7 @@ def _handle_someday(request, inbox_item, item_id, logger):
     inbox_item.save()
     
     messages.success(request, f'Item "{inbox_item.title}" guardado para "Algún día/Quizás"')
-    return redirect('process_inbox_item_mailbox')
+    return redirect('events:process_inbox_item_mailbox')
   
 # ============================================================================
 # FUNCIONES AUXILIARES DE PERMISOS
@@ -1269,7 +1269,7 @@ def inbox_admin_dashboard(request):
     # Verificar permisos de administrador
     if not (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and request.user.cv.role in ['SU', 'ADMIN']):
         messages.error(request, 'No tienes permisos para acceder al panel de administración de inboxes.')
-        return redirect('inbox')
+        return redirect('events:inbox')
 
     # Filtros
     status_filter = request.GET.get('status', 'all')
@@ -1407,7 +1407,7 @@ def inbox_item_detail_admin(request, item_id):
 
     except InboxItem.DoesNotExist:
         messages.error(request, 'Item del inbox no encontrado.')
-        return redirect('inbox_admin_dashboard')
+        return redirect('events:inbox_admin_dashboard')
 
 @login_required
 def classify_inbox_item_admin(request, item_id):
@@ -1417,13 +1417,13 @@ def classify_inbox_item_admin(request, item_id):
     # Verificar permisos
     if not (hasattr(request.user, 'cv') and request.user.cv and request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST']):
         messages.error(request, 'No tienes permisos para clasificar items del inbox.')
-        return redirect('inbox_admin_dashboard')
+        return redirect('events:inbox_admin_dashboard')
 
     try:
         inbox_item = InboxItem.objects.get(id=item_id)
     except InboxItem.DoesNotExist:
         messages.error(request, 'Item del inbox no encontrado.')
-        return redirect('inbox_admin_dashboard')
+        return redirect('events:inbox_admin_dashboard')
 
     if request.method == 'POST':
         gtd_category = request.POST.get('gtd_category')
@@ -1469,7 +1469,7 @@ def classify_inbox_item_admin(request, item_id):
         )
 
         messages.success(request, f'Clasificación guardada para "{inbox_item.title}"')
-        return redirect('inbox_item_detail_admin', item_id=item_id)
+        return redirect('events:inbox_item_detail_admin', item_id=item_id)
 
     # GET request - mostrar formulario
     context = {
@@ -1487,13 +1487,13 @@ def authorize_inbox_item(request, item_id):
     # Verificar permisos
     if not (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST']):
         messages.error(request, 'No tienes permisos para autorizar usuarios.')
-        return redirect('inbox_admin_dashboard')
+        return redirect('events:inbox_admin_dashboard')
 
     try:
         inbox_item = InboxItem.objects.get(id=item_id)
     except InboxItem.DoesNotExist:
         messages.error(request, 'Item del inbox no encontrado.')
-        return redirect('inbox_admin_dashboard')
+        return redirect('events:inbox_admin_dashboard')
 
     if request.method == 'POST':
         user_id = request.POST.get('user_id')
@@ -1530,7 +1530,7 @@ def authorize_inbox_item(request, item_id):
             )
 
             messages.success(request, f'Autorización actualizada para {user.username}')
-            return redirect('inbox_item_detail_admin', item_id=item_id)
+            return redirect('events:inbox_item_detail_admin', item_id=item_id)
 
         except User.DoesNotExist:
             messages.error(request, 'Usuario no encontrado.')
@@ -1737,7 +1737,7 @@ def inbox_management_panel(request):
             (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and
              request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST'])):
         messages.error(request, 'No tienes permisos para acceder al panel de gestión GTD.')
-        return redirect('inbox')
+        return redirect('events:inbox')
 
     # Obtener estadísticas generales
     total_inbox_items = InboxItem.objects.count()
@@ -2472,7 +2472,7 @@ def inbox_link_checker(request):
     if not (hasattr(request.user, 'cv') and hasattr(request.user.cv, 'role') and 
             request.user.cv.role in ['SU', 'ADMIN', 'GTD_ANALYST']):
         messages.error(request, 'No tienes permisos para acceder a esta herramienta.')
-        return redirect('inbox')
+        return redirect('events:inbox')
     
     action = request.GET.get('action', '')
     

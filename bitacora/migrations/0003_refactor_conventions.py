@@ -47,11 +47,16 @@ class Migration(migrations.Migration):
             ),
         ),
 
-        # Agregar is_active
-        migrations.AddField(
-            model_name='bitacoraentry',
-            name='is_active',
-            field=models.BooleanField(default=True),
+        # Agregar is_active (solo si no existe)
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.AddField(
+                    model_name='bitacoraentry',
+                    name='is_active',
+                    field=models.BooleanField(default=True),
+                ),
+            ],
+            database_operations=[],
         ),
 
         # mood: choices

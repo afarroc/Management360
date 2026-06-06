@@ -74,25 +74,25 @@ def kanban_board_unified(request):
             'title': 'Proyectos Recientes',
             'icon': 'bi-folder',
             'color': 'primary',
-            'items': projects_data[:5],  # Últimos 5 proyectos
-            'view_all_url': 'projects'
+            'items': projects_data[:5],
+            'view_all_url': 'events:projects'
         },
         'active_events': {
             'title': 'Eventos Activos',
             'icon': 'bi-calendar-event',
             'color': 'success',
             'items': [e for e in events_data if e['event'].event_status.status_name == 'In Progress'][:5],
-            'view_all_url': 'events'
+            'view_all_url': 'events:events'
         },
         'gtd_tools': {
             'title': 'Herramientas GTD',
             'icon': 'bi-lightbulb',
             'color': 'warning',
             'items': [
-                {'name': 'Bandeja de Entrada', 'url': 'inbox', 'icon': 'bi-inbox', 'description': 'Capturar tareas rápidamente'},
-                {'name': 'Matriz Eisenhower', 'url': 'eisenhower_matrix', 'icon': 'bi-grid-3x3', 'description': 'Priorizar tareas'},
-                {'name': 'Dependencias', 'url': 'task_dependencies_list', 'icon': 'bi-link', 'description': 'Gestionar dependencias'},
-                {'name': 'Plantillas', 'url': 'project_templates', 'icon': 'bi-file-earmark-plus', 'description': 'Crear desde plantillas'},
+                {'name': 'Bandeja de Entrada', 'url': 'events:inbox', 'icon': 'bi-inbox', 'description': 'Capturar tareas rápidamente'},
+                {'name': 'Matriz Eisenhower', 'url': 'events:eisenhower_matrix', 'icon': 'bi-grid-3x3', 'description': 'Priorizar tareas'},
+                {'name': 'Dependencias', 'url': 'events:task_dependencies_list', 'icon': 'bi-link', 'description': 'Gestionar dependencias'},
+                {'name': 'Plantillas', 'url': 'events:project_templates', 'icon': 'bi-file-earmark-plus', 'description': 'Crear desde plantillas'},
             ],
             'view_all_url': None
         },
@@ -101,12 +101,12 @@ def kanban_board_unified(request):
             'icon': 'bi-gear',
             'color': 'info',
             'items': [
-                {'name': 'Crear Tarea', 'url': 'task_create', 'icon': 'bi-plus-circle', 'description': 'Nueva tarea rápida'},
-                {'name': 'Crear Proyecto', 'url': 'project_create', 'icon': 'bi-folder-plus', 'description': 'Nuevo proyecto'},
-                {'name': 'Crear Evento', 'url': 'event_create', 'icon': 'bi-calendar-plus', 'description': 'Nuevo evento'},
-                {'name': 'Recordatorios', 'url': 'reminders_dashboard', 'icon': 'bi-bell', 'description': 'Gestionar recordatorios'},
+                {'name': 'Crear Tarea', 'url': 'events:task_create', 'icon': 'bi-plus-circle', 'description': 'Nueva tarea rápida'},
+                {'name': 'Crear Proyecto', 'url': 'events:project_create', 'icon': 'bi-folder-plus', 'description': 'Nuevo proyecto'},
+                {'name': 'Crear Evento', 'url': 'events:event_create', 'icon': 'bi-calendar-plus', 'description': 'Nuevo evento'},
+                {'name': 'Recordatorios', 'url': 'events:reminders_dashboard', 'icon': 'bi-bell', 'description': 'Gestionar recordatorios'},
             ],
-            'view_all_url': 'status'
+            'view_all_url': 'events:status'
         }
     }
 
@@ -154,6 +154,7 @@ def kanban_board_unified(request):
         # Datos adicionales de ambas vistas
         'inbox_items': inbox_items,
         'projects': projects,  # Para el modal de creación rápida
+        'recent_projects': projects,  # Para la sección de proyectos recientes
         'recent_activities': [],  # Podría implementarse más tarde
     }
 
@@ -171,10 +172,10 @@ def kanban_project(request, project_id):
         project = Project.objects.get(id=project_id)
         if not (project.host == request.user or request.user in project.attendees.all()):
             messages.error(request, 'No tienes permisos para ver este proyecto.')
-            return redirect('projects')
+            return redirect('events:projects')
     except Project.DoesNotExist:
         messages.error(request, 'El proyecto no existe.')
-        return redirect('projects')
+        return redirect('events:projects')
 
     # Obtener tareas del proyecto específico
     tasks = Task.objects.filter(project=project).select_related(

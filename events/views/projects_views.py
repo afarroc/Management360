@@ -99,7 +99,7 @@ def render_single_project_view(request, project_id, title, statuses):
         # Verificar permisos
         if project.host != request.user and request.user not in project.attendees.all():
             messages.error(request, 'No tienes permiso para ver este proyecto.')
-            return redirect('project_panel')
+            return redirect('events:project_panel')
         
         # Obtener tareas del proyecto
         tasks = project.task_set.select_related(
@@ -148,7 +148,7 @@ def render_single_project_view(request, project_id, title, statuses):
     except Exception as e:
         logger.error(f"Error en vista detallada de proyecto {project_id}: {str(e)}", exc_info=True)
         messages.error(request, f'Ha ocurrido un error al cargar el proyecto: {e}')
-        return redirect('project_panel')
+        return redirect('events:project_panel')
 
 
 def render_project_panel_view(request, title, statuses):
@@ -520,13 +520,13 @@ def projects(request, project_id=None):
     
     # URLs para navegación
     urls = [
-        {'url': 'project_create', 'name': 'Project Create'},
+        {'url_name': 'events:project_create', 'name': 'Project Create'},
     ]
-
+    
     other_urls = [
-        {'url': 'events', 'id': None, 'name': 'Events Panel'},
-        {'url': 'projects', 'id': None, 'name': 'Projects Panel'},
-        {'url': 'tasks', 'id': None, 'name': 'Tasks Panel'},
+        {'url_name': 'events:events', 'id': None, 'name': 'Events Panel'},
+        {'url_name': 'events:projects', 'id': None, 'name': 'Projects Panel'},
+        {'url_name': 'events:tasks', 'id': None, 'name': 'Tasks Panel'},
     ]
     
     instructions = [
@@ -663,7 +663,7 @@ def project_detail(request, project_id):
     # Verificar permisos
     if not (project.host == request.user or request.user in project.attendees.all()):
         messages.error(request, 'No tienes permisos para ver este proyecto.')
-        return redirect('projects')
+        return redirect('events:projects')
 
     # Obtener tareas del proyecto con información detallada
     tasks = Task.objects.filter(project_id=project_id).select_related(
@@ -746,13 +746,13 @@ def project_create(request):
     Vista para crear un nuevo proyecto usando ProjectManager para consistencia
     """
     urls = [
-        {'url': 'project_create', 'name': 'Project Create'},
+        {'url_name': 'events:project_create', 'name': 'Project Create'},
     ]
     
     other_urls = [
-        {'url': 'events', 'id': None, 'name': 'Events Panel'},
-        {'url': 'projects', 'id': None, 'name': 'Projects Panel'},
-        {'url': 'tasks', 'id': None, 'name': 'Tasks Panel'},
+        {'url_name': 'events:events', 'id': None, 'name': 'Events Panel'},
+        {'url_name': 'events:projects', 'id': None, 'name': 'Projects Panel'},
+        {'url_name': 'events:tasks', 'id': None, 'name': 'Tasks Panel'},
     ]
     
     title = "Create New Project"
@@ -807,7 +807,7 @@ def project_create(request):
                     project.attendees.set(attendees)
                 
                 messages.success(request, 'Proyecto creado exitosamente!')
-                return redirect('project_panel')
+                return redirect('events:project_panel')
                 
             except Exception as e:
                 messages.error(request, f'Error al crear el proyecto: {e}')
@@ -835,12 +835,12 @@ def project_edit(request, project_id=None):
                 project = get_object_or_404(Project, pk=project_id)
             except Http404:
                 messages.error(request, 'El proyecto con el ID "{}" no existe.'.format(project_id))
-                return redirect('index')
+                return redirect('home')
 
             # Verificar permisos - solo el host o attendees pueden editar
             if not (project.host == request.user or request.user in project.attendees.all()):
                 messages.error(request, 'No tienes permisos para editar este proyecto.')
-                return redirect('projects')
+                return redirect('events:projects')
 
             if request.method == 'POST':
                 form = CreateNewProject(request.POST, instance=project)
@@ -861,7 +861,7 @@ def project_edit(request, project_id=None):
                     form.save()
 
                     messages.success(request, 'Proyecto guardado con éxito.')
-                    return redirect('projects')  # Redirige a la página de lista de edición
+                    return redirect('events:projects')  # Redirige a la página de lista de edición
                 else:
                     messages.error(request, 'Hubo un error al guardar el proyecto. Por favor, revisa el formulario.')
             else:
@@ -891,7 +891,7 @@ def project_edit(request, project_id=None):
     
     except Exception as e:
         messages.error(request, 'Ha ocurrido un error: {}'.format(e))
-        return redirect('index')
+        return redirect('home')
 
 
 @login_required
@@ -905,14 +905,14 @@ def project_delete(request, project_id):
         # Verificar permisos - solo el host o attendees pueden eliminar
         if not (project.host == request.user or request.user in project.attendees.all()):
             messages.error(request, 'No tienes permiso para eliminar este proyecto.')
-            return redirect(reverse('project_panel'))
+            return redirect('events:project_panel')
 
         project.delete()
         messages.success(request, 'El proyecto ha sido eliminado exitosamente.')
     else:
         messages.error(request, 'Método no permitido.')
     
-    return redirect(reverse('project_panel'))
+    return redirect('events:project_panel')
 
 
 # ============================================================================
@@ -934,7 +934,7 @@ def change_project_status(request, project_id):
         
         if request.user is None:
             messages.error(request, "User is none: Usuario no autenticado")
-            return redirect('index')
+            return redirect('home')
         
         if project.host is not None and (project.host == request.user or request.user in project.attendees.all()):
             old_status = project.project_status
@@ -951,7 +951,7 @@ def change_project_status(request, project_id):
         return HttpResponse(f"Error: {str(e)}", status=500)
     
     messages.success(request, 'Project status edited successfully!')
-    return redirect('project_panel')
+    return redirect('events:project_panel')
 
 
 @login_required
@@ -993,7 +993,7 @@ def project_activate(request, project_id=None):
             })
         except Exception as e:
             messages.error(request, 'Ha ocurrido un error: {}'.format(e))
-            return redirect('project_panel')
+            return redirect('events:project_panel')
 
 
 @login_required
@@ -1007,14 +1007,14 @@ def project_bulk_action(request):
 
         if not selected_projects:
             messages.error(request, 'No se seleccionaron proyectos.')
-            return redirect('project_panel')
+            return redirect('events:project_panel')
 
         projects = Project.objects.filter(id__in=selected_projects)
 
         if action == 'delete':
             if not (hasattr(request.user, 'profile') and hasattr(request.user.cv, 'role') and request.user.cv.role == 'SU'):
                 messages.error(request, 'No tienes permiso para eliminar proyectos.')
-                return redirect('project_panel')
+                return redirect('events:project_panel')
 
             count = projects.count()
             projects.delete()
@@ -1033,7 +1033,7 @@ def project_bulk_action(request):
         else:
             messages.error(request, 'Acción no válida.')
 
-    return redirect('project_panel')
+    return redirect('events:project_panel')
 
 
 @login_required

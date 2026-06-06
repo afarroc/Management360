@@ -229,7 +229,7 @@ else:
     WHITENOISE_AUTOREFRESH = False
 
 # Media — servido desde servidor remoto en Termux
-MEDIA_URL = 'http://192.168.18.51:8000/'
+MEDIA_URL = 'http://192.168.18.59:8000/'
 DEFAULT_FILE_STORAGE = 'panel.storages.RemoteMediaStorage'
 
 from django.core.files.storage import default_storage

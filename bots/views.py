@@ -10,6 +10,8 @@ from django.urls import reverse
 from django.db.models import Count, Q
 from django.utils import timezone
 from django.core.paginator import Paginator
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import LeadCampaign, Lead, LeadDistributionRule, BotInstance
 from .lead_distributor import get_lead_distributor, get_bulk_importer
@@ -17,7 +19,7 @@ from .utils import get_bot_coordinator
 from .lead_connector import process_webhook_payload          # BOT-3b
 from .discador_bridge import DiscadorBridge                  # BOT-3
 from campaigns.models import DiscadorLoad                    # BOT-3
-from django.views.decorators.csrf import csrf_exempt         # BOT-3b
+
 
 import json
 import csv

@@ -45,7 +45,27 @@
         <div class="col-lg-8">
             <div class="row">
                 {% if event %}
-                    {% include 'events/includes/event_form.html' %}
+                    <form method="POST" action="{% url 'events:event_edit' event.id %}">
+                        {% csrf_token %}
+                        {% include 'events/includes/event_form.html' %}
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                    <button type="submit" name="save_and_continue" class="btn btn-primary">
+                                        <i class="bi bi-save me-2"></i>Guardar cambios
+                                    </button>
+                                    <div>
+                                        <a href="{% url 'events:event_detail' event.id %}" class="btn btn-outline-secondary me-2">
+                                            <i class="bi bi-x-circle me-2"></i>Cancelar
+                                        </a>
+                                        <button type="submit" name="save_and_view" class="btn btn-success">
+                                            <i class="bi bi-check-circle me-2"></i>Guardar y ver
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
                 {% else %}
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle me-2"></i>No se encontraron datos del evento.

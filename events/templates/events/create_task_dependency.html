@@ -14,9 +14,9 @@
                         {{ title }}
                     </h3>
                     <div class="card-tools">
-                        <a href="{% url 'events:task_dependencies_list' task.id %}" class="btn btn-secondary btn-sm">
-                            <i class="bi bi-arrow-left me-1"></i>
-                            Volver a Dependencias
+                          <a href="{% url 'events:task_dependencies_list' task.id %}" class="btn btn-secondary btn-sm">
+                              <i class="bi bi-arrow-left me-1"></i>
+                              Volver a Dependencias
                         </a>
                     </div>
                 </div>
@@ -105,13 +105,13 @@
                                             </div>
 
                                             <div class="d-flex gap-2">
-                                                <button type="submit" class="btn btn-primary">
-                                                    <i class="bi bi-check-circle me-1"></i>
-                                                    Crear Dependencia
-                                                </button>
-                                                <a href="{% url 'events:task_dependencies_list' task.id %}" class="btn btn-secondary">
-                                                    <i class="bi bi-x-circle me-1"></i>
-                                                    Cancelar
+                                                 <button type="submit" class="btn btn-primary">
+                                                     <i class="bi bi-check-circle me-1"></i>
+                                                     Crear Dependencia
+                                                  </button>
+                                                  <a href="{% url 'events:task_dependencies_list' task.id %}" class="btn btn-secondary">
+                                                      <i class="bi bi-x-circle me-1"></i>
+                                                      Cancelar
                                                 </a>
                                             </div>
                                         </div>

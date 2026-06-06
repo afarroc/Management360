@@ -4,7 +4,7 @@
 {% block content %}
 <!-- Chat Panel -->
 <!-- Botón flotante para restaurar chat -->
-<button id="chat-restore-btn" style="display:none;position:fixed;bottom:20px;right:20px;z-index:10001;background:#007bff;color:#fff;border:none;border-radius:50%;width:48px;height:48px;box-shadow:0 2px 8px rgba(0,0,0,0.2);font-size:1.7rem;align-items:center;justify-content:center;cursor:pointer;">
+<button id="chat-restore-btn" style="display:none;position:fixed;bottom:90px;right:20px;z-index:10001;background:#007bff;color:#fff;border:none;border-radius:50%;width:48px;height:48px;box-shadow:0 2px 8px rgba(0,0,0,0.2);font-size:1.7rem;align-items:center;justify-content:center;cursor:pointer;">
     <i class="bi bi-chat-dots"></i>
 </button>
 <div id="chat-panel" style="background:#fff;box-shadow:0 4px 24px rgba(0,0,0,0.2);overflow:hidden;display:flex;flex-direction:column;">
@@ -227,28 +227,66 @@
     @media (max-width: 768px) {
         #chat-panel.docked {
             width: 95vw;
-            height: 70px;
-            min-height: 70px;
+            height: 420px;
+            min-height: 320px;
+            max-height: 65vh;
             right: 2.5vw;
-            bottom: 20px;
-            border-radius: 1.2em;
-            font-size: 0.9rem;
+            bottom: 90px;
+            border-radius: 16px;
+            font-size: 0.85rem;
             box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10001;
         }
 
         #chat-panel.docked .chat-header {
-            font-size: 1rem;
-            padding: 0.3em 0.8em;
-            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 0.3em 0.6em;
+            cursor: move;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
         }
 
-        #chat-panel.docked .chat-panel-body,
+        #chat-panel.docked .chat-header > span {
+            flex-shrink: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        #chat-panel.docked .chat-header .d-flex {
+            flex-wrap: nowrap;
+        }
+
+        /* Room selector - constrain width */
+        #chat-panel.docked #chat-room-selector {
+            font-size: 0.65rem;
+            padding: 0.1em 0.3em;
+            margin-left: 0.2em;
+            max-width: 70px;
+            min-width: 0;
+            flex-shrink: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            width: auto !important;
+        }
+
+        /* Show body and info in docked mode - don't hide them */
+        #chat-panel.docked .chat-panel-body {
+            display: flex !important;
+            flex: 1 !important;
+            min-height: 0;
+            max-height: calc(70vh - 100px);
+        }
+
         #chat-panel.docked .chat-info-containers {
-            display: none;
+            display: flex !important;
+            flex-direction: column !important;
+            padding: 0.3em !important;
+            gap: 0.2em !important;
         }
 
         #chat-panel.docked #toggle-chat-panel,

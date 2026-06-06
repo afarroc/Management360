@@ -120,18 +120,18 @@ def unified_dashboard(request):
 
     # URLs de acceso rápido
     quick_access = {
-        'kanban': {'url': 'kanban_board', 'title': 'Kanban Board', 'icon': 'bi-kanban', 'color': 'primary'},
-        'eisenhower': {'url': 'eisenhower_matrix', 'title': 'Eisenhower Matrix', 'icon': 'bi-grid-3x3', 'color': 'warning'},
-        'inbox': {'url': 'inbox', 'title': 'GTD Inbox', 'icon': 'bi-inbox', 'color': 'info'},
-        'templates': {'url': 'project_templates', 'title': 'Project Templates', 'icon': 'bi-file-earmark-plus', 'color': 'success'},
-        'reminders': {'url': 'reminders_dashboard', 'title': 'Reminders', 'icon': 'bi-bell', 'color': 'danger'},
-        'dependencies': {'url': 'task_dependencies_list', 'title': 'Task Dependencies', 'icon': 'bi-link', 'color': 'secondary'},
+        'kanban': {'url': 'events:kanban_board', 'title': 'Kanban Board', 'icon': 'bi-kanban', 'color': 'primary'},
+        'eisenhower': {'url': 'events:eisenhower_matrix', 'title': 'Eisenhower Matrix', 'icon': 'bi-grid-3x3', 'color': 'warning'},
+        'inbox': {'url': 'events:inbox', 'title': 'GTD Inbox', 'icon': 'bi-inbox', 'color': 'info'},
+        'templates': {'url': 'events:project_templates', 'title': 'Project Templates', 'icon': 'bi-file-earmark-plus', 'color': 'success'},
+        'reminders': {'url': 'events:reminders_dashboard', 'title': 'Reminders', 'icon': 'bi-bell', 'color': 'danger'},
+        'dependencies': {'url': 'events:task_dependencies_list', 'title': 'Task Dependencies', 'icon': 'bi-link', 'color': 'secondary'},
     }
 
     # Agregar panel administrativo de programaciones si el usuario es admin
     if request.user.is_superuser:
         quick_access['schedule_admin'] = {
-            'url': 'schedule_admin_dashboard',
+            'url': 'events:schedule_admin_dashboard',
             'title': 'Admin Programaciones',
             'icon': 'bi-calendar-check',
             'color': 'dark'
@@ -175,7 +175,7 @@ def root(request):
     # Verificar acceso usando utilidad centralizada
     if not check_root_access(request.user):
         messages.error(request, 'No tienes permisos suficientes para acceder al panel root.')
-        return redirect('dashboard')
+        return redirect('events:unified_dashboard')
 
     # Registrar acceso para auditoría
     log_dashboard_access(request.user, 'root_dashboard_access')
@@ -242,7 +242,7 @@ def root(request):
     except Exception as e:
         logger.error(f"Error in root dashboard for user {request.user.username}: {str(e)}", exc_info=True)
         messages.error(request, 'Error al cargar el dashboard. Contacte al administrador.')
-        return redirect('dashboard')
+        return redirect('events:unified_dashboard')
 
 
 # ============================================================================

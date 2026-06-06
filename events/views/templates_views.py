@@ -94,7 +94,7 @@ def create_project_template(request):
                     task_formset.save_m2m()
 
                     messages.success(request, f'Plantilla "{template.name}" creada exitosamente')
-                    return redirect('project_template_detail', template_id=template.id)
+                    return redirect('events:project_template_detail', template_id=template.id)
 
             except Exception as e:
                 messages.error(request, f'Error al crear la plantilla: {e}')
@@ -124,7 +124,7 @@ def project_template_detail(request, template_id):
         # Verificar permisos
         if not template.is_public and template.created_by != request.user:
             messages.error(request, 'No tienes permisos para ver esta plantilla.')
-            return redirect('project_templates')
+            return redirect('events:project_templates')
 
         context = {
             'title': f'Plantilla: {template.name}',
@@ -137,7 +137,7 @@ def project_template_detail(request, template_id):
 
     except ProjectTemplate.DoesNotExist:
         messages.error(request, 'Plantilla no encontrada.')
-        return redirect('project_templates')
+        return redirect('events:project_templates')
 
 
 @login_required
@@ -151,7 +151,7 @@ def edit_project_template(request, template_id):
         # Verificar permisos
         if template.created_by != request.user:
             messages.error(request, 'No tienes permisos para editar esta plantilla.')
-            return redirect('project_templates')
+            return redirect('events:project_templates')
 
         if request.method == 'POST':
             template_form = ProjectTemplateForm(request.POST, instance=template)
@@ -174,7 +174,7 @@ def edit_project_template(request, template_id):
                         task_formset.save_m2m()
 
                         messages.success(request, f'Plantilla "{template.name}" actualizada exitosamente')
-                        return redirect('project_template_detail', template_id=template.id)
+                        return redirect('events:project_template_detail', template_id=template.id)
 
                 except Exception as e:
                     messages.error(request, f'Error al actualizar la plantilla: {e}')
@@ -195,7 +195,7 @@ def edit_project_template(request, template_id):
 
     except ProjectTemplate.DoesNotExist:
         messages.error(request, 'Plantilla no encontrada.')
-        return redirect('project_templates')
+        return redirect('events:project_templates')
 
 
 @login_required
@@ -209,14 +209,14 @@ def delete_project_template(request, template_id):
         # Verificar permisos
         if template.created_by != request.user:
             messages.error(request, 'No tienes permisos para eliminar esta plantilla.')
-            return redirect('project_templates')
+            return redirect('events:project_templates')
 
         if request.method == 'POST':
             template_name = template.name
             template.delete()
 
             messages.success(request, f'Plantilla "{template_name}" eliminada exitosamente')
-            return redirect('project_templates')
+            return redirect('events:project_templates')
 
         context = {
             'title': 'Eliminar Plantilla',
@@ -227,7 +227,7 @@ def delete_project_template(request, template_id):
 
     except ProjectTemplate.DoesNotExist:
         messages.error(request, 'Plantilla no encontrada.')
-        return redirect('project_templates')
+        return redirect('events:project_templates')
 
 
 # ============================================================================
@@ -245,7 +245,7 @@ def use_project_template(request, template_id):
         # Verificar permisos
         if not template.is_public and template.created_by != request.user:
             messages.error(request, 'No tienes permisos para usar esta plantilla.')
-            return redirect('project_templates')
+            return redirect('events:project_templates')
 
         if request.method == 'POST':
             project_form = CreateNewProject(request.POST)
@@ -293,7 +293,7 @@ def use_project_template(request, template_id):
 
                         messages.success(request,
                             f'Proyecto "{project.title}" creado exitosamente usando la plantilla "{template.name}"')
-                        return redirect('projects', project_id=project.id)
+                        return redirect('events:project_detail', project_id=project.id)
 
                 except Exception as e:
                     messages.error(request, f'Error al crear el proyecto: {e}')
@@ -318,4 +318,4 @@ def use_project_template(request, template_id):
 
     except ProjectTemplate.DoesNotExist:
         messages.error(request, 'Plantilla no encontrada.')
-        return redirect('project_templates')
+        return redirect('events:project_templates')

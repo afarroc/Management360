@@ -155,7 +155,7 @@ def render_single_task_view(request, task_id, title, other_task_statuses, status
         
         if task.host != request.user and task.assigned_to != request.user:
             messages.error(request, 'No tienes permiso para ver esta tarea.')
-            return redirect('task_panel')
+            return redirect('events:task_panel')
         
         active_state = task.taskstate_set.filter(
             end_time__isnull=True,
@@ -231,7 +231,7 @@ def render_single_task_view(request, task_id, title, other_task_statuses, status
     except Exception as e:
         logger.error(f"Error en vista detallada de tarea {task_id}: {str(e)}", exc_info=True)
         messages.error(request, f'Ha ocurrido un error al cargar la tarea: {e}')
-        return redirect('task_panel')
+        return redirect('events:task_panel')
 
 
 def render_task_panel_view(request, title, other_task_statuses, statuses, tasks_states):
@@ -528,14 +528,14 @@ def tasks(request, task_id=None, project_id=None):
     title = 'Tasks'
     
     urls = [
-        {'url': 'task_create', 'name': 'Task Create'},
-        {'url': 'task_edit', 'name': 'Task Edit'},
+        {'url_name': 'events:task_create', 'name': 'Task Create'},
+        {'url_name': 'events:task_edit', 'name': 'Task Edit'},
     ]
-
+    
     other_urls = [
-        {'url': 'events', 'id': None, 'name': 'Events Panel'},
-        {'url': 'projects', 'id': None, 'name': 'Projects Panel'},
-        {'url': 'tasks', 'id': None, 'name': 'Tasks Panel'},
+        {'url_name': 'events:events', 'id': None, 'name': 'Events Panel'},
+        {'url_name': 'events:projects', 'id': None, 'name': 'Projects Panel'},
+        {'url_name': 'events:tasks', 'id': None, 'name': 'Tasks Panel'},
     ]
     
     instructions = [
@@ -680,7 +680,7 @@ def task_create(request, project_id=None):
             initial_task_status = get_object_or_404(TaskStatus, status_name=initial_status_name)
         except Exception as e:
             messages.error(request, f"Error al obtener estado de tarea: {e}")
-            return redirect('task_panel')
+            return redirect('events:task_panel')
         
         initial_ticket_price = 0.07
         
@@ -722,7 +722,7 @@ def task_create(request, project_id=None):
                         task.save()
                         form.save_m2m()
                         messages.success(request, 'Tarea creada exitosamente!')
-                        return redirect('task_panel')
+                        return redirect('events:task_panel')
                     
                 except IntegrityError as e:
                     messages.error(request, f'Hubo un problema al guardar la tarea o crear el evento: {e}')
@@ -732,7 +732,7 @@ def task_create(request, project_id=None):
                         task.save()
                         form.save_m2m()
                         messages.success(request, 'Tarea creada exitosamente!')
-                        return redirect('task_panel')
+                        return redirect('events:task_panel')
                 except IntegrityError:
                     messages.error(request, 'Hubo un problema al guardar la Tarea.')
 
@@ -773,7 +773,7 @@ def task_edit(request, task_id=None):
                     form.save()
 
                     messages.success(request, 'Tarea guardada con éxito.')
-                    return redirect('task_panel')
+                    return redirect('events:task_panel')
                 else:
                     messages.error(request, 'Hubo un error al guardar la tarea. Por favor, revisa el formulario.')
             else:
@@ -803,14 +803,14 @@ def task_delete(request, task_id):
         task = get_object_or_404(Task, pk=task_id)
         if not (hasattr(request.user, 'profile') and hasattr(request.user.cv, 'role') and request.user.cv.role == 'SU'):
             messages.error(request, 'No tienes permiso para eliminar esta tarea.')
-            return redirect(reverse('tasks'))
+            return redirect('events:tasks')
         
         task.delete()
         messages.success(request, 'La tarea ha sido eliminada exitosamente.')
     else:
         messages.error(request, 'Método no permitido.')
     
-    return redirect(reverse('tasks'))
+    return redirect('events:tasks')
 
 
 # ============================================================================
@@ -850,7 +850,7 @@ def change_task_status(request, task_id):
         return HttpResponse(f"Error: {str(e)}", status=500)
     
     messages.success(request, 'Task status edited successfully!')
-    return redirect('task_panel')
+    return redirect('events:task_panel')
 
 
 @login_required
@@ -936,7 +936,7 @@ def task_activate(request, task_id=None):
             })
         except Exception as e:
             messages.error(request, f'Ha ocurrido un error: {e}')
-            return redirect('task_panel')
+            return redirect('events:task_panel')
 
 
 # ============================================================================
@@ -1176,7 +1176,7 @@ def task_bulk_action(request):
 
         if not selected_tasks:
             messages.error(request, 'No tasks selected.')
-            return redirect('task_panel')
+            return redirect('events:task_panel')
 
         tasks = Task.objects.filter(id__in=selected_tasks)
 
@@ -1191,4 +1191,4 @@ def task_bulk_action(request):
             count = tasks.update(task_status=TaskStatus.objects.get(status_name='Completed'))
             messages.success(request, f'Successfully completed {count} task(s).')
 
-    return redirect('task_panel')
+    return redirect('events:task_panel')

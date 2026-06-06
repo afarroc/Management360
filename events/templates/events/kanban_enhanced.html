@@ -295,11 +295,11 @@
                                     <i class="bi bi-circle-fill"></i>
                                 </div>
                                 <div class="item-content">
-                                    <strong>{{ event.title }}</strong>
+                                    <strong>{{ event.event.title }}</strong>
                                     <br>
-                                    <small class="text-muted">{{ event.updated_at|date:"d/m/Y" }}</small>
+                                    <small class="text-muted">{{ event.event.updated_at|date:"d/m/Y" }}</small>
                                 </div>
-                                <a href="{% url 'events:event_detail' event.id %}" class="item-action">
+                                <a href="{% url 'events:event_detail' event.event.id %}" class="item-action">
                                     Ver
                                 </a>
                             </div>

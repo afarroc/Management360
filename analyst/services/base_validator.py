@@ -272,7 +272,7 @@ class BaseValidator:
 
         blob      = _serialize(df)
         col_names = [str(c) for c in df.columns]
-        dtype_map = {str(c): str(df.dtypes[i]) for i, c in enumerate(df.columns)}
+        dtype_map = {str(c): str(df.dtypes[c]) for c in df.columns}
 
         if analyst_base.dataset is None:
             # Primera vez: crear StoredDataset

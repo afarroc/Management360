@@ -46,12 +46,13 @@ def _handle_specific_task_dependencies(request, task_id):
     
     try:
         task = Task.objects.get(id=task_id)
+        logger.info(f"[task_dependencies] Retrieved task: {task.id}, project: {task.project}")
         
         # Verificar permisos
         if not (task.host == request.user or request.user in task.attendees.all()):
             logger.warning(f"[task_dependencies] Permission denied for task {task_id}")
             messages.error(request, 'No tienes permisos para ver las dependencias de esta tarea.')
-            return redirect('tasks')
+            return redirect('events:tasks')
 
         # Obtener dependencias donde esta tarea es la dependiente
         dependencies = TaskDependency.objects.filter(task=task)
@@ -60,21 +61,35 @@ def _handle_specific_task_dependencies(request, task_id):
 
         logger.info(f"[task_dependencies] Found {dependencies.count()} dependencies and {blocking.count()} blocking tasks for task {task_id}")
 
+        # Obtener tareas disponibles para dependencias (misma lógica que en _render_create_dependency_form)
+        if task.project:
+            available_tasks = Task.objects.filter(
+                project=task.project
+            ).exclude(id=task_id).order_by('title')
+            logger.info(f"[task_dependencies] Found {available_tasks.count()} available tasks in project {task.project.id}")
+            # Fallback: if no tasks in same project, show all tasks (excluding self)
+            if not available_tasks:
+                available_tasks = Task.objects.exclude(id=task_id).order_by('title')
+                logger.info(f"[task_dependencies] Fallback: Found {available_tasks.count()} available tasks (no project match)")
+        else:
+            # If the task is not in a project, we allow depending on any task in the system.
+            available_tasks = Task.objects.exclude(id=task_id).order_by('title')
+            logger.info(f"[task_dependencies] Found {available_tasks.count()} available tasks (no project)")
+
         context = {
             'title': f'Dependencias de: {task.title}',
             'task': task,
             'dependencies': dependencies,
             'blocking': blocking,
-            'available_tasks': Task.objects.filter(
-                project=task.project
-            ).exclude(id=task_id).order_by('title')
+            'available_tasks': available_tasks,
         }
+        logger.info(f"[task_dependencies] Final context available_tasks count: {context['available_tasks'].count()}")
         return render(request, 'events/task_dependencies.html', context)
 
     except Task.DoesNotExist:
         logger.error(f"[task_dependencies] Task {task_id} not found")
         messages.error(request, 'Tarea no encontrada.')
-        return redirect('tasks')
+        return redirect('events:tasks')
 
 
 def _handle_all_dependencies(request):
@@ -105,10 +120,10 @@ def create_task_dependency(request, task_id):
         task = Task.objects.get(id=task_id)
         if not (task.host == request.user or request.user in task.attendees.all()):
             messages.error(request, 'No tienes permisos para gestionar dependencias de esta tarea.')
-            return redirect('tasks')
+            return redirect('events:tasks')
     except Task.DoesNotExist:
         messages.error(request, 'Tarea no encontrada.')
-        return redirect('tasks')
+        return redirect('events:tasks')
 
     if request.method == 'POST':
         return _process_create_dependency(request, task)
@@ -130,7 +145,7 @@ def _process_create_dependency(request, task):
         # Validar que no se cree una dependencia circular
         if task.id == depends_on_id:
             messages.error(request, 'Una tarea no puede depender de sí misma.')
-            return redirect('task_dependencies_list', task_id=task.id)
+            return redirect('events:task_dependencies_list', task_id=task.id)
 
         # Verificar si ya existe esta dependencia
         existing = TaskDependency.objects.filter(
@@ -140,7 +155,7 @@ def _process_create_dependency(request, task):
 
         if existing:
             messages.error(request, 'Esta dependencia ya existe.')
-            return redirect('task_dependencies_list', task_id=task.id)
+            return redirect('events:task_dependencies_list', task_id=task.id)
 
         # Crear la dependencia
         TaskDependency.objects.create(
@@ -150,14 +165,14 @@ def _process_create_dependency(request, task):
         )
 
         messages.success(request, f'Dependencia creada: "{task.title}" depende de "{depends_on_task.title}"')
-        return redirect('task_dependencies_list', task_id=task.id)
+        return redirect('events:task_dependencies_list', task_id=task.id)
 
     except Task.DoesNotExist:
         messages.error(request, 'La tarea objetivo no existe.')
     except Exception as e:
         messages.error(request, f'Error al crear la dependencia: {e}')
 
-    return redirect('create_task_dependency', task_id=task.id)
+    return redirect('events:create_task_dependency', task_id=task.id)
 
 
 def _render_create_dependency_form(request, task):
@@ -165,9 +180,21 @@ def _render_create_dependency_form(request, task):
     Renderiza el formulario para crear una dependencia
     """
     # Obtener tareas disponibles para dependencias
-    available_tasks = Task.objects.filter(
-        project=task.project
-    ).exclude(id=task.id).order_by('title')
+    logger.info(f"_render_create_dependency_form: task.id={task.id}, task.project={task.project}")
+    
+    if task.project:
+        available_tasks = Task.objects.filter(
+            project=task.project
+        ).exclude(id=task.id).order_by('title')
+        logger.info(f"_render_create_dependency_form: Found {available_tasks.count()} available tasks in project {task.project.id}")
+        # Fallback: if no tasks in same project, show all tasks (excluding self)
+        if not available_tasks:
+            available_tasks = Task.objects.exclude(id=task.id).order_by('title')
+            logger.info(f"_render_create_dependency_form: Fallback: Found {available_tasks.count()} available tasks (no project match)")
+    else:
+        # If the task is not in a project, we allow depending on any task in the system.
+        available_tasks = Task.objects.exclude(id=task.id).order_by('title')
+        logger.info(f"_render_create_dependency_form: Found {available_tasks.count()} available tasks (no project)")
 
     context = {
         'title': f'Crear Dependencia para: {task.title}',
@@ -191,7 +218,7 @@ def delete_task_dependency(request, dependency_id):
         # Verificar permisos
         if not (dependency.task.host == request.user or request.user in dependency.task.attendees.all()):
             messages.error(request, 'No tienes permisos para eliminar esta dependencia.')
-            return redirect('tasks')
+            return redirect('events:tasks')
 
         if request.method == 'POST':
             return _process_delete_dependency(request, dependency, task_id)
@@ -205,7 +232,7 @@ def delete_task_dependency(request, dependency_id):
 
     except TaskDependency.DoesNotExist:
         messages.error(request, 'Dependencia no encontrada.')
-        return redirect('tasks')
+        return redirect('events:tasks')
 
 
 def _process_delete_dependency(request, dependency, task_id):
@@ -234,10 +261,10 @@ def task_dependency_graph(request, task_id):
         task = Task.objects.get(id=task_id)
         if not (task.host == request.user or request.user in task.attendees.all()):
             messages.error(request, 'No tienes permisos para ver el gráfico de dependencias.')
-            return redirect('tasks')
+            return redirect('events:tasks')
     except Task.DoesNotExist:
         messages.error(request, 'Tarea no encontrada.')
-        return redirect('tasks')
+        return redirect('events:tasks')
 
     # Obtener todas las dependencias relacionadas
     all_dependencies = _get_all_dependencies(task)

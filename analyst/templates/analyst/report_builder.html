@@ -490,6 +490,7 @@ const REGISTRY = {{ registry_json|safe }};
 const DATASETS = [{% for ds in datasets %}{"id":"{{ ds.id }}","name":"{{ ds.name|escapejs }}","columns":{{ ds.columns|safe }},"dtype_map":{{ ds.dtype_map|safe }}},{% endfor %}];
 const CLIPS    = [{% for c in clips %}{"key":"{{ c.key|escapejs }}","name":"{{ c.key|escapejs }}","columns":[]},{% endfor %}];
 const MODELS   = {{ model_choices_json|safe }};
+const ANALYST_BASES = {{ analyst_bases_json|safe }};
 
 const URLS = {
   build:        "{% url 'analyst:report_build' %}",
@@ -533,61 +534,67 @@ function selectFunction(key){
 
 /* ── Sources ── */
 function renderSources(defs){
-  const grp=document.getElementById('sourcesGroup');
-  const con=document.getElementById('sourcesContainer');
-  grp.style.display=defs.length?'block':'none';
-  con.innerHTML='';
-  defs.forEach(d=>{
-    const s=document.createElement('div');
-    s.className='src-slot'; s.id=`slot-${d.id}`;
-    s.innerHTML=`<div class="src-slot-lbl">${d.required?'* ':''}${d.label}</div>
-      <div class="f-group" style="margin-bottom:6px;">
-        <label class="f-label">Tipo de fuente</label>
-        <select class="f-select" id="srcType-${d.id}" onchange="onSourceTypeChange('${d.id}')">
-          <option value="">— seleccionar —</option>
-          <option value="dataset">📦 Dataset Guardado</option>
-          <option value="clip">📋 Clipboard (temporal)</option>
-          <option value="model">🗄️ Modelo Django</option>
-        </select>
-      </div>
-      <div id="srcRef-${d.id}" style="display:none;"></div>`;
-    con.appendChild(s);
-  });
-  updateSrcStatus();
-}
+   const grp=document.getElementById('sourcesGroup');
+   const con=document.getElementById('sourcesContainer');
+   grp.style.display=defs.length?'block':'none';
+   con.innerHTML='';
+   defs.forEach(d=>{
+     const s=document.createElement('div');
+     s.className='src-slot'; s.id=`slot-${d.id}`;
+     s.innerHTML=`<div class="src-slot-lbl">${d.required?'* ':''}${d.label}</div>
+       <div class="f-group" style="margin-bottom:6px;">
+         <label class="f-label">Tipo de fuente</label>
+         <select class="f-select" id="srcType-${d.id}" onchange="onSourceTypeChange('${d.id}')">
+           <option value="">— seleccionar —</option>
+           <option value="dataset">📦 Dataset Guardado</option>
+           <option value="analyst_base">📋 Base de Datos Analista</option>
+           <option value="clip">📋 Clipboard (temporal)</option>
+           <option value="model">🗄️ Modelo Django</option>
+         </select>
+       </div>
+       <div id="srcRef-${d.id}" style="display:none;"></div>`;
+     con.appendChild(s);
+   });
+   updateSrcStatus();
+ }
 
-function onSourceTypeChange(srcId){
-  const type=document.getElementById(`srcType-${srcId}`)?.value;
-  const ref=document.getElementById(`srcRef-${srcId}`);
-  if(!type){ref.style.display='none';delete STATE.sources[srcId];checkBuildReady();updateSrcStatus();return;}
-  const rowWrap=(lbl,inner)=>`<div class="f-group"><label class="f-label">${lbl}</label>${inner}</div>`;
-  let html='';
-  if(type==='dataset')
-    html=rowWrap('Dataset',`<select class="f-select" id="srcVal-${srcId}" onchange="onSourceSelected('${srcId}','dataset',this.value,this.options[this.selectedIndex].text)"><option value="">— seleccionar dataset —</option>${DATASETS.map(d=>`<option value="${d.id}">${d.name} (${d.columns?.length??0} cols)</option>`).join('')}</select>`);
-  else if(type==='clip')
-    html=rowWrap('Clipboard',`<select class="f-select" id="srcVal-${srcId}" onchange="onSourceSelected('${srcId}','clip',this.value,this.options[this.selectedIndex].text)"><option value="">— seleccionar clip —</option>${CLIPS.map(c=>`<option value="${c.key}">${c.name}</option>`).join('')}</select>`);
-  else
-    html=rowWrap('Modelo',`<select class="f-select" id="srcVal-${srcId}" onchange="onSourceSelected('${srcId}','model',this.value,this.options[this.selectedIndex].text)"><option value="">— seleccionar modelo —</option>${MODELS.map(m=>`<option value="${m.value}">${m.label}</option>`).join('')}</select>`);
-  ref.innerHTML=html; ref.style.display='block';
-  delete STATE.sources[srcId]; checkBuildReady();
+ function onSourceTypeChange(srcId){
+   const type=document.getElementById(`srcType-${srcId}`)?.value;
+   const ref=document.getElementById(`srcRef-${srcId}`);
+   if(!type){ref.style.display='none';delete STATE.sources[srcId];checkBuildReady();updateSrcStatus();return;}
+   const rowWrap=(lbl,inner)=>`<div class="f-group"><label class="f-label">${lbl}</label>${inner}</div>`;
+   let html='';
+   if(type==='dataset')
+     html=rowWrap('Dataset',`<select class="f-select" id="srcVal-${srcId}" onchange="onSourceSelected('${srcId}','dataset',this.value,this.options[this.selectedIndex].text)"><option value="">— seleccionar dataset —</option>${DATASETS.map(d=>`<option value="${d.id}">${d.name} (${d.columns?.length??0} cols)</option>`).join('')}</select>`);
+   else if(type==='analyst_base')
+     html=rowWrap('Base de Datos',`<select class="f-select" id="srcVal-${srcId}" onchange="onSourceSelected('${srcId}','analyst_base',this.value,this.options[this.selectedIndex].text)"><option value="">— seleccionar base —</option>${ANALYST_BASES.map(b=>`<option value="${b.id}">${b.name} (${b.columns?.length??0} cols)</option>`).join('')}</select>`);
+   else if(type==='clip')
+     html=rowWrap('Clipboard',`<select class="f-select" id="srcVal-${srcId}" onchange="onSourceSelected('${srcId}','clip',this.value,this.options[this.selectedIndex].text)"><option value="">— seleccionar clip —</option>${CLIPS.map(c=>`<option value="${c.key}">${c.name}</option>`).join('')}</select>`);
+   else
+     html=rowWrap('Modelo',`<select class="f-select" id="srcVal-${srcId}" onchange="onSourceSelected('${srcId}','model',this.value,this.options[this.selectedIndex].text)"><option value="">— seleccionar modelo —</option>${MODELS.map(m=>`<option value="${m.value}">${m.label}</option>`).join('')}</select>`);
+   ref.innerHTML=html; ref.style.display='block';
+   delete STATE.sources[srcId]; checkBuildReady();
 }
 
 async function onSourceSelected(srcId,type,ref,name){
-  if(!ref){delete STATE.sources[srcId];checkBuildReady();updateSrcStatus();return;}
-  let columns=[];
-  if(type==='dataset'){
-    const ds=DATASETS.find(d=>d.id===ref);
-    columns=ds?(ds.columns||[]).map(c=>({name:c,dtype:ds.dtype_map?.[c]??'object'})):[];
-  }else if(type==='model'){
-    try{const r=await fetch(`${URLS.dsColumns}?models[]=${encodeURIComponent(ref)}`);const d=await r.json();columns=d.sources?.[`model:${ref}`]?.columns??[];}catch(e){}
-  }
-  STATE.sources[srcId]={type,ref,name,columns};
-  const slot=document.getElementById(`slot-${srcId}`);
-  if(slot) slot.className='src-slot filled';
-  const meta=REGISTRY[STATE.fnKey];
-  if(meta) refreshParamSelectors(meta.params);
-  checkBuildReady(); updateSrcStatus();
-}
+   if(!ref){delete STATE.sources[srcId];checkBuildReady();updateSrcStatus();return;}
+   let columns=[];
+   if(type==='dataset'){
+     const ds=DATASETS.find(d=>d.id===ref);
+     columns=ds?(ds.columns||[]).map(c=>({name:c,dtype:ds.dtype_map?.[c]??'object'})):[];
+   }else if(type==='analyst_base'){
+     const base=ANALYST_BASES.find(b=>b.id===ref);
+     columns=base?(base.columns||[]).map(c=>({name:c,dtype:'object'})):[];
+   }else if(type==='model'){
+     try{const r=await fetch(`${URLS.dsColumns}?models[]=${encodeURIComponent(ref)}`);const d=await r.json();columns=d.sources?.[`model:${ref}`]?.columns??[];}catch(e){}
+   }
+   STATE.sources[srcId]={type,ref,name,columns};
+   const slot=document.getElementById(`slot-${srcId}`);
+   if(slot) slot.className='src-slot filled';
+   const meta=REGISTRY[STATE.fnKey];
+   if(meta) refreshParamSelectors(meta.params);
+   checkBuildReady(); updateSrcStatus();
+ }
 
 function updateSrcStatus(){
   const meta=STATE.fnKey?REGISTRY[STATE.fnKey]:null;
@@ -612,29 +619,39 @@ function renderParams(defs){
 }
 
 function buildParamInput(p){
-  const cols=colsForSource(p.source);
-  const opts=cols.map(c=>`<option value="${c.name}">${c.name} (${c.dtype})</option>`).join('');
-  if(p.type==='column_select')
-    return `<select class="f-select" id="param-${p.id}" onchange="onParamChange('${p.id}',this.value)"><option value="">— columna —</option>${opts}</select>`;
-  if(p.type==='multi_column')
-    return `<select class="f-select f-select-multi" id="param-${p.id}" multiple onchange="onParamMultiChange('${p.id}',this)">${opts}</select><div class="f-hint">Ctrl+clic para selección múltiple</div>`;
-  if(p.type==='boolean')
-    return `<label class="cb-row"><input type="checkbox" id="param-${p.id}" ${p.default?'checked':''} onchange="onParamChange('${p.id}',this.checked)"> ${p.label}</label>`;
-  if(p.type==='number')
-    return `<input type="number" class="f-input" id="param-${p.id}" value="${p.default??''}" style="max-width:140px;" onchange="onParamChange('${p.id}',parseFloat(this.value))">`;
-  return `<input type="text" class="f-input" id="param-${p.id}" placeholder="${p.label}" onchange="onParamChange('${p.id}',this.value)">`;
-}
+   const cols=colsForSource(p.source);
+   if(p.type==='column_select'||p.type==='multi_column'){
+     const opts=cols.map(c=>`<option value="${c.name}">${c.name} (${c.dtype})</option>`).join('');
+     if(p.type==='column_select')
+       return `<select class="f-select" id="param-${p.id}" onchange="onParamChange('${p.id}',this.value)"><option value="">${cols.length?'— columna —':'— seleccione fuente primero —'}</option>${opts}</select>`;
+     return `<select class="f-select f-select-multi" id="param-${p.id}" multiple onchange="onParamMultiChange('${p.id}',this)">${cols.length?opts:''}</select><div class="f-hint">Ctrl+clic para selección múltiple</div>`;
+   }
+   if(p.type==='boolean')
+     return `<label class="cb-row"><input type="checkbox" id="param-${p.id}" ${p.default?'checked':''} onchange="onParamChange('${p.id}',this.checked)"> ${p.label}</label>`;
+   if(p.type==='number')
+     return `<input type="number" class="f-input" id="param-${p.id}" value="${p.default??''}" style="max-width:140px;" onchange="onParamChange('${p.id}',parseFloat(this.value))">`;
+   return `<input type="text" class="f-input" id="param-${p.id}" placeholder="${p.label}" onchange="onParamChange('${p.id}',this.value)">`;
+ }
 
 function refreshParamSelectors(defs){
-  defs.forEach(p=>{
-    if(p.type!=='column_select'&&p.type!=='multi_column') return;
-    const el=document.getElementById(`param-${p.id}`); if(!el) return;
-    const opts=colsForSource(p.source).map(c=>`<option value="${c.name}">${c.name} (${c.dtype})</option>`).join('');
-    const prev=el.type==='select-multiple'?[...el.selectedOptions].map(o=>o.value):[el.value];
-    el.innerHTML=(p.type==='column_select'?'<option value="">— columna —</option>':'')+opts;
-    prev.forEach(v=>{const o=el.querySelector(`option[value="${v}"]`);if(o)o.selected=true;});
-  });
-}
+   defs.forEach(p=>{
+     if(p.type!=='column_select'&&p.type!=='multi_column') return;
+     const el=document.getElementById(`param-${p.id}`); if(!el) return;
+     const cols=colsForSource(p.source);
+     const opts=cols.map(c=>`<option value="${c.name}">${c.name} (${c.dtype})</option>`).join('');
+
+     // Preservar valor actual antes de actualizar
+     const prev=el.type==='select-multiple'?[...el.selectedOptions].map(o=>o.value):[el.value];
+
+el.disabled=false;
+     // Guardar primero el event handler y el ID
+     const firstOpt = p.type==='column_select' ? '<option value="">— columna —</option>' : '';
+     el.innerHTML = firstOpt + opts;
+
+     // Restore prev selections
+     prev.forEach(v=>{const o=el.querySelector(`option[value="${v}"]`);if(o)o.selected=true;});
+   });
+ }
 
 function onParamChange(id,val){ STATE.params[id]=val; checkBuildReady(); }
 function onParamMultiChange(id,sel){ STATE.params[id]=[...sel.selectedOptions].map(o=>o.value); checkBuildReady(); }

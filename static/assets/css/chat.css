@@ -1,9 +1,24 @@
 /* Chat Panel Styles - Management360 */
 /* Compatible with NiceAdmin Bootstrap Template */
 
-/* Chat Restore Button */
+/* Chat Restore Button - fixed position at bottom when panel is minimized */
 #chat-restore-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1080;
     transition: opacity 0.2s;
+}
+
+/* Ensure buttons stack correctly in mobile - above chat panel */
+@media (max-width: 768px) {
+    /* Bottom buttons stack: chat panel (20px) | inbox (90px) | restore (20px) */
+    .inbox-floating-container {
+        bottom: 90px !important;
+    }
+    #chat-restore-btn {
+        bottom: 20px !important;
+    }
 }
 
 /* Chat Panel Base Styles */
