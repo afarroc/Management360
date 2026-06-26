@@ -3,6 +3,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.models import ContentType
 
 User = get_user_model()
 from ..models import CreditAccount, Task, InboxItem, TaskStatus
@@ -67,9 +68,11 @@ def create_inbox_item_for_task(sender, instance, created, **kwargs):
             if instance.host:
                 # NO crear item en inbox si la tarea viene del procesamiento del inbox
                 # Verificar si existe algún InboxItem que apunte a esta tarea (ya procesado)
+                task_ct = ContentType.objects.get_for_model(Task)
                 existing_processed_inbox_item = InboxItem.objects.filter(
                     created_by=instance.host,
-                    processed_to=instance
+                    processed_to_content_type=task_ct,
+                    processed_to_object_id=instance.pk
                 ).exists()
 
                 if existing_processed_inbox_item:
