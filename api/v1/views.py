@@ -59,7 +59,7 @@ class _PageableMixin:
     def _paginate(self, request: Request, queryset):
         query = request.query_params.get("q", "")
         limit = self._coerce_int(request.query_params.get("limit"), default=20, minimum=1, maximum=100)
-        offset = self._coerce_int(request.query_params.get("offset"), default=0, minimum=0)
+        offset = self._coerce_int(request.query_params.get("offset"), default=0, minimum=0, maximum=10000)
 
         if query:
             q_filter = Q()
@@ -192,7 +192,7 @@ class EventViewSet(_PageableMixin, ModelViewSet):
     def list(self, request: Request, *args, **kwargs) -> Response:
         project_id = request.query_params.get("project_id")
         if project_id:
-            self.queryset = self.queryset.filter(project_id=project_id)
+            self.queryset = self.queryset.filter(project__id=project_id)
         category = request.query_params.get("category")
         if category:
             self.queryset = self.queryset.filter(event_category__iexact=category)
@@ -213,7 +213,7 @@ class ReminderViewSet(_PageableMixin, ModelViewSet):
     def list(self, request: Request, *args, **kwargs) -> Response:
         project_id = request.query_params.get("project_id")
         if project_id:
-            self.queryset = self.queryset.filter(project_id=project_id)
+            self.queryset = self.queryset.filter(project__id=project_id)
         is_sent = request.query_params.get("is_sent")
         if is_sent is not None:
             self.queryset = self.queryset.filter(is_sent=is_sent.lower() in ("true", "1", "yes"))

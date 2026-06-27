@@ -42,19 +42,19 @@ class _NestedStatusSerializer(serializers.ModelSerializer):
 class _NestedProjectStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectStatus
-        fields = ["id", "status_name", "status_description"]
+        fields = ["id", "status_name", "active", "color"]
 
 
 class _NestedTaskStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskStatus
-        fields = ["id", "status_name", "status_description"]
+        fields = ["id", "status_name", "active", "color"]
 
 
 class _NestedEventStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = Status
-        fields = ["id", "status_name", "status_description"]
+        fields = ["id", "status_name", "active", "color"]
 
 
 class _NestedTagSerializer(serializers.ModelSerializer):
@@ -78,6 +78,7 @@ class _ProjectStatsSerializer(serializers.Serializer):
 
 class ProjectSerializer(serializers.ModelSerializer):
     project_status = _NestedProjectStatusSerializer(read_only=True)
+    status = serializers.CharField(source='project_status.status_name', read_only=True)
     stats = serializers.SerializerMethodField()
     host = _NestedUserSummarySerializer(read_only=True)
     assigned_to = _NestedUserSummarySerializer(read_only=True)
@@ -112,6 +113,8 @@ class ProjectSerializer(serializers.ModelSerializer):
 
 class TaskSerializer(serializers.ModelSerializer):
     task_status = _NestedTaskStatusSerializer(read_only=True)
+    status = serializers.CharField(source='task_status.status_name', read_only=True)
+    status_id = serializers.IntegerField(source='task_status.id', read_only=True)
     project = serializers.PrimaryKeyRelatedField(read_only=True)
     project_title = serializers.CharField(source="project.title", read_only=True)
     assigned_to = _NestedUserSummarySerializer(read_only=True)
@@ -129,10 +132,13 @@ class TaskSerializer(serializers.ModelSerializer):
             "description",
             "status",
             "status_id",
+            "task_status",
             "important",
             "assigned_to",
+            "project",
             "project_id",
             "project_title",
+            "event",
             "event_id",
             "tags",
             "created_at",
@@ -141,7 +147,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "events_linked",
             "reminders_linked",
         ]
-        read_only_fields = ["status_id", "event_id"]
+        read_only_fields = ["status_id", "event_id", "event"]
 
     def get_dependencies(self, obj):
         return list(obj.dependencies.values_list("depends_on_id", flat=True))
@@ -157,6 +163,7 @@ class TaskSerializer(serializers.ModelSerializer):
 
 class EventSerializer(serializers.ModelSerializer):
     event_status = _NestedEventStatusSerializer(read_only=True)
+    status = serializers.CharField(source='event_status.status_name', read_only=True)
     host = _NestedUserSummarySerializer(read_only=True)
     assigned_to = _NestedUserSummarySerializer(read_only=True)
     tags = _NestedTagSerializer(many=True, read_only=True)
@@ -169,8 +176,6 @@ class EventSerializer(serializers.ModelSerializer):
             "description",
             "status",
             "event_status",
-            "start_date",
-            "end_date",
             "venue",
             "host",
             "event_category",
