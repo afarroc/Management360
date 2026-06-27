@@ -208,6 +208,19 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
+M360_API_KEY = config('M360_API_KEY', default='')
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'api.authentication.BearerAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'api.permissions.IsWriteAuthenticated',
+    ],
+}
+
 # Internacionalización
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE     = 'UTC'
