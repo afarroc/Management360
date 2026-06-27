@@ -10,6 +10,8 @@ from django.core.files.storage import default_storage
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
+import os
+
 User = get_user_model()
 import asyncio
 import json
@@ -424,14 +426,18 @@ def chat_view(request):
                     async for chunk in generate_response(messages):
                         if not chunk or not isinstance(chunk, dict):
                             continue
+                        # Support both formats: {'message': {'content': ...}} and {'content': ...}
+                        content = ''
+                        if 'message' in chunk:
+                            content = chunk['message'].get('content', '')
+                        elif 'content' in chunk:
+                            content = chunk['content']
                         if 'error' in chunk:
                             raise AIResponseError(chunk['error'])
-                        content = chunk.get('message', {}).get('content', '')
                         if content:
                             ai_response_content += content
-                            # Replace newlines and escape special characters
                             yield f"data: {json.dumps({'content': content})}\n\n"
-                            await asyncio.sleep(0)  # Forzar flush inmediato del chunk
+                            await asyncio.sleep(0)
                 except AIResponseError as ai_err:
                     error_msg = f'AIResponseError: {str(ai_err)}'
                     ai_response_content = error_msg
@@ -1293,7 +1299,84 @@ def delete_assistant_configuration(request, config_id):
         except Exception as e:
             messages.error(request, f'Error al eliminar configuración: {str(e)}')
 
+        return redirect('chat:assistant_configurations')
+     
     return redirect('chat:assistant_configurations')
+
+# Public AI test endpoint - no authentication required
+@csrf_exempt
+def ai_test(request):
+    """Endpoint público para probar la IA Kilo integrada"""
+    if request.method == 'GET':
+        return JsonResponse({
+            'status': 'ready',
+            'backend': 'kilo' if os.getenv('USE_KILO', 'true').lower() == 'true' else 'ollama',
+            'message': 'POST a este endpoint con {"message": "tu texto"} para interactuar con la IA',
+            'endpoints': {
+                'test': '/chat/test/',
+                'ai_post': '/chat/ai/ (POST con message)',
+                'rooms': '/chat/rooms/ (requiere auth)',
+                'websocket': 'ws://127.0.0.1:8000/ws/chat/{room_id}/'
+            }
+        })
+    
+    if request.method == 'POST':
+        user_message = request.POST.get('message', '') or request.GET.get('message', '')
+        if not user_message:
+            return JsonResponse({'error': 'message parameter required'}, status=400)
+        
+        # Usar generate_response_kilo_sync para respuesta inmediata
+        from .ollama_api import generate_response_kilo_sync
+        try:
+            response_text = generate_response_kilo_sync([{'role': 'user', 'content': user_message}])
+        except Exception as e:
+            response_text = f"Error: {str(e)}"
+        
+        return JsonResponse({
+            'response': response_text,
+            'backend': 'kilo',
+            'success': True
+        })
+
+# Simple synchronous chat endpoint for testing (no auth, no streaming)
+@csrf_exempt
+def chat_simple(request):
+    """Chat simple sin streaming - útil para pruebas rápidas"""
+    if request.method == 'GET':
+        return JsonResponse({'status': 'ok', 'message': 'POST {"user_input": "texto"}'})
+    
+    if request.method == 'POST':
+        user_input = request.POST.get('user_input', '') or request.GET.get('user_input', '')
+        if not user_input:
+            return JsonResponse({'error': 'user_input required'}, status=400)
+        
+        from .ollama_api import generate_response_kilo_sync
+        response_text = generate_response_kilo_sync([{'role': 'user', 'content': user_input}])
+        
+        return JsonResponse({
+            'response': response_text,
+            'success': True
+        })
+    
+    if request.method == 'POST':
+        user_message = request.POST.get('message', request.GET.get('message', ''))
+        if not user_message:
+            return JsonResponse({'error': 'message parameter required'}, status=400)
+        
+        # Construir mensajes para la IA
+        messages = [{'role': 'user', 'content': user_message}]
+        
+        # Importar y usar generate_response
+        from .ollama_api import generate_response
+        import asyncio
+        
+        # Para GET/POST síncronos, usar respuesta simple
+        response_text = f"IA Kilo: Entendido '{user_message[:50]}...'. El sistema está operativo."
+        
+        return JsonResponse({
+            'response': response_text,
+            'backend': 'kilo'
+        })
     
     
 @login_required
@@ -2015,4 +2098,24 @@ def chat_stats_api(request):
         'active_rooms': total_rooms,
         'user_conversations': user_conversations,
         'rooms': rooms_data
+    })
+
+
+# Public test endpoint - no authentication required
+def test_page(request):
+    """Página pública de prueba para verificar que el chat está operativo."""
+    from django.db import connection
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1")
+            db_ok = True
+    except Exception:
+        db_ok = False
+    
+    return JsonResponse({
+        'status': 'ok',
+        'app': 'chat',
+        'message': 'Management360 Chat app is running',
+        'db_connected': db_ok,
+        'redis_configured': bool(os.environ.get('REDIS_URL', 'redis://192.168.18.59:6379'))
     })

@@ -7,6 +7,12 @@ app_name = 'chat'  # Namespace definition
 
 urlpatterns = [
     path('', views.index, name='index'),
+    # Public test endpoint - no authentication required
+    path('test/', views.test_page, name='test_page'),
+    # Public AI endpoint - no authentication required
+    path('ai/', views.ai_test, name='ai_test'),
+    # Simple synchronous chat endpoint for testing
+    path('simple/', views.chat_simple, name='chat_simple'),
     path('rooms/', views.room_list, name='room_list'),
     path('room/', views.redirect_to_last_room, name='redirect_to_last_room'),
     path('room/<str:room_name>/', views.room, name='room'),

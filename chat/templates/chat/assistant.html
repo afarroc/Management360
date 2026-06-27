@@ -596,6 +596,9 @@
             $("#user-input").prop('disabled', true);
             $("#send-btn").prop('disabled', true);
             
+            // Timeout para evitar bloqueo indefinido
+            const STREAM_TIMEOUT = 15000; // 15 segundos
+            
             // Clear input and save user message
             $("#user-input").val("");
             const userMsg = {
@@ -762,7 +765,7 @@
 
                 scrollToBottom();
 
-                // Stream response SSE-style
+// Stream response SSE-style
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let aiResponse = '';
