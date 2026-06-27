@@ -151,6 +151,7 @@ class TaskSerializer(serializers.ModelSerializer):
     dependencies = serializers.SerializerMethodField()
     events_linked = serializers.SerializerMethodField()
     reminders_linked = serializers.SerializerMethodField()
+    done = serializers.BooleanField(required=False)
 
     class Meta:
         model = Task
@@ -178,6 +179,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "dependencies",
             "events_linked",
             "reminders_linked",
+            "done",
         ]
         read_only_fields = ["status_id", "event_id", "event"]
 
