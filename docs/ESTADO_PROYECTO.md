@@ -1,8 +1,8 @@
 # Estado del proyecto Management360
 
-**Fecha:** 2026-06-27T10:58-05:00  
+**Fecha:** 2026-06-27T12:04:39-05:00  
 **Rama:** `main`  
-**Último commit:** (pendiente — serializer writable)
+**Último commit:** `c6db1d8d` fix(api/v1): serializer Reminder con created_by_id escribible
 
 ---
 
@@ -12,8 +12,8 @@
 
 | Recurso | Estado | IDs creados |
 |---------|--------|-------------|
-| Proyecto | OK | 78 |
-| Tareas | OK | 278, 279, 280 |
+| Proyecto | OK | 78 (o 79 en última corrida) |
+| Tareas | OK | 278-283 |
 | Eventos | OK | kickoff, review |
 | Recordatorio | OK | reminder-1 |
 
@@ -22,10 +22,12 @@
   - `ProjectSerializer`: campos escribibles `project_status_id`, `host_id`, `assigned_to_id`
   - `TaskSerializer`: campos escribibles `task_status_id`, `project_id`, `assigned_to_id`, `host_id`
   - `EventSerializer`: campos escribibles `event_status_id`, `host_id`, `assigned_to_id`
+  - `ReminderSerializer`: `created_by_id` escribible
 - `tools/m360_bridge/client.py` (mementobloom):
   - Método `_request_json` para envío JSON con CSRF
   - Métodos `api_v1_*` (projects, tasks, events, reminders, inbox, health)
   - Defaults seguros en `create_project`, `create_task`, `create_reminder`
+  - Auto-retry 401/403 en `_request_json`
 - `tools/m360_bridge/sync.py` (mementobloom):
   - Consume endpoints `/api/v1/` en lugar de rutas legacy
 
@@ -53,6 +55,23 @@
 **Servidor:** Daphne/ASGI en `0.0.0.0:8000`  
 **Último health check:** OK  
 **Proyecto M360 ID:** 78 (MementoBloom - S-27-06)
+
+---
+
+## Memoria sincronizada (2026-06-27)
+
+- **Último sync:** `quick_scan.py` → 107 entradas detectadas
+- **Nota:** el índice JSON plano (`memory/graph/memory_index.json`) no expone `entries` en formato array; los recuentos se obtienen del escaneo directo
+- **Handoffs indexados:** 104 HANDOFF + 1 CONTEXT + 1 NOTE + 1 COMPONENT
+
+---
+
+## Cambios recientes M360
+
+- `c6db1d8d` fix(api/v1): serializer Reminder con created_by_id escribible
+- `8ab2f6fa` fix(api/v1): serializer writable para Project/Task/Event
+- `767a10de` fix(api/v1): corregir serializers Event/Reminder y filtros por proyecto
+- `36dea8be` feat(api/v1): ViewSets, paginacion, filtrado y rutas /api/v1/
 
 ---
 
@@ -104,8 +123,8 @@
 
 ## Commits recientes M360
 
+- `c6db1d8d` fix(api/v1): serializer Reminder con created_by_id escribible
+- `8ab2f6fa` fix(api/v1): serializer writable para Project/Task/Event
 - `767a10de` fix(api/v1): corregir serializers Event/Reminder y filtros por proyecto
 - `36dea8be` feat(api/v1): ViewSets, paginacion, filtrado y rutas /api/v1/
 - `065d957f` feat(api/v1): serializers para Project, Task, Event, Reminder, InboxItem
-- `6bea7cd6` chore: agregar API_SPEC.md
-- `72c87156` fix(migrations): resolver conflicto en 0023_evento_tipo
