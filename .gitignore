@@ -99,6 +99,8 @@ db.sqlite3
 # ================================
 *.log
 logs/
+runserver.pid
+informe_bitacora.html
 # ================================
 # Cache y backups internos
 # ================================
@@ -110,11 +112,10 @@ backup_*.json
 **/migrations/*.pyc
 
 # Archivos temporales
-0
+_raw_fixed_sprint_reporte.py
 _fix_git_ignore.py
 gtd_config.yaml
 backup_pre_migration_*.json
-media/
 
 # ================================
 # Archives and third-party code
