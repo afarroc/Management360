@@ -56,6 +56,7 @@ urlpatterns = [
     path('content/<slug:slug>/preview/', views.preview_content_block, name='preview_content_block'),
     path('content/my-blocks/', views.my_content_blocks, name='my_content_blocks'),
     path('content/public/', views.public_content_blocks, name='public_content_blocks'),
+    path('content/public/<slug:slug>/', views.public_content_detail, name='public_content_detail'),
     path('content/featured/', views.featured_content_blocks, name='featured_content_blocks'),
     path('content/<slug:slug>/toggle-featured/', views.toggle_block_featured, name='toggle_block_featured'),
     path('content/<slug:slug>/toggle-public/', views.toggle_block_public, name='toggle_block_public'),

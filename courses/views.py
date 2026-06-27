@@ -1888,7 +1888,6 @@ def my_content_blocks(request):
 
     return render(request, 'courses/content_blocks_list.html', context)
 
-@login_required
 def public_content_blocks(request):
     """Ver bloques de contenido públicos disponibles"""
     blocks = ContentBlock.objects.filter(is_public=True).select_related('author').order_by('-updated_at')
@@ -1929,7 +1928,37 @@ def public_content_blocks(request):
         'title': 'Biblioteca Pública de Contenido',
     }
 
-    return render(request, 'courses/content_blocks_list.html', context)
+    return render(request, 'courses/public_content_blocks.html', context)
+
+
+def public_content_detail(request, slug):
+    """Vista pública de detalle de un bloque, accesible sin login"""
+    block = get_object_or_404(ContentBlock, slug=slug)
+    if not block.is_public and (not request.user.is_authenticated or block.author != request.user):
+        from django.contrib import messages
+        messages.error(request, 'Este contenido no es público.')
+        return redirect('courses:public_content_blocks')
+
+    force_css = """
+    <style id="public-overflow-fix">
+      #public-overflow-fix + .public-card, .public-card { overflow-x: auto !important; }
+      #public-overflow-fix + .public-card table, #public-overflow-fix ~ .public-card table, .public-card table { display: block !important; overflow-x: auto !important; width: auto !important; max-width: 100%; }
+      #public-overflow-fix + .public-card th, #public-overflow-fix + .public-card td,
+      #public-overflow-fix ~ .public-card th, #public-overflow-fix ~ .public-card td,
+      .public-card th, .public-card td { white-space: nowrap !important; }
+      #public-overflow-fix + .public-card img, #public-overflow-fix ~ .public-card img, .public-card img { max-width: 100% !important; height: auto !important; }
+    </style>
+    """
+
+    context = {
+        'block': block,
+        'title': block.title,
+        'force_css': force_css,
+    }
+
+    response = render(request, 'courses/public_content_detail.html', context)
+    return response
+
 
 @login_required
 def featured_content_blocks(request):
