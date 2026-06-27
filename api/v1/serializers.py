@@ -236,6 +236,9 @@ class EventSerializer(serializers.ModelSerializer):
 
 class ReminderSerializer(serializers.ModelSerializer):
     created_by = _NestedUserSummarySerializer(read_only=True)
+    created_by_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source="created_by", write_only=True, required=False
+    )
 
     class Meta:
         model = Reminder
@@ -248,10 +251,21 @@ class ReminderSerializer(serializers.ModelSerializer):
             "project",
             "event",
             "created_by",
+            "created_by_id",
             "is_sent",
             "reminder_type",
             "created_at",
         ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.task_id:
+            data["task"] = {"id": instance.task_id, "title": instance.task.title if instance.task else None}
+        if instance.project_id:
+            data["project"] = {"id": instance.project_id, "title": instance.project.title if instance.project else None}
+        if instance.event_id:
+            data["event"] = {"id": instance.event_id, "title": instance.event.title if instance.event else None}
+        return data
 
 
 class InboxItemSerializer(serializers.ModelSerializer):
