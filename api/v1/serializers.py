@@ -1,0 +1,242 @@
+"""
+Serializers para API v1 — Management360
+
+Endpoints consumidos:
+- GET /api/v1/projects/
+- GET /api/v1/projects/{id}/
+- GET /api/v1/projects/{project_id}/tasks/
+- GET /api/v1/tasks/{task_id}/
+- POST /api/v1/tasks/{task_id}/status/
+- GET /api/v1/projects/{project_id}/events/
+- GET /api/v1/projects/{project_id}/reminders/
+- GET /api/v1/inbox/
+- POST /api/v1/inbox/{id}/
+"""
+
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+from rest_framework import serializers
+
+from events.models import (
+    Classification,
+    Event,
+    InboxItem,
+    Project,
+    ProjectStatus,
+    Reminder,
+    Status,
+    Task,
+    TaskStatus,
+    Tag,
+)
+
+User = get_user_model()
+
+
+class _NestedStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Status
+        fields = ["id", "status_name", "status_description"]
+
+
+class _NestedProjectStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectStatus
+        fields = ["id", "status_name", "status_description"]
+
+
+class _NestedTaskStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TaskStatus
+        fields = ["id", "status_name", "status_description"]
+
+
+class _NestedEventStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Status
+        fields = ["id", "status_name", "status_description"]
+
+
+class _NestedTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ["id", "name", "color", "description"]
+
+
+class _NestedUserSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "username", "first_name", "last_name", "email"]
+
+
+class _ProjectStatsSerializer(serializers.Serializer):
+    tasks_total = serializers.IntegerField()
+    tasks_completed = serializers.IntegerField()
+    events_total = serializers.IntegerField()
+    reminders_total = serializers.IntegerField()
+
+
+class ProjectSerializer(serializers.ModelSerializer):
+    project_status = _NestedProjectStatusSerializer(read_only=True)
+    stats = serializers.SerializerMethodField()
+    host = _NestedUserSummarySerializer(read_only=True)
+    assigned_to = _NestedUserSummarySerializer(read_only=True)
+
+    class Meta:
+        model = Project
+        fields = [
+            "id",
+            "title",
+            "description",
+            "status",
+            "created_at",
+            "updated_at",
+            "done",
+            "project_status",
+            "host",
+            "assigned_to",
+            "ticket_price",
+            "stats",
+        ]
+
+    def get_stats(self, obj):
+        return {
+            "tasks_total": obj.task_set.count() if hasattr(obj, "task_set") else 0,
+            "tasks_completed": (
+                obj.task_set.filter(done=True).count() if hasattr(obj, "task_set") else 0
+            ),
+            "events_total": Event.objects.filter(project=obj).count(),
+            "reminders_total": Reminder.objects.filter(project=obj).count(),
+        }
+
+
+class TaskSerializer(serializers.ModelSerializer):
+    task_status = _NestedTaskStatusSerializer(read_only=True)
+    project = serializers.PrimaryKeyRelatedField(read_only=True)
+    project_title = serializers.CharField(source="project.title", read_only=True)
+    assigned_to = _NestedUserSummarySerializer(read_only=True)
+    tags = _NestedTagSerializer(many=True, read_only=True)
+
+    dependencies = serializers.SerializerMethodField()
+    events_linked = serializers.SerializerMethodField()
+    reminders_linked = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Task
+        fields = [
+            "id",
+            "title",
+            "description",
+            "status",
+            "status_id",
+            "important",
+            "assigned_to",
+            "project_id",
+            "project_title",
+            "event_id",
+            "tags",
+            "created_at",
+            "updated_at",
+            "dependencies",
+            "events_linked",
+            "reminders_linked",
+        ]
+        read_only_fields = ["status_id", "event_id"]
+
+    def get_dependencies(self, obj):
+        return list(obj.dependencies.values_list("depends_on_id", flat=True))
+
+    def get_events_linked(self, obj):
+        if obj.event_id:
+            return [obj.event_id]
+        return []
+
+    def get_reminders_linked(self, obj):
+        return list(obj.reminder_set.values_list("id", flat=True))
+
+
+class EventSerializer(serializers.ModelSerializer):
+    event_status = _NestedEventStatusSerializer(read_only=True)
+    host = _NestedUserSummarySerializer(read_only=True)
+    assigned_to = _NestedUserSummarySerializer(read_only=True)
+    tags = _NestedTagSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Event
+        fields = [
+            "id",
+            "title",
+            "description",
+            "status",
+            "event_status",
+            "start_date",
+            "end_date",
+            "venue",
+            "host",
+            "event_category",
+            "max_attendees",
+            "ticket_price",
+            "assigned_to",
+            "tags",
+            "links",
+            "classification",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class ReminderSerializer(serializers.ModelSerializer):
+    created_by = _NestedUserSummarySerializer(read_only=True)
+
+    class Meta:
+        model = Reminder
+        fields = [
+            "id",
+            "title",
+            "description",
+            "remind_at",
+            "task",
+            "project",
+            "event",
+            "created_by",
+            "is_sent",
+            "reminder_type",
+            "created_at",
+        ]
+
+
+class InboxItemSerializer(serializers.ModelSerializer):
+    created_by = _NestedUserSummarySerializer(read_only=True)
+    processed_to_summary = serializers.SerializerMethodField()
+
+    class Meta:
+        model = InboxItem
+        fields = [
+            "id",
+            "title",
+            "description",
+            "created_at",
+            "created_by",
+            "is_processed",
+            "processed_at",
+            "processed_to_summary",
+            "gtd_category",
+            "action_type",
+            "priority",
+            "context",
+            "estimated_time",
+            "due_date",
+            "energy_required",
+            "notes",
+            "is_public",
+            "assigned_to",
+        ]
+
+    def get_processed_to_summary(self, obj):
+        if not obj.processed_to:
+            return None
+        return {
+            "content_type": obj.processed_to_content_type.model,
+            "id": obj.processed_to_object_id,
+            "title": str(obj.processed_to),
+        }
