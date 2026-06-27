@@ -1,0 +1,50 @@
+{% extends "layouts/base.html" %}
+{% load static lesson_tags %}
+
+{% block extra_head %}
+<style>
+  .public-content-body {
+    max-width: 100%;
+    overflow: hidden;
+  }
+</style>
+{% include "courses/includes/conditional_sidebar.html" %}
+{% endblock %}
+
+{% block content %}
+<main class="public-main">
+  <div class="public-card">
+    <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+      <div>
+        <h1 class="h3 mb-2">{{ block.title }}</h1>
+        <div class="public-meta">
+          <span><i class="bi bi-person me-1"></i>{{ block.author.get_full_name|default:block.author.username }}</span>
+          <span class="ms-3"><i class="bi bi-clock me-1"></i>{{ block.created_at|date:"d/m/Y H:i" }}</span>
+        </div>
+        {% if block.description %}
+        <p class="mt-3 mb-0 text-secondary">{{ block.description }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <hr class="my-4">
+
+    {% include "courses/includes/public_content_render.html" with block=block %}
+
+    {% if block.tags %}
+    <div class="mt-4">
+      {% for tag in block.get_tags_list %}
+      <span class="badge bg-light text-dark border me-1">#{{ tag }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <footer class="mt-5 pt-3 border-top text-secondary small">
+      <div class="d-flex justify-content-between flex-wrap gap-2">
+        <span>Publicado por {{ block.author.get_full_name|default:block.author.username }}</span>
+        <span>{{ block.created_at|date:"d/m/Y H:i" }}</span>
+      </div>
+    </footer>
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% load lesson_tags %}
+
+<div class="public-content-body">
+  {% if block.content_type == 'html' or block.content_type == 'bootstrap' %}
+    {{ block.html_content|safe }}
+  {% elif block.content_type == 'markdown' %}
+    {{ block.markdown_content|linebreaks }}
+  {% elif block.content_type == 'json' %}
+    <pre>{{ block.json_content }}</pre>
+  {% elif block.content_type == 'text' %}
+    {{ block.html_content }}
+  {% endif %}
+</div>
