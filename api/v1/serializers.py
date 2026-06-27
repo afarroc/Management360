@@ -78,10 +78,19 @@ class _ProjectStatsSerializer(serializers.Serializer):
 
 class ProjectSerializer(serializers.ModelSerializer):
     project_status = _NestedProjectStatusSerializer(read_only=True)
+    project_status_id = serializers.PrimaryKeyRelatedField(
+        queryset=ProjectStatus.objects.all(), source="project_status", write_only=True, required=False
+    )
     status = serializers.CharField(source='project_status.status_name', read_only=True)
     stats = serializers.SerializerMethodField()
     host = _NestedUserSummarySerializer(read_only=True)
+    host_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source="host", write_only=True, required=False
+    )
     assigned_to = _NestedUserSummarySerializer(read_only=True)
+    assigned_to_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source="assigned_to", write_only=True, required=False
+    )
 
     class Meta:
         model = Project
@@ -94,8 +103,11 @@ class ProjectSerializer(serializers.ModelSerializer):
             "updated_at",
             "done",
             "project_status",
+            "project_status_id",
             "host",
+            "host_id",
             "assigned_to",
+            "assigned_to_id",
             "ticket_price",
             "stats",
         ]
@@ -113,12 +125,28 @@ class ProjectSerializer(serializers.ModelSerializer):
 
 class TaskSerializer(serializers.ModelSerializer):
     task_status = _NestedTaskStatusSerializer(read_only=True)
+    task_status_id = serializers.PrimaryKeyRelatedField(
+        queryset=TaskStatus.objects.all(), source="task_status", write_only=True, required=False
+    )
     status = serializers.CharField(source='task_status.status_name', read_only=True)
     status_id = serializers.IntegerField(source='task_status.id', read_only=True)
     project = serializers.PrimaryKeyRelatedField(read_only=True)
+    project_id = serializers.PrimaryKeyRelatedField(
+        queryset=Project.objects.all(), source="project", write_only=True, required=False
+    )
     project_title = serializers.CharField(source="project.title", read_only=True)
     assigned_to = _NestedUserSummarySerializer(read_only=True)
+    assigned_to_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source="assigned_to", write_only=True, required=False
+    )
+    host = _NestedUserSummarySerializer(read_only=True)
+    host_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source="host", write_only=True, required=False
+    )
     tags = _NestedTagSerializer(many=True, read_only=True)
+    task_status_id = serializers.PrimaryKeyRelatedField(
+        queryset=TaskStatus.objects.all(), source="task_status", write_only=True, required=False
+    )
 
     dependencies = serializers.SerializerMethodField()
     events_linked = serializers.SerializerMethodField()
@@ -133,8 +161,12 @@ class TaskSerializer(serializers.ModelSerializer):
             "status",
             "status_id",
             "task_status",
+            "task_status_id",
             "important",
             "assigned_to",
+            "assigned_to_id",
+            "host",
+            "host_id",
             "project",
             "project_id",
             "project_title",
@@ -163,9 +195,18 @@ class TaskSerializer(serializers.ModelSerializer):
 
 class EventSerializer(serializers.ModelSerializer):
     event_status = _NestedEventStatusSerializer(read_only=True)
+    event_status_id = serializers.PrimaryKeyRelatedField(
+        queryset=Status.objects.all(), source="event_status", write_only=True, required=False
+    )
     status = serializers.CharField(source='event_status.status_name', read_only=True)
     host = _NestedUserSummarySerializer(read_only=True)
+    host_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source="host", write_only=True, required=False
+    )
     assigned_to = _NestedUserSummarySerializer(read_only=True)
+    assigned_to_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(), source="assigned_to", write_only=True, required=False
+    )
     tags = _NestedTagSerializer(many=True, read_only=True)
 
     class Meta:
@@ -176,12 +217,15 @@ class EventSerializer(serializers.ModelSerializer):
             "description",
             "status",
             "event_status",
+            "event_status_id",
             "venue",
             "host",
+            "host_id",
             "event_category",
             "max_attendees",
             "ticket_price",
             "assigned_to",
+            "assigned_to_id",
             "tags",
             "links",
             "classification",
