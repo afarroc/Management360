@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from panel import views
 from . import views as api_views
 
@@ -12,4 +12,5 @@ urlpatterns = [
     path('token/connection/', views.get_connection_token, name='connection-token'),
     path('token/subscription/', views.get_subscription_token, name='subscription-token'),
     path('content/publish/', api_views.publish_content, name='publish-content'),
+    path('v1/', include('api.v1.urls', namespace='api_v1')),
 ]
