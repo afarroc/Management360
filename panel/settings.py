@@ -16,7 +16,7 @@ if not SECRET_KEY:
 DEBUG = config('DEBUG', default=False, cast=bool)
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
-    default='localhost,127.0.0.1,192.168.18.46,192.168.18.47,testserver'
+    default='localhost,127.0.0.1,testserver'
 ).split(',')
 
 if RENDER_EXTERNAL_HOSTNAME := os.environ.get('RENDER_EXTERNAL_HOSTNAME'):
@@ -116,7 +116,7 @@ def _build_caches():
     try:
         importlib.import_module('django_redis')
         import redis as _redis
-        _client = _redis.from_url(_url, socket_connect_timeout=2)
+        _client = _redis.from_url(_url, socket_connect_timeout=5, socket_timeout=5)
         _client.ping()
         logger.debug("Redis cache OK: %s", _url)
         return {
